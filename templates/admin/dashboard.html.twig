@@ -1,0 +1,91 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Dashboard Admin{% endblock %}
+{% block page_title %}Tableau de Bord Admin{% endblock %}
+
+{% block body %}
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-people"></i></div>
+            <h3>{{ stats.users }}</h3>
+            <p>Utilisateurs</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-calendar-event"></i></div>
+            <h3>{{ stats.events }}</h3>
+            <p>Événements</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+            <h3>{{ stats.packs }}</h3>
+            <p>Packs</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-journal-check"></i></div>
+            <h3>{{ stats.inscriptions }}</h3>
+            <p>Inscriptions</p>
+        </div>
+    </div>
+</div>
+
+<div class="admin-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0">Gestion des événements</h4>
+        <a href="#" class="btn btn-eco btn-sm">Ajouter</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Événement</th>
+                    <th>Lieu</th>
+                    <th>Date</th>
+                    <th>Participants</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in recentEvents %}
+                    <tr>
+                        <td>{{ event.title }}</td>
+                        <td>{{ event.location }}</td>
+                        <td>{{ event.date }}</td>
+                        <td>{{ event.participants }}</td>
+                        <td>
+                            {% if event.status == 'Active' %}
+                                <span class="badge bg-success">{{ event.status }}</span>
+                            {% elseif event.status == 'À venir' %}
+                                <span class="badge bg-warning text-dark">{{ event.status }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ event.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for event in recentEvents %}
+        <div class="col-lg-4">
+            <div class="admin-card h-100">
+                <h5 class="fw-bold">{{ event.title }}</h5>
+                <p class="mb-1"><i class="bi bi-geo-alt me-2"></i>{{ event.location }}</p>
+                <p class="mb-1"><i class="bi bi-calendar-event me-2"></i>{{ event.date }}</p>
+                <p class="mb-3"><i class="bi bi-people me-2"></i>{{ event.participants }} participants</p>
+                <a href="#" class="btn btn-eco-outline btn-sm">Voir détails</a>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

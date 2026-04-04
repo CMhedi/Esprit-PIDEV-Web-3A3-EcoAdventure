@@ -1,0 +1,69 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tous les événements | EcoAdventure{% endblock %}
+
+{% block body %}
+<section class="page-header py-5">
+    <div class="container">
+        <h1 class="fw-bold">Tous les Événements</h1>
+        <p class="text-muted">Retrouvez l’ensemble des activités et événements sportifs.</p>
+
+        <div class="filter-box shadow-sm">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Recherche...">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select">
+                        <option>Catégorie</option>
+                        <option>Nature</option>
+                        <option>Nautique</option>
+                        <option>Aventure</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select">
+                        <option>Lieu</option>
+                        <option>Ain Draham</option>
+                        <option>Bizerte</option>
+                        <option>Zaghouan</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-warning w-100">Filtrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="pb-5">
+    <div class="container">
+        <div class="row g-4">
+            {% for event in events %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card event-card border-0 shadow-sm h-100">
+                        <img src="{{ asset(event.image) }}" class="card-img-top event-image" alt="{{ event.title }}">
+                        <div class="card-body">
+                            <span class="badge bg-light text-dark mb-2">{{ event.category }}</span>
+                            <h5 class="fw-bold">{{ event.title }}</h5>
+                            <p class="mb-1"><i class="bi bi-geo-alt me-2"></i>{{ event.location }}</p>
+                            <p class="mb-1"><i class="bi bi-calendar-event me-2"></i>{{ event.date }}</p>
+                            <p class="price-text mb-3"><i class="bi bi-cash-stack me-2"></i>{{ event.price }}</p>
+
+                            <div class="d-flex gap-2">
+                                <a href="#" class="btn btn-eco w-100">S'inscrire</a>
+                                <a href="#" class="btn btn-light border w-100">Détails</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info">Aucun événement disponible.</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
