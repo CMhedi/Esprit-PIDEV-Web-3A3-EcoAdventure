@@ -1,0 +1,134 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accueil | EcoAdventure{% endblock %}
+
+{% block body %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-card">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-6">
+                    <span class="badge rounded-pill bg-light text-dark px-3 py-2 mb-3">
+                        Aventure • Nature • Sport
+                    </span>
+                    <h1 class="display-4 fw-bold text-white">
+                        Explorez l’aventure avec <span>EcoAdventure</span>
+                    </h1>
+                    <p class="lead text-white-50 mt-3">
+                        Réservez vos activités sportives, découvrez les événements et profitez
+                        d’une expérience immersive au cœur de la nature.
+                    </p>
+
+                    <form class="search-box mt-4">
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <input type="text" class="form-control form-control-lg" placeholder="Rechercher une activité">
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select form-select-lg">
+                                    <option>Toutes catégories</option>
+                                    <option>Nature</option>
+                                    <option>Nautique</option>
+                                    <option>Aventure</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-warning w-100 btn-lg fw-semibold">Rechercher</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="col-lg-6 text-center">
+                    <img src="{{ asset('assets/img/Hero.png') }}" class="img-fluid rounded-4 hero-image" alt="Hero">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            {% for activity in activities %}
+                <div class="col-md-4">
+                    <div class="card activity-card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="icon-box mb-3">
+                                <i class="bi {{ activity.icon }}"></i>
+                            </div>
+                            <h4 class="fw-bold">{{ activity.title }}</h4>
+                            <p class="text-muted">{{ activity.description }}</p>
+                            <a href="#" class="btn btn-eco-outline rounded-pill px-4">Découvrir</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="pb-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold section-title">Événements à venir</h2>
+                <p class="text-muted mb-0">Choisissez votre prochaine aventure.</p>
+            </div>
+            <a href="{{ path('app_events') }}" class="btn btn-link text-decoration-none fw-semibold">Voir tous</a>
+        </div>
+
+        <div class="row g-4">
+            {% for event in events %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card event-card border-0 shadow-sm h-100">
+                        <img src="{{ asset(event.image) }}" class="card-img-top event-image" alt="{{ event.title }}">
+                        <div class="card-body">
+                            <span class="badge bg-light text-dark mb-2">{{ event.category }}</span>
+                            <h5 class="fw-bold">{{ event.title }}</h5>
+                            <p class="mb-1"><i class="bi bi-geo-alt me-2"></i>{{ event.location }}</p>
+                            <p class="mb-1"><i class="bi bi-calendar-event me-2"></i>{{ event.date }}</p>
+                            <p class="price-text mb-3"><i class="bi bi-cash-stack me-2"></i>{{ event.price }}</p>
+
+                            <div class="d-flex gap-2">
+                                <a href="#" class="btn btn-eco w-100">S'inscrire</a>
+                                <a href="#" class="btn btn-light border w-100">Détails</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="py-5 pack-section">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold section-title">Nos Packs</h2>
+            <p class="text-muted">Des formules adaptées à chaque aventurier.</p>
+        </div>
+
+        <div class="row g-4">
+            {% for pack in packs %}
+                <div class="col-lg-4">
+                    <div class="card pack-card border-0 shadow-sm h-100">
+                        <div class="card-body p-4 text-center">
+                            <h4 class="fw-bold">{{ pack.name }}</h4>
+                            <div class="pack-price my-3">{{ pack.price }}</div>
+
+                            <ul class="list-unstyled pack-features">
+                                {% for feature in pack.features %}
+                                    <li><i class="bi bi-check-circle-fill me-2"></i>{{ feature }}</li>
+                                {% endfor %}
+                            </ul>
+
+                            <a href="#" class="btn btn-eco rounded-pill px-4 mt-3">Choisir ce pack</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
