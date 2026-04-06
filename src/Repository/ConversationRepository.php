@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Conversation;
+use App\Entity\UserApp;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -30,6 +31,17 @@ class ConversationRepository extends ServiceEntityRepository
 //            ->getResult()
 //        ;
 //    }
+
+    public function findByParticipant(UserApp $user): array
+    {
+        return $this->createQueryBuilder('c')
+            ->innerJoin('c.participants', 'u')
+            ->andWhere('u = :user')
+            ->setParameter('user', $user)
+            ->orderBy('c.date_creation', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 
 //    public function findOneBySomeField($value): ?Conversation
 //    {

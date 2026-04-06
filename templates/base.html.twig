@@ -16,7 +16,7 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top custom-navbar">
     <div class="container">
         <a class="navbar-brand fw-bold brand-text" href="{{ path('app_home') }}">
-            <i class="bi bi-tree-fill me-2"></i>Eco<span>Adventure</span>
+            <i class="bi bi-tree-fill me-2 text-success"></i>Eco<span>Adventure</span>
         </a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
@@ -32,9 +32,17 @@
                 <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
             </ul>
 
-            <div class="d-flex gap-2">
+            <div class="d-flex align-items-center gap-3">
+                {# --- L'ICÔNE DE MESSAGERIE --- #}
+                <div class="position-relative me-2">
+    <button type="button" class="btn btn-link text-success fs-4 p-0 border-0" data-bs-toggle="modal" data-bs-target="#userSelectModal" title="Choisir un utilisateur">
+        <i class="bi bi-chat-text-fill"></i>
+        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+    </button>
+</div>
+
                 <a href="#" class="btn btn-outline-success rounded-pill px-4">Connexion</a>
-                <a href="#" class="btn btn-eco rounded-pill px-4">S'inscrire</a>
+                <a href="#" class="btn btn-eco rounded-pill px-4 text-white">S'inscrire</a>
             </div>
         </div>
     </div>
@@ -42,39 +50,70 @@
 
 {% block body %}{% endblock %}
 
-<footer class="footer-eco text-white mt-5">
-    <div class="footer-overlay py-5">
-        <div class="container">
-            <div class="row g-4 align-items-start">
-                <div class="col-lg-4">
-                    <h4 class="fw-bold">EcoAdventure</h4>
-                    <p>
-                        Votre agence d’activités et d’événements sportifs en pleine nature.
-                    </p>
+{# Supprime l'ancien modal et garde celui-ci #}
+<div class="modal fade" id="userSelectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-person-badge me-2"></i>Connexion au Chat</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                {# Affichage des erreurs flash si l'ID n'existe pas #}
+                {% for message in app.flashes('error') %}
+                    <div class="alert alert-danger small p-2">{{ message }}</div>
+                {% endfor %}
+
+                <label class="form-label text-muted small fw-bold">ID UTILISATEUR (XAMPP) :</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-success fw-bold">#</span>
+                    <input type="number" id="userInputId" class="form-control" placeholder="Ex: 1, 2, 5..." value="1">
                 </div>
-                <div class="col-lg-4">
-                    <h5>Liens utiles</h5>
-                    <ul class="list-unstyled footer-links">
-                        <li><a href="{{ path('app_home') }}">Accueil</a></li>
-                        <li><a href="{{ path('app_events') }}">Événements</a></li>
-                        <li><a href="{{ path('app_packs') }}">Packs</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-4">
-                    <h5>Suivez-nous</h5>
-                    <div class="d-flex gap-3 fs-4">
-                        <a href="#"><i class="bi bi-facebook"></i></a>
-                        <a href="#"><i class="bi bi-instagram"></i></a>
-                        <a href="#"><i class="bi bi-twitter-x"></i></a>
-                        <a href="#"><i class="bi bi-youtube"></i></a>
-                    </div>
-                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-success rounded-pill px-4 shadow-sm" onclick="goToMessenger()">Se connecter</button>
             </div>
         </div>
     </div>
-</footer>
+</div>
+
+<div class="modal fade" id="userSelectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-person-badge me-2"></i>Connexion au Chat</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <label class="form-label text-muted small fw-bold">ID UTILISATEUR (XAMPP) :</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-success fw-bold">#</span>
+                    <input type="number" id="userInputId" class="form-control" placeholder="Ex: 1" value="1">
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-success rounded-pill px-4 shadow-sm" onclick="goToMessenger()">Se connecter</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+function goToMessenger() {
+    const userId = document.getElementById('userInputId').value;
+    if (userId.trim() !== "") {
+        // Redirige vers /messagerie/1 (ou l'ID choisi)
+        window.location.href = "/messagerie/" + userId;
+    } else {
+        alert("Veuillez entrer un ID valide !");
+    }
+}
+</script>
+
 {% block js %}{% endblock %}
 </body>
 </html>
