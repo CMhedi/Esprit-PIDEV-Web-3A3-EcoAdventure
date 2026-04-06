@@ -29,11 +29,60 @@
         background-color: #e8f5e9;
         border-left-color: #28a745;
     }
+    .conversation-filter-bar {
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .conversation-search-input {
+        border-radius: 50px;
+        border: 1px solid #dee2e6;
+    }
+    .conversation-sort-btns {
+        gap: 0.35rem;
+        flex-wrap: wrap;
+    }
+    .conversation-sort-btns .btn.active {
+        background-color: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+    .conversation-tag {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.45rem;
+        border-radius: 999px;
+        background: #e9f7ef;
+        color: #1b5e20;
+    }
     .chat-window {
         background: white;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
     }
     .messages-area {
         background-color: #f0f2f5;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding-bottom: 110px;
+        scroll-behavior: smooth;
+    }
+    
+    .messages-area::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .messages-area::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    .messages-area::-webkit-scrollbar-thumb {
+        background: #28a745;
+        border-radius: 4px;
+    }
+    
+    .messages-area::-webkit-scrollbar-thumb:hover {
+        background: #218838;
     }
     .message-bubble {
         max-width: 70%;
@@ -42,9 +91,10 @@
         margin-bottom: 10px;
         position: relative;
         font-size: 0.95rem;
+        word-break: break-word;
     }
     .message-sent {
-        background-color: #28a745; 
+        background-color: #28a745;
         color: white;
         border-bottom-right-radius: 2px;
     }
@@ -63,7 +113,6 @@
     .bg-eco { background-color: #28a745; }
     .btn-eco { background-color: #28a745; border: none; color: white; }
     .btn-eco:hover { background-color: #218838; color: white; }
-    
     .online-dot {
         height: 10px;
         width: 10px;
@@ -72,6 +121,59 @@
         display: inline-block;
         margin-right: 5px;
         border: 2px solid white;
+    }
+    .message-item {
+        transition: all 0.2s ease;
+    }
+    .message-item .message-actions-hover {
+        position: absolute;
+        top: 5px;
+        right: 45px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 4px 6px;
+        border-radius: 4px;
+        display: flex;
+        gap: 4px;
+    }
+    .message-item:hover .message-actions-hover {
+        opacity: 1;
+    }
+    .message-actions-hover .btn {
+        padding: 2px 4px !important;
+        font-size: 0.85rem;
+    }
+    .message-actions-hover .btn:hover {
+        opacity: 0.8;
+    }
+    .message-footer {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        z-index: 100;
+        border-top: 1px solid #ddd;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+    }
+    .message-checkmarks {
+        display: inline-flex;
+        gap: 1px;
+        margin-left: 6px;
+        font-size: 1rem;
+        vertical-align: middle;
+    }
+    .checkmark {
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: bold;
+    }
+    .checkmark.read {
+        color: #1976d2;
+        font-weight: bold;
+    }
+    .read-time {
+        font-size: 0.7rem;
+        margin-left: 4px;
+        opacity: 0.8;
     }
 </style>
 {% endblock %}
@@ -88,10 +190,28 @@
                     <i class="bi bi-pencil-square text-success"></i>
                 </button>
             </div>
-            
+            <div class="p-3 border-bottom bg-white">
+                <div class="d-flex flex-column conversation-filter-bar">
+                    <div class="input-group input-group-sm conversation-search-input">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                        <input id="conversationSearch" type="text" class="form-control border-start-0" placeholder="Rechercher une conversation..." aria-label="Rechercher une conversation">
+                    </div>
+                    <div class="d-flex align-items-center conversation-sort-btns">
+                        <button type="button" class="btn btn-outline-success btn-sm" data-filter="all">Tous</button>
+                        <button type="button" class="btn btn-outline-success btn-sm active" data-sort="name">Nom</button>
+                        <button type="button" class="btn btn-outline-success btn-sm" data-sort="date">Date</button>
+                        <button type="button" class="btn btn-outline-success btn-sm" data-filter="groupe">Groupes</button>
+                        <button type="button" class="btn btn-outline-success btn-sm" data-filter="prive">Privés</button>
+                    </div>
+                </div>
+            </div>
             <div class="flex-grow-1 p-2" style="overflow-y:auto">
                 {% for conversation in conversations %}
-                    <a href="{{ path('app_messagerie', {'id_user': mon_id}) }}" class="card conversation-item mb-1 {% if loop.first %}active{% endif %}">
+                    <a href="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
+                       class="card conversation-item mb-1 {% if current_conv is defined and current_conv.id_conversation == conversation.id_conversation %}active{% elseif current_conv is not defined and loop.first %}active{% endif %}"
+                       data-title="{{ conversation.titre|lower }}"
+                       data-date="{{ conversation.date_creation ? conversation.date_creation|date('YmdHis') : '' }}"
+                       data-type="{{ conversation.est_groupe ? 'groupe' : 'prive' }}">
                         <div class="card-body p-3">
                             <div class="d-flex align-items-center">
                                 <div class="flex-shrink-0">
@@ -120,39 +240,84 @@
 
         {# --- COLONNE DROITE (CHAT) --- #}
         <div class="col-md-8 d-flex flex-column chat-window">
-            
+
             <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white shadow-sm">
                 <div class="d-flex align-items-center">
                     <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px;">
-                        <i class="bi bi-person-badge-fill text-success fs-4"></i>
+                        <i class="bi bi-chat-dots-fill text-success fs-4"></i>
                     </div>
                     <div>
                         <h5 class="m-0 fw-bold text-dark">
-                            {{ nom_utilisateur }} {{ prenom_utilisateur }} 
-                            <span class="badge bg-light text-success border ms-2" style="font-size: 0.7rem;">ID #{{ mon_id }}</span>
+                            {{ current_conv ? current_conv.titre : nom_utilisateur ~ ' ' ~ prenom_utilisateur }}
+                            {% if current_conv %}
+                                <span class="badge bg-light text-success border ms-2" style="font-size: 0.7rem;">{{ current_conv.est_groupe ? 'Groupe' : 'Privé' }}</span>
+                            {% endif %}
                         </h5>
-                        <small class="text-success fw-semibold"><span class="online-dot"></span>En ligne</small>
+                        <small class="text-success fw-semibold"><span class="online-dot"></span>{{ current_conv ? 'Discussion active' : 'Aucune discussion sélectionnée' }}</small>
                     </div>
                 </div>
                 <div class="text-muted fs-5">
                     <i class="bi bi-telephone-fill me-3" style="cursor:pointer"></i>
                     <i class="bi bi-camera-video-fill me-3" style="cursor:pointer"></i>
-                    {# BOUTON POUR MODAL INFO #}
                     <i class="bi bi-info-circle-fill text-info" style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#infoModal"></i>
                 </div>
             </div>
 
-            <div class="flex-grow-1 p-4 messages-area d-flex flex-column" style="overflow-y:auto">
+            <div class="flex-grow-1 p-4 messages-area d-flex flex-column" id="messagesContainer" style="overflow-y:auto">
+                {% if current_conv %}
+                    {% set is_group_admin = current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
+                {% endif %}
                 {% for message in messages %}
-                    {% set is_mine = (message.id_user == mon_id) %}
-                    <div class="d-flex {{ is_mine ? 'justify-content-end' : 'justify-content-start' }} mb-3">
-                        <div class="message-bubble {{ is_mine ? 'message-sent shadow' : 'message-received shadow-sm' }}">
+                    {% set is_mine = (message.userApp is defined and message.userApp.id_user == mon_id) %}
+                    <div class="d-flex {{ is_mine ? 'justify-content-end' : 'justify-content-start' }} mb-3 message-item">
+                        <div class="message-bubble {{ is_mine ? 'message-sent shadow' : 'message-received shadow-sm' }}" style="position: relative;">
+                            <div class="mb-2 fw-bold small text-muted">{{ message.userApp ? (message.userApp.nom ~ ' ' ~ message.userApp.prenom) : 'Utilisateur' }}</div>
                             {{ message.contenu }}
-                            <span class="time-stamp {{ is_mine ? 'text-white-50 text-end' : 'text-muted' }}">
-                                {{ message.date_envoi|date('H:i') }}
-                            </span>
+                            <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap">
+                                <div>
+                                    <span class="time-stamp {{ is_mine ? 'text-white-50' : 'text-muted' }}">
+                                        {{ message.date_envoi ? message.date_envoi|date('H:i') : '' }}
+                                        {% if is_mine %}
+                                            <span class="message-checkmarks">
+                                                {% if message.date_lecture %}
+                                                    <span class="checkmark read">✓✓</span>
+                                                    <span class="read-time {{ is_mine ? 'text-white-50' : 'text-muted' }}">{{ message.date_lecture|date('H:i') }}</span>
+                                                {% else %}
+                                                    <span class="checkmark">✓✓</span>
+                                                {% endif %}
+                                            </span>
+                                        {% endif %}
+                                    </span>
+                                    {% if message.date_modifier %}
+                                        <div class="small {{ is_mine ? 'text-white-50' : 'text-muted' }}" style="font-size: 0.75rem; margin-top: 2px;">
+                                            <span class="badge {{ is_mine ? 'bg-secondary' : 'bg-light text-dark' }}">Modifié</span>
+                                            {{ message.date_modifier|date('H:i') }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if is_mine or is_group_admin %}
+                                <div class="message-actions-hover">
+                                    {% if is_mine %}
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-success me-2" onclick="toggleEditForm({{ message.id_message }});">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    {% endif %}
+                                    <a href="{{ path('app_delete_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation, 'id_message': message.id_message}) }}" class="btn btn-link btn-sm p-0 text-danger" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
+                    {% if is_mine %}
+                        <form id="edit-form-{{ message.id_message }}" action="{{ path('app_edit_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation, 'id_message': message.id_message}) }}" method="post" class="mb-3 d-none">
+                            <div class="input-group">
+                                <input type="text" name="edited_message" class="form-control" value="{{ message.contenu }}" required>
+                                <button type="submit" class="btn btn-success btn-sm">Enregistrer</button>
+                            </div>
+                        </form>
+                    {% endif %}
                 {% else %}
                     <div class="my-auto text-center text-muted">
                         <i class="bi bi-chat-quote fs-1 d-block mb-2 text-success opacity-25"></i>
@@ -161,13 +326,13 @@
                 {% endfor %}
             </div>
 
-            <div class="p-3 bg-white border-top">
-                <form method="post" class="d-flex align-items-center gap-2">
+            <div class="p-3 message-footer">
+                <form method="post" action="{{ current_conv ? path('app_send_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '#' }}" class="d-flex align-items-center gap-2">
                     <button type="button" class="btn btn-outline-light text-muted rounded-circle border-0"><i class="bi bi-plus-circle-fill fs-5"></i></button>
                     <button type="button" class="btn btn-outline-light text-muted rounded-circle border-0"><i class="bi bi-image fs-5"></i></button>
                     <div class="input-group">
-                        <input type="text" name="message" class="form-control border-0 bg-light rounded-pill px-4" placeholder="Écrivez votre message..." required>
-                        <button type="submit" class="btn btn-eco rounded-circle ms-2 shadow d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                        <input type="text" name="message" class="form-control border-0 bg-light rounded-pill px-4 text-dark" placeholder="Écrivez votre message..." autocomplete="off" required {{ current_conv ? '' : 'disabled' }}>
+                        <button type="submit" class="btn btn-eco rounded-circle ms-2 shadow d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;" {{ current_conv ? '' : 'disabled' }}>
                             <i class="bi bi-send-fill"></i>
                         </button>
                     </div>
@@ -177,7 +342,7 @@
     </div>
 </div>
 
-{# --- MODAL INFO / GESTION (POUR L'ICÔNE i) --- #}
+{# --- MODAL INFO / GESTION --- #}
 <div class="modal fade" id="infoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
@@ -188,11 +353,8 @@
             <div class="modal-body">
                 {% if conversations|length > 0 %}
                     {% set current_conv = conversations[0] %}
-                    
+                    {% set is_group_admin = current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
                     {% if current_conv.est_groupe %}
-                        {% set is_group_admin = current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
-
-                        {# SECTION GROUPE #}
                         {% if is_group_admin %}
                             <form action="{{ path('app_edit_group', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) }}" method="POST" class="mb-4">
                                 <label class="form-label small fw-bold">Nom du groupe</label>
@@ -202,7 +364,6 @@
                                 </div>
                             </form>
                         {% endif %}
-
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">MEMBRES</label>
                             <ul class="list-group list-group-flush border rounded mb-3">
@@ -222,12 +383,11 @@
                             {% endif %}
                         </div>
                     {% endif %}
-
                     <hr>
                     <div class="d-grid shadow-sm">
                         {% if not current_conv.est_groupe or current_conv.createur.id_user == mon_id %}
-                            <a href="{{ path('app_delete_conversation', {'id_conversation': current_conv.id_conversation, 'id_user': mon_id}) }}" 
-                               class="btn btn-danger py-2" 
+                            <a href="{{ path('app_delete_conversation', {'id_conversation': current_conv.id_conversation, 'id_user': mon_id}) }}"
+                               class="btn btn-danger py-2"
                                onclick="return confirm('Supprimer cette conversation ?')">
                                 <i class="bi bi-trash3-fill me-2"></i> Supprimer la conversation
                             </a>
@@ -239,7 +399,7 @@
     </div>
 </div>
 
-{# --- MODAL NOUVELLE DISCUSSION / AJOUT MEMBRE --- #}
+{# --- MODAL NOUVELLE DISCUSSION --- #}
 <div class="modal fade" id="newListModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -263,7 +423,7 @@
                             </div>
                             <div class="btn-group btn-group-sm">
                                 <a href="{{ path('app_new_conversation', {'id_createur': mon_id, 'id_destinataire': user.id_user, 'type': 'prive'}) }}" class="btn btn-outline-success">Privé</a>
-                                <a href="{{ path('app_new_conversation', {'id_createur': mon_id, 'id_destinataire': user.id_user, 'type': 'groupe'}) }}" class="btn btn-success">Groupe</a>
+                                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createGroupModal" onclick="selectUserForGroup({{ user.id_user }}, '{{ user.nom }} {{ user.prenom }}')">Groupe</button>
                             </div>
                         </div>
                         {% endif %}
@@ -274,6 +434,7 @@
     </div>
 </div>
 
+{# --- MODAL AJOUT MEMBRE --- #}
 <div class="modal fade" id="addMemberModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -310,4 +471,194 @@
         </div>
     </div>
 </div>
+
+{# --- MODAL CREATION GROUPE --- #}
+<div class="modal fade" id="createGroupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h6 class="modal-title">
+                    <i class="bi bi-people-fill me-2"></i>
+                    Créer un nouveau groupe
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ path('app_create_group', {'id_createur': mon_id}) }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="group_name" class="form-label fw-bold">Nom du groupe (optionnel)</label>
+                        <input type="text" class="form-control" id="group_name" name="group_name" placeholder="Laissez vide pour un nom automatique">
+                        <small class="text-muted">Si vide, le nom sera généré automatiquement avec les noms des participants</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Sélectionner les membres</label>
+                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                            {% for user in tous_les_users %}
+                                {% if user.id_user != mon_id %}
+                                <div class="form-check d-flex align-items-center mb-2">
+                                    <input class="form-check-input me-3 participant-checkbox" type="checkbox"
+                                           value="{{ user.id_user }}" id="user_{{ user.id_user }}" name="participants[]">
+                                    <label class="form-check-label d-flex align-items-center flex-grow-1" for="user_{{ user.id_user }}">
+                                        <div class="rounded-circle bg-light border me-3 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                            <i class="bi bi-person text-success"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ user.nom }} {{ user.prenom }}</div>
+                                            <small class="text-muted">ID #{{ user.id_user }}</small>
+                                        </div>
+                                    </label>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Avec 2 personnes sélectionnées, ce sera une conversation privée. Avec 3+ personnes, ce sera un groupe.
+                        </small>
+                    </div>
+                    <div class="selected-count text-muted">
+                        <small><span id="selected-count">0</span> membre(s) sélectionné(s)</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success" id="create-group-btn" disabled>
+                        <i class="bi bi-check-circle me-1"></i>
+                        Créer <span id="group-type-text">le groupe</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// ✅ Global: scroll vers le bas du container messages
+function scrollToBottom() {
+    const container = document.getElementById('messagesContainer');
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+// ✅ Scroll avec délai pour s'assurer que le DOM est rendu
+function delayedScrollToBottom() {
+    setTimeout(() => {
+        scrollToBottom();
+    }, 100);
+}
+
+// ✅ Toggle edit form
+function toggleEditForm(id) {
+    const form = document.getElementById('edit-form-' + id);
+    if (form) form.classList.toggle('d-none');
+}
+
+// ✅ Sélectionner un user pour le groupe
+function selectUserForGroup(userId, userName) {
+    document.querySelectorAll('.participant-checkbox').forEach(cb => cb.checked = false);
+    const checkbox = document.getElementById('user_' + userId);
+    if (checkbox) checkbox.checked = true;
+    updateParticipantCount();
+}
+
+// ✅ Compteur participants
+function updateParticipantCount() {
+    const checkboxes = document.querySelectorAll('.participant-checkbox:checked');
+    const count = checkboxes.length;
+    const countElement = document.getElementById('selected-count');
+    const createBtn = document.getElementById('create-group-btn');
+    const groupTypeText = document.getElementById('group-type-text');
+    if (countElement) countElement.textContent = count;
+    if (createBtn) {
+        createBtn.disabled = count === 0;
+        if (count <= 1) groupTypeText.textContent = 'la conversation';
+        else if (count === 2) groupTypeText.textContent = 'la conversation privée';
+        else groupTypeText.textContent = 'le groupe';
+    }
+}
+
+// ✅ Filter conversations
+function filterConversations() {
+    const query = document.getElementById('conversationSearch').value.toLowerCase();
+    const items = Array.from(document.querySelectorAll('.conversation-item'));
+    const currentFilter = document.querySelector('[data-filter].active')?.getAttribute('data-filter') || 'all';
+    items.forEach(item => {
+        const title = item.dataset.title || '';
+        const type = item.dataset.type || '';
+        const matchesSearch = title.includes(query);
+        const matchesFilter = currentFilter === 'all' || type === currentFilter;
+        item.style.display = matchesSearch && matchesFilter ? '' : 'none';
+    });
+}
+
+function handleSortClick(event) {
+    const selectedSort = event.currentTarget.getAttribute('data-sort');
+    document.querySelectorAll('[data-sort]').forEach(btn => btn.classList.toggle('active', btn === event.currentTarget));
+    sortConversations(selectedSort);
+}
+
+function handleFilterClick(event) {
+    document.querySelectorAll('[data-filter]').forEach(btn => btn.classList.toggle('active', btn === event.currentTarget));
+    filterConversations();
+}
+
+function sortConversations(method) {
+    const list = document.querySelector('.conversation-list .flex-grow-1');
+    if (!list) return;
+    const items = Array.from(list.querySelectorAll('.conversation-item'));
+    const sorted = items.sort((a, b) => {
+        if (method === 'date') return (b.dataset.date || '').localeCompare(a.dataset.date || '');
+        return (a.dataset.title || '').trim().localeCompare((b.dataset.title || '').trim(), 'fr', { sensitivity: 'base' });
+    });
+    sorted.forEach(item => list.appendChild(item));
+    filterConversations();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ✅ Scroll initial vers le dernier message
+    scrollToBottom();
+
+    // ✅ MutationObserver: scroll automatique si nouveau message ajouté au DOM
+    const container = document.getElementById('messagesContainer');
+    if (container) {
+        const observer = new MutationObserver(() => {
+            scrollToBottom();
+        });
+        observer.observe(container, { childList: true, subtree: true });
+    }
+
+    // Checkboxes groupe
+    document.querySelectorAll('.participant-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateParticipantCount);
+    });
+
+    document.getElementById('createGroupModal')?.addEventListener('hidden.bs.modal', function () {
+        document.querySelectorAll('.participant-checkbox').forEach(cb => cb.checked = false);
+        document.getElementById('group_name').value = '';
+        updateParticipantCount();
+    });
+
+    // Search & sort conversations
+    const searchInput = document.getElementById('conversationSearch');
+    if (searchInput) searchInput.addEventListener('input', filterConversations);
+    document.querySelectorAll('[data-sort]').forEach(btn => btn.addEventListener('click', handleSortClick));
+    document.querySelectorAll('[data-filter]').forEach(btn => btn.addEventListener('click', handleFilterClick));
+
+    if (!document.querySelector('[data-sort].active')) {
+        document.querySelector('[data-sort="name"]')?.classList.add('active');
+    }
+    if (!document.querySelector('[data-filter].active')) {
+        document.querySelector('[data-filter="all"]')?.classList.add('active');
+    }
+
+    filterConversations();
+});
+
+// ✅ Scroll quand l'utilisateur revient sur l'onglet
+document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) scrollToBottom();
+});
+</script>
 {% endblock %}

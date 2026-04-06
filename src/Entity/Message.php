@@ -102,6 +102,20 @@ private ?StatutMessage $statut_message = null;
         return $this;
     }
 
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $date_modifier = null;
+
+    public function getDate_modifier(): ?\DateTimeInterface
+    {
+        return $this->date_modifier;
+    }
+
+    public function setDate_modifier(?\DateTimeInterface $date_modifier): self
+    {
+        $this->date_modifier = $date_modifier;
+        return $this;
+    }
+
     #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
     #[ORM\JoinColumn(name: 'id_conversation', referencedColumnName: 'id_conversation')]
     private ?Conversation $conversation = null;

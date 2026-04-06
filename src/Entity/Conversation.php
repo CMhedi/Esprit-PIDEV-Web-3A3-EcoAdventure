@@ -23,7 +23,11 @@ class Conversation
     private ?UserApp $createur = null;
 
     #[ORM\ManyToMany(targetEntity: UserApp::class)]
-    #[ORM\JoinTable(name: 'conversation_user')]
+    #[ORM\JoinTable(
+        name: 'conversation_user',
+        joinColumns: [new ORM\JoinColumn(name: 'conversation_id_conversation', referencedColumnName: 'id_conversation')],
+        inverseJoinColumns: [new ORM\JoinColumn(name: 'user_app_id_user', referencedColumnName: 'id_user')]
+    )]
     private Collection $participants;
 
     #[ORM\Column(type: 'string', length: 150)]
