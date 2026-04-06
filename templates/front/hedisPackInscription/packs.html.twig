@@ -1,0 +1,184 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nos Packs | EcoAdventure{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{{ asset('assets/css/packs.css') }}">
+{% endblock %}
+
+{% block body %}
+<section class="packs-hero-section py-5">
+    <div class="container">
+        <div class="packs-hero-box">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-7">
+                    <span class="packs-badge">EcoAdventure • Packs</span>
+                    <h1 class="packs-main-title mt-3">
+                        Découvrez les packs disponibles pour vos aventures sportives
+                    </h1>
+                    <p class="packs-main-text mt-3">
+                        Recherchez, filtrez et triez les packs selon vos besoins.
+                        Chaque pack affiche son prix, sa réduction, son type et le nombre
+                        maximum d’activités autorisées.
+                    </p>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="packs-hero-stats">
+                        <div class="hero-mini-card">
+                            <span>Total Packs</span>
+                            <strong>{{ packs|length }}</strong>
+                        </div>
+                        <div class="hero-mini-card">
+                            <span>Types</span>
+                            <strong>{{ typesDisponibles|length }}</strong>
+                        </div>
+                        <div class="hero-mini-card">
+                            <span>Expérience</span>
+                            <strong>Premium</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="packs-filter-card mt-4">
+            <form method="get" action="{{ path('app_packs') }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-lg-4">
+                        <label class="form-label fw-semibold">Recherche</label>
+                        <input
+                            type="text"
+                            name="q"
+                            class="form-control form-control-lg pack-input"
+                            placeholder="Nom du pack ou type..."
+                            value="{{ currentSearch }}"
+                        >
+                    </div>
+
+                    <div class="col-lg-2">
+                        <label class="form-label fw-semibold">Type</label>
+                        <select name="type" class="form-select form-select-lg pack-input">
+                            <option value="">Tous</option>
+                            {% for typeItem in typesDisponibles %}
+                                <option value="{{ typeItem }}" {{ currentType == typeItem ? 'selected' : '' }}>
+                                    {{ typeItem }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-lg-2">
+                        <label class="form-label fw-semibold">Statut</label>
+                        <select name="statut" class="form-select form-select-lg pack-input">
+                            <option value="">Tous</option>
+                            {% for statutItem in statutsDisponibles %}
+                                <option value="{{ statutItem }}" {{ currentStatut == statutItem ? 'selected' : '' }}>
+                                    {{ statutItem }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-lg-2">
+                        <label class="form-label fw-semibold">Tri</label>
+                        <select name="sort" class="form-select form-select-lg pack-input">
+                            <option value="">Nom A-Z</option>
+                            <option value="nom_desc" {{ currentSort == 'nom_desc' ? 'selected' : '' }}>Nom Z-A</option>
+                            <option value="prix_asc" {{ currentSort == 'prix_asc' ? 'selected' : '' }}>Prix croissant</option>
+                            <option value="prix_desc" {{ currentSort == 'prix_desc' ? 'selected' : '' }}>Prix décroissant</option>
+                            <option value="reduction_desc" {{ currentSort == 'reduction_desc' ? 'selected' : '' }}>Réduction max</option>
+                            <option value="activites_desc" {{ currentSort == 'activites_desc' ? 'selected' : '' }}>Plus d’activités</option>
+                        </select>
+                    </div>
+
+                    <div class="col-lg-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-eco w-100 btn-lg rounded-pill">
+                            <i class="bi bi-search me-2"></i>Filtrer
+                        </button>
+                        <a href="{{ path('app_packs') }}" class="btn btn-eco-outline btn-lg rounded-pill px-4">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<section class="packs-list-section pb-5">
+    <div class="container">
+        {% if packs is empty %}
+            <div class="packs-empty-state text-center">
+                <div class="empty-icon mb-3">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <h3>Aucun pack trouvé</h3>
+                <p>Essayez de modifier la recherche ou les filtres.</p>
+                <a href="{{ path('app_packs') }}" class="btn btn-eco rounded-pill px-4">
+                    Réinitialiser
+                </a>
+            </div>
+        {% else %}
+            <div class="row g-4">
+                {% for pack in packs %}
+                    <div class="col-xl-4 col-md-6">
+                        <div class="pack-advanced-card h-100">
+                            <div class="pack-card-top">
+                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                    <div>
+                                        <span class="pack-type-chip">{{ pack.typePack }}</span>
+                                        <h3 class="pack-title mt-3 mb-2">{{ pack.nom }}</h3>
+                                    </div>
+
+                                    <span class="pack-status-badge {{ pack.statutPack|lower == 'actif' ? 'status-active' : 'status-inactive' }}">
+                                        {{ pack.statutPack }}
+                                    </span>
+                                </div>
+
+                                <div class="pack-price-zone mt-4">
+                                    <div class="pack-price-main">
+                                        {{ pack.prixBase|number_format(2, '.', ' ') }} DT
+                                    </div>
+                                    <div class="pack-price-sub">
+                                        Prix final :
+                                        <strong>{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pack-card-body">
+                                <div class="pack-feature-row">
+                                    <span><i class="bi bi-percent me-2"></i>Réduction</span>
+                                    <strong>{{ pack.reduction|number_format(2, '.', ' ') }} DT</strong>
+                                </div>
+
+                                <div class="pack-feature-row">
+                                    <span><i class="bi bi-grid-1x2-fill me-2"></i>Type</span>
+                                    <strong>{{ pack.typePack }}</strong>
+                                </div>
+
+                                <div class="pack-feature-row">
+                                    <span><i class="bi bi-lightning-charge-fill me-2"></i>Activités max</span>
+                                    <strong>{{ pack.nbActivitesMax }}</strong>
+                                </div>
+
+                                <div class="pack-feature-row">
+                                    <span><i class="bi bi-list-check me-2"></i>Activités liées</span>
+                                    <strong>{{ pack.activites|length }}</strong>
+                                </div>
+                            </div>
+
+                            <div class="pack-card-footer">
+                                <a href="{{ path('app_pack_inscription', {'id': pack.idPack}) }}" class="btn btn-eco rounded-pill w-100">
+                                  <i class="bi bi-eye-fill me-2"></i>S'inscrire à ce pack
+                                 </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
