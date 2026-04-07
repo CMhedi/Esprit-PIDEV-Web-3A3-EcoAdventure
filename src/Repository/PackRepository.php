@@ -13,27 +13,20 @@ class PackRepository extends ServiceEntityRepository
         parent::__construct($registry, Pack::class);
     }
 
-    public function findForFront(
-        ?string $search = null,
-        ?string $sort = null,
-        ?string $type = null,
-        ?string $statut = null
-    ): array {
-        $qb = $this->createQueryBuilder('p');
+    public function findForAdmin(?string $search = null, ?string $sort = null): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.inscriptions', 'i')
+            ->addSelect('COUNT(i.id_inscription) AS HIDDEN inscriptionsCount')
+            ->groupBy('p.id_pack');
 
         if (!empty($search)) {
-            $qb->andWhere('LOWER(p.nom) LIKE :search OR LOWER(p.type_pack) LIKE :search')
-               ->setParameter('search', '%' . mb_strtolower(trim($search)) . '%');
-        }
-
-        if (!empty($type)) {
-            $qb->andWhere('LOWER(p.type_pack) = :type')
-               ->setParameter('type', mb_strtolower(trim($type)));
-        }
-
-        if (!empty($statut)) {
-            $qb->andWhere('LOWER(p.statut_pack) = :statut')
-               ->setParameter('statut', mb_strtolower(trim($statut)));
+            $qb->andWhere('
+                LOWER(p.nom) LIKE :search
+                OR LOWER(p.type_pack) LIKE :search
+                OR LOWER(p.statut_pack) LIKE :search
+            ')
+            ->setParameter('search', '%' . mb_strtolower(trim($search)) . '%');
         }
 
         switch ($sort) {
@@ -57,39 +50,35 @@ class PackRepository extends ServiceEntityRepository
                 $qb->orderBy('p.nb_activites_max', 'DESC');
                 break;
 
+            case 'statut_asc':
+                $qb->orderBy('p.statut_pack', 'ASC');
+                break;
+
+            case 'popular_desc':
+                $qb->orderBy('inscriptionsCount', 'DESC');
+                break;
+
             default:
-                $qb->orderBy('p.nom', 'ASC');
+                $qb->orderBy('p.id_pack', 'DESC');
                 break;
         }
 
         return $qb->getQuery()->getResult();
     }
 
-    public function findDistinctTypes(): array
+    public function countAllPacks(): int
     {
-        $rows = $this->createQueryBuilder('p')
-            ->select('DISTINCT p.type_pack AS type_pack')
-            ->where('p.type_pack IS NOT NULL')
-            ->andWhere('p.type_pack != :vide')
-            ->setParameter('vide', '')
-            ->orderBy('p.type_pack', 'ASC')
+        return (int) $this->createQueryBuilder('p')
+            ->select('COUNT(p.id_pack)')
             ->getQuery()
-            ->getArrayResult();
-
-        return array_map(fn ($row) => $row['type_pack'], $rows);
+            ->getSingleScalarResult();
     }
 
-    public function findDistinctStatuts(): array
+    public function findAllForPdf(): array
     {
-        $rows = $this->createQueryBuilder('p')
-            ->select('DISTINCT p.statut_pack AS statut_pack')
-            ->where('p.statut_pack IS NOT NULL')
-            ->andWhere('p.statut_pack != :vide')
-            ->setParameter('vide', '')
-            ->orderBy('p.statut_pack', 'ASC')
+        return $this->createQueryBuilder('p')
+            ->orderBy('p.nom', 'ASC')
             ->getQuery()
-            ->getArrayResult();
-
-        return array_map(fn ($row) => $row['statut_pack'], $rows);
+            ->getResult();
     }
 }
