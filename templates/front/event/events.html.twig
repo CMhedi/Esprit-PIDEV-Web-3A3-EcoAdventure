@@ -2,27 +2,65 @@
 
 {% block title %}Tous les événements | EcoAdventure{% endblock %}
 
+{% block css %}
+<style>
+    .filter-box {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+    .filter-box:focus-within {
+        border-color: #ffc107;
+        box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #ffc107;
+        box-shadow: none;
+    }
+    .btn-warning {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #000;
+        transition: all 0.3s ease;
+    }
+    .btn-warning:hover {
+        background-color: #e0a800;
+        transform: translateY(-2px);
+    }
+    #loader {
+        transition: opacity 0.3s ease;
+    }
+</style>
+{% endblock %}
+
 {% block body %}
 <section class="page-header py-5">
     <div class="container">
         <h1 class="fw-bold">Tous les Événements</h1>
         <p class="text-muted">Retrouvez l’ensemble des activités et événements sportifs.</p>
 
-        <div class="filter-box shadow-sm">
+        <div class="filter-box shadow-sm p-4 bg-white rounded-4 mb-5">
             <form id="filter-form" action="{{ path('app_event_front_index') }}" method="GET">
                 <div class="row g-3">
-                    <div class="col-md-4">
-                        <input type="text" name="search" id="search" class="form-control" placeholder="Recherche..." value="{{ search }}">
-                    </div>
                     <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" name="search" id="search" class="form-control border-start-0" placeholder="Recherche..." value="{{ search }}">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
                         <select name="categorie" id="categorie" class="form-select">
                             <option value="">Toutes les catégories</option>
-                            <option value="Nature" {% if selected_cat == 'Nature' %}selected{% endif %}>Nature</option>
-                            <option value="Nautique" {% if selected_cat == 'Nautique' %}selected{% endif %}>Nautique</option>
-                            <option value="Aventure" {% if selected_cat == 'Aventure' %}selected{% endif %}>Aventure</option>
+                            <option value="TOURNOI" {% if selected_cat == 'TOURNOI' %}selected{% endif %}>TOURNOI</option>
+                            <option value="MARATHON" {% if selected_cat == 'MARATHON' %}selected{% endif %}>MARATHON</option>
+                            <option value="COMPETITION" {% if selected_cat == 'COMPETITION' %}selected{% endif %}>COMPETITION</option>
+                            <option value="STAGE" {% if selected_cat == 'STAGE' %}selected{% endif %}>STAGE</option>
+                            <option value="NATURE" {% if selected_cat == 'NATURE' %}selected{% endif %}>NATURE</option>
+                            <option value="NAUTIQUE" {% if selected_cat == 'NAUTIQUE' %}selected{% endif %}>NAUTIQUE</option>
+                            <option value="AVENTURE" {% if selected_cat == 'AVENTURE' %}selected{% endif %}>AVENTURE</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <select name="lieu" id="lieu" class="form-select">
                             <option value="">Tous les lieux</option>
                             {% for l in lieux %}
@@ -30,8 +68,13 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-warning w-100">Filtrer</button>
+                    <div class="col-md-3">
+                        <select name="sortBy" id="sortBy" class="form-select">
+                            <option value="date_desc" {% if selected_sort == 'date_desc' %}selected{% endif %}>Plus récents</option>
+                            <option value="date_asc" {% if selected_sort == 'date_asc' %}selected{% endif %}>Plus anciens</option>
+                            <option value="title_asc" {% if selected_sort == 'title_asc' %}selected{% endif %}>Titre (A-Z)</option>
+                            <option value="title_desc" {% if selected_sort == 'title_desc' %}selected{% endif %}>Titre (Z-A)</option>
+                        </select>
                     </div>
                 </div>
             </form>
@@ -39,7 +82,12 @@
     </div>
 </section>
 
-<section class="pb-5">
+<section class="pb-5 position-relative">
+    <div id="loader" class="position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-75 d-none justify-content-center align-items-start pt-5" style="z-index: 10;">
+        <div class="spinner-border text-warning" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
     <div class="container">
         <div class="row g-4" id="events-list">
             {% include 'front/event/_list.html.twig' with {'events': events} %}
@@ -51,35 +99,51 @@
 document.addEventListener('DOMContentLoaded', function() {
     const filterForm = document.getElementById('filter-form');
     const eventsList = document.getElementById('events-list');
+    const loader = document.getElementById('loader');
+    let timeout = null;
     
-    // AJAX Filtering
-    filterForm.addEventListener('input', function(e) {
-        if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
-            const formData = new FormData(filterForm);
-            const params = new URLSearchParams(formData).toString();
-            
-            fetch("{{ path('app_event_front_index') }}?" + params, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(res => res.text())
-            .then(html => {
-                eventsList.innerHTML = html;
-            });
-        }
-    });
-
-    filterForm.addEventListener('submit', function(e) {
-        e.preventDefault();
+    const updateEvents = () => {
+        loader.classList.replace('d-none', 'd-flex');
         const formData = new FormData(filterForm);
         const params = new URLSearchParams(formData).toString();
         
-        fetch("{{ path('app_event_front_index') }}?" + params, {
+        // Push state to URL
+        const newUrl = `${window.location.pathname}?${params}`;
+        window.history.pushState({path: newUrl}, '', newUrl);
+
+        fetch(newUrl, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(res => res.text())
         .then(html => {
             eventsList.innerHTML = html;
+            loader.classList.replace('d-flex', 'd-none');
+        })
+        .catch(err => {
+            console.error('Filtering failed:', err);
+            loader.classList.replace('d-flex', 'd-none');
         });
+    };
+
+    // AJAX Filtering on Input/Change
+    filterForm.addEventListener('input', function(e) {
+        if(e.target.tagName === 'INPUT') {
+            // Debounce for text input
+            clearTimeout(timeout);
+            timeout = setTimeout(updateEvents, 500);
+        } else if(e.target.tagName === 'SELECT') {
+            updateEvents();
+        }
+    });
+
+    filterForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateEvents();
+    });
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', function() {
+        window.location.reload();
     });
 });
 </script>

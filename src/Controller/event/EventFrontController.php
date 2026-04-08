@@ -65,9 +65,10 @@ class EventFrontController extends AbstractController
         $search = $request->query->get('search');
         $categorie = $request->query->get('categorie');
         $lieu = $request->query->get('lieu');
+        $sortBy = $request->query->get('sortBy', 'date_desc');
 
         // Handling pagination & sorting can go here, but for now we use the repository filters
-        $events = $evenementRepository->findByFilters($search, $categorie, $lieu);
+        $events = $evenementRepository->findByFilters($search, $categorie, $lieu, $sortBy);
 
         // Fetch distinct locations for filter dropdown
         $lieux = $evenementRepository->findDistinctLieux();
@@ -84,7 +85,8 @@ class EventFrontController extends AbstractController
             'lieux'  => $lieux,
             'search' => $search,
             'selected_cat' => $categorie,
-            'selected_lieu' => $lieu
+            'selected_lieu' => $lieu,
+            'selected_sort' => $sortBy
         ]);
     }
 

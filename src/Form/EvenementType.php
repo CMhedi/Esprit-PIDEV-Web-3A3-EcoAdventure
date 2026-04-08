@@ -17,9 +17,14 @@ class EvenementType extends AbstractType
             ->add('categorie_evt', \Symfony\Component\Form\Extension\Core\Type\EnumType::class, [
                 'class' => \App\Enum\CategorieEvenement::class,
                 'choice_label' => fn (\App\Enum\CategorieEvenement $choice) => $choice->value,
+                'label' => 'Categorie event',
             ])
             ->add('date_event', null, [
-                'widget' => 'single_text'
+                'widget' => 'single_text',
+                'attr' => [
+                    'min' => (new \DateTime())->format('Y-m-d\TH:i'),
+                ],
+                'label' => 'Date event',
             ])
             ->add('lieu')
             ->add('nb_places')

@@ -14,7 +14,7 @@ class EvenementRepository extends ServiceEntityRepository
     }
 
     // 🔍 FILTRE
-    public function findByFilters(?string $search, ?string $categorie, ?string $lieu)
+    public function findByFilters(?string $search, ?string $categorie, ?string $lieu, ?string $sortBy = 'date_desc')
     {
         $qb = $this->createQueryBuilder('e');
 
@@ -33,9 +33,23 @@ class EvenementRepository extends ServiceEntityRepository
                ->setParameter('lieu', $lieu);
         }
 
-        return $qb->orderBy('e.date_event', 'DESC')
-                  ->getQuery()
-                  ->getResult();
+        switch ($sortBy) {
+            case 'date_asc':
+                $qb->orderBy('e.date_event', 'ASC');
+                break;
+            case 'title_asc':
+                $qb->orderBy('e.titre', 'ASC');
+                break;
+            case 'title_desc':
+                $qb->orderBy('e.titre', 'DESC');
+                break;
+            case 'date_desc':
+            default:
+                $qb->orderBy('e.date_event', 'DESC');
+                break;
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     // 📍 LIEUX DISTINCTS
