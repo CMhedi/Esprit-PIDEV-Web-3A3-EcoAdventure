@@ -72,11 +72,61 @@ final class PackAdminController extends AbstractController
         return new Response('Détails du pack ID : ' . $id);
     }
 
-    #[Route('/admin/packs/{id}/edit', name: 'app_admin_pack_edit', requirements: ['id' => '\d+'])]
-    public function editPack(int $id): Response
-    {
-        return new Response('Modifier le pack ID : ' . $id);
+   #[Route('/admin/packs/{id}/edit', name: 'app_admin_pack_edit', requirements: ['id' => '\d+'])]
+public function editPack(
+    int $id,
+    Request $request,
+    PackRepository $packRepository,
+    EntityManagerInterface $entityManager
+): Response {
+    $pack = $packRepository->find($id);
+
+    if (!$pack) {
+        $this->addFlash('danger', 'Pack introuvable.');
+        return $this->redirectToRoute('app_admin_packs');
     }
+
+    $ancienNom = $pack->getNom();
+    $ancienType = $pack->getTypePack();
+    $ancienPrix = $pack->getPrixBase();
+    $ancienneReduction = $pack->getReduction();
+    $ancienNbActivites = $pack->getNbActivitesMax();
+    $ancienStatut = $pack->getStatutPack();
+
+    $form = $this->createForm(PackType::class, $pack);
+    $form->handleRequest($request);
+
+    if ($form->isSubmitted() && $form->isValid()) {
+        $aucunChangement =
+            $ancienNom === $pack->getNom() &&
+            $ancienType === $pack->getTypePack() &&
+            $ancienPrix === $pack->getPrixBase() &&
+            $ancienneReduction === $pack->getReduction() &&
+            $ancienNbActivites === $pack->getNbActivitesMax() &&
+            $ancienStatut === $pack->getStatutPack();
+
+        if ($aucunChangement) {
+            $this->addFlash('danger', 'Aucune modification détectée sur ce pack.');
+            return $this->redirectToRoute('app_admin_pack_edit', ['id' => $pack->getIdPack()]);
+        }
+
+        if ((float) $pack->getReduction() > (float) $pack->getPrixBase()) {
+            $this->addFlash('danger', 'La réduction ne peut pas être supérieure au prix de base.');
+            return $this->redirectToRoute('app_admin_pack_edit', ['id' => $pack->getIdPack()]);
+        }
+
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Le pack a été modifié avec succès.');
+
+        return $this->redirectToRoute('app_admin_packs');
+    }
+
+    return $this->render('admin/packs/ModifierPack_Admin.html.twig', [
+        'form' => $form->createView(),
+        'pack' => $pack
+    ]);
+}
 
     #[Route('/admin/packs/{id}/delete', name: 'app_admin_pack_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function deletePack(
