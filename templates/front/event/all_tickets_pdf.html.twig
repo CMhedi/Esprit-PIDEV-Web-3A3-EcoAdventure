@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Tous mes Tickets | EcoAdventure</title>
+    <style>
+        body { font-family: 'Helvetica', 'Arial', sans-serif; color: #333; margin: 0; padding: 0; }
+        .page-break { page-break-after: always; }
+        .ticket-page { padding: 40px; }
+        .ticket-container { border: 2px solid #28a745; border-radius: 10px; overflow: hidden; width: 100%; }
+        .header { background-color: #28a745; color: white; padding: 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { padding: 30px; }
+        .event-info { margin-bottom: 30px; }
+        .event-title { font-size: 20px; font-weight: bold; color: #28a745; margin-bottom: 10px; }
+        .details { display: table; width: 100%; }
+        .details-row { display: table-row; }
+        .details-cell { display: table-cell; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .label { font-weight: bold; width: 150px; }
+        .qr-section { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px dashed #ccc; }
+        .footer { text-align: center; font-size: 12px; color: #888; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    {% for ticket in tickets %}
+    <div class="ticket-page {% if not loop.last %}page-break{% endif %}">
+        <div class="ticket-container">
+            <div class="header">
+                <h1>EcoAdventure - Ticket Officiel</h1>
+            </div>
+            
+            <div class="content">
+                <div class="event-info">
+                    <div class="event-title">{{ ticket.evenement.titre }}</div>
+                    <p>Merci pour votre confiance ! Voici votre ticket pour votre prochaine aventure.</p>
+                </div>
+
+                <div class="details">
+                    <div class="details-row">
+                        <div class="details-cell label">Client :</div>
+                        <div class="details-cell">{{ user.nom }} {{ user.prenom }}</div>
+                    </div>
+                    <div class="details-row">
+                        <div class="details-cell label">Lieu :</div>
+                        <div class="details-cell">{{ ticket.evenement.lieu }}</div>
+                    </div>
+                    <div class="details-row">
+                        <div class="details-cell label">Date :</div>
+                        <div class="details-cell">{{ ticket.evenement.date_event|date('d/m/Y à H:i') }}</div>
+                    </div>
+                    <div class="details-row">
+                        <div class="details-cell label">Billets :</div>
+                        <div class="details-cell">{{ ticket.totalBillets }}</div>
+                    </div>
+                    <div class="details-row">
+                        <div class="details-cell label">Réf :</div>
+                        <div class="details-cell">{{ ticket.reference }}</div>
+                    </div>
+                </div>
+
+                <div class="qr-section">
+                    <p>Scannez ce QR Code à l'entrée</p>
+                    <img src="data:image/svg+xml;base64,{{ ticket.qrCode }}" alt="QR Code Reservation" style="width: 150px; height: 150px;">
+                    <p style="font-size: 10px; color: #aaa;">REF: {{ ticket.reference }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>EcoAdventure - Vivez l'aventure grandeur nature</p>
+            <p>Ce ticket est personnel et ne peut être revendu.</p>
+        </div>
+    </div>
+    {% endfor %}
+</body>
+</html>

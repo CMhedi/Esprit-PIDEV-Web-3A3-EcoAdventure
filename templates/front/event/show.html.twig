@@ -21,11 +21,32 @@
                     <img src="{{ asset('assets/img/default-event.png') }}" class="img-fluid rounded shadow-sm mb-4" alt="{{ evenement.titre }}" style="width: 100%; max-height: 400px; object-fit: cover;">
                 {% endif %}
                 
-                <h1 class="fw-bold">{{ evenement.titre }}</h1>
-                <span class="badge bg-success mb-3">{{ evenement.categorie_evt.value }}</span>
-                
-                <h4 class="mt-4">Description</h4>
-                <p>{{ evenement.description }}</p>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1 class="fw-bold">{{ evenement.titre }}</h1>
+                    <div class="text-warning fs-4">
+                        {% set avg = evenement.averageRating %}
+                        {% for i in 1..5 %}
+                            <i class="bi bi-star{{ avg >= i ? '-fill' : (avg >= i - 0.5 ? '-half' : '') }}"></i>
+                        {% endfor %}
+                        <span class="ms-1 text-muted fs-6">({{ evenement.ratings|length }})</span>
+                    </div>
+                </div>
+                <p class="lead">{{ evenement.description }}</p>
+
+                {% if weather %}
+                    <div class="card border-0 shadow-sm bg-light mb-4">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <h5 class="fw-bold mb-1"><i class="bi bi-cloud-sun me-2 text-primary"></i>Météo à {{ evenement.lieu }}</h5>
+                                <p class="mb-0 text-muted">{{ weather.description }}</p>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <img src="https://openweathermap.org/img/wn/{{ weather.icon }}@2x.png" alt="Météo" style="width: 50px;">
+                                <span class="fs-2 fw-bold ms-2">{{ weather.temp }}°C</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
                 
                 <h4 class="mt-4">Informations Pratiques</h4>
                 <ul class="list-unstyled">
@@ -62,8 +83,59 @@
                         </form>
                     </div>
                 </div>
+
+                <div class="card shadow-sm border-0 mt-4">
+                    <div class="card-body p-4 text-center">
+                        <h5 class="fw-bold mb-3">Noter cet événement</h5>
+                        <form action="{{ path('app_event_rate', {'id_evenement': evenement.id_evenement}) }}" method="POST" id="rating-form">
+                            <div class="rating-stars mb-3 fs-3 text-warning">
+                                {% for i in 1..5 %}
+                                    <i class="bi bi-star rating-star" data-value="{{ i }}" style="cursor: pointer;"></i>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="note" id="note-input" value="5">
+                            <button type="submit" class="btn btn-outline-warning btn-sm w-100">Envoyer ma note</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </section>
+
+{% block js %}
+<script>
+document.querySelectorAll('.rating-star').forEach(star => {
+    star.addEventListener('mouseover', function() {
+        const val = this.dataset.value;
+        highlightStars(val);
+    });
+    star.addEventListener('click', function() {
+        const val = this.dataset.value;
+        document.getElementById('note-input').value = val;
+        setSelectedStars(val);
+    });
+});
+
+document.querySelector('.rating-stars').addEventListener('mouseleave', function() {
+    highlightStars(document.getElementById('note-input').value);
+});
+
+function highlightStars(val) {
+    document.querySelectorAll('.rating-star').forEach(star => {
+        if (star.dataset.value <= val) {
+            star.classList.replace('bi-star', 'bi-star-fill');
+        } else {
+            star.classList.replace('bi-star-fill', 'bi-star');
+        }
+    });
+}
+
+function setSelectedStars(val) {
+    highlightStars(val);
+}
+// Initial state
+highlightStars(5);
+</script>
+{% endblock %}
 {% endblock %}

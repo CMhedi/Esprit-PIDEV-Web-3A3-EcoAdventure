@@ -18,7 +18,14 @@
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="fw-bold"><i class="bi bi-ticket-detailed me-2 text-success"></i>Mes Réservations</h1>
-        <a href="{{ path('app_event_front_index') }}" class="btn btn-outline-success">Voir d'autres événements</a>
+        <div class="d-flex gap-2">
+            {% if reservations is not empty %}
+                <a href="{{ path('app_reservation_all_tickets') }}" class="btn btn-success shadow-sm">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i>Télécharger tout (PDF)
+                </a>
+            {% endif %}
+            <a href="{{ path('app_event_front_index') }}" class="btn btn-outline-success">Voir d'autres événements</a>
+        </div>
     </div>
 
     {% for label, messages in app.flashes %}
@@ -71,9 +78,19 @@
                             <div class="text-muted small mt-2">
                                 Dernière réservation le {{ res.latest_date|date('d/m/Y H:i') }}
                             </div>
-                            <div class="mt-3">
-                                <a href="{{ path('app_event_front_show', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-outline-success w-100">
-                                    <i class="bi bi-plus-circle me-1"></i>Réserver plus de billets
+                            <div class="mt-3 d-flex flex-column gap-2">
+                                <div class="d-flex gap-2">
+                                    <a href="{{ path('app_event_front_show', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-outline-success flex-grow-1">
+                                        <i class="bi bi-plus-circle me-1"></i>Réserver
+                                    </a>
+                                    <a href="{{ path('app_reservation_event_ticket', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-success flex-grow-1">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i>Ticket PDF
+                                    </a>
+                                </div>
+                                
+                                {% set google_cal_url = "https://www.google.com/calendar/render?action=TEMPLATE&text=" ~ res.evenement.titre|url_encode ~ "&details=Réservation EcoAdventure&location=" ~ res.evenement.lieu|url_encode ~ "&dates=" ~ res.evenement.date_event|date('Ymd\\THis') ~ "/" ~ res.evenement.date_event|date_modify("+2 hours")|date('Ymd\\THis') %}
+                                <a href="{{ google_cal_url }}" target="_blank" class="btn btn-sm btn-outline-primary w-100">
+                                    <i class="bi bi-calendar-plus me-1"></i>Ajouter au Calendrier
                                 </a>
                             </div>
                         </div>
