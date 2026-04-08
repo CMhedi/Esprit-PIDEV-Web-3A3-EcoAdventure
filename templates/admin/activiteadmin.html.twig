@@ -1,41 +1,61 @@
 {% extends 'admin/base_admin.html.twig' %}
 
-{% block title %}Gestion Activités{% endblock %}
+{% block title %}Gestion des Activités{% endblock %}
 {% block page_title %}Gestion des Activités{% endblock %}
 
 {% block body %}
-<div class="admin-card">
-    <h4 class="fw-bold mb-4">Liste des Activités</h4>
+<div class="row g-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold mb-0">Toutes les Activités</h4>
+               
+            </div>
 
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead>
-                <tr>
-                    <th>Nom</th>
-                    <th>Type</th>
-                    <th>Catégorie</th>
-                    <th>Niveau</th>
-                    <th>Prix</th>
-                    <th>Statut</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for activite in activites %}
-                    <tr>
-                        <td>{{ activite.nom }}</td>
-                        <td>{{ activite.typeActivite.value }}</td>
-                        <td>{{ activite.categorieAct.value }}</td>
-                        <td>{{ activite.niveauAct.value }}</td>
-                        <td>{{ activite.prix }} DT</td>
-                        <td>
-                            <span class="badge bg-success">
-                                {{ activite.statut.value }}
-                            </span>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>Catégorie</th>
+                            <th>Niveau</th>
+                            <th>Prix</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activite in activites %}
+                            <tr>
+                                <td>{{ activite.nom }}</td>
+                                <td>{{ activite.typeActivite.value }}</td>
+                                <td>{{ activite.categorieAct.value }}</td>
+                                <td>{{ activite.niveauAct.value }}</td>
+                                <td>{{ activite.prix }} DT</td>
+                                <td>
+                                    {% if activite.statut.value == 'ACTIVE' %}
+                                        <span class="badge bg-success">{{ activite.statut.value }}</span>
+                                    {% elseif activite.statut.value == 'INACTIVE' %}
+                                        <span class="badge bg-secondary">{{ activite.statut.value }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">{{ activite.statut.value }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-primary">Modifier</a>
+                                    <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center">Aucune activité disponible</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
