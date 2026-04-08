@@ -1,0 +1,143 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Modifier Pack Admin{% endblock %}
+{% block page_title %}Modification d’un Pack{% endblock %}
+
+{% block body %}
+<link rel="stylesheet" href="{{ asset('assets/css/modifier-pack-admin.css') }}">
+
+<div class="pack-edit-page">
+    <div class="pack-edit-hero">
+        <div class="pack-edit-hero-content">
+            <span class="pack-edit-badge">EcoAdventure • Administration</span>
+            <h2>Mettre à jour un pack existant</h2>
+            <p>
+                Modifiez les informations du pack sélectionné dans une interface claire,
+                moderne et professionnelle, avec contrôle de saisie et validation sécurisée.
+            </p>
+        </div>
+
+        <div class="pack-preview-card">
+            <div class="preview-top">
+                <span class="preview-label">Pack sélectionné</span>
+                <span class="preview-status
+                    {% if pack.statutPack|lower in ['actif', 'active', 'disponible'] %}
+                        active
+                    {% else %}
+                        inactive
+                    {% endif %}
+                ">
+                    {{ pack.statutPack }}
+                </span>
+            </div>
+
+            <h3>{{ pack.nom }}</h3>
+            <p>{{ pack.typePack }}</p>
+
+            <div class="preview-grid">
+                <div class="preview-item">
+                    <span>Prix de base</span>
+                    <strong>{{ pack.prixBase }} DT</strong>
+                </div>
+                <div class="preview-item">
+                    <span>Réduction</span>
+                    <strong>{{ pack.reduction }} DT</strong>
+                </div>
+                <div class="preview-item">
+                    <span>Prix final</span>
+                    <strong>{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</strong>
+                </div>
+                <div class="preview-item">
+                    <span>Activités max</span>
+                    <strong>{{ pack.nbActivitesMax }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flash-wrap-pack">
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success custom-alert-pack">{{ message }}</div>
+        {% endfor %}
+
+        {% for message in app.flashes('danger') %}
+            <div class="alert alert-danger custom-alert-pack">{{ message }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="pack-edit-wrapper">
+        <div class="pack-edit-header">
+            <div>
+                <h3>Formulaire de modification</h3>
+                <p>Mettez à jour les champs souhaités puis enregistrez les changements.</p>
+            </div>
+
+            <a href="{{ path('app_admin_packs') }}" class="btn btn-pack-back">
+                <i class="bi bi-arrow-left me-1"></i> Retour à la liste
+            </a>
+        </div>
+
+        {{ form_start(form, {'attr': {'class': 'pack-edit-form-grid'}}) }}
+
+            <div class="form-block">
+                {{ form_label(form.nom) }}
+                {{ form_widget(form.nom) }}
+                <div class="form-error">{{ form_errors(form.nom) }}</div>
+            </div>
+
+            <div class="form-block">
+                {{ form_label(form.typePack) }}
+                {{ form_widget(form.typePack) }}
+                <div class="form-error">{{ form_errors(form.typePack) }}</div>
+            </div>
+
+            <div class="form-block">
+                {{ form_label(form.prixBase) }}
+                <div class="input-with-unit">
+                    {{ form_widget(form.prixBase) }}
+                    <span>DT</span>
+                </div>
+                <div class="form-error">{{ form_errors(form.prixBase) }}</div>
+            </div>
+
+            <div class="form-block">
+                {{ form_label(form.reduction) }}
+                <div class="input-with-unit">
+                    {{ form_widget(form.reduction) }}
+                    <span>DT</span>
+                </div>
+                <div class="form-error">{{ form_errors(form.reduction) }}</div>
+            </div>
+
+            <div class="form-block">
+                {{ form_label(form.nbActivitesMax) }}
+                {{ form_widget(form.nbActivitesMax) }}
+                <div class="form-error">{{ form_errors(form.nbActivitesMax) }}</div>
+            </div>
+
+            <div class="form-block">
+                {{ form_label(form.statutPack) }}
+                {{ form_widget(form.statutPack) }}
+                <div class="form-error">{{ form_errors(form.statutPack) }}</div>
+            </div>
+
+            <div class="pack-note-box">
+                <h4>Conseil de gestion</h4>
+                <p>
+                    Vérifiez que la réduction reste cohérente avec le prix de base
+                    et que le nombre d’activités maximal reflète correctement l’offre du pack.
+                </p>
+            </div>
+
+            <div class="form-actions-full">
+                <a href="{{ path('app_admin_packs') }}" class="btn btn-pack-cancel">
+                    Annuler
+                </a>
+
+                {{ form_widget(form.save, {'label': 'Enregistrer les modifications'}) }}
+            </div>
+
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}
