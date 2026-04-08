@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Repository\ActiviteRepository;
+use App\Repository\ReservationActiviteRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -45,6 +47,27 @@ final class AdminController extends AbstractController
         return $this->render('admin/dashboard.html.twig', [
             'stats' => $stats,
             'recentEvents' => $recentEvents
+        ]);
+    }
+
+    #[Route('/admin/activites', name: 'app_admin_activites')]
+    public function activites(ActiviteRepository $activiteRepository): Response
+    {
+        $activites = $activiteRepository->findAll();
+
+        return $this->render('admin/activiteadmin.html.twig', [
+            'activites' => $activites
+        ]);
+    }
+
+    #[Route('/admin/reservations', name: 'app_admin_reservations')]
+    public function reservations(
+        ReservationActiviteRepository $reservationRepository
+    ): Response {
+        $reservations = $reservationRepository->findAll();
+
+        return $this->render('admin/reservationadmin.html.twig', [
+            'reservations' => $reservations
         ]);
     }
 }
