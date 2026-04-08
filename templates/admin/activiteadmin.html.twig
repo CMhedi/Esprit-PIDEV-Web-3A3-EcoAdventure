@@ -1,0 +1,41 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Gestion Activités{% endblock %}
+{% block page_title %}Gestion des Activités{% endblock %}
+
+{% block body %}
+<div class="admin-card">
+    <h4 class="fw-bold mb-4">Liste des Activités</h4>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Type</th>
+                    <th>Catégorie</th>
+                    <th>Niveau</th>
+                    <th>Prix</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for activite in activites %}
+                    <tr>
+                        <td>{{ activite.nom }}</td>
+                        <td>{{ activite.typeActivite.value }}</td>
+                        <td>{{ activite.categorieAct.value }}</td>
+                        <td>{{ activite.niveauAct.value }}</td>
+                        <td>{{ activite.prix }} DT</td>
+                        <td>
+                            <span class="badge bg-success">
+                                {{ activite.statut.value }}
+                            </span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
