@@ -2,14 +2,15 @@
 
 {% block title %}Gestion des Packs{% endblock %}
 {% block page_title %}Gestion des Packs{% endblock %}
+
 {% block body %}
 <style>
     .packs-page {
-        --eco-primary: #2D5A27;      /* Vert Forêt */
-        --eco-secondary: #F28C28;    /* Orange Énergie */
-        --eco-accent: #3B82F6;       /* Bleu Rivière */
-        --eco-dark: #374151;         /* Gris Roche */
-        --eco-light: #F9FAFB;        /* Blanc cassé */
+        --eco-primary: #2D5A27;
+        --eco-secondary: #F28C28;
+        --eco-accent: #3B82F6;
+        --eco-dark: #374151;
+        --eco-light: #F9FAFB;
         --eco-border: #d9e3d7;
         --eco-success: #2D5A27;
         --eco-danger: #dc2626;
@@ -336,6 +337,54 @@
         border: none;
     }
 
+    .packs-page .delete-pack-form,
+    .packs-page .delete-all-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .packs-page .delete-inline-captcha {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid #d7dfdc;
+        border-radius: 14px;
+        padding: 8px 10px;
+    }
+
+    .packs-page .captcha-mini-label {
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: var(--eco-dark);
+    }
+
+    .packs-page .captcha-mini-code {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 82px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--eco-dark), #4b5563);
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 900;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+
+    .packs-page .captcha-mini-input {
+        min-height: 40px;
+        min-width: 120px;
+        max-width: 140px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        padding-left: 10px;
+    }
+
     .packs-page .empty-state {
         text-align: center;
         padding: 60px 20px;
@@ -378,12 +427,19 @@
             padding: 14px 12px;
         }
 
-        .packs-page .action-zone {
+        .packs-page .action-zone,
+        .packs-page .delete-pack-form,
+        .packs-page .delete-all-form,
+        .packs-page .delete-inline-captcha {
+            width: 100%;
             flex-direction: column;
+            align-items: stretch;
         }
 
-        .packs-page .action-btn {
+        .packs-page .action-btn,
+        .packs-page .captcha-mini-input {
             width: 100%;
+            max-width: 100%;
             min-width: unset;
         }
     }
@@ -443,8 +499,19 @@
                 <form method="post"
                       action="{{ path('app_admin_pack_delete_all') }}"
                       onsubmit="return confirm('Voulez-vous vraiment supprimer tous les packs ? Cette action est irréversible.');"
-                      class="d-inline">
+                      class="delete-all-form">
                     <input type="hidden" name="_token" value="{{ csrf_token('delete_all_packs') }}">
+
+                    <div class="delete-inline-captcha">
+                        <span class="captcha-mini-label">Captcha</span>
+                        <span class="captcha-mini-code">{{ deleteAllCaptcha }}</span>
+                        <input type="text"
+                               name="delete_all_captcha"
+                               class="form-control captcha-mini-input"
+                               placeholder="Recopier"
+                               required>
+                    </div>
+
                     <button type="submit" class="btn btn-eco-delete-all">
                         <i class="bi bi-trash3 me-1"></i> Supprimer tout
                     </button>
@@ -531,16 +598,33 @@
                                     </td>
 
                                     <td>
-                                      <div class="action-zone">
-                                       <a href="{{ path('app_admin_pack_edit', {id: pack.idPack}) }}"
-                                        class="btn action-btn btn-warning">
-                                        <i class="bi bi-pencil-square me-1"></i> Modifier</a>
-                                        <form method="post"action="{{ path('app_admin_pack_delete', {id: pack.idPack}) }}"onsubmit="return confirm('Voulez-vous vraiment supprimer le pack : {{ pack.nom|e('js') }} ?');"class="d-inline">
-                                        <input type="hidden" name="_token" value="{{ csrf_token('delete_pack_' ~ pack.idPack) }}">
-                                        <button type="submit" class="btn btn-danger action-btn">
-                                        <i class="bi bi-trash me-1"></i> Supprimer</button>
-                                        </form>
-                                      </div>
+                                        <div class="action-zone">
+                                            <a href="{{ path('app_admin_pack_edit', {id: pack.idPack}) }}"
+                                               class="btn action-btn btn-warning">
+                                                <i class="bi bi-pencil-square me-1"></i> Modifier
+                                            </a>
+
+                                            <form method="post"
+                                                  action="{{ path('app_admin_pack_delete', {id: pack.idPack}) }}"
+                                                  onsubmit="return confirm('Voulez-vous vraiment supprimer le pack : {{ pack.nom|e('js') }} ?');"
+                                                  class="delete-pack-form">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete_pack_' ~ pack.idPack) }}">
+
+                                                <div class="delete-inline-captcha">
+                                                    <span class="captcha-mini-label">Captcha</span>
+                                                    <span class="captcha-mini-code">{{ deleteCaptcha }}</span>
+                                                    <input type="text"
+                                                           name="delete_captcha"
+                                                           class="form-control captcha-mini-input"
+                                                           placeholder="Recopier"
+                                                           required>
+                                                </div>
+
+                                                <button type="submit" class="btn btn-danger action-btn">
+                                                    <i class="bi bi-trash me-1"></i> Supprimer
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             {% endfor %}
