@@ -16,28 +16,31 @@ class InscriptionRepository extends ServiceEntityRepository
         parent::__construct($registry, Inscription::class);
     }
 
-//    /**
-//     * @return Inscription[] Returns an array of Inscription objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('i')
-//            ->andWhere('i.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('i.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    public function findForAdmin(?string $search = null): array
+    {
+        $qb = $this->createQueryBuilder('i')
+            ->leftJoin('i.pack', 'p')
+            ->addSelect('p')
+            ->orderBy('i.date_inscription', 'DESC');
 
-//    public function findOneBySomeField($value): ?Inscription
-//    {
-//        return $this->createQueryBuilder('i')
-//            ->andWhere('i.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        if (!empty($search)) {
+            $qb->andWhere('
+                LOWER(i.nom_user) LIKE :search
+                OR LOWER(i.nom_pack) LIKE :search
+                OR LOWER(i.statut_inscr) LIKE :search
+                OR LOWER(p.nom) LIKE :search
+            ')
+            ->setParameter('search', '%' . mb_strtolower(trim($search)) . '%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function countAllInscriptions(): int
+    {
+        return (int) $this->createQueryBuilder('i')
+            ->select('COUNT(i.id_inscription)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

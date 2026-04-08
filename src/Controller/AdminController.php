@@ -1,18 +1,20 @@
 <?php
 
 namespace App\Controller;
-
+use App\Repository\InscriptionRepository;
 use App\Repository\PackRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\Attribute\Route;
-
+use App\Entity\Pack;
+use App\Form\PackType;
 final class AdminController extends AbstractController
 {
     #[Route('/admin/dashboard', name: 'app_admin_dashboard')]
@@ -83,11 +85,26 @@ final class AdminController extends AbstractController
         ]);
     }
 
-    #[Route('/admin/packs/new', name: 'app_admin_pack_new')]
-    public function newPack(): Response
-    {
-        return new Response('Page Ajouter Pack');
+   #[Route('/admin/packs/new', name: 'app_admin_pack_new')]
+public function newPack(Request $request, EntityManagerInterface $entityManager): Response
+{
+    $pack = new Pack();
+    $form = $this->createForm(PackType::class, $pack);
+    $form->handleRequest($request);
+
+    if ($form->isSubmitted() && $form->isValid()) {
+        $entityManager->persist($pack);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Le pack a été ajouté avec succès.');
+
+        return $this->redirectToRoute('app_admin_packs');
     }
+
+    return $this->render('admin/packs/AjoutPack_Admin.html.twig', [
+    'form' => $form->createView()
+]);
+}
 
     #[Route('/admin/packs/{id}', name: 'app_admin_pack_show', requirements: ['id' => '\d+'])]
     public function showPack(int $id): Response
@@ -205,4 +222,18 @@ final class AdminController extends AbstractController
 
         return $response;
     }
+    #[Route('/admin/inscriptions', name: 'app_admin_inscriptions', methods: ['GET'])]
+public function inscriptions(Request $request, InscriptionRepository $inscriptionRepository): Response
+{
+    $search = $request->query->get('search');
+
+    $inscriptions = $inscriptionRepository->findForAdmin($search);
+    $totalInscriptions = $inscriptionRepository->countAllInscriptions();
+
+    return $this->render('admin/inscriptions/InscriptionPacks.html.twig', [
+        'inscriptions' => $inscriptions,
+        'search' => $search,
+        'totalInscriptions' => $totalInscriptions
+    ]);
+}
 }
