@@ -21,7 +21,12 @@
         </div>
     </div>
 {% else %}
-    <div class="col-12">
-        <div class="alert alert-info">Aucun événement ne correspond à vos critères de recherche.</div>
+    <div class="col-12 py-5 text-center">
+        <div class="empty-state">
+            <i class="bi bi-search fs-1 text-muted mb-3 d-block"></i>
+            <h4 class="fw-bold">Aucun événement trouvé</h4>
+            <p class="text-muted">Essayez de modifier vos critères de recherche ou de réinitialiser les filtres.</p>
+            <a href="{{ path('app_event_front_index') }}" class="btn btn-outline-warning mt-2">Voir tous les événements</a>
+        </div>
     </div>
 {% endfor %}
