@@ -8,6 +8,7 @@ padding:10px;
 border-radius:10px;
 }
 
+
 .message-other{
 background:#f1f1f1;
 padding:10px;
@@ -20,3 +21,17 @@ border-radius:10px;
         color: #198754 !important; /* Vert plus foncé */
         transform: scale(1.1);
     }
+    .messages-area {
+    background-color: #f0f2f5;
+    height: 500px; /* Wala ay hauteur t7eb 3liha */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    scroll-behavior: smooth;
+}
+
+/* Faza bech t-forsa el messages yab9aw mel louta kiy yebdaw chwaya */
+.messages-area > .message-item:first-child {
+    margin-top: auto !important;
+}

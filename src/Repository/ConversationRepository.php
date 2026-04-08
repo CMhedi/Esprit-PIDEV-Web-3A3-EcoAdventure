@@ -31,17 +31,34 @@ class ConversationRepository extends ServiceEntityRepository
 //            ->getResult()
 //        ;
 //    }
+// Fichier: src/Repository/ConversationRepository.php
 
-    public function findByParticipant(UserApp $user): array
-    {
-        return $this->createQueryBuilder('c')
-            ->innerJoin('c.participants', 'u')
-            ->andWhere('u = :user')
-            ->setParameter('user', $user)
-            ->orderBy('c.date_creation', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
+public function findOneByParticipants(UserApp $u1, UserApp $u2)
+{
+    return $this->createQueryBuilder('c')
+        ->join('c.participants', 'p1')
+        ->join('c.participants', 'p2')
+        ->where('c.est_groupe = :isGroup')
+        ->andWhere('p1 = :u1')
+        ->andWhere('p2 = :u2')
+        ->setParameter('isGroup', false)
+        ->setParameter('u1', $u1)
+        ->setParameter('u2', $u2)
+        ->setMaxResults(1)
+        ->getQuery()
+        ->getOneOrNullResult();
+}
+
+    public function findConversationsByUser(UserApp $user)
+{
+    return $this->createQueryBuilder('c')
+        ->join('c.participants', 'p')
+        ->where('p = :user')
+        ->setParameter('user', $user)
+        ->orderBy('c.date_creation', 'DESC')
+        ->getQuery()
+        ->getResult();
+}
 
 //    public function findOneBySomeField($value): ?Conversation
 //    {

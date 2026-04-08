@@ -2,12 +2,12 @@
 
 namespace App\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+use App\Enum\StatutMessage;
 use App\Enum\TypeMessage;
 use App\Repository\MessageRepository;
-use App\Enum\StatutMessage;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
 #[ORM\Table(name: 'message')]
 class Message
@@ -16,6 +16,53 @@ class Message
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
     private ?int $id_message = null;
+
+    #[ORM\Column(enumType: TypeMessage::class)]
+    #[Assert\NotNull(message: "Le type de message est obligatoire.")]
+    private ?TypeMessage $type_message = null;
+
+    #[ORM\Column(type: 'string', length: 2000, nullable: true)]
+    #[Assert\Length(
+        max: 2000,
+        maxMessage: "Le contenu ne peut pas dépasser {{ limit }} caractères."
+    )]
+    #[Assert\NotBlank(message: "Le contenu du message ne peut pas être vide.", groups: ["text_message"])]
+    private ?string $contenu = null;
+
+    #[ORM\Column(enumType: StatutMessage::class)]
+    #[Assert\NotNull(message: "Le statut du message est obligatoire.")]
+    private ?StatutMessage $statut_message = null;
+
+    #[ORM\Column(type: 'datetime', nullable: false)]
+    #[Assert\NotNull(message: "La date d'envoi est obligatoire.")]
+    #[Assert\LessThanOrEqual("now", message: "La date d'envoi ne peut pas être dans le futur.")]
+    private ?\DateTimeInterface $date_envoi = null;
+
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $date_lecture = null;
+
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    #[Assert\Expression(
+        "this.getDate_modifier() == null || this.getDate_modifier() >= this.getDate_envoi()",
+        message: "La date de modification ne peut pas être antérieure à la date d'envoi."
+    )]
+    private ?\DateTimeInterface $date_modifier = null;
+
+    #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
+    #[ORM\JoinColumn(name: 'id_conversation', referencedColumnName: 'id_conversation', nullable: false)]
+    #[Assert\NotNull(message: "Le message doit être rattaché à une conversation.")]
+    private ?Conversation $conversation = null;
+
+    #[ORM\ManyToOne(targetEntity: UserApp::class, inversedBy: 'messages')]
+    #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user', nullable: false)]
+    #[Assert\NotNull(message: "L'auteur du message est obligatoire.")]
+    private ?UserApp $userApp = null;
+
+    public function __construct()
+    {
+        $this->date_envoi = new \DateTime();
+        // Par défaut, un nouveau message est souvent mis en statut 'ENVOYE' ou 'NON_LU'
+    }
 
     public function getId_message(): ?int
     {
@@ -28,11 +75,6 @@ class Message
         return $this;
     }
 
-
-
-#[ORM\Column(enumType: TypeMessage::class)]
-private ?TypeMessage $type_message = null;
-
     public function getType_message(): ?TypeMessage
     {
         return $this->type_message;
@@ -43,9 +85,6 @@ private ?TypeMessage $type_message = null;
         $this->type_message = $type_message;
         return $this;
     }
-
-#[ORM\Column(type: 'string', length: 2000, nullable: true)]
-private ?string $contenu = null;
 
     public function getContenu(): ?string
     {
@@ -58,11 +97,6 @@ private ?string $contenu = null;
         return $this;
     }
 
-
-
-#[ORM\Column(enumType: StatutMessage::class)]
-private ?StatutMessage $statut_message = null;
-
     public function getStatut_message(): ?StatutMessage
     {
         return $this->statut_message;
@@ -73,9 +107,6 @@ private ?StatutMessage $statut_message = null;
         $this->statut_message = $statut_message;
         return $this;
     }
-
-    #[ORM\Column(type: 'datetime', nullable: false)]
-    private ?\DateTimeInterface $date_envoi = null;
 
     public function getDate_envoi(): ?\DateTimeInterface
     {
@@ -88,9 +119,6 @@ private ?StatutMessage $statut_message = null;
         return $this;
     }
 
-    #[ORM\Column(type: 'datetime', nullable: true)]
-    private ?\DateTimeInterface $date_lecture = null;
-
     public function getDate_lecture(): ?\DateTimeInterface
     {
         return $this->date_lecture;
@@ -101,9 +129,6 @@ private ?StatutMessage $statut_message = null;
         $this->date_lecture = $date_lecture;
         return $this;
     }
-
-    #[ORM\Column(type: 'datetime', nullable: true)]
-    private ?\DateTimeInterface $date_modifier = null;
 
     public function getDate_modifier(): ?\DateTimeInterface
     {
@@ -116,10 +141,6 @@ private ?StatutMessage $statut_message = null;
         return $this;
     }
 
-    #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
-    #[ORM\JoinColumn(name: 'id_conversation', referencedColumnName: 'id_conversation')]
-    private ?Conversation $conversation = null;
-
     public function getConversation(): ?Conversation
     {
         return $this->conversation;
@@ -131,10 +152,6 @@ private ?StatutMessage $statut_message = null;
         return $this;
     }
 
-    #[ORM\ManyToOne(targetEntity: UserApp::class, inversedBy: 'messages')]
-    #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user')]
-    private ?UserApp $userApp = null;
-
     public function getUserApp(): ?UserApp
     {
         return $this->userApp;
@@ -145,5 +162,4 @@ private ?StatutMessage $statut_message = null;
         $this->userApp = $userApp;
         return $this;
     }
-
 }
