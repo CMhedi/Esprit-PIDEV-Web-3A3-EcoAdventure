@@ -1,0 +1,135 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Gestion des Inscriptions{% endblock %}
+{% block page_title %}Gestion des Inscriptions{% endblock %}
+
+{% block body %}
+<link rel="stylesheet" href="{{ asset('assets/css/inscriptions-admin.css') }}">
+
+<div class="inscriptions-page">
+    <div class="inscriptions-hero">
+        <div class="hero-content">
+            <span class="hero-badge">EcoAdventure • Administration</span>
+            <h2>Liste des inscriptions aux packs</h2>
+            <p>
+                Consultez les inscriptions enregistrées, recherchez instantanément un utilisateur,
+                un pack ou un statut, et visualisez les informations essentielles dans une interface moderne.
+            </p>
+        </div>
+
+        <div class="hero-stat">
+            <span>Total</span>
+            <strong>{{ totalInscriptions }}</strong>
+            <small>inscriptions enregistrées</small>
+        </div>
+    </div>
+
+    <div class="inscriptions-toolbar">
+        <div class="toolbar-head">
+            <div>
+                <h3>Recherche intelligente</h3>
+                <p>La recherche se lance automatiquement pendant la saisie, sans bouton.</p>
+            </div>
+
+            <a href="{{ path('app_admin_dashboard') }}" class="btn btn-back-insc">
+                <i class="bi bi-arrow-left me-1"></i> Retour
+            </a>
+        </div>
+
+        <form method="get"
+              action="{{ path('app_admin_inscriptions') }}"
+              id="inscriptionSearchForm">
+            <div class="search-live-box">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text"
+                       name="search"
+                       id="liveSearchInput"
+                       class="form-control"
+                       placeholder="Rechercher par nom utilisateur, pack ou statut..."
+                       value="{{ search|default('') }}"
+                       autocomplete="off">
+            </div>
+        </form>
+    </div>
+
+    <div class="inscriptions-table-card">
+        {% if inscriptions|length > 0 %}
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Utilisateur</th>
+                            <th>Pack</th>
+                            <th>Date d’inscription</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inscription in inscriptions %}
+                            <tr>
+                                <td>
+                                    <div class="cell-title">
+                                        {{ inscription.nomUser ?: 'Utilisateur inconnu' }}
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="cell-pack">
+                                        {{ inscription.nomPack ?: (inscription.pack ? inscription.pack.nom : 'Pack non défini') }}
+                                    </div>
+                                </td>
+
+                                <td>
+                                    {{ inscription.dateInscription ? inscription.dateInscription|date('d/m/Y H:i') : '-' }}
+                                </td>
+
+                                <td>
+                                    <span class="amount-chip">
+                                        {{ inscription.montantTotal }} DT
+                                    </span>
+                                </td>
+
+                                <td>
+                                    {% set statut = inscription.statutInscr ? inscription.statutInscr.value : 'Inconnu' %}
+
+                                    {% if statut|lower in ['confirmée', 'confirmee', 'validée', 'validee', 'active'] %}
+                                        <span class="status-badge status-success">{{ statut }}</span>
+                                    {% elseif statut|lower in ['en attente', 'pending'] %}
+                                        <span class="status-badge status-warning">{{ statut }}</span>
+                                    {% else %}
+                                        <span class="status-badge status-dark">{{ statut }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-insc">
+                <i class="bi bi-journal-x"></i>
+                <h4>Aucune inscription trouvée</h4>
+                <p>Aucun résultat ne correspond à la recherche actuelle.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    (function () {
+        const input = document.getElementById('liveSearchInput');
+        const form = document.getElementById('inscriptionSearchForm');
+        let timer = null;
+
+        if (input && form) {
+            input.addEventListener('input', function () {
+                clearTimeout(timer);
+                timer = setTimeout(function () {
+                    form.submit();
+                }, 350);
+            });
+        }
+    })();
+</script>
+{% endblock %}
