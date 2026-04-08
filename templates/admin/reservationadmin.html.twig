@@ -16,7 +16,7 @@
                     <th>Date</th>
                     <th>Statut</th>
                     <th>Personnes</th>
-                    <th>Actions</th> {# Nouvelle colonne pour les boutons #}
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -32,8 +32,14 @@
                         </td>
                         <td>{{ reservation.nbPersonnes }}</td>
                         <td>
-                            <a href="#" class="btn btn-sm btn-primary">Modifier</a>
-                            <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
+                            <a href="{{ path('app_admin_reservation_edit', {'id': reservation.idResAct}) }}" 
+                               class="btn btn-sm btn-primary">Modifier</a>
+
+                            <form action="{{ path('app_admin_reservation_delete', {'id': reservation.idResAct}) }}" 
+                                  method="POST" style="display:inline-block;" 
+                                  onsubmit="return confirm('Voulez-vous vraiment supprimer cette réservation ?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                            </form>
                         </td>
                     </tr>
                 {% else %}
