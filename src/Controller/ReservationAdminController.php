@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controller\Admin;
+namespace App\Controller;
 
 use App\Entity\ReservationActivite;
 use App\Entity\Activite;
@@ -47,8 +47,11 @@ class ReservationAdminController extends AbstractController
         $activites = $em->getRepository(Activite::class)->findAll();
 
         if ($request->isMethod('POST')) {
-            $reservation->setActivite($em->getReference(Activite::class, $request->request->get('activite')));
-            $reservation->setDateReservation(new \DateTime($request->request->get('date')));
+            // Remarquez setDateRes ici
+            $reservation->setActivite(
+                $em->getReference(Activite::class, $request->request->get('activite'))
+            );
+            $reservation->setDateRes(new \DateTime($request->request->get('date')));
             $reservation->setStatutRes(StatutReservationActivite::from($request->request->get('statut')));
             $reservation->setNbPersonnes((int)$request->request->get('nbPersonnes'));
 
