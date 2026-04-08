@@ -1,0 +1,62 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Réservation Activité{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+    <h2 class="mb-4">Réserver une Activité</h2>
+
+    <form action="{{ path('app_reservation_create', {'id': activite.idActivite}) }}" method="POST">
+
+        <!-- Activité affichée -->
+        <div class="mb-3">
+            <label class="form-label">Activité sélectionnée</label>
+            <input type="text" class="form-control" value="{{ activite.nom }}" readonly>
+        </div>
+
+        <!-- Statut réservation -->
+        <div class="mb-3">
+            <label for="statut_res" class="form-label">Statut Réservation</label>
+            <select class="form-select" id="statut_res" name="statut_res" required>
+                <option value="">Choisir le statut</option>
+                <option value="EN_ATTENTE">EN_ATTENTE</option>
+                <option value="CONFIRMEE">CONFIRMEE</option>
+                <option value="ANNULEE">ANNULEE</option>
+            </select>
+        </div>
+
+        <!-- Nombre personnes -->
+        <div class="mb-3">
+            <label for="nb_personnes" class="form-label">Nombre de personnes</label>
+            <input type="number"
+                   class="form-control"
+                   id="nb_personnes"
+                   name="nb_personnes"
+                   min="1"
+                   placeholder="Nombre de personnes"
+                   required>
+        </div>
+
+        <!-- Style bouton -->
+        <style>
+            .btn-eco {
+                background: linear-gradient(135deg, #28a745, #218838);
+                color: #fff;
+                border: none;
+                transition: all 0.3s ease;
+            }
+
+            .btn-eco:hover {
+                background: linear-gradient(135deg, #218838, #28a745);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            }
+        </style>
+
+        <!-- Bouton -->
+        <button type="submit" class="btn btn-eco btn-lg rounded-pill px-5">
+            <i class="bi bi-calendar-check me-2"></i> Réserver
+        </button>
+    </form>
+</div>
+{% endblock %}
