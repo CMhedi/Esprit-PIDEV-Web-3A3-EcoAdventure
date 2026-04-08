@@ -236,4 +236,33 @@ public function inscriptions(Request $request, InscriptionRepository $inscriptio
         'totalInscriptions' => $totalInscriptions
     ]);
 }
+#[Route('/admin/inscriptions/{id}/delete', name: 'app_admin_inscription_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+public function deleteInscription(
+    int $id,
+    Request $request,
+    InscriptionRepository $inscriptionRepository,
+    EntityManagerInterface $entityManager
+): Response {
+    $inscription = $inscriptionRepository->find($id);
+
+    if (!$inscription) {
+        $this->addFlash('danger', 'Inscription introuvable.');
+        return $this->redirectToRoute('app_admin_inscriptions');
+    }
+
+    if (!$this->isCsrfTokenValid('delete_inscription_' . $inscription->getIdInscription(), $request->request->get('_token'))) {
+        $this->addFlash('danger', 'Jeton CSRF invalide.');
+        return $this->redirectToRoute('app_admin_inscriptions');
+    }
+
+    $nomUser = $inscription->getNomUser() ?: 'Utilisateur';
+    $nomPack = $inscription->getNomPack() ?: ($inscription->getPack() ? $inscription->getPack()->getNom() : 'Pack');
+
+    $entityManager->remove($inscription);
+    $entityManager->flush();
+
+    $this->addFlash('success', 'L’inscription de "' . $nomUser . '" pour "' . $nomPack . '" a été supprimée avec succès.');
+
+    return $this->redirectToRoute('app_admin_inscriptions');
+}
 }
