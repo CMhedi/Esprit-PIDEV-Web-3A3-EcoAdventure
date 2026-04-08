@@ -27,6 +27,21 @@ class EventAdminController extends AbstractController
         ]);
     }
 
+    #[Route('/reservation/{id_res_evt}/status/{newStatus}', name: 'app_event_admin_reservation_status', methods: ['POST'])]
+    public function updateReservationStatus(ReservationEvenement $reservation, string $newStatus, EntityManagerInterface $entityManager): Response
+    {
+        try {
+            $statusEnum = StatutReservationEvenement::from($newStatus);
+            $reservation->setStatut_res($statusEnum);
+            $entityManager->flush();
+            $this->addFlash('success', 'Le statut de la réservation a été mis à jour avec succès.');
+        } catch (\Exception $e) {
+            $this->addFlash('error', 'Erreur lors de la mise à jour du statut : ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('app_event_admin_reservations');
+    }
+
     #[Route('/', name: 'app_event_admin_index', methods: ['GET'])]
     public function index(EvenementRepository $evenementRepository): Response
     {

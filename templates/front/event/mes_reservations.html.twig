@@ -48,11 +48,6 @@
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100 shadow-sm border-0 position-relative">
                         <div class="position-absolute top-0 end-0 p-2 d-flex flex-column gap-1">
-                            {% if res.is_new %}
-                                <span class="badge bg-primary badge-nouveau">
-                                    <i class="bi bi-star-fill me-1"></i>Nouveau
-                                </span>
-                            {% endif %}
                             <span class="badge bg-{{ res.statut.value == 'CONFIRMEE' ? 'success' : (res.statut.value == 'ANNULEE' ? 'danger' : 'warning') }}">
                                 {{ res.statut.value }}
                             </span>
@@ -83,15 +78,35 @@
                                     <a href="{{ path('app_event_front_show', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-outline-success flex-grow-1">
                                         <i class="bi bi-plus-circle me-1"></i>Réserver
                                     </a>
-                                    <a href="{{ path('app_reservation_event_ticket', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-success flex-grow-1">
-                                        <i class="bi bi-file-earmark-pdf me-1"></i>Ticket PDF
-                                    </a>
+                                    {% if res.statut.value == 'CONFIRMEE' %}
+                                        <a href="{{ path('app_reservation_event_ticket', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-success flex-grow-1">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i>Ticket PDF
+                                        </a>
+                                    {% endif %}
                                 </div>
                                 
-                                {% set google_cal_url = "https://www.google.com/calendar/render?action=TEMPLATE&text=" ~ res.evenement.titre|url_encode ~ "&details=Réservation EcoAdventure&location=" ~ res.evenement.lieu|url_encode ~ "&dates=" ~ res.evenement.date_event|date('Ymd\\THis') ~ "/" ~ res.evenement.date_event|date_modify("+2 hours")|date('Ymd\\THis') %}
-                                <a href="{{ google_cal_url }}" target="_blank" class="btn btn-sm btn-outline-primary w-100">
-                                    <i class="bi bi-calendar-plus me-1"></i>Ajouter au Calendrier
-                                </a>
+                                {% if res.statut.value == 'EN_ATTENTE' %}
+                                    <form method="post" action="{{ path('app_reservation_confirm_event', {'id_evenement': res.evenement.id_evenement}) }}">
+                                        <button type="submit" class="btn btn-sm btn-success w-100 mt-1">
+                                            <i class="bi bi-check-circle me-1"></i>Confirmer ma réservation
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                                {% if res.statut.value != 'ANNULEE' %}
+                                    {% if res.statut.value == 'CONFIRMEE' %}
+                                        {% set google_cal_url = "https://www.google.com/calendar/render?action=TEMPLATE&text=" ~ res.evenement.titre|url_encode ~ "&details=Réservation EcoAdventure&location=" ~ res.evenement.lieu|url_encode ~ "&dates=" ~ res.evenement.date_event|date('Ymd\\THis') ~ "/" ~ res.evenement.date_event|date_modify("+2 hours")|date('Ymd\\THis') %}
+                                        <a href="{{ google_cal_url }}" target="_blank" class="btn btn-sm btn-outline-primary w-100">
+                                            <i class="bi bi-calendar-plus me-1"></i>Ajouter au Calendrier
+                                        </a>
+                                    {% endif %}
+
+                                    <form method="post" action="{{ path('app_reservation_cancel_event', {'id_evenement': res.evenement.id_evenement}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer toutes vos réservations pour cet événement ?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger w-100 mt-1">
+                                            <i class="bi bi-trash me-1"></i>{{ res.statut.value == 'EN_ATTENTE' ? 'Annuler' : 'Supprimer' }} mes réservations
+                                        </button>
+                                    </form>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

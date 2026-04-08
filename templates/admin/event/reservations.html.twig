@@ -18,7 +18,7 @@
                             <th>Événement</th>
                             <th>Date Réservation</th>
                             <th>Billets</th>
-                            <th>Statut</th>
+                            <th class="pe-4">Statut</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -45,13 +45,13 @@
                                     {{ res.nb_billets }} billet(s)
                                 </span>
                             </td>
-                            <td>
+                            <td class="pe-4">
                                 <span class="badge rounded-pill px-3 py-2 bg-{{ res.statut_res.value == 'CONFIRMEE' ? 'success' : (res.statut_res.value == 'ANNULEE' ? 'danger' : 'warning') }}">
                                     {{ res.statut_res.value }}
                                 </span>
                             </td>
                         </tr>
-                    {% else %}
+{% else %}
                         <tr>
                             <td colspan="5" class="text-center py-5">
                                 <i class="bi bi-inbox fs-1 text-muted d-block mb-3"></i>

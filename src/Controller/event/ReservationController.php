@@ -221,6 +221,7 @@ class ReservationController extends AbstractController
             'Content-Disposition' => sprintf('attachment; filename="%s"', $filename),
         ]);
     }
+
     #[Route('/evenement/{id_evenement}', name: 'app_reservation_event', methods: ['POST'])]
     public function reserver(Request $request, Evenement $evenement, EntityManagerInterface $entityManager): Response
     {
@@ -271,7 +272,7 @@ class ReservationController extends AbstractController
         $reservation->setEvenement($evenement);
         $reservation->setUserApp($user);
         $reservation->setDate_reservation(new \DateTime());
-        $reservation->setStatut_res(StatutReservationEvenement::CONFIRMEE);
+        $reservation->setStatut_res(StatutReservationEvenement::EN_ATTENTE);
         $reservation->setNb_billets($nbBillets);
 
         $entityManager->persist($reservation);
@@ -284,8 +285,67 @@ class ReservationController extends AbstractController
 
         $entityManager->flush();
 
-        $this->addFlash('success', 'Votre réservation a été confirmée ! Retrouvez-la dans vos réservations.');
+        $this->addFlash('success', 'Votre réservation a été enregistrée en attente de confirmation !');
 
+        return $this->redirectToRoute('app_mes_reservations');
+    }
+
+    #[Route('/annuler-event/{id_evenement}', name: 'app_reservation_cancel_event', methods: ['POST'])]
+    public function annulerEvent(Evenement $evenement, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            $user = $entityManager->getRepository(UserApp::class)->findOneBy(['email' => 'guest@ecoadventure.com']);
+        }
+
+        // Find all reservations for this event and user
+        $reservations = $entityManager->getRepository(ReservationEvenement::class)->findBy([
+            'userApp' => $user,
+            'evenement' => $evenement
+        ]);
+
+        if (empty($reservations)) {
+            $this->addFlash('error', 'Aucune réservation trouvée pour cet événement.');
+            return $this->redirectToRoute('app_mes_reservations');
+        }
+
+        foreach ($reservations as $res) {
+            // Hard delete as requested "supprimé"
+            $entityManager->remove($res);
+        }
+        
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Votre réservation pour l\'événement "' . $evenement->getTitre() . '" a été supprimée.');
+        return $this->redirectToRoute('app_mes_reservations');
+    }
+
+    #[Route('/confirmer-event/{id_evenement}', name: 'app_reservation_confirm_event', methods: ['POST'])]
+    public function confirmerEvent(Evenement $evenement, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            $user = $entityManager->getRepository(UserApp::class)->findOneBy(['email' => 'guest@ecoadventure.com']);
+        }
+
+        $reservations = $entityManager->getRepository(ReservationEvenement::class)->findBy([
+            'userApp' => $user,
+            'evenement' => $evenement,
+            'statut_res' => StatutReservationEvenement::EN_ATTENTE
+        ]);
+
+        if (empty($reservations)) {
+            $this->addFlash('error', 'Aucune réservation en attente trouvée pour cet événement.');
+            return $this->redirectToRoute('app_mes_reservations');
+        }
+
+        foreach ($reservations as $res) {
+            $res->setStatut_res(StatutReservationEvenement::CONFIRMEE);
+        }
+        
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Votre réservation pour l\'événement "' . $evenement->getTitre() . '" est maintenant confirmée !');
         return $this->redirectToRoute('app_mes_reservations');
     }
 
@@ -311,6 +371,11 @@ class ReservationController extends AbstractController
 
         $groupedReservations = [];
         foreach ($allReservations as $res) {
+            // Only process non-cancelled reservations (though we delete them now, safety first)
+            if ($res->getStatut_res() === StatutReservationEvenement::ANNULEE) {
+                continue;
+            }
+            
             $eventId = $res->getEvenement()->getId_evenement();
             if (!isset($groupedReservations[$eventId])) {
                 $groupedReservations[$eventId] = [
@@ -318,18 +383,11 @@ class ReservationController extends AbstractController
                     'total_billets' => 0,
                     'latest_date' => $res->getDate_reservation(),
                     'statut' => $res->getStatut_res(),
-                    'is_new' => false,
                     'ids' => [], // Store all reservation IDs for this event
                 ];
             }
             $groupedReservations[$eventId]['total_billets'] += $res->getNb_billets();
             $groupedReservations[$eventId]['ids'][] = $res->getId_res_evt();
-            
-            // Check if any reservation in this group is "new" (e.g., less than 24 hours old)
-             $oneDayAgo = new \DateTime('-24 hours');
-             if ($res->getDate_reservation() > $oneDayAgo) {
-                 $groupedReservations[$eventId]['is_new'] = true;
-             }
         }
 
         return $this->render('front/event/mes_reservations.html.twig', [
