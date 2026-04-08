@@ -41,17 +41,15 @@ class MessagerieController extends AbstractController
         if (!$user) {
             return $this->redirectToRoute('app_home');
         }
+        $user->setLast_seen(new \DateTime());
+        $em->persist($user);
 
         $conversations = $conversationRepo->findConversationsByUser($user);
         $tousLesUsers = $userAppRepo->findAll();
         $presenceByUserId = [];
         $presenceThreshold = new \DateTime('-5 minutes');
         foreach ($tousLesUsers as $candidateUser) {
-            $lastMessage = $messageRepo->findOneBy(
-                ['userApp' => $candidateUser],
-                ['date_envoi' => 'DESC']
-            );
-            $lastSeen = $lastMessage?->getDate_envoi();
+            $lastSeen = $candidateUser->getLast_seen();
             $presenceByUserId[$candidateUser->getId_user()] = [
                 'online' => $lastSeen !== null && $lastSeen >= $presenceThreshold,
                 'last_seen' => $lastSeen?->format('Y-m-d H:i:s'),
@@ -66,16 +64,18 @@ class MessagerieController extends AbstractController
             }
         }
 
-        if (!$currentConv && count($conversations) > 0) {
-            $currentConv = $conversations[0];
-        }
-
         $messages = [];
+        $currentConvLastContact = null;
         if ($currentConv) {
             $messages = $messageRepo->findBy(
                 ['conversation' => $currentConv],
                 ['date_envoi' => 'ASC']
             );
+            if (!empty($messages)) {
+                $lastMessage = end($messages);
+                $currentConvLastContact = $lastMessage?->getDate_envoi();
+                reset($messages);
+            }
 
             // Marquer comme lus les messages des autres utilisateurs
             foreach ($messages as $message) {
@@ -84,15 +84,39 @@ class MessagerieController extends AbstractController
                     $em->persist($message);
                 }
             }
-            $em->flush();
         }
+
+        $unreadByConversationId = [];
+        $totalUnreadCount = 0;
+        foreach ($conversations as $conversation) {
+            $convMessages = $messageRepo->findBy(['conversation' => $conversation]);
+            $unreadCount = 0;
+            foreach ($convMessages as $convMessage) {
+                if (
+                    $convMessage->getUserApp()?->getId_user() !== $user->getId_user()
+                    && $convMessage->getDate_lecture() === null
+                ) {
+                    $unreadCount++;
+                }
+            }
+            $conversationId = $conversation->getId_conversation();
+            if ($conversationId !== null) {
+                $unreadByConversationId[$conversationId] = $unreadCount;
+            }
+            $totalUnreadCount += $unreadCount;
+        }
+
+        $em->flush();
 
         return $this->render('front/index.html.twig', [
             'conversations' => $conversations,
             'current_conv' => $currentConv,
             'messages' => $messages,
+            'current_conv_last_contact' => $currentConvLastContact,
             'tous_les_users' => $tousLesUsers,
             'presence_by_user_id' => $presenceByUserId,
+            'unread_by_conversation_id' => $unreadByConversationId,
+            'total_unread_count' => $totalUnreadCount,
             'mon_id' => $user->getId_user(),
             'nom_utilisateur' => $user->getNom(),
             'prenom_utilisateur' => $user->getPrenom()
@@ -227,12 +251,39 @@ class MessagerieController extends AbstractController
         Request $request,
         EntityManagerInterface $em,
         SluggerInterface $slugger,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        ConversationRepository $conversationRepo,
+        UserAppRepository $userRepo
     ): Response {
-        $user = $em->getRepository(UserApp::class)->find($id_user);
-        $conversation = $em->getRepository(Conversation::class)->find($id_conversation);
+        $user = $userRepo->find($id_user);
+        $conversation = $conversationRepo->find($id_conversation);
 
-        if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
+        if (!$user) {
+            throw $this->createNotFoundException();
+        }
+
+        if (!$conversation || !$conversation->getParticipants()->contains($user)) {
+            $idDestinataire = (int) $request->request->get('id_destinataire', 0);
+            if ($idDestinataire > 0 && $idDestinataire !== $id_user) {
+                $destinataire = $userRepo->find($idDestinataire);
+                if ($destinataire) {
+                    $conversation = $conversationRepo->findOneByParticipants($user, $destinataire);
+                    if (!$conversation) {
+                        $conversation = new Conversation();
+                        $conversation->setCreateur($user);
+                        $conversation->addParticipant($user);
+                        $conversation->addParticipant($destinataire);
+                        $conversation->setTitre($destinataire->getNom() . ' ' . $destinataire->getPrenom());
+                        $conversation->setEst_groupe(false);
+                        $conversation->setDate_creation(new \DateTime());
+                        $em->persist($conversation);
+                        $em->flush();
+                    }
+                }
+            }
+        }
+
+        if (!$conversation || !$conversation->getParticipants()->contains($user)) {
             throw $this->createNotFoundException();
         }
 
@@ -352,7 +403,7 @@ class MessagerieController extends AbstractController
 
         return $this->redirectToRoute('app_messagerie_selected', [
             'id_user' => $id_user,
-            'id_conversation' => $id_conversation
+            'id_conversation' => $conversation->getId_conversation()
         ]);
     }
 
@@ -677,6 +728,45 @@ public function callLog(
             'success' => true,
             'counts' => $counts,
             'selected' => $selected ? $emoji : null,
+        ]);
+    }
+
+    #[Route('/messagerie/poll/{id_user}/{id_conversation}', name: 'app_messagerie_poll', methods: ['GET'])]
+    public function pollConversation(
+        int $id_user,
+        int $id_conversation,
+        UserAppRepository $userRepo,
+        ConversationRepository $conversationRepo,
+        MessageRepository $messageRepo,
+        Request $request
+    ): Response {
+        $user = $userRepo->find($id_user);
+        $conversation = $conversationRepo->find($id_conversation);
+        if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
+            return $this->json(['error' => 'Not found'], 404);
+        }
+
+        $lastSeenId = (int) $request->query->get('last_seen_id', 0);
+        $messages = $messageRepo->findBy(
+            ['conversation' => $conversation],
+            ['date_envoi' => 'ASC']
+        );
+
+        $latestId = $lastSeenId;
+        $incomingCount = 0;
+        foreach ($messages as $message) {
+            $msgId = (int) ($message->getId_message() ?? 0);
+            if ($msgId > $latestId) {
+                $latestId = $msgId;
+            }
+            if ($msgId > $lastSeenId && $message->getUserApp()?->getId_user() !== $id_user) {
+                $incomingCount++;
+            }
+        }
+
+        return $this->json([
+            'latest_id' => $latestId,
+            'incoming_count' => $incomingCount,
         ]);
     }
 }

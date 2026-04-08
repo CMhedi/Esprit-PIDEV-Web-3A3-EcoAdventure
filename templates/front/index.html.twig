@@ -132,6 +132,19 @@
     .online-dot.offline {
         background-color: #9aa0a6;
     }
+    .unread-badge {
+        min-width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0 6px;
+        background: #0d6efd;
+        color: #fff;
+    }
     .message-item {
         transition: all 0.2s ease;
     }
@@ -469,6 +482,7 @@
                     {% set conversationAvatar = '' %}
                     {% set conversationOtherId = null %}
                     {% set conversationOtherPresence = null %}
+                    {% set conversationDisplayTitle = conversation.titre %}
                     {% if not conversation.est_groupe %}
                         {% for participant in conversation.participants %}
                             {% if participant.id_user != mon_id and participant.image_url %}
@@ -476,6 +490,7 @@
                             {% endif %}
                             {% if participant.id_user != mon_id %}
                                 {% set conversationOtherId = participant.id_user %}
+                                {% set conversationDisplayTitle = participant.nom ~ ' ' ~ participant.prenom %}
                             {% endif %}
                         {% endfor %}
                         {% if conversationOtherId and presence_by_user_id[conversationOtherId] is defined %}
@@ -490,8 +505,9 @@
                                 : asset(conversationAvatar)))
                         : '' %}
                     <a href="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
-                       class="card conversation-item mb-1 {% if current_conv is defined and current_conv.id_conversation == conversation.id_conversation %}active{% elseif current_conv is not defined and loop.first %}active{% endif %}"
-                       data-title="{{ conversation.titre|lower }}"
+                       class="card conversation-item mb-1 {% if current_conv is defined and current_conv.id_conversation == conversation.id_conversation %}active{% endif %}"
+                       data-open-url="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
+                       data-title="{{ conversationDisplayTitle|lower }}"
                        data-date="{{ conversation.date_creation ? conversation.date_creation|date('YmdHis') : '' }}"
                        data-type="{{ conversation.est_groupe ? 'groupe' : 'prive' }}">
                         <div class="card-body p-3">
@@ -507,8 +523,14 @@
                                 </div>
                                 <div class="flex-grow-1 ms-3 text-dark">
                                     <div class="d-flex justify-content-between">
-                                        <h6 class="mb-0 fw-bold text-truncate" style="max-width: 140px;">{{ conversation.titre }}</h6>
-                                        <small class="text-muted">{{ conversation.date_creation|date('d/m') }}</small>
+                                        <h6 class="mb-0 fw-bold text-truncate" style="max-width: 140px;">{{ conversationDisplayTitle }}</h6>
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% set unreadCount = unread_by_conversation_id[conversation.id_conversation]|default(0) %}
+                                            {% if unreadCount > 0 %}
+                                                <span class="unread-badge">{{ unreadCount }}</span>
+                                            {% endif %}
+                                            <small class="text-muted">{{ conversation.date_creation|date('d/m') }}</small>
+                                        </div>
                                     </div>
                                     {% if conversation.est_groupe %}
                                         <small class="text-muted">Groupe</small>
@@ -539,6 +561,7 @@
                     {% set headerAvatar = '' %}
                     {% set headerOtherId = null %}
                     {% set headerPresence = null %}
+                    {% set headerDisplayTitle = current_conv ? current_conv.titre : (nom_utilisateur ~ ' ' ~ prenom_utilisateur) %}
                     {% if current_conv and not current_conv.est_groupe %}
                         {% for participant in current_conv.participants %}
                             {% if participant.id_user != mon_id and participant.image_url %}
@@ -546,6 +569,7 @@
                             {% endif %}
                             {% if participant.id_user != mon_id %}
                                 {% set headerOtherId = participant.id_user %}
+                                {% set headerDisplayTitle = participant.nom ~ ' ' ~ participant.prenom %}
                             {% endif %}
                         {% endfor %}
                         {% if headerOtherId and presence_by_user_id[headerOtherId] is defined %}
@@ -568,7 +592,7 @@
                     </div>
                     <div>
                         <h5 class="m-0 fw-bold text-dark">
-                            {{ current_conv ? current_conv.titre : nom_utilisateur ~ ' ' ~ prenom_utilisateur }}
+                            {{ headerDisplayTitle }}
                             {% if current_conv %}
                                 <span class="badge bg-light text-success border ms-2" style="font-size: 0.7rem;">{{ current_conv.est_groupe ? 'Groupe' : 'Privé' }}</span>
                             {% endif %}
@@ -590,7 +614,11 @@
                 </div>
             </div>
 
-            <div class="flex-grow-1 p-4 messages-area d-flex flex-column" id="messagesContainer" style="overflow-y:auto">
+            <div class="flex-grow-1 p-4 messages-area d-flex flex-column" id="messagesContainer" style="overflow-y:auto"
+                 data-my-user-id="{{ mon_id }}"
+                 data-current-conversation-id="{{ current_conv ? current_conv.id_conversation : '' }}"
+                 data-last-message-id="{{ messages|length > 0 ? messages|last.id_message : 0 }}"
+                 data-current-title="{{ current_conv ? current_conv.titre : '' }}">
                 {% if current_conv %}
                     {% set is_group_admin = current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
                 {% endif %}
@@ -801,9 +829,16 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                {% if conversations|length > 0 %}
-                    {% set current_conv = conversations[0] %}
+                {% if current_conv is defined and current_conv %}
                     {% set is_group_admin = current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
+                    {% set private_other_user = null %}
+                    {% if not current_conv.est_groupe %}
+                        {% for participant in current_conv.participants %}
+                            {% if participant.id_user != mon_id %}
+                                {% set private_other_user = participant %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
                     
                     {# --- Rename group (only for groups) --- #}
                     {% if current_conv.est_groupe %}
@@ -851,6 +886,52 @@
                             {% endif %}
                         </div>
                     {% endif %}
+
+                    {% if not current_conv.est_groupe %}
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">MEMBRES</label>
+                            <ul class="list-group list-group-flush border rounded mb-3">
+                                {% for participant in current_conv.participants %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>{{ participant.nom }} {{ participant.prenom }}</span>
+                                        <span class="badge bg-light text-dark">{{ participant.id_user == mon_id ? 'Vous' : 'Contact' }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        {% if private_other_user %}
+                            {% set privateAvatar = private_other_user.image_url
+                                ? (private_other_user.image_url starts with 'http'
+                                    ? private_other_user.image_url
+                                    : (private_other_user.image_url starts with '/'
+                                        ? private_other_user.image_url
+                                        : asset(private_other_user.image_url)))
+                                : '' %}
+                            <div class="border rounded p-3 mb-3">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center me-3" style="width: 52px; height: 52px;">
+                                        {% if privateAvatar %}
+                                            <img src="{{ privateAvatar }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                                        {% else %}
+                                            <i class="bi bi-person-fill text-success fs-4"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ private_other_user.nom }} {{ private_other_user.prenom }}</div>
+                                        <small class="text-muted">{{ private_other_user.email ?? 'Email non renseigné' }}</small>
+                                    </div>
+                                </div>
+                                <div class="small text-muted">
+                                    <div><strong>Téléphone:</strong> {{ private_other_user.telephone ?? 'Non renseigné' }}</div>
+                                    <div><strong>Rôle:</strong> {{ private_other_user.role ? private_other_user.role.value : 'N/A' }}</div>
+                                    <div><strong>Création du compte:</strong> {{ private_other_user.date_creation ? private_other_user.date_creation|date('d/m/Y H:i') : 'N/A' }}</div>
+                                    <div><strong>Création conversation:</strong> {{ current_conv.date_creation ? current_conv.date_creation|date('d/m/Y H:i') : 'N/A' }}</div>
+                                    <div><strong>Dernier contact:</strong> {{ current_conv_last_contact ? current_conv_last_contact|date('d/m/Y H:i') : 'Aucun message' }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endif %}
                     
                     <hr>
                     
@@ -867,6 +948,8 @@
                             </a>
                         {% endif %}
                     </div>
+                {% else %}
+                    <div class="text-muted">Aucune conversation sélectionnée.</div>
                 {% endif %}
             </div>
         </div>
@@ -1226,6 +1309,58 @@ function linkifyElementContent(element) {
     }
 }
 
+function playSendNotificationSound() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.2);
+    } catch (error) {
+        // ignore sound failures, keep message send behavior
+    }
+}
+
+function playIncomingNotificationSound() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.type = 'triangle';
+        osc2.type = 'triangle';
+        osc1.frequency.setValueAtTime(660, ctx.currentTime);
+        osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+        osc1.start(ctx.currentTime);
+        osc2.start(ctx.currentTime + 0.08);
+        osc1.stop(ctx.currentTime + 0.25);
+        osc2.stop(ctx.currentTime + 0.35);
+    } catch (error) {
+        // no-op on audio restrictions
+    }
+}
+
 function openFilePicker(acceptValue, placeholderText) {
     if (isRecordedVocaleInput) isRecordedVocaleInput.value = '0';
     fileInput.setAttribute('accept', acceptValue);
@@ -1389,7 +1524,9 @@ document.getElementById('messageComposerForm')?.addEventListener('submit', funct
     if (!fileInput.files.length && !textInput.value.trim()) {
         e.preventDefault();
         showComposerError('Veuillez ecrire un message ou joindre un fichier.');
+        return;
     }
+    playSendNotificationSound();
 });
 // ✅ Global: scroll vers le bas du container messages
 function scrollToBottom() {
@@ -1512,6 +1649,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.querySelectorAll('.js-linkify').forEach(linkifyElementContent);
+    const totalUnreadCount = {{ total_unread_count|default(0) }};
+    if (totalUnreadCount > 0) {
+        document.title = `(${totalUnreadCount}) Messagerie - EcoAdventure`;
+    }
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+    }
 
     // Confirmation popup personnalisee (remplace confirm natif)
     const confirmModalEl = document.getElementById('actionConfirmModal');
@@ -1658,6 +1802,61 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         });
+    });
+
+    document.querySelectorAll('.conversation-item').forEach(item => {
+        item.addEventListener('click', (event) => {
+            event.preventDefault();
+        });
+        item.addEventListener('dblclick', () => {
+            const openUrl = item.getAttribute('data-open-url');
+            if (openUrl) {
+                window.location.href = openUrl;
+            }
+        });
+    });
+
+    const messagesContainer = document.getElementById('messagesContainer');
+    let pollingActive = true;
+    async function pollIncomingMessages() {
+        if (!pollingActive || !messagesContainer) return;
+        const userId = messagesContainer.getAttribute('data-my-user-id');
+        const conversationId = messagesContainer.getAttribute('data-current-conversation-id');
+        let lastSeenId = Number(messagesContainer.getAttribute('data-last-message-id') || '0');
+        if (!userId || !conversationId) return;
+
+        try {
+            const url = `/messagerie/poll/${userId}/${conversationId}?last_seen_id=${lastSeenId}`;
+            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!response.ok) return;
+            const data = await response.json();
+            const incomingCount = Number(data.incoming_count || 0);
+            const latestId = Number(data.latest_id || lastSeenId);
+
+            if (incomingCount > 0 && latestId > lastSeenId) {
+                messagesContainer.setAttribute('data-last-message-id', String(latestId));
+                playIncomingNotificationSound();
+
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    const convTitle = messagesContainer.getAttribute('data-current-title') || 'Messagerie';
+                    new Notification(`Nouveau message - ${convTitle}`, {
+                        body: `Vous avez ${incomingCount} nouveau(x) message(s).`,
+                    });
+                }
+
+                setTimeout(() => window.location.reload(), 500);
+            } else if (latestId > lastSeenId) {
+                messagesContainer.setAttribute('data-last-message-id', String(latestId));
+            }
+        } catch (error) {
+            // keep silent; polling continues
+        }
+    }
+
+    const pollInterval = setInterval(pollIncomingMessages, 4000);
+    window.addEventListener('beforeunload', () => {
+        pollingActive = false;
+        clearInterval(pollInterval);
     });
 
     filterConversations();

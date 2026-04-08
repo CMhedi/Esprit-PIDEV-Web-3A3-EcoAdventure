@@ -133,6 +133,9 @@ private ?string $mot_de_passe = null;
     #[ORM\Column(type: 'datetime', nullable: false)]
     private ?\DateTimeInterface $date_creation = null;
 
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $last_seen = null;
+
     public function getDate_creation(): ?\DateTimeInterface
     {
         return $this->date_creation;
@@ -141,6 +144,17 @@ private ?string $mot_de_passe = null;
     public function setDate_creation(\DateTimeInterface $date_creation): self
     {
         $this->date_creation = $date_creation;
+        return $this;
+    }
+
+    public function getLast_seen(): ?\DateTimeInterface
+    {
+        return $this->last_seen;
+    }
+
+    public function setLast_seen(?\DateTimeInterface $last_seen): self
+    {
+        $this->last_seen = $last_seen;
         return $this;
     }
 
