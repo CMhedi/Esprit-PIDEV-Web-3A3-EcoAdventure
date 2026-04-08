@@ -71,6 +71,10 @@ private ?CategorieEvenement $categorie_evt = null;
         $this->categorie_evt = $categorie_evt;
         return $this;
     }
+    
+    // CamelCase aliases for PropertyAccessor (Symfony Forms)
+    public function getCategorieEvt(): ?CategorieEvenement { return $this->categorie_evt; }
+    public function setCategorieEvt(CategorieEvenement $cat): self { $this->categorie_evt = $cat; return $this; }
 
     #[ORM\Column(type: 'datetime', nullable: false)]
     private ?\DateTimeInterface $date_event = null;
@@ -85,9 +89,12 @@ private ?CategorieEvenement $categorie_evt = null;
         $this->date_event = $date_event;
         return $this;
     }
+    
+    public function getDateEvent(): ?\DateTimeInterface { return $this->date_event; }
+    public function setDateEvent(\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
 
-#[ORM\Column(type: 'string', length: 150)]
-private ?string $lieu = null;
+    #[ORM\Column(type: 'string', length: 150)]
+    private ?string $lieu = null;
 
     public function getLieu(): ?string
     {
@@ -114,8 +121,11 @@ private ?string $lieu = null;
         return $this;
     }
 
-#[ORM\Column(type: 'string', length: 255, nullable: true)]
-private ?string $statut = null;
+    public function getNbPlaces(): ?int { return $this->nb_places; }
+    public function setNbPlaces(int $nb): self { $this->nb_places = $nb; return $this; }
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $statut = null;
 
     public function getStatut(): ?string
     {
@@ -128,8 +138,8 @@ private ?string $statut = null;
         return $this;
     }
 
-#[ORM\Column(type: 'string', length: 255, nullable: true)]
-private ?string $image_url = null;
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $image_url = null;
 
     public function getImage_url(): ?string
     {
@@ -141,6 +151,9 @@ private ?string $image_url = null;
         $this->image_url = $image_url;
         return $this;
     }
+
+    public function getImageUrl(): ?string { return $this->image_url; }
+    public function setImageUrl(?string $url): self { $this->image_url = $url; return $this; }
 
     #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement')]
     private Collection $reservationEvenements;
