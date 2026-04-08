@@ -1,0 +1,104 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ajouter une Activité{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+    <h2 class="mb-4">Ajouter une Nouvelle Activité</h2>
+
+    <form action="{{ path('app_activite_create') }}" method="POST" enctype="multipart/form-data">
+        <!-- Nom de l'activité -->
+        <div class="mb-3">
+            <label for="nom" class="form-label">Nom</label>
+            <input type="text" class="form-control" id="nom" name="nom" placeholder="Nom" required>
+        </div>
+
+        <!-- Type d'activité -->
+        <div class="mb-3">
+            <label for="type_activite" class="form-label">Type d'activité</label>
+            <select class="form-select" id="type_activite" name="type_activite" required>
+                <option value="">Choisir le type</option>
+                <option value="SPORT">SPORT</option>
+                <option value="CAMPING">CAMPING</option>
+                <option value="INTELECTUEL">INTELECTUEL</option>
+                <option value="CULTUREL">CULTUREL</option>
+            </select>
+        </div>
+
+        <!-- Catégorie -->
+        <div class="mb-3">
+            <label for="categorie_act" class="form-label">Catégorie</label>
+            <select class="form-select" id="categorie_act" name="categorie_act" required>
+                <option value="">Choisir la catégorie</option>
+                <option value="FITNESS">FITNESS</option>
+                <option value="RUNNING">RUNNING</option>
+                <option value="FOOTBALL">FOOTBALL</option>
+                <option value="BASKETBALL">BASKETBALL</option>
+                <option value="TENNIS">TENNIS</option>
+                <option value="NATATION">NATATION</option>
+                <option value="RANDONNEE">RANDONNEE</option>
+                <option value="CYCLISME">CYCLISME</option>
+                <option value="YOGA">YOGA</option>
+                <option value="AUTRE">AUTRE</option>
+            </select>
+        </div>
+
+        <!-- Niveau -->
+        <div class="mb-3">
+            <label for="niveau_act" class="form-label">Niveau</label>
+            <select class="form-select" id="niveau_act" name="niveau_act" required>
+                <option value="">Choisir le niveau</option>
+                <option value="DEBUTANT">Débutant</option>
+                <option value="INTERMEDIAIRE">Intermédiaire</option>
+                <option value="AVANCE">Avancé</option>
+            </select>
+        </div>
+
+        <!-- Prix -->
+        <div class="mb-3">
+            <label for="prix" class="form-label">Prix</label>
+            <input type="number" class="form-control" id="prix" name="prix" placeholder="Prix en DT" step="0.01" required>
+        </div>
+
+        <!-- Statut -->
+        <div class="mb-3">
+            <label for="statut" class="form-label">Statut</label>
+            <select class="form-select" id="statut" name="statut" required>
+                <option value="">Choisir le statut</option>
+                <option value="DISPONIBLE">Disponible</option>
+                <option value="INDISPONIBLE">Indisponible</option>
+            </select>
+        </div>
+
+        <!-- Image -->
+        <div class="mb-3">
+            <label for="image_url" class="form-label">Image de l'activité</label>
+            <input type="file" class="form-control" id="image_url" name="image_url" accept="image/*" required>
+        </div>
+
+        <!-- Pack associé -->
+        <div class="mb-3">
+            <label for="id_pack" class="form-label">Pack associé</label>
+            <input type="number" class="form-control" id="id_pack" name="id_pack" placeholder="ID du pack" required>
+        </div>
+
+        <!-- Bouton Ajouter -->
+        <style>
+            .btn-eco {
+                background: linear-gradient(135deg, #28a745, #218838);
+                color: #fff;
+                border: none;
+                transition: all 0.3s ease;
+            }
+            .btn-eco:hover {
+                background: linear-gradient(135deg, #218838, #28a745);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            }
+        </style>
+        <button type="submit" class="btn btn-eco btn-lg rounded-pill px-5">
+            <i class="bi bi-plus-circle me-2"></i> Ajouter l'activité
+        </button>
+    </form>
+</div>
+{% endblock %}
