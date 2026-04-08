@@ -46,9 +46,14 @@ class EventFrontController extends AbstractController
     #[Route('/{id_evenement}', name: 'app_event_front_show', methods: ['GET'])]
     public function show(Evenement $evenement): Response
     {
-        // Compute available places
-        $nbReservations = $evenement->getReservationEvenements()->count();
-        $placesDispo = $evenement->getNb_places() - $nbReservations;
+        // Compute available places properly (сум of nb_billets, not just row count)
+        $nbReservationsExistantes = 0;
+        foreach ($evenement->getReservationEvenements() as $res) {
+            if ($res->getStatut_res() !== \App\Enum\StatutReservationEvenement::ANNULEE) {
+                $nbReservationsExistantes += $res->getNb_billets();
+            }
+        }
+        $placesDispo = $evenement->getNb_places() - $nbReservationsExistantes;
 
         return $this->render('front/event/show.html.twig', [
             'evenement' => $evenement,

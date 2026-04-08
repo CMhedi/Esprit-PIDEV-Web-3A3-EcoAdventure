@@ -21,12 +21,21 @@ class ReservationController extends AbstractController
         // 1. Check if user is connected
         $user = $this->getUser();
         
-        // Temporaire: Mock de l'utilisateur s'il n'y a pas de système de login encore
+        // Temporaire: Génération d'un "Guest" si l'utilisateur n'est pas connecté
         if (!$user) {
-            $user = $entityManager->getRepository(UserApp::class)->findOneBy([]);
+            $user = $entityManager->getRepository(UserApp::class)->findOneBy(['email' => 'guest@ecoadventure.com']);
             if (!$user) {
-                $this->addFlash('error', 'Vous devez être connecté pour réserver.');
-                return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
+                // Création d'un profil invité pour ne pas bloquer les tests de réservation
+                $user = new UserApp();
+                $user->setNom('Visiteur');
+                $user->setPrenom('Anonyme');
+                $user->setEmail('guest@ecoadventure.com');
+                $user->setMot_de_passe('dummy_password'); // mot de passe factice
+                $user->setRole(\App\Enum\RoleUser::USER_SIMPLE);
+                $user->setDate_creation(new \DateTime());
+                
+                $entityManager->persist($user);
+                $entityManager->flush();
             }
         }
 
@@ -62,8 +71,54 @@ class ReservationController extends AbstractController
         $entityManager->persist($reservation);
         $entityManager->flush();
 
-        $this->addFlash('success', 'Votre réservation a été confirmée !');
+        $this->addFlash('success', 'Votre réservation a été confirmée ! Retrouvez-la dans vos réservations.');
 
-        return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
+        return $this->redirectToRoute('app_mes_reservations');
+    }
+
+    #[Route('/mes-reservations', name: 'app_mes_reservations', methods: ['GET'])]
+    public function mesReservations(EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        
+        // Mock si pas connecté
+        if (!$user) {
+            $user = $entityManager->getRepository(UserApp::class)->findOneBy(['email' => 'guest@ecoadventure.com']);
+        }
+
+        if (!$user) {
+            $this->addFlash('warning', 'Vous n\'avez aucune réservation ou n\'êtes pas connecté.');
+            return $this->redirectToRoute('app_event_front_index');
+        }
+
+        $allReservations = $entityManager->getRepository(ReservationEvenement::class)->findBy(
+            ['userApp' => $user],
+            ['date_reservation' => 'DESC']
+        );
+
+        $groupedReservations = [];
+        foreach ($allReservations as $res) {
+            $eventId = $res->getEvenement()->getId_evenement();
+            if (!isset($groupedReservations[$eventId])) {
+                $groupedReservations[$eventId] = [
+                    'evenement' => $res->getEvenement(),
+                    'total_billets' => 0,
+                    'latest_date' => $res->getDate_reservation(),
+                    'statut' => $res->getStatut_res(),
+                    'is_new' => false,
+                ];
+            }
+            $groupedReservations[$eventId]['total_billets'] += $res->getNb_billets();
+            
+            // Check if any reservation in this group is "new" (e.g., less than 24 hours old)
+             $oneDayAgo = new \DateTime('-24 hours');
+             if ($res->getDate_reservation() > $oneDayAgo) {
+                 $groupedReservations[$eventId]['is_new'] = true;
+             }
+        }
+
+        return $this->render('front/event/mes_reservations.html.twig', [
+            'reservations' => $groupedReservations,
+        ]);
     }
 }

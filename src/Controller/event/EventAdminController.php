@@ -13,9 +13,20 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
+use App\Repository\ReservationEvenementRepository;
+use App\Enum\StatutReservationEvenement;
+
 #[Route('/admin/events')]
 class EventAdminController extends AbstractController
 {
+    #[Route('/reservations', name: 'app_event_admin_reservations', methods: ['GET'])]
+    public function reservations(ReservationEvenementRepository $reservationRepository): Response
+    {
+        return $this->render('admin/event/reservations.html.twig', [
+            'reservations' => $reservationRepository->findBy([], ['date_reservation' => 'DESC']),
+        ]);
+    }
+
     #[Route('/', name: 'app_event_admin_index', methods: ['GET'])]
     public function index(EvenementRepository $evenementRepository): Response
     {
