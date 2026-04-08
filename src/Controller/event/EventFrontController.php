@@ -3,7 +3,10 @@
 namespace App\Controller\event;
 
 use App\Entity\Evenement;
+use App\Entity\EventRating;
+use App\Entity\UserApp;
 use App\Repository\EvenementRepository;
+use App\Service\WeatherService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,6 +17,48 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 #[Route('/events')]
 class EventFrontController extends AbstractController
 {
+    #[Route('/rate/{id_evenement}', name: 'app_event_rate', methods: ['POST'])]
+    public function rate(Request $request, Evenement $evenement, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            $user = $entityManager->getRepository(UserApp::class)->findOneBy(['email' => 'guest@ecoadventure.com']);
+        }
+
+        if (!$user) {
+            $this->addFlash('error', 'Vous devez être connecté pour noter un événement.');
+            return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
+        }
+
+        $note = (int) $request->request->get('note', 5);
+        if ($note < 1 || $note > 5) {
+            $this->addFlash('error', 'La note doit être entre 1 et 5.');
+            return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
+        }
+
+        // Check if already rated
+        $existingRating = $entityManager->getRepository(EventRating::class)->findOneBy([
+            'user' => $user,
+            'evenement' => $evenement
+        ]);
+
+        if ($existingRating) {
+            $existingRating->setNote($note);
+            $existingRating->setCreatedAt(new \DateTime());
+        } else {
+            $rating = new EventRating();
+            $rating->setUser($user);
+            $rating->setEvenement($evenement);
+            $rating->setNote($note);
+            $entityManager->persist($rating);
+        }
+
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Merci pour votre note !');
+        return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
+    }
+
     #[Route('/', name: 'app_event_front_index', methods: ['GET'])]
     public function index(Request $request, EvenementRepository $evenementRepository): Response
     {
@@ -44,9 +89,9 @@ class EventFrontController extends AbstractController
     }
 
     #[Route('/{id_evenement}', name: 'app_event_front_show', methods: ['GET'])]
-    public function show(Evenement $evenement): Response
+    public function show(Evenement $evenement, WeatherService $weatherService): Response
     {
-        // Compute available places properly (сум of nb_billets, not just row count)
+        // Compute available places properly
         $nbReservationsExistantes = 0;
         foreach ($evenement->getReservationEvenements() as $res) {
             if ($res->getStatut_res() !== \App\Enum\StatutReservationEvenement::ANNULEE) {
@@ -55,9 +100,13 @@ class EventFrontController extends AbstractController
         }
         $placesDispo = $evenement->getNb_places() - $nbReservationsExistantes;
 
+        // Fetch Weather
+        $weather = $weatherService->getWeather($evenement->getLieu());
+
         return $this->render('front/event/show.html.twig', [
             'evenement' => $evenement,
             'places_dispo' => $placesDispo,
+            'weather' => $weather
         ]);
     }
 }

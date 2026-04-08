@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use App\Enum\CategorieEvenement;
 use App\Repository\EvenementRepository;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: EvenementRepository::class)]
 #[ORM\Table(name: 'evenement')]
@@ -17,84 +18,47 @@ class Evenement
     #[ORM\Column(type: 'integer')]
     private ?int $id_evenement = null;
 
-    public function getId_evenement(): ?int
-    {
-        return $this->id_evenement;
-    }
+    #[ORM\Column(type: 'string', length: 150)]
+    #[Assert\NotBlank(message: "Le titre est obligatoire.")]
+    #[Assert\Length(min: 5, minMessage: "Le titre doit faire au moins {{ limit }} caractères.")]
+    private ?string $titre = null;
 
-    public function setId_evenement(int $id_evenement): self
-    {
-        $this->id_evenement = $id_evenement;
-        return $this;
-    }
+    #[ORM\Column(type: 'string', length: 1000, nullable: true)]
+    #[Assert\NotBlank(message: "La description est obligatoire.")]
+    private ?string $description = null;
 
-#[ORM\Column(type: 'string', length: 150)]
-private ?string $titre = null;
-
-    public function getTitre(): ?string
-    {
-        return $this->titre;
-    }
-
-    public function setTitre(string $titre): self
-    {
-        $this->titre = $titre;
-        return $this;
-    }
-
-#[ORM\Column(type: 'string', length: 1000, nullable: true)]
-private ?string $description = null;
-
-    public function getDescription(): ?string
-    {
-        return $this->description;
-    }
-
-    public function setDescription(?string $description): self
-    {
-        $this->description = $description;
-        return $this;
-    }
-
-
-
-#[ORM\Column(enumType: CategorieEvenement::class)]
-private ?CategorieEvenement $categorie_evt = null;
-
-    public function getCategorie_evt(): ?CategorieEvenement
-    {
-        return $this->categorie_evt;
-    }
-
-    public function setCategorie_evt(CategorieEvenement $categorie_evt): self
-    {
-        $this->categorie_evt = $categorie_evt;
-        return $this;
-    }
-    
-    // CamelCase aliases for PropertyAccessor (Symfony Forms)
-    public function getCategorieEvt(): ?CategorieEvenement { return $this->categorie_evt; }
-    public function setCategorieEvt(CategorieEvenement $cat): self { $this->categorie_evt = $cat; return $this; }
+    #[ORM\Column(enumType: CategorieEvenement::class)]
+    #[Assert\NotNull(message: "Veuillez choisir une catégorie.")]
+    private ?CategorieEvenement $categorie_evt = null;
 
     #[ORM\Column(type: 'datetime', nullable: false)]
+    #[Assert\NotBlank(message: "La date est obligatoire.")]
+    #[Assert\GreaterThan("today", message: "La date de l'événement doit être dans le futur.")]
     private ?\DateTimeInterface $date_event = null;
 
-    public function getDate_event(): ?\DateTimeInterface
-    {
-        return $this->date_event;
-    }
+    #[ORM\Column(type: 'string', length: 150)]
+    #[Assert\NotBlank(message: "Le lieu est obligatoire.")]
+    private ?string $lieu = null;
 
-    public function setDate_event(\DateTimeInterface $date_event): self
-    {
-        $this->date_event = $date_event;
-        return $this;
-    }
-    
+    #[ORM\Column(type: 'integer')]
+    #[Assert\NotBlank(message: "Le nombre de places est obligatoire.")]
+    #[Assert\Positive(message: "Le nombre de places doit être positif.")]
+    private ?int $nb_places = null;
+
+    public function getId_evenement(): ?int { return $this->id_evenement; }
+    public function setId_evenement(int $id): self { $this->id_evenement = $id; return $this; }
+    public function getTitre(): ?string { return $this->titre; }
+    public function setTitre(string $titre): self { $this->titre = $titre; return $this; }
+    public function getDescription(): ?string { return $this->description; }
+    public function setDescription(?string $desc): self { $this->description = $desc; return $this; }
+    public function getCategorie_evt(): ?CategorieEvenement { return $this->categorie_evt; }
+    public function setCategorie_evt(CategorieEvenement $cat): self { $this->categorie_evt = $cat; return $this; }
+    public function getCategorieEvt(): ?CategorieEvenement { return $this->categorie_evt; }
+    public function setCategorieEvt(CategorieEvenement $cat): self { $this->categorie_evt = $cat; return $this; }
+    public function getDate_event(): ?\DateTimeInterface { return $this->date_event; }
+    public function setDate_event(\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
     public function getDateEvent(): ?\DateTimeInterface { return $this->date_event; }
     public function setDateEvent(\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
-
-    #[ORM\Column(type: 'string', length: 150)]
-    private ?string $lieu = null;
 
     public function getLieu(): ?string
     {
@@ -106,9 +70,6 @@ private ?CategorieEvenement $categorie_evt = null;
         $this->lieu = $lieu;
         return $this;
     }
-
-    #[ORM\Column(type: 'integer', nullable: false)]
-    private ?int $nb_places = null;
 
     public function getNb_places(): ?int
     {
@@ -158,15 +119,43 @@ private ?CategorieEvenement $categorie_evt = null;
     #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement')]
     private Collection $reservationEvenements;
 
+    #[ORM\OneToMany(targetEntity: EventRating::class, mappedBy: 'evenement', cascade: ['remove'])]
+    private Collection $ratings;
+
+    public function __construct()
+    {
+        $this->reservationEvenements = new ArrayCollection();
+        $this->ratings = new ArrayCollection();
+    }
+
     /**
      * @return Collection<int, ReservationEvenement>
      */
     public function getReservationEvenements(): Collection
     {
-        if (!$this->reservationEvenements instanceof Collection) {
-            $this->reservationEvenements = new ArrayCollection();
-        }
         return $this->reservationEvenements;
+    }
+
+    /**
+     * @return Collection<int, EventRating>
+     */
+    public function getRatings(): Collection
+    {
+        return $this->ratings;
+    }
+
+    public function getAverageRating(): float
+    {
+        if ($this->ratings->isEmpty()) {
+            return 0.0;
+        }
+
+        $sum = 0;
+        foreach ($this->ratings as $rating) {
+            $sum += $rating->getNote();
+        }
+
+        return round($sum / $this->ratings->count(), 1);
     }
 
     public function addReservationEvenement(ReservationEvenement $reservationEvenement): self

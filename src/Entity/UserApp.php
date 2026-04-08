@@ -133,6 +133,24 @@ private ?string $mot_de_passe = null;
     #[ORM\Column(type: 'datetime', nullable: false)]
     private ?\DateTimeInterface $date_creation = null;
 
+    #[ORM\Column(type: 'string', length: 10, nullable: true)]
+    private ?string $referralCode = null;
+
+    #[ORM\Column(type: 'integer', options: ["default" => 0])]
+    private int $loyaltyPoints = 0;
+
+    public function getReferralCode(): ?string { return $this->referralCode; }
+    public function setReferralCode(?string $code): self { $this->referralCode = $code; return $this; }
+    public function getLoyaltyPoints(): int { return $this->loyaltyPoints; }
+    public function setLoyaltyPoints(int $points): self { $this->loyaltyPoints = $points; return $this; }
+    public function addLoyaltyPoints(int $points): self { $this->loyaltyPoints += $points; return $this; }
+
+    public function __construct()
+    {
+        $this->date_creation = new \DateTime();
+        $this->referralCode = strtoupper(substr(uniqid(), -6));
+    }
+
     public function getDate_creation(): ?\DateTimeInterface
     {
         return $this->date_creation;
