@@ -55,10 +55,14 @@
             <tbody>
                 {% for event in recentEvents %}
                     <tr>
-                        <td>{{ event.title }}</td>
+                        <td class="fw-bold">{{ event.title }}</td>
                         <td>{{ event.location }}</td>
-                        <td>{{ event.date }}</td>
-                        <td>{{ event.participants }}</td>
+                        <td>{{ event.date|date('d/m/Y') }}</td>
+                        <td>
+                            <span class="badge bg-info-subtle text-info px-2 py-1 rounded-pill">
+                                {{ event.participants }}
+                            </span>
+                        </td>
                         <td>
                             {% if event.status == 'Active' %}
                                 <span class="badge bg-success">{{ event.status }}</span>
@@ -68,6 +72,10 @@
                                 <span class="badge bg-secondary">{{ event.status }}</span>
                             {% endif %}
                         </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-3">Aucun événement récent.</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -80,10 +88,10 @@
         <div class="col-lg-4">
             <div class="admin-card h-100">
                 <h5 class="fw-bold">{{ event.title }}</h5>
-                <p class="mb-1"><i class="bi bi-geo-alt me-2"></i>{{ event.location }}</p>
-                <p class="mb-1"><i class="bi bi-calendar-event me-2"></i>{{ event.date }}</p>
-                <p class="mb-3"><i class="bi bi-people me-2"></i>{{ event.participants }} participants</p>
-                <a href="#" class="btn btn-eco-outline btn-sm">Voir détails</a>
+                <p class="mb-1 text-muted small"><i class="bi bi-geo-alt me-2"></i>{{ event.location }}</p>
+                <p class="mb-1 text-muted small"><i class="bi bi-calendar-event me-2"></i>{{ event.date|date('d/m/Y') }}</p>
+                <p class="mb-3"><i class="bi bi-people me-2"></i><strong>{{ event.participants }}</strong> participants</p>
+                <a href="{{ path('app_event_admin_edit', {'id_evenement': event.id}) }}" class="btn btn-eco-outline btn-sm">Voir détails</a>
             </div>
         </div>
     {% endfor %}

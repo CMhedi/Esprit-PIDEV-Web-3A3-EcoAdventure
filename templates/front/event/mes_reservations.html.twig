@@ -1,0 +1,86 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Réservations | EcoAdventure{% endblock %}
+
+{% block css %}
+<style>
+    .badge-nouveau {
+        animation: pulse-animation 2s infinite;
+    }
+    @keyframes pulse-animation {
+        0% { box-shadow: 0 0 0 0px rgba(13, 110, 253, 0.7); }
+        100% { box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="fw-bold"><i class="bi bi-ticket-detailed me-2 text-success"></i>Mes Réservations</h1>
+        <a href="{{ path('app_event_front_index') }}" class="btn btn-outline-success">Voir d'autres événements</a>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if reservations is empty %}
+        <div class="alert alert-info py-4 text-center">
+            <h4 class="mb-3">Vous n'avez pas encore de réservations.</h4>
+            <a href="{{ path('app_event_front_index') }}" class="btn btn-success">Explorer les événements</a>
+        </div>
+    {% else %}
+        <div class="row g-4">
+            {% for res in reservations %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm border-0 position-relative">
+                        <div class="position-absolute top-0 end-0 p-2 d-flex flex-column gap-1">
+                            {% if res.is_new %}
+                                <span class="badge bg-primary badge-nouveau">
+                                    <i class="bi bi-star-fill me-1"></i>Nouveau
+                                </span>
+                            {% endif %}
+                            <span class="badge bg-{{ res.statut.value == 'CONFIRMEE' ? 'success' : (res.statut.value == 'ANNULEE' ? 'danger' : 'warning') }}">
+                                {{ res.statut.value }}
+                            </span>
+                        </div>
+                        
+                        {% if res.evenement.image_url %}
+                            <img src="{{ asset(res.evenement.image_url) }}" class="card-img-top" alt="{{ res.evenement.titre }}" style="height: 150px; object-fit: cover;">
+                        {% else %}
+                            <img src="{{ asset('assets/img/default-event.png') }}" class="card-img-top" alt="{{ res.evenement.titre }}" style="height: 150px; object-fit: cover;">
+                        {% endif %}
+
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">{{ res.evenement.titre }}</h5>
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-geo-alt"></i> {{ res.evenement.lieu }}<br>
+                                <i class="bi bi-calendar-event"></i> {{ res.evenement.date_event|date('d/m/Y à H:i') }}
+                            </p>
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold"><i class="bi bi-ticket-perforated text-success"></i> Billets Total :</span>
+                                <span class="fs-5 fw-bold text-success">{{ res.total_billets }}</span>
+                            </div>
+                            <div class="text-muted small mt-2">
+                                Dernière réservation le {{ res.latest_date|date('d/m/Y H:i') }}
+                            </div>
+                            <div class="mt-3">
+                                <a href="{{ path('app_event_front_show', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-outline-success w-100">
+                                    <i class="bi bi-plus-circle me-1"></i>Réserver plus de billets
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

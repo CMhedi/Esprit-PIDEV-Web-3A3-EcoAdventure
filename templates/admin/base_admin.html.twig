@@ -18,8 +18,9 @@
         </div>
 
         <ul class="sidebar-menu list-unstyled">
-            <li><a href="{{ path('app_admin_dashboard') }}" class="active"><i class="bi bi-grid"></i> Tableau de bord</a></li>
-            <li><a href="{{ path('app_event_admin_index') }}"><i class="bi bi-calendar-event"></i> Événements</a></li>
+            <li><a href="{{ path('app_admin_dashboard') }}" class="{{ app.request.get('_route') == 'app_admin_dashboard' ? 'active' : '' }}"><i class="bi bi-grid"></i> Tableau de bord</a></li>
+            <li><a href="{{ path('app_event_admin_index') }}" class="{{ app.request.get('_route') starts with 'app_event_admin' and app.request.get('_route') != 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-calendar-event"></i> Événements</a></li>
+            <li><a href="{{ path('app_event_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-ticket-detailed"></i> Réservations Événements</a></li>
             <li><a href="#"><i class="bi bi-people"></i> Utilisateurs</a></li>
             <li><a href="#"><i class="bi bi-box-seam"></i> Packs</a></li>
             <li><a href="#"><i class="bi bi-journal-check"></i> Inscriptions</a></li>
