@@ -19,7 +19,7 @@
 
         <ul class="sidebar-menu list-unstyled">
             <li><a href="{{ path('app_admin_dashboard') }}" class="active"><i class="bi bi-grid"></i> Tableau de bord</a></li>
-            <li><a href="#"><i class="bi bi-calendar-event"></i> Événements</a></li>
+            <li><a href="{{ path('app_event_admin_index') }}"><i class="bi bi-calendar-event"></i> Événements</a></li>
             <li><a href="#"><i class="bi bi-people"></i> Utilisateurs</a></li>
             <li><a href="#"><i class="bi bi-box-seam"></i> Packs</a></li>
             <li><a href="#"><i class="bi bi-journal-check"></i> Inscriptions</a></li>
@@ -36,6 +36,19 @@
             </div>
             <div class="admin-user">
                 <span class="badge text-bg-light px-3 py-2 rounded-pill">Admin</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                {% for label, messages in app.flashes %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endfor %}
             </div>
         </div>
 

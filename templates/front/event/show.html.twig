@@ -1,0 +1,69 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ evenement.titre }} | EcoAdventure{% endblock %}
+
+{% block body %}
+<section class="py-5">
+    <div class="container">
+        
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success mt-2">{{ message }}</div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-danger mt-2">{{ message }}</div>
+        {% endfor %}
+
+        <div class="row">
+            <div class="col-lg-8">
+                {% if evenement.image_url %}
+                    <img src="{{ asset(evenement.image_url) }}" class="img-fluid rounded shadow-sm mb-4" alt="{{ evenement.titre }}" style="width: 100%; max-height: 400px; object-fit: cover;">
+                {% else %}
+                    <img src="{{ asset('assets/img/default-event.png') }}" class="img-fluid rounded shadow-sm mb-4" alt="{{ evenement.titre }}" style="width: 100%; max-height: 400px; object-fit: cover;">
+                {% endif %}
+                
+                <h1 class="fw-bold">{{ evenement.titre }}</h1>
+                <span class="badge bg-success mb-3">{{ evenement.categorie_evt.value }}</span>
+                
+                <h4 class="mt-4">Description</h4>
+                <p>{{ evenement.description }}</p>
+                
+                <h4 class="mt-4">Informations Pratiques</h4>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-geo-alt text-warning me-2"></i><strong>Lieu:</strong> {{ evenement.lieu }}</li>
+                    <li><i class="bi bi-calendar-event text-warning me-2"></i><strong>Date:</strong> {{ evenement.date_event|date('d/m/Y H:i') }}</li>
+                    <li><i class="bi bi-people text-warning me-2"></i><strong>Places Restantes:</strong> 
+                        {% if places_dispo <= 0 %}
+                            <span class="text-danger fw-bold">Complet</span>
+                        {% else %}
+                            <span class="text-success fw-bold">{{ places_dispo }} / {{ evenement.nb_places }}</span>
+                        {% endif %}
+                    </li>
+                </ul>
+            </div>
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 sticky-top" style="top: 100px;">
+                    <div class="card-body text-center p-4">
+                        <h4 class="fw-bold">Réserver votre place</h4>
+                        <p class="text-muted">Rejoignez-nous pour cette aventure !</p>
+                        
+                        <hr>
+                        
+                        <form action="{{ path('app_reservation_event', {'id_evenement': evenement.id_evenement}) }}" method="POST">
+                            <div class="mb-3 text-start">
+                                <label for="nb_billets" class="form-label">Nombre de billets</label>
+                                <input type="number" name="nb_billets" id="nb_billets" class="form-control" value="1" min="1" max="{{ places_dispo > 0 ? places_dispo : 1 }}" {% if places_dispo <= 0 %}disabled{% endif %}>
+                            </div>
+                            
+                            {% if places_dispo <= 0 %}
+                                <button type="button" class="btn btn-secondary w-100 fw-bold py-2 disabled">Complet</button>
+                            {% else %}
+                                <button type="submit" class="btn btn-warning w-100 fw-bold py-2">Valider la Réservation</button>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

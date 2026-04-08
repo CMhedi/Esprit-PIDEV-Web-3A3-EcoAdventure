@@ -1,0 +1,29 @@
+{{ form_start(form, {'attr': {'class': 'needs-validation'}}) }}
+    {{ form_errors(form) }}
+    <div class="row g-3">
+        <div class="col-md-6">
+            {{ form_row(form.titre, {'attr': {'class': 'form-control'}}) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.categorie_evt, {'attr': {'class': 'form-select'}}) }}
+        </div>
+        <div class="col-12">
+            {{ form_row(form.description, {'attr': {'class': 'form-control', 'rows': '3'}}) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.date_event, {'attr': {'class': 'form-control'}}) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.lieu, {'attr': {'class': 'form-control'}}) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.nb_places, {'attr': {'class': 'form-control'}}) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.image_url, {'attr': {'class': 'form-control'}}) }}
+        </div>
+    </div>
+    <div class="mt-4 text-end">
+        <button class="btn btn-success"><i class="bi bi-save"></i> {{ button_label|default('Enregistrer') }}</button>
+    </div>
+{{ form_end(form) }}

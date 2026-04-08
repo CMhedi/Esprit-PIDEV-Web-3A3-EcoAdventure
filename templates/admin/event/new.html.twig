@@ -1,0 +1,17 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Nouvel Événement{% endblock %}
+{% block page_title %}Nouvel Événement{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Créer un Nouvel Événement</h2>
+        <a href="{{ path('app_event_admin_index') }}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Retour</a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            {{ include('admin/event/_form.html.twig') }}
+        </div>
+    </div>
+{% endblock %}

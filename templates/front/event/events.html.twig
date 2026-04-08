@@ -1,0 +1,86 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tous les événements | EcoAdventure{% endblock %}
+
+{% block body %}
+<section class="page-header py-5">
+    <div class="container">
+        <h1 class="fw-bold">Tous les Événements</h1>
+        <p class="text-muted">Retrouvez l’ensemble des activités et événements sportifs.</p>
+
+        <div class="filter-box shadow-sm">
+            <form id="filter-form" action="{{ path('app_event_front_index') }}" method="GET">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" name="search" id="search" class="form-control" placeholder="Recherche..." value="{{ search }}">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="categorie" id="categorie" class="form-select">
+                            <option value="">Toutes les catégories</option>
+                            <option value="Nature" {% if selected_cat == 'Nature' %}selected{% endif %}>Nature</option>
+                            <option value="Nautique" {% if selected_cat == 'Nautique' %}selected{% endif %}>Nautique</option>
+                            <option value="Aventure" {% if selected_cat == 'Aventure' %}selected{% endif %}>Aventure</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="lieu" id="lieu" class="form-select">
+                            <option value="">Tous les lieux</option>
+                            {% for l in lieux %}
+                                <option value="{{ l }}" {% if selected_lieu == l %}selected{% endif %}>{{ l }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-warning w-100">Filtrer</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<section class="pb-5">
+    <div class="container">
+        <div class="row g-4" id="events-list">
+            {% include 'front/event/_list.html.twig' with {'events': events} %}
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filter-form');
+    const eventsList = document.getElementById('events-list');
+    
+    // AJAX Filtering
+    filterForm.addEventListener('input', function(e) {
+        if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+            const formData = new FormData(filterForm);
+            const params = new URLSearchParams(formData).toString();
+            
+            fetch("{{ path('app_event_front_index') }}?" + params, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.text())
+            .then(html => {
+                eventsList.innerHTML = html;
+            });
+        }
+    });
+
+    filterForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams(formData).toString();
+        
+        fetch("{{ path('app_event_front_index') }}?" + params, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.text())
+        .then(html => {
+            eventsList.innerHTML = html;
+        });
+    });
+});
+</script>
+{% endblock %}

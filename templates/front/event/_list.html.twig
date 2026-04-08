@@ -1,0 +1,27 @@
+{% for event in events %}
+    <div class="col-lg-4 col-md-6">
+        <div class="card event-card border-0 shadow-sm h-100">
+            {% if event.image_url %}
+                <img src="{{ asset(event.image_url) }}" class="card-img-top event-image" alt="{{ event.titre }}" style="height: 200px; object-fit: cover;">
+            {% else %}
+                <img src="{{ asset('assets/img/default-event.png') }}" class="card-img-top event-image" alt="{{ event.titre }}" style="height: 200px; object-fit: cover;">
+            {% endif %}
+            
+            <div class="card-body">
+                <span class="badge bg-light text-dark mb-2">{{ event.categorie_evt.value }}</span>
+                <h5 class="fw-bold">{{ event.titre }}</h5>
+                <p class="mb-1"><i class="bi bi-geo-alt me-2"></i>{{ event.lieu }}</p>
+                <p class="mb-1"><i class="bi bi-calendar-event me-2"></i>{{ event.date_event ? event.date_event|date('d M Y') : '' }}</p>
+                <p class="price-text mb-3"><i class="bi bi-people me-2"></i>{{ event.nb_places }} Places</p>
+
+                <div class="d-flex gap-2">
+                    <a href="{{ path('app_event_front_show', {'id_evenement': event.id_evenement}) }}" class="btn btn-light border w-100">Détails</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="col-12">
+        <div class="alert alert-info">Aucun événement ne correspond à vos critères de recherche.</div>
+    </div>
+{% endfor %}
