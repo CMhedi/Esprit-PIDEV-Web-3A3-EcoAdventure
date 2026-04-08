@@ -2,12 +2,11 @@
 
 namespace App\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+use App\Repository\ConversationRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-
-use App\Entity\UserApp;
-use App\Repository\ConversationRepository;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ConversationRepository::class)]
 #[ORM\Table(name: 'conversation')]
@@ -20,32 +19,45 @@ class Conversation
 
     #[ORM\ManyToOne(targetEntity: UserApp::class)]
     #[ORM\JoinColumn(name: 'id_createur', referencedColumnName: 'id_user', nullable: false)]
+    #[Assert\NotNull(message: "Le créateur de la conversation est obligatoire.")]
     private ?UserApp $createur = null;
 
     #[ORM\ManyToMany(targetEntity: UserApp::class)]
     #[ORM\JoinTable(
         name: 'conversation_user',
-        joinColumns: [new ORM\JoinColumn(name: 'conversation_id_conversation', referencedColumnName: 'id_conversation')],
-        inverseJoinColumns: [new ORM\JoinColumn(name: 'user_app_id_user', referencedColumnName: 'id_user')]
+        joinColumns: [new ORM\JoinColumn(name: 'id_conversation', referencedColumnName: 'id_conversation')],
+        inverseJoinColumns: [new ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user')]
     )]
+    #[Assert\Count(min: 1, minMessage: "Il doit y avoir au moins un participant.")]
     private Collection $participants;
 
     #[ORM\Column(type: 'string', length: 150)]
+    #[Assert\NotBlank(message: "Le titre ne peut pas être vide.")]
+    #[Assert\Length(
+        min: 2,
+        max: 150,
+        minMessage: "Le titre doit comporter au moins {{ limit }} caractères.",
+        maxMessage: "Le titre ne peut pas dépasser {{ limit }} caractères."
+    )]
     private ?string $titre = null;
 
     #[ORM\Column(type: 'boolean', nullable: false)]
+    #[Assert\NotNull(message: "Veuillez préciser s'il s'agit d'un groupe ou non.")]
     private ?bool $est_groupe = null;
 
     #[ORM\Column(type: 'datetime', nullable: false)]
+    #[Assert\NotNull(message: "La date de création est requise.")]
+    #[Assert\LessThanOrEqual("now", message: "La date de création ne peut pas être dans le futur.")]
     private ?\DateTimeInterface $date_creation = null;
 
-    #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'conversation')]
+    #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'conversation', cascade: ['remove'])]
     private Collection $messages;
 
     public function __construct()
     {
         $this->participants = new ArrayCollection();
         $this->messages = new ArrayCollection();
+        $this->date_creation = new \DateTime();
     }
 
     public function getId_conversation(): ?int
@@ -64,7 +76,7 @@ class Conversation
         return $this->createur;
     }
 
-    public function setCreateur(UserApp $createur): self
+    public function setCreateur(?UserApp $createur): self
     {
         $this->createur = $createur;
         return $this;
@@ -97,7 +109,7 @@ class Conversation
         return $this->titre;
     }
 
-    public function setTitre(string $titre): self
+    public function setTitre(?string $titre): self
     {
         $this->titre = $titre;
         return $this;
@@ -137,13 +149,18 @@ class Conversation
     {
         if (!$this->messages->contains($message)) {
             $this->messages->add($message);
+            $message->setConversation($this);
         }
         return $this;
     }
 
     public function removeMessage(Message $message): self
     {
-        $this->messages->removeElement($message);
+        if ($this->messages->removeElement($message)) {
+            if ($message->getConversation() === $this) {
+                $message->setConversation(null);
+            }
+        }
         return $this;
     }
 }

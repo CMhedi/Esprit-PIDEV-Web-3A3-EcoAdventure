@@ -4,17 +4,24 @@
 
 {% block css %}
 <style>
-    .chat-container {
-        height: 80vh;
-        background: #f8f9fa;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-    }
-    .conversation-list {
-        background: white;
-        border-right: 1px solid #eee;
-    }
+   .chat-container {
+    height: 85vh;
+    background: #f8f9fa;
+    border-radius: 15px;
+    overflow: hidden;
+    display: flex;
+}
+   .conversation-list {
+    background: white;
+    border-right: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.conversation-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+}
     .conversation-item {
         transition: all 0.2s;
         border: none;
@@ -54,20 +61,20 @@
         color: #1b5e20;
     }
     .chat-window {
-        background: white;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-    }
+    background: white;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
     .messages-area {
-        background-color: #f0f2f5;
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow-y: auto;
-        padding-bottom: 110px;
-        scroll-behavior: smooth;
-    }
-    
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    scroll-behavior: smooth;
+}
     .messages-area::-webkit-scrollbar {
         width: 8px;
     }
@@ -154,6 +161,79 @@
         z-index: 100;
         border-top: 1px solid #ddd;
         box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+    }
+    .composer-row {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+    }
+    .composer-input-wrap {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        background: #ffffff;
+        border: 1px solid #e3e7ee;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .composer-emoji-btn {
+        width: 46px;
+        height: 46px;
+        border: 0;
+        border-right: 1px solid #edf1f6;
+        background: #fbf6df;
+        color: #d7b24c;
+    }
+    .composer-text-input {
+        border: 0 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        padding-left: 0.85rem !important;
+        padding-right: 0.85rem !important;
+    }
+    .media-action-btn {
+        width: 46px;
+        height: 46px;
+        border: 0;
+        border-radius: 8px;
+        background: #e9f4ff;
+        color: #57a7e6;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .media-action-btn:hover {
+        background: #d8ecff;
+        color: #368ed2;
+    }
+    .composer-send-btn {
+        width: 46px;
+        height: 46px;
+        border: 0;
+        border-radius: 8px;
+        background: #1ecf6b;
+        color: #fff;
+    }
+    .composer-send-btn:hover {
+        background: #17b95e;
+        color: #fff;
+    }
+    .preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    .chat-video-inline {
+        width: 100%;
+        min-width: 260px;
+        max-width: 520px;
+        max-height: 320px;
+        background: #000;
+    }
+    .video-open-btn {
+        margin-top: 0.45rem;
     }
     .message-checkmarks {
         display: inline-flex;
@@ -272,7 +352,51 @@
                     <div class="d-flex {{ is_mine ? 'justify-content-end' : 'justify-content-start' }} mb-3 message-item">
                         <div class="message-bubble {{ is_mine ? 'message-sent shadow' : 'message-received shadow-sm' }}" style="position: relative;">
                             <div class="mb-2 fw-bold small text-muted">{{ message.userApp ? (message.userApp.nom ~ ' ' ~ message.userApp.prenom) : 'Utilisateur' }}</div>
-                            {{ message.contenu }}
+                            {% set rawContent = message.contenu ?? '' %}
+                            {% set contentParts = rawContent ? rawContent|split('|', 2) : [''] %}
+                            {% set mediaPath = contentParts[0] ?? '' %}
+                            {% set mediaComment = contentParts[1] ?? '' %}
+                            {% set mediaRelative = mediaPath starts with '/uploads/' ? mediaPath|slice(9) : '' %}
+                            {% set mediaUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative}) : '' %}
+                            {% set msgType = message.type_message and message.type_message.value is defined ? message.type_message.value : (message.type_message ?? '') %}
+                            {% set mediaExt = mediaPath ? (mediaPath|split('.')|last|lower) : '' %}
+                            {% set mediaParts = mediaPath ? mediaPath|split('/') : [] %}
+                            {% set mediaFolder = mediaParts|length > 2 ? mediaParts[2]|lower : '' %}
+                            {% set isVideoFile = mediaFolder == 'video' or mediaExt in ['mp4', 'mov', 'avi', 'mkv', 'webm'] %}
+                            {% set isAudioFile = mediaFolder in ['audio', 'call'] or mediaExt in ['mp3', 'wav', 'm4a', 'ogg', 'aac'] %}
+                            {% set isImageFile = mediaFolder == 'images' or mediaExt in ['jpg', 'jpeg', 'png', 'webp', 'gif'] %}
+                            {% set isPdfFile = (mediaFolder == 'files' and mediaExt == 'pdf') or mediaExt == 'pdf' %}
+
+                            {% if mediaUrl %}
+                                {% if isVideoFile or msgType in ['VIDEO', 'APPEL_VIDEO'] %}
+                                    <video controls class="rounded chat-video-inline">
+                                        <source src="{{ mediaUrl }}">
+                                    </video>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-light border video-open-btn" data-video-src="{{ mediaUrl }}">
+                                            <i class="bi bi-arrows-fullscreen me-1"></i> Ouvrir video
+                                        </button>
+                                    </div>
+                                {% elseif isAudioFile or msgType in ['AUDIO', 'APPEL_AUDIO'] %}
+                                    <audio controls class="w-100">
+                                        <source src="{{ mediaUrl }}">
+                                    </audio>
+                                {% elseif isImageFile or msgType in ['IMAGE', 'GIF'] %}
+                                    <img src="{{ mediaUrl }}" alt="media" class="img-fluid rounded" style="max-height: 220px;">
+                                {% elseif isPdfFile or msgType == 'PDF' %}
+                                    <a href="{{ mediaUrl }}" target="_blank" class="btn btn-sm btn-light border">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i> Ouvrir le PDF
+                                    </a>
+                                {% else %}
+                                    <a href="{{ mediaUrl }}" target="_blank" class="text-decoration-underline">Ouvrir le fichier</a>
+                                {% endif %}
+
+                                {% if mediaComment is not empty %}
+                                    <div class="mt-2">{{ mediaComment }}</div>
+                                {% endif %}
+                            {% else %}
+                                {{ rawContent }}
+                            {% endif %}
                             <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap">
                                 <div>
                                     <span class="time-stamp {{ is_mine ? 'text-white-50' : 'text-muted' }}">
@@ -326,18 +450,43 @@
                 {% endfor %}
             </div>
 
-            <div class="p-3 message-footer">
-                <form method="post" action="{{ current_conv ? path('app_send_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '#' }}" class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-outline-light text-muted rounded-circle border-0"><i class="bi bi-plus-circle-fill fs-5"></i></button>
-                    <button type="button" class="btn btn-outline-light text-muted rounded-circle border-0"><i class="bi bi-image fs-5"></i></button>
-                    <div class="input-group">
-                        <input type="text" name="message" class="form-control border-0 bg-light rounded-pill px-4 text-dark" placeholder="Écrivez votre message..." autocomplete="off" required {{ current_conv ? '' : 'disabled' }}>
-                        <button type="submit" class="btn btn-eco rounded-circle ms-2 shadow d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;" {{ current_conv ? '' : 'disabled' }}>
-                            <i class="bi bi-send-fill"></i>
-                        </button>
-                    </div>
-                </form>
+          <div class="p-3 message-footer">
+    <form method="post" enctype="multipart/form-data" action="{{ current_conv ? path('app_send_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '#' }}" class="d-flex flex-column gap-2">
+        
+        {# Media preview area #}
+        <div id="mediaPreview" class="d-none mb-2 p-2 bg-light rounded">
+            <div class="preview-header">
+                <small class="text-muted mb-0">Fichier selectionne</small>
+                <button type="button" id="clearMediaBtn" class="btn btn-sm btn-outline-danger py-0 px-2">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
+            <div id="mediaPreviewContent"></div>
+        </div>
+        
+        {# Input row: file + text + send #}
+        <div class="composer-row">
+            <div class="composer-input-wrap">
+                <button type="button" class="composer-emoji-btn" title="Emoji">
+                    <i class="bi bi-emoji-smile"></i>
+                </button>
+                <input type="text" name="message" id="textMessage" class="form-control composer-text-input text-dark" placeholder="Type Message..." autocomplete="off" {{ current_conv ? '' : 'disabled' }}>
+            </div>
+            
+            <input type="file" id="mediaFile" name="mediaFile" accept="image/*,video/*,audio/*,application/pdf,.gif" class="d-none">
+
+            <button type="submit" class="composer-send-btn shadow-sm" {{ current_conv ? '' : 'disabled' }} title="Envoyer">
+                <i class="bi bi-send"></i>
+            </button>
+            <button type="button" class="media-action-btn" id="attachVocaleBtn" title="Message vocale">
+                <i class="bi bi-mic"></i>
+            </button>
+            <button type="button" class="media-action-btn" id="attachImageBtn" title="Joindre un fichier">
+                <i class="bi bi-paperclip"></i>
+            </button>
+        </div>
+    </form>
+</div>
         </div>
     </div>
 </div>
@@ -354,6 +503,8 @@
                 {% if conversations|length > 0 %}
                     {% set current_conv = conversations[0] %}
                     {% set is_group_admin = current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
+                    
+                    {# --- Rename group (only for groups) --- #}
                     {% if current_conv.est_groupe %}
                         {% if is_group_admin %}
                             <form action="{{ path('app_edit_group', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) }}" method="POST" class="mb-4">
@@ -364,18 +515,34 @@
                                 </div>
                             </form>
                         {% endif %}
+                        
+                        {# --- Member list with KICK button (only for group admins) --- #}
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">MEMBRES</label>
                             <ul class="list-group list-group-flush border rounded mb-3">
                                 {% for participant in current_conv.participants %}
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>{{ participant.nom }} {{ participant.prenom }}{% if participant.id_user == current_conv.createur.id_user %} (Admin){% endif %}</span>
-                                        {% if participant.id_user == current_conv.createur.id_user %}
-                                            <span class="badge bg-success">Admin</span>
+                                        <span>
+                                            {{ participant.nom }} {{ participant.prenom }}
+                                            {% if participant.id_user == current_conv.createur.id_user %}
+                                                <span class="badge bg-success ms-2">Admin</span>
+                                            {% endif %}
+                                        </span>
+                                        {% if is_group_admin and participant.id_user != current_conv.createur.id_user %}
+                                            <a href="{{ path('app_kick_member', {'id_conversation': current_conv.id_conversation, 'id_user_to_kick': participant.id_user, 'id_user': mon_id}) }}"
+                                               class="btn btn-sm btn-outline-danger"
+                                               data-confirm-link
+                                               data-confirm-title="Retirer un membre"
+                                               data-confirm-message="Retirer {{ participant.nom }} {{ participant.prenom }} du groupe ?"
+                                               data-confirm-note="Cette action retire ce membre du groupe.">
+                                                <i class="bi bi-person-x-fill"></i> Kick
+                                            </a>
                                         {% endif %}
                                     </li>
                                 {% endfor %}
                             </ul>
+                            
+                            {# --- Add member button (admin only) --- #}
                             {% if is_group_admin %}
                                 <button class="btn btn-outline-success btn-sm w-100" data-bs-toggle="modal" data-bs-target="#addMemberModal">
                                     <i class="bi bi-person-plus-fill me-1"></i> Ajouter un membre
@@ -383,12 +550,18 @@
                             {% endif %}
                         </div>
                     {% endif %}
+                    
                     <hr>
+                    
+                    {# --- Delete conversation (only if admin or private chat) --- #}
                     <div class="d-grid shadow-sm">
                         {% if not current_conv.est_groupe or current_conv.createur.id_user == mon_id %}
                             <a href="{{ path('app_delete_conversation', {'id_conversation': current_conv.id_conversation, 'id_user': mon_id}) }}"
                                class="btn btn-danger py-2"
-                               onclick="return confirm('Supprimer cette conversation ?')">
+                               data-confirm-link
+                               data-confirm-title="Supprimer la conversation"
+                               data-confirm-message="Supprimer cette conversation ?"
+                               data-confirm-note="Cette action est irreversible.">
                                 <i class="bi bi-trash3-fill me-2"></i> Supprimer la conversation
                             </a>
                         {% endif %}
@@ -472,6 +645,45 @@
     </div>
 </div>
 
+{# --- MODAL CONFIRMATION PERSONNALISE --- #}
+<div class="modal fade" id="actionConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h6 class="modal-title" id="actionConfirmTitle">Confirmation</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0" id="actionConfirmMessage">Voulez-vous continuer ?</p>
+            </div>
+            <div class="modal-footer d-block border-0 pt-0">
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <a href="#" id="actionConfirmBtn" class="btn btn-danger">Confirmer</a>
+                </div>
+                <small class="text-muted d-block mt-2" id="actionConfirmNote">Verifiez bien avant de confirmer.</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- MODAL VIDEO (TAILLE MOYENNE) --- #}
+<div class="modal fade" id="videoPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h6 class="modal-title">Lecture video</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2 bg-black">
+                <video id="videoPreviewPlayer" controls class="w-100 rounded" style="max-height: 65vh;">
+                    <source id="videoPreviewSource" src="">
+                </video>
+            </div>
+        </div>
+    </div>
+</div>
+
 {# --- MODAL CREATION GROUPE --- #}
 <div class="modal fade" id="createGroupModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -533,6 +745,88 @@
 </div>
 
 <script>
+
+const fileInput = document.getElementById('mediaFile');
+const textInput = document.getElementById('textMessage');
+const previewDiv = document.getElementById('mediaPreview');
+const previewContentDiv = document.getElementById('mediaPreviewContent');
+const clearMediaBtn = document.getElementById('clearMediaBtn');
+
+function clearSelectedMedia() {
+    fileInput.value = '';
+    if (previewContentDiv) previewContentDiv.innerHTML = '';
+    previewDiv.classList.add('d-none');
+    textInput.placeholder = 'Type Message...';
+}
+
+function openFilePicker(acceptValue, placeholderText) {
+    fileInput.setAttribute('accept', acceptValue);
+    fileInput.value = '';
+    fileInput.click();
+    if (placeholderText) {
+        textInput.placeholder = placeholderText;
+    }
+}
+
+document.getElementById('attachImageBtn')?.addEventListener('click', () => {
+    openFilePicker('image/*,video/*,audio/*,application/pdf,.gif', 'Ajouter un commentaire (optionnel)');
+});
+document.getElementById('attachVocaleBtn')?.addEventListener('click', () => {
+    openFilePicker('audio/*', 'Ajouter un message vocale (optionnel)');
+});
+
+fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validation: video max 5 min
+    if (file.type.startsWith('video/')) {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = function() {
+            if (video.duration > 300) { // 5 min = 300 sec
+                alert('La vidéo ne doit pas dépasser 5 minutes.');
+                clearSelectedMedia();
+                return;
+            }
+            showPreview(file);
+        };
+        video.src = URL.createObjectURL(file);
+    } else {
+        showPreview(file);
+    }
+});
+
+function showPreview(file) {
+    const fileURL = URL.createObjectURL(file);
+    let html = '';
+    if (file.type.startsWith('image/')) {
+        html = `<img src="${fileURL}" class="img-fluid rounded" style="max-height: 150px;">`;
+    } else if (file.type.startsWith('video/')) {
+        html = `<video controls class="rounded" style="max-height: 150px;"><source src="${fileURL}"></video>`;
+    } else if (file.type.startsWith('audio/')) {
+        html = `<audio controls src="${fileURL}"></audio>`;
+    } else if (file.type === 'application/pdf') {
+        html = `<embed src="${fileURL}" type="application/pdf" style="height: 150px; width: 100%;">`;
+    } else {
+        html = `<div class="alert alert-info">Fichier: ${file.name}</div>`;
+    }
+    previewContentDiv.innerHTML = html + `<div class="small text-muted mt-1">${file.name}</div>`;
+    previewDiv.classList.remove('d-none');
+    
+    // Optional: disable text input if file is attached (or allow both)
+    textInput.placeholder = file ? "Ajouter un commentaire (optionnel)" : "Écrivez votre message...";
+}
+
+clearMediaBtn?.addEventListener('click', clearSelectedMedia);
+
+// On form submit, ensure we send the file
+document.querySelector('form').addEventListener('submit', function(e) {
+    if (!fileInput.files.length && !textInput.value.trim()) {
+        e.preventDefault();
+        alert("Veuillez écrire un message ou joindre un fichier.");
+    }
+});
 // ✅ Global: scroll vers le bas du container messages
 function scrollToBottom() {
     const container = document.getElementById('messagesContainer');
@@ -652,6 +946,55 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!document.querySelector('[data-filter].active')) {
         document.querySelector('[data-filter="all"]')?.classList.add('active');
     }
+
+    // Confirmation popup personnalisee (remplace confirm natif)
+    const confirmModalEl = document.getElementById('actionConfirmModal');
+    const confirmTitleEl = document.getElementById('actionConfirmTitle');
+    const confirmMessageEl = document.getElementById('actionConfirmMessage');
+    const confirmNoteEl = document.getElementById('actionConfirmNote');
+    const confirmBtnEl = document.getElementById('actionConfirmBtn');
+    const confirmModal = confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
+    const videoModalEl = document.getElementById('videoPreviewModal');
+    const videoModal = videoModalEl ? new bootstrap.Modal(videoModalEl) : null;
+    const videoPlayer = document.getElementById('videoPreviewPlayer');
+    const videoSource = document.getElementById('videoPreviewSource');
+
+    document.querySelectorAll('[data-confirm-link]').forEach(link => {
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+            if (!confirmModal) return;
+
+            const title = this.getAttribute('data-confirm-title') || 'Confirmation';
+            const message = this.getAttribute('data-confirm-message') || 'Voulez-vous continuer ?';
+            const note = this.getAttribute('data-confirm-note') || 'Verifiez bien avant de confirmer.';
+            const targetHref = this.getAttribute('href') || '#';
+
+            confirmTitleEl.textContent = title;
+            confirmMessageEl.textContent = message;
+            confirmNoteEl.textContent = note;
+            confirmBtnEl.setAttribute('href', targetHref);
+
+            confirmModal.show();
+        });
+    });
+
+    document.querySelectorAll('[data-video-src]').forEach(btn => {
+        btn.addEventListener('click', function () {
+            if (!videoModal || !videoPlayer || !videoSource) return;
+            const src = this.getAttribute('data-video-src');
+            if (!src) return;
+            videoSource.setAttribute('src', src);
+            videoPlayer.load();
+            videoModal.show();
+        });
+    });
+
+    videoModalEl?.addEventListener('hidden.bs.modal', function () {
+        if (!videoPlayer || !videoSource) return;
+        videoPlayer.pause();
+        videoSource.setAttribute('src', '');
+        videoPlayer.load();
+    });
 
     filterConversations();
 });
