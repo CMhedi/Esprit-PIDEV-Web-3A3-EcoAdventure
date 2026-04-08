@@ -24,6 +24,16 @@
         </div>
     </div>
 
+    <div class="flash-wrap-insc">
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success custom-alert-insc">{{ message }}</div>
+        {% endfor %}
+
+        {% for message in app.flashes('danger') %}
+            <div class="alert alert-danger custom-alert-insc">{{ message }}</div>
+        {% endfor %}
+    </div>
+
     <div class="inscriptions-toolbar">
         <div class="toolbar-head">
             <div>
@@ -63,6 +73,7 @@
                             <th>Date d’inscription</th>
                             <th>Montant</th>
                             <th>Statut</th>
+                            <th class="text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -101,6 +112,17 @@
                                         <span class="status-badge status-dark">{{ statut }}</span>
                                     {% endif %}
                                 </td>
+
+                                <td class="text-center">
+                                    <button type="button"
+                                            class="btn btn-delete-inscription"
+                                            data-inscription-id="{{ inscription.idInscription }}"
+                                            data-inscription-user="{{ inscription.nomUser ?: 'Utilisateur inconnu' }}"
+                                            data-inscription-pack="{{ inscription.nomPack ?: (inscription.pack ? inscription.pack.nom : 'Pack non défini') }}"
+                                            data-inscription-token="{{ csrf_token('delete_inscription_' ~ inscription.idInscription) }}">
+                                        <i class="bi bi-trash me-1"></i> Supprimer
+                                    </button>
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -116,6 +138,43 @@
     </div>
 </div>
 
+<div id="deleteInscriptionModal" class="delete-modal-overlay">
+    <div class="delete-modal-stage">
+        <div class="delete-card-animation" id="deleteAnimatedCard">
+            <div class="delete-card-face delete-card-front">
+                <div class="card-chip"></div>
+                <div class="card-brand">EcoAdventure</div>
+                <div class="card-wave"></div>
+                <div class="card-title">Suppression sécurisée</div>
+                <div class="card-subtitle">Validation en cours...</div>
+            </div>
+            <div class="delete-card-face delete-card-back">
+                <div class="card-strip"></div>
+                <div class="card-note">Admin Control</div>
+            </div>
+        </div>
+
+        <div class="delete-confirm-box" id="deleteConfirmBox">
+            <h3>Confirmer la suppression</h3>
+            <p id="deleteConfirmText">
+                Êtes-vous sûr de vouloir supprimer cette inscription ?
+            </p>
+
+            <form id="deleteInscriptionForm" method="post" action="">
+                <input type="hidden" name="_token" id="deleteInscriptionToken">
+                <div class="delete-confirm-actions">
+                    <button type="submit" class="btn btn-confirm-yes">
+                        Oui, supprimer
+                    </button>
+                    <button type="button" class="btn btn-confirm-no" id="cancelDeleteBtn">
+                        Non
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     (function () {
         const input = document.getElementById('liveSearchInput');
@@ -128,6 +187,63 @@
                 timer = setTimeout(function () {
                     form.submit();
                 }, 350);
+            });
+        }
+    })();
+
+    (function () {
+        const modal = document.getElementById('deleteInscriptionModal');
+        const animatedCard = document.getElementById('deleteAnimatedCard');
+        const confirmBox = document.getElementById('deleteConfirmBox');
+        const confirmText = document.getElementById('deleteConfirmText');
+        const deleteForm = document.getElementById('deleteInscriptionForm');
+        const deleteToken = document.getElementById('deleteInscriptionToken');
+        const cancelBtn = document.getElementById('cancelDeleteBtn');
+        const deleteButtons = document.querySelectorAll('.btn-delete-inscription');
+
+        function openDeleteModal(id, user, pack, token) {
+            deleteForm.action = '/admin/inscriptions/' + id + '/delete';
+            deleteToken.value = token;
+            confirmText.textContent = 'Êtes-vous sûr de vouloir supprimer l’inscription de "' + user + '" pour le pack "' + pack + '" ?';
+
+            modal.classList.add('active');
+            animatedCard.classList.remove('stop-motion');
+            confirmBox.classList.remove('show-confirm');
+
+            void animatedCard.offsetWidth;
+
+            setTimeout(() => {
+                animatedCard.classList.add('stop-motion');
+                confirmBox.classList.add('show-confirm');
+            }, 1900);
+        }
+
+        function closeDeleteModal() {
+            modal.classList.remove('active');
+            confirmBox.classList.remove('show-confirm');
+            animatedCard.classList.remove('stop-motion');
+        }
+
+        deleteButtons.forEach((btn) => {
+            btn.addEventListener('click', function () {
+                openDeleteModal(
+                    this.dataset.inscriptionId,
+                    this.dataset.inscriptionUser,
+                    this.dataset.inscriptionPack,
+                    this.dataset.inscriptionToken
+                );
+            });
+        });
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeDeleteModal);
+        }
+
+        if (modal) {
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) {
+                    closeDeleteModal();
+                }
             });
         }
     })();
