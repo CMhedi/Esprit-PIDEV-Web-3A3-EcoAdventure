@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Pack;
 use App\Repository\PackRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Dompdf\Dompdf;
@@ -11,6 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class AdminController extends AbstractController
@@ -56,19 +56,30 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/packs', name: 'app_admin_packs', methods: ['GET'])]
-    public function packs(Request $request, PackRepository $packRepository): Response
-    {
+    public function packs(
+        Request $request,
+        PackRepository $packRepository,
+        SessionInterface $session
+    ): Response {
         $search = $request->query->get('search');
         $sort = $request->query->get('sort');
 
         $packs = $packRepository->findForAdmin($search, $sort);
         $totalPacks = $packRepository->countAllPacks();
 
+        $deleteCaptcha = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+        $deleteAllCaptcha = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+
+        $session->set('delete_pack_captcha', $deleteCaptcha);
+        $session->set('delete_all_packs_captcha', $deleteAllCaptcha);
+
         return $this->render('admin/packs/index.html.twig', [
             'packs' => $packs,
             'search' => $search,
             'sort' => $sort,
-            'totalPacks' => $totalPacks
+            'totalPacks' => $totalPacks,
+            'deleteCaptcha' => $deleteCaptcha,
+            'deleteAllCaptcha' => $deleteAllCaptcha
         ]);
     }
 
@@ -95,7 +106,8 @@ final class AdminController extends AbstractController
         int $id,
         Request $request,
         PackRepository $packRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        SessionInterface $session
     ): Response {
         $pack = $packRepository->find($id);
 
@@ -109,10 +121,20 @@ final class AdminController extends AbstractController
             return $this->redirectToRoute('app_admin_packs');
         }
 
+        $captchaSaisi = strtoupper(trim((string) $request->request->get('delete_captcha')));
+        $captchaSession = strtoupper((string) $session->get('delete_pack_captcha'));
+
+        if (empty($captchaSaisi) || $captchaSaisi !== $captchaSession) {
+            $this->addFlash('danger', 'Captcha de suppression incorrect.');
+            return $this->redirectToRoute('app_admin_packs');
+        }
+
         $nomPack = $pack->getNom();
 
         $entityManager->remove($pack);
         $entityManager->flush();
+
+        $session->remove('delete_pack_captcha');
 
         $this->addFlash('success', 'Le pack "' . $nomPack . '" a été supprimé avec succès.');
 
@@ -123,10 +145,19 @@ final class AdminController extends AbstractController
     public function deleteAllPacks(
         Request $request,
         PackRepository $packRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        SessionInterface $session
     ): Response {
         if (!$this->isCsrfTokenValid('delete_all_packs', $request->request->get('_token'))) {
             $this->addFlash('danger', 'Jeton CSRF invalide.');
+            return $this->redirectToRoute('app_admin_packs');
+        }
+
+        $captchaSaisi = strtoupper(trim((string) $request->request->get('delete_all_captcha')));
+        $captchaSession = strtoupper((string) $session->get('delete_all_packs_captcha'));
+
+        if (empty($captchaSaisi) || $captchaSaisi !== $captchaSession) {
+            $this->addFlash('danger', 'Captcha de suppression globale incorrect.');
             return $this->redirectToRoute('app_admin_packs');
         }
 
@@ -137,6 +168,8 @@ final class AdminController extends AbstractController
         }
 
         $entityManager->flush();
+
+        $session->remove('delete_all_packs_captcha');
 
         $this->addFlash('success', 'Tous les packs ont été supprimés avec succès.');
 
