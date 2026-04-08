@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Activite;
 use App\Entity\ReservationActivite;
+use App\Entity\UserApp;
 use App\Enum\StatutReservationActivite;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -39,31 +40,32 @@ class ReservationController extends AbstractController
             throw $this->createNotFoundException('Activité non trouvée');
         }
 
-        $user = $this->getUser();
+        // utilisateur fixe pour test
+        $user = $em->getRepository(UserApp::class)->find(1);
 
         if (!$user) {
-            $this->addFlash('error', 'Vous devez être connecté pour réserver');
-            return $this->redirectToRoute('app_login');
+            throw $this->createNotFoundException('Utilisateur avec ID 1 non trouvé');
         }
 
         $reservation = new ReservationActivite();
 
-        // date auto
-        $reservation->setDateReservation(new \DateTime());
+        // date réservation
+        $dateRes = new \DateTime($request->request->get('date_res'));
+        $reservation->setDateRes($dateRes);
 
-        // enum
+        // statut réservation
         $reservation->setStatutRes(
             StatutReservationActivite::from(
                 $request->request->get('statut_res')
             )
         );
 
-        // nb personnes
+        // nombre de personnes
         $reservation->setNbPersonnes(
             (int) $request->request->get('nb_personnes')
         );
 
-        // current user
+        // user fixe
         $reservation->setUserApp($user);
 
         // activité
@@ -74,8 +76,24 @@ class ReservationController extends AbstractController
 
         $this->addFlash('success', 'Réservation effectuée avec succès');
 
-        return $this->redirectToRoute('app_activite_affichage', [
-            'id' => $activite->getIdActivite()
+        return $this->redirectToRoute('app_reservation_affichage', [
+            'id' => $reservation->getIdResAct()
+        ]);
+    }
+
+    #[Route('/reservation/affichage/{id}', name: 'app_reservation_affichage')]
+    public function reservationAffichage(
+        int $id,
+        EntityManagerInterface $em
+    ): Response {
+        $reservation = $em->getRepository(ReservationActivite::class)->find($id);
+
+        if (!$reservation) {
+            throw $this->createNotFoundException('Réservation non trouvée');
+        }
+
+        return $this->render('front/reservationaffichage.html.twig', [
+            'reservation' => $reservation
         ]);
     }
 }

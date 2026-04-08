@@ -15,8 +15,8 @@ class ReservationActivite
     #[ORM\Column(name: 'id_res_act', type: 'integer')]
     private ?int $id_res_act = null;
 
-    #[ORM\Column(type: 'datetime')]
-    private ?\DateTimeInterface $date_reservation = null;
+    #[ORM\Column(name: 'date_res', type: 'datetime')]
+    private ?\DateTimeInterface $dateRes = null;
 
     #[ORM\Column(enumType: StatutReservationActivite::class)]
     private ?StatutReservationActivite $statut_res = null;
@@ -37,14 +37,14 @@ class ReservationActivite
         return $this->id_res_act;
     }
 
-    public function getDateReservation(): ?\DateTimeInterface
+    public function getDateRes(): ?\DateTimeInterface
     {
-        return $this->date_reservation;
+        return $this->dateRes;
     }
 
-    public function setDateReservation(\DateTimeInterface $date_reservation): self
+    public function setDateRes(\DateTimeInterface $dateRes): self
     {
-        $this->date_reservation = $date_reservation;
+        $this->dateRes = $dateRes;
         return $this;
     }
 
