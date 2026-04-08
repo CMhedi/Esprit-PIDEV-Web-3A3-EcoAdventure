@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class MessagerieController extends AbstractController
 {
@@ -43,6 +44,19 @@ class MessagerieController extends AbstractController
 
         $conversations = $conversationRepo->findConversationsByUser($user);
         $tousLesUsers = $userAppRepo->findAll();
+        $presenceByUserId = [];
+        $presenceThreshold = new \DateTime('-5 minutes');
+        foreach ($tousLesUsers as $candidateUser) {
+            $lastMessage = $messageRepo->findOneBy(
+                ['userApp' => $candidateUser],
+                ['date_envoi' => 'DESC']
+            );
+            $lastSeen = $lastMessage?->getDate_envoi();
+            $presenceByUserId[$candidateUser->getId_user()] = [
+                'online' => $lastSeen !== null && $lastSeen >= $presenceThreshold,
+                'last_seen' => $lastSeen?->format('Y-m-d H:i:s'),
+            ];
+        }
 
         $currentConv = null;
         if ($id_conversation) {
@@ -78,6 +92,7 @@ class MessagerieController extends AbstractController
             'current_conv' => $currentConv,
             'messages' => $messages,
             'tous_les_users' => $tousLesUsers,
+            'presence_by_user_id' => $presenceByUserId,
             'mon_id' => $user->getId_user(),
             'nom_utilisateur' => $user->getNom(),
             'prenom_utilisateur' => $user->getPrenom()
@@ -211,7 +226,8 @@ class MessagerieController extends AbstractController
         int $id_conversation,
         Request $request,
         EntityManagerInterface $em,
-        SluggerInterface $slugger
+        SluggerInterface $slugger,
+        ValidatorInterface $validator
     ): Response {
         $user = $em->getRepository(UserApp::class)->find($id_user);
         $conversation = $em->getRepository(Conversation::class)->find($id_conversation);
@@ -229,6 +245,7 @@ class MessagerieController extends AbstractController
 
         $uploadedFile = $request->files->get('mediaFile');
         $textContent = trim($request->request->get('message', ''));
+        $isRecordedVocale = $request->request->getBoolean('is_recorded_vocale', false);
 
         // Gestion du fichier
         if ($uploadedFile) {
@@ -246,7 +263,7 @@ class MessagerieController extends AbstractController
             $mime = $uploadedFile->getMimeType() ?? '';
 
             // Vérification durée vidéo (max 5 min)
-            if (str_starts_with($mime, 'video/')) {
+            if (!$isRecordedVocale && str_starts_with($mime, 'video/')) {
                 $duration = $this->getVideoDuration($uploadedFile->getPathname());
                 if ($duration > 300) {
                     $this->addFlash('error', 'La vidéo ne doit pas dépasser 5 minutes.');
@@ -258,7 +275,9 @@ class MessagerieController extends AbstractController
             }
 
             try {
-                if ($mime === 'image/gif') {
+                if ($isRecordedVocale) {
+                    $message->setType_message(TypeMessage::VOCALE);
+                } elseif ($mime === 'image/gif') {
                     $message->setType_message(TypeMessage::GIF);
                 } elseif (str_starts_with($mime, 'image/')) {
                     $message->setType_message(TypeMessage::IMAGE);
@@ -270,8 +289,15 @@ class MessagerieController extends AbstractController
                     $message->setType_message(TypeMessage::PDF);
                 }
 
-                // User choice: store all uploaded media in the "images" directory.
-                $targetFolder = 'images';
+                $targetFolder = match ($message->getType_message()) {
+                    TypeMessage::IMAGE => 'images',
+                    TypeMessage::GIF => 'images',
+                    TypeMessage::VIDEO, TypeMessage::APPEL_VIDEO => 'video',
+                    TypeMessage::AUDIO => 'Audio',
+                    TypeMessage::VOCALE, TypeMessage::APPEL_AUDIO => 'Vocale',
+                    TypeMessage::PDF => 'files',
+                    default => 'files',
+                };
 
                 $baseUploadDir = rtrim((string) $this->getParameter('messages_upload_directory'), '/\\');
                 $targetUploadDir = $baseUploadDir . DIRECTORY_SEPARATOR . $targetFolder;
@@ -298,9 +324,23 @@ class MessagerieController extends AbstractController
                 $message->setContenu($message->getContenu() . '|' . $textContent);
             } else {
                 $message->setContenu($textContent);
+                if ($this->isEmojiOnlyMessage($textContent)) {
+                    $message->setType_message(TypeMessage::EMOJI);
+                }
             }
         } elseif (!$uploadedFile) {
             $this->addFlash('error', 'Vous ne pouvez pas envoyer un message vide.');
+            return $this->redirectToRoute('app_messagerie_selected', [
+                'id_user' => $id_user,
+                'id_conversation' => $id_conversation
+            ]);
+        }
+
+        $errors = $validator->validate($message);
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $this->addFlash('error', $error->getMessage());
+            }
             return $this->redirectToRoute('app_messagerie_selected', [
                 'id_user' => $id_user,
                 'id_conversation' => $id_conversation
@@ -540,7 +580,7 @@ public function callLog(
 }
 
     #[Route('/media-file/{file}', name: 'app_media_file', requirements: ['file' => '.+'])]
-    public function mediaFile(string $file): Response
+    public function mediaFile(string $file, Request $request): Response
     {
         $baseDir = rtrim((string) $this->getParameter('messages_upload_directory'), '/\\');
         $relative = ltrim(str_replace('\\', '/', $file), '/');
@@ -561,7 +601,82 @@ public function callLog(
         }
 
         $response = new BinaryFileResponse($resolvedPath);
-        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_INLINE, basename($resolvedPath));
+        $disposition = $request->query->getBoolean('download', false)
+            ? ResponseHeaderBag::DISPOSITION_ATTACHMENT
+            : ResponseHeaderBag::DISPOSITION_INLINE;
+        $response->setContentDisposition($disposition, basename($resolvedPath));
         return $response;
+    }
+
+    private function isEmojiOnlyMessage(string $text): bool
+    {
+        $normalized = preg_replace('/\s+/u', '', $text) ?? '';
+        if ($normalized === '') {
+            return false;
+        }
+
+        return (bool) preg_match('/^(?:\p{Extended_Pictographic}|\x{FE0F}|\x{200D})+$/u', $normalized);
+    }
+
+    #[Route('/message/{id_message}/react/{id_user}', name: 'app_message_react', methods: ['POST'])]
+    public function reactToMessage(
+        int $id_message,
+        int $id_user,
+        Request $request,
+        MessageRepository $messageRepo,
+        UserAppRepository $userRepo,
+        EntityManagerInterface $em
+    ): Response {
+        $allowedEmojis = ['❤️'];
+        $emoji = (string) $request->request->get('emoji', '');
+
+        if (!in_array($emoji, $allowedEmojis, true)) {
+            return $this->json(['error' => 'Emoji invalide.'], 400);
+        }
+
+        $message = $messageRepo->find($id_message);
+        $user = $userRepo->find($id_user);
+        if (!$message || !$user) {
+            return $this->json(['error' => 'Message ou utilisateur introuvable.'], 404);
+        }
+
+        $conversation = $message->getConversation();
+        if (!$conversation || !$conversation->getParticipants()->contains($user)) {
+            return $this->json(['error' => 'Action non autorisee.'], 403);
+        }
+
+        $reactions = $message->getReactions();
+        foreach ($allowedEmojis as $allowedEmoji) {
+            $reactions[$allowedEmoji] = array_values(array_filter(
+                $reactions[$allowedEmoji] ?? [],
+                static fn ($uid): bool => (int) $uid !== $id_user
+            ));
+        }
+
+        $selected = false;
+        if (!in_array($id_user, $reactions[$emoji] ?? [], true)) {
+            $reactions[$emoji][] = $id_user;
+            $selected = true;
+        }
+
+        foreach ($allowedEmojis as $allowedEmoji) {
+            if (empty($reactions[$allowedEmoji])) {
+                unset($reactions[$allowedEmoji]);
+            }
+        }
+
+        $message->setReactions($reactions);
+        $em->flush();
+
+        $counts = [];
+        foreach ($allowedEmojis as $allowedEmoji) {
+            $counts[$allowedEmoji] = count($reactions[$allowedEmoji] ?? []);
+        }
+
+        return $this->json([
+            'success' => true,
+            'counts' => $counts,
+            'selected' => $selected ? $emoji : null,
+        ]);
     }
 }

@@ -5,6 +5,8 @@ namespace App\Enum;
 enum TypeMessage: string
 {
     case TEXTE = 'TEXTE';
+    case EMOJI = 'EMOJI';
+       case VOCALE = 'VOCALE';
     case IMAGE = 'IMAGE';
     case VIDEO = 'VIDEO';
     case AUDIO = 'AUDIO';
