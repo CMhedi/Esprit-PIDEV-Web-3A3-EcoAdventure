@@ -129,6 +129,9 @@
         margin-right: 5px;
         border: 2px solid white;
     }
+    .online-dot.offline {
+        background-color: #9aa0a6;
+    }
     .message-item {
         transition: all 0.2s ease;
     }
@@ -174,7 +177,8 @@
         background: #ffffff;
         border: 1px solid #e3e7ee;
         border-radius: 10px;
-        overflow: hidden;
+        overflow: visible;
+        position: relative;
     }
     .composer-emoji-btn {
         width: 46px;
@@ -183,6 +187,40 @@
         border-right: 1px solid #edf1f6;
         background: #fbf6df;
         color: #d7b24c;
+    }
+    .composer-emoji-wrap {
+        position: relative;
+    }
+    .emoji-picker-panel {
+        position: absolute;
+        left: 0;
+        bottom: 52px;
+        width: 340px;
+        max-height: 260px;
+        overflow-y: auto;
+        background: #fff;
+        border: 1px solid #e1e6ef;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        padding: 0.4rem;
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 0.2rem;
+        z-index: 1400;
+    }
+    .emoji-picker-panel.d-none {
+        display: none;
+    }
+    .emoji-item-btn {
+        border: 0;
+        background: transparent;
+        font-size: 1.1rem;
+        border-radius: 6px;
+        line-height: 1;
+        padding: 0.25rem;
+    }
+    .emoji-item-btn:hover {
+        background: #f1f4f9;
     }
     .composer-text-input {
         border: 0 !important;
@@ -206,6 +244,16 @@
         background: #d8ecff;
         color: #368ed2;
     }
+    .media-action-btn.recording {
+        background: #ffebee;
+        color: #c62828;
+        animation: pulseMic 1s infinite;
+    }
+    @keyframes pulseMic {
+        0% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.35); }
+        70% { box-shadow: 0 0 0 10px rgba(198, 40, 40, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0); }
+    }
     .composer-send-btn {
         width: 46px;
         height: 46px;
@@ -225,6 +273,14 @@
         gap: 0.75rem;
         margin-bottom: 0.5rem;
     }
+    .composer-error {
+        border: 1px solid #f5c2c7;
+        background: #f8d7da;
+        color: #842029;
+        border-radius: 8px;
+        padding: 0.45rem 0.65rem;
+        font-size: 0.85rem;
+    }
     .chat-video-inline {
         width: 100%;
         min-width: 260px;
@@ -234,6 +290,129 @@
     }
     .video-open-btn {
         margin-top: 0.45rem;
+    }
+    .message-reactions {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0.4rem;
+        flex-wrap: wrap;
+    }
+    .reaction-btn {
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        background: rgba(255, 255, 255, 0.2);
+        color: inherit;
+        border-radius: 999px;
+        padding: 0.05rem 0.45rem;
+        font-size: 0.85rem;
+        line-height: 1.2;
+        cursor: pointer;
+    }
+    .reaction-btn.active {
+        background: #fff;
+        color: #222;
+    }
+    .reaction-btn .reaction-label {
+        margin-left: 0.2rem;
+        font-size: 0.78rem;
+    }
+    .voice-message-card {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        background: linear-gradient(135deg, #1f73e0, #2a5ee8);
+        color: #fff;
+        border-radius: 18px;
+        padding: 0.65rem 0.85rem;
+        min-width: 280px;
+        max-width: 360px;
+        user-select: none;
+    }
+    .voice-message-time {
+        font-weight: 700;
+        min-width: 42px;
+    }
+    .voice-wave {
+        flex: 1;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+    }
+    .voice-wave span {
+        display: block;
+        width: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.8);
+        height: 5px;
+    }
+    .voice-wave span:nth-child(6) { height: 28px; background: #fff; }
+    .voice-wave span:nth-child(5),
+    .voice-wave span:nth-child(7) { height: 20px; }
+    .voice-wave span:nth-child(4),
+    .voice-wave span:nth-child(8) { height: 14px; }
+    .voice-wave span:nth-child(3),
+    .voice-wave span:nth-child(9) { height: 9px; }
+    .voice-play-btn {
+        width: 30px;
+        height: 30px;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .vocal-recording-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        background: #1f73e0;
+        color: #fff;
+        border-radius: 999px;
+        padding: 0.45rem 0.65rem;
+    }
+    .vocal-recording-timer {
+        background: #fff;
+        color: #1f73e0;
+        border-radius: 999px;
+        font-weight: 700;
+        padding: 0.15rem 0.55rem;
+        min-width: 54px;
+        text-align: center;
+    }
+    .vocal-recording-wave {
+        flex: 1;
+        height: 10px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.8), rgba(255,255,255,0.3));
+        background-size: 200% 100%;
+        animation: vocalWave 1.2s linear infinite;
+    }
+    @keyframes vocalWave {
+        from { background-position: 0% 0; }
+        to { background-position: 200% 0; }
+    }
+    .vocal-recording-stop,
+    .vocal-recording-cancel {
+        width: 30px;
+        height: 30px;
+        border: 0;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .vocal-recording-stop {
+        background: #fff;
+        color: #1f73e0;
+    }
+    .vocal-recording-cancel {
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
     }
     .message-checkmarks {
         display: inline-flex;
@@ -287,6 +466,29 @@
             </div>
             <div class="flex-grow-1 p-2" style="overflow-y:auto">
                 {% for conversation in conversations %}
+                    {% set conversationAvatar = '' %}
+                    {% set conversationOtherId = null %}
+                    {% set conversationOtherPresence = null %}
+                    {% if not conversation.est_groupe %}
+                        {% for participant in conversation.participants %}
+                            {% if participant.id_user != mon_id and participant.image_url %}
+                                {% set conversationAvatar = participant.image_url %}
+                            {% endif %}
+                            {% if participant.id_user != mon_id %}
+                                {% set conversationOtherId = participant.id_user %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if conversationOtherId and presence_by_user_id[conversationOtherId] is defined %}
+                            {% set conversationOtherPresence = presence_by_user_id[conversationOtherId] %}
+                        {% endif %}
+                    {% endif %}
+                    {% set conversationAvatarUrl = conversationAvatar
+                        ? (conversationAvatar starts with 'http'
+                            ? conversationAvatar
+                            : (conversationAvatar starts with '/'
+                                ? conversationAvatar
+                                : asset(conversationAvatar)))
+                        : '' %}
                     <a href="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
                        class="card conversation-item mb-1 {% if current_conv is defined and current_conv.id_conversation == conversation.id_conversation %}active{% elseif current_conv is not defined and loop.first %}active{% endif %}"
                        data-title="{{ conversation.titre|lower }}"
@@ -296,7 +498,11 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-shrink-0">
                                     <div class="rounded-circle bg-eco d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 45px; height: 45px;">
-                                        <i class="bi {{ conversation.est_groupe ? 'bi-people-fill' : 'bi-person-fill' }}"></i>
+                                        {% if conversationAvatarUrl %}
+                                            <img src="{{ conversationAvatarUrl }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                                        {% else %}
+                                            <i class="bi {{ conversation.est_groupe ? 'bi-people-fill' : 'bi-person-fill' }}"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 <div class="flex-grow-1 ms-3 text-dark">
@@ -304,7 +510,14 @@
                                         <h6 class="mb-0 fw-bold text-truncate" style="max-width: 140px;">{{ conversation.titre }}</h6>
                                         <small class="text-muted">{{ conversation.date_creation|date('d/m') }}</small>
                                     </div>
-                                    <small class="text-muted">{{ conversation.est_groupe ? 'Groupe' : 'Privé' }}</small>
+                                    {% if conversation.est_groupe %}
+                                        <small class="text-muted">Groupe</small>
+                                    {% else %}
+                                        <small class="{{ conversationOtherPresence and conversationOtherPresence.online ? 'text-success' : 'text-muted' }}">
+                                            <span class="online-dot {{ conversationOtherPresence and conversationOtherPresence.online ? '' : 'offline' }}"></span>
+                                            {{ conversationOtherPresence and conversationOtherPresence.online ? 'En ligne' : 'Hors ligne' }}
+                                        </small>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -323,8 +536,35 @@
 
             <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white shadow-sm">
                 <div class="d-flex align-items-center">
+                    {% set headerAvatar = '' %}
+                    {% set headerOtherId = null %}
+                    {% set headerPresence = null %}
+                    {% if current_conv and not current_conv.est_groupe %}
+                        {% for participant in current_conv.participants %}
+                            {% if participant.id_user != mon_id and participant.image_url %}
+                                {% set headerAvatar = participant.image_url %}
+                            {% endif %}
+                            {% if participant.id_user != mon_id %}
+                                {% set headerOtherId = participant.id_user %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if headerOtherId and presence_by_user_id[headerOtherId] is defined %}
+                            {% set headerPresence = presence_by_user_id[headerOtherId] %}
+                        {% endif %}
+                    {% endif %}
+                    {% set headerAvatarUrl = headerAvatar
+                        ? (headerAvatar starts with 'http'
+                            ? headerAvatar
+                            : (headerAvatar starts with '/'
+                                ? headerAvatar
+                                : asset(headerAvatar)))
+                        : '' %}
                     <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px;">
-                        <i class="bi bi-chat-dots-fill text-success fs-4"></i>
+                        {% if headerAvatarUrl %}
+                            <img src="{{ headerAvatarUrl }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                        {% else %}
+                            <i class="bi bi-chat-dots-fill text-success fs-4"></i>
+                        {% endif %}
                     </div>
                     <div>
                         <h5 class="m-0 fw-bold text-dark">
@@ -333,7 +573,14 @@
                                 <span class="badge bg-light text-success border ms-2" style="font-size: 0.7rem;">{{ current_conv.est_groupe ? 'Groupe' : 'Privé' }}</span>
                             {% endif %}
                         </h5>
-                        <small class="text-success fw-semibold"><span class="online-dot"></span>{{ current_conv ? 'Discussion active' : 'Aucune discussion sélectionnée' }}</small>
+                        {% if current_conv and not current_conv.est_groupe and headerPresence %}
+                            <small class="{{ headerPresence.online ? 'text-success' : 'text-muted' }} fw-semibold">
+                                <span class="online-dot {{ headerPresence.online ? '' : 'offline' }}"></span>
+                                {{ headerPresence.online ? 'En ligne' : 'Hors ligne' }}
+                            </small>
+                        {% else %}
+                            <small class="text-success fw-semibold"><span class="online-dot"></span>{{ current_conv ? 'Discussion active' : 'Aucune discussion sélectionnée' }}</small>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="text-muted fs-5">
@@ -349,27 +596,54 @@
                 {% endif %}
                 {% for message in messages %}
                     {% set is_mine = (message.userApp is defined and message.userApp.id_user == mon_id) %}
+                    {% set msgType = message.type_message and message.type_message.value is defined ? message.type_message.value : (message.type_message ?? '') %}
+                    {% set rawContent = message.contenu ?? '' %}
+                    {% set hasUrlInText = rawContent matches '/(https?:\\/\\/|www\\.)\\S+/i' %}
+                    {% set isTextStyled = msgType == 'TEXTE' and not hasUrlInText %}
                     <div class="d-flex {{ is_mine ? 'justify-content-end' : 'justify-content-start' }} mb-3 message-item">
-                        <div class="message-bubble {{ is_mine ? 'message-sent shadow' : 'message-received shadow-sm' }}" style="position: relative;">
+                        <div class="message-bubble {{ (is_mine and isTextStyled) ? 'message-sent shadow' : 'message-received shadow-sm' }}" style="position: relative;">
                             <div class="mb-2 fw-bold small text-muted">{{ message.userApp ? (message.userApp.nom ~ ' ' ~ message.userApp.prenom) : 'Utilisateur' }}</div>
-                            {% set rawContent = message.contenu ?? '' %}
                             {% set contentParts = rawContent ? rawContent|split('|', 2) : [''] %}
                             {% set mediaPath = contentParts[0] ?? '' %}
                             {% set mediaComment = contentParts[1] ?? '' %}
                             {% set mediaRelative = mediaPath starts with '/uploads/' ? mediaPath|slice(9) : '' %}
                             {% set mediaUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative}) : '' %}
-                            {% set msgType = message.type_message and message.type_message.value is defined ? message.type_message.value : (message.type_message ?? '') %}
+                            {% set mediaDownloadUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative, 'download': 1}) : '' %}
+                            {% set mediaFileName = mediaPath ? (mediaPath|split('/')|last) : 'fichier' %}
                             {% set mediaExt = mediaPath ? (mediaPath|split('.')|last|lower) : '' %}
                             {% set mediaParts = mediaPath ? mediaPath|split('/') : [] %}
                             {% set mediaFolder = mediaParts|length > 2 ? mediaParts[2]|lower : '' %}
-                            {% set isVideoFile = mediaFolder == 'video' or mediaExt in ['mp4', 'mov', 'avi', 'mkv', 'webm'] %}
-                            {% set isAudioFile = mediaFolder in ['audio', 'call'] or mediaExt in ['mp3', 'wav', 'm4a', 'ogg', 'aac'] %}
+                            {% set isVideoFile = (mediaFolder == 'video' and mediaFolder != 'vocale') or (mediaExt in ['mp4', 'mov', 'avi', 'mkv', 'webm'] and mediaFolder != 'vocale') %}
+                            {% set isAudioFile = mediaFolder in ['audio', 'call', 'vocale'] or mediaExt in ['mp3', 'wav', 'm4a', 'ogg', 'aac', 'webm'] %}
                             {% set isImageFile = mediaFolder == 'images' or mediaExt in ['jpg', 'jpeg', 'png', 'webp', 'gif'] %}
                             {% set isPdfFile = (mediaFolder == 'files' and mediaExt == 'pdf') or mediaExt == 'pdf' %}
+                            {% set reactions = message.reactions ?? {} %}
+                            {% set reactionOptions = ['❤️'] %}
+                            {% set userReaction = '' %}
+                            {% for reactionEmoji in reactionOptions %}
+                                {% if mon_id in (reactions[reactionEmoji]|default([])) %}
+                                    {% set userReaction = reactionEmoji %}
+                                {% endif %}
+                            {% endfor %}
 
                             {% if mediaUrl %}
-                                {% if isVideoFile or msgType in ['VIDEO', 'APPEL_VIDEO'] %}
-                                    <video controls class="rounded chat-video-inline">
+                                {% if isAudioFile or msgType in ['AUDIO', 'APPEL_AUDIO', 'VOCALE'] %}
+                                    <div class="voice-message-card js-open-media" data-media-url="{{ mediaUrl }}" data-media-kind="audio" title="Double-clic pour ouvrir">
+                                        <span class="voice-message-time" data-voice-time>0:00</span>
+                                        <div class="voice-wave" aria-hidden="true">
+                                            <span></span><span></span><span></span><span></span><span></span>
+                                            <span></span>
+                                            <span></span><span></span><span></span><span></span><span></span>
+                                        </div>
+                                        <button type="button" class="voice-play-btn" data-voice-play>
+                                            <i class="bi bi-play-fill"></i>
+                                        </button>
+                                        <audio class="d-none" preload="metadata">
+                                            <source src="{{ mediaUrl }}">
+                                        </audio>
+                                    </div>
+                                {% elseif isVideoFile or msgType in ['VIDEO', 'APPEL_VIDEO'] %}
+                                    <video controls class="rounded chat-video-inline js-open-media" data-media-url="{{ mediaUrl }}" data-media-kind="video" title="Double-clic pour ouvrir">
                                         <source src="{{ mediaUrl }}">
                                     </video>
                                     <div>
@@ -377,29 +651,36 @@
                                             <i class="bi bi-arrows-fullscreen me-1"></i> Ouvrir video
                                         </button>
                                     </div>
-                                {% elseif isAudioFile or msgType in ['AUDIO', 'APPEL_AUDIO'] %}
-                                    <audio controls class="w-100">
-                                        <source src="{{ mediaUrl }}">
-                                    </audio>
                                 {% elseif isImageFile or msgType in ['IMAGE', 'GIF'] %}
-                                    <img src="{{ mediaUrl }}" alt="media" class="img-fluid rounded" style="max-height: 220px;">
+                                    <img src="{{ mediaUrl }}" alt="media" class="img-fluid rounded js-open-media" data-media-url="{{ mediaUrl }}" data-media-kind="image" style="max-height: 220px; cursor: zoom-in;" title="Double-clic pour ouvrir">
                                 {% elseif isPdfFile or msgType == 'PDF' %}
-                                    <a href="{{ mediaUrl }}" target="_blank" class="btn btn-sm btn-light border">
-                                        <i class="bi bi-file-earmark-pdf me-1"></i> Ouvrir le PDF
+                                    <a href="{{ mediaDownloadUrl }}" class="btn btn-sm btn-light border" download="{{ mediaFileName }}" target="_blank" rel="noopener">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i> {{ mediaFileName }}
                                     </a>
                                 {% else %}
-                                    <a href="{{ mediaUrl }}" target="_blank" class="text-decoration-underline">Ouvrir le fichier</a>
+                                    <a href="{{ mediaDownloadUrl }}" class="text-decoration-underline" download="{{ mediaFileName }}" target="_blank" rel="noopener">{{ mediaFileName }}</a>
                                 {% endif %}
 
                                 {% if mediaComment is not empty %}
-                                    <div class="mt-2">{{ mediaComment }}</div>
+                                    <div class="mt-2 js-linkify">{{ mediaComment }}</div>
                                 {% endif %}
                             {% else %}
-                                {{ rawContent }}
+                                <div class="js-linkify">{{ rawContent }}</div>
                             {% endif %}
+                            <div class="message-reactions" data-message-id="{{ message.id_message }}" data-react-url="{{ path('app_message_react', {'id_message': message.id_message, 'id_user': mon_id}) }}">
+                                {% for reactionEmoji in reactionOptions %}
+                                    {% set reactionCount = (reactions[reactionEmoji]|default([]))|length %}
+                                    <button type="button"
+                                            class="reaction-btn {{ userReaction == reactionEmoji ? 'active' : '' }}"
+                                            data-emoji="{{ reactionEmoji }}">
+                                        {{ reactionEmoji }} <span class="reaction-label">J'adore</span> <span data-count>{{ reactionCount }}</span>
+                                    </button>
+                                {% endfor %}
+                            </div>
                             <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap">
                                 <div>
                                     <span class="time-stamp {{ is_mine ? 'text-white-50' : 'text-muted' }}">
+                                    <span class="time-stamp {{ (is_mine and isTextStyled) ? 'text-white-50' : 'text-muted' }}">
                                         {{ message.date_envoi ? message.date_envoi|date('H:i') : '' }}
                                         {% if is_mine %}
                                             <span class="message-checkmarks">
@@ -413,8 +694,8 @@
                                         {% endif %}
                                     </span>
                                     {% if message.date_modifier %}
-                                        <div class="small {{ is_mine ? 'text-white-50' : 'text-muted' }}" style="font-size: 0.75rem; margin-top: 2px;">
-                                            <span class="badge {{ is_mine ? 'bg-secondary' : 'bg-light text-dark' }}">Modifié</span>
+                                        <div class="small {{ (is_mine and isTextStyled) ? 'text-white-50' : 'text-muted' }}" style="font-size: 0.75rem; margin-top: 2px;">
+                                            <span class="badge {{ (is_mine and isTextStyled) ? 'bg-secondary' : 'bg-light text-dark' }}">Modifié</span>
                                             {{ message.date_modifier|date('H:i') }}
                                         </div>
                                     {% endif %}
@@ -451,9 +732,25 @@
             </div>
 
           <div class="p-3 message-footer">
-    <form method="post" enctype="multipart/form-data" action="{{ current_conv ? path('app_send_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '#' }}" class="d-flex flex-column gap-2">
+    <form id="messageComposerForm" method="post" enctype="multipart/form-data" action="{{ current_conv ? path('app_send_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '#' }}" class="d-flex flex-column gap-2">
         
         {# Media preview area #}
+        <div id="composerError" class="composer-error d-none"></div>
+        {% for flashError in app.flashes('error') %}
+            <div class="composer-error">{{ flashError }}</div>
+        {% endfor %}
+        <div id="vocalRecordingBar" class="d-none">
+            <div class="vocal-recording-bar">
+                <span id="vocalRecordingTimer" class="vocal-recording-timer">0:00</span>
+                <div class="vocal-recording-wave"></div>
+                <button type="button" id="vocalStopBtn" class="vocal-recording-stop" title="Stop">
+                    <i class="bi bi-stop-fill"></i>
+                </button>
+                <button type="button" id="vocalCancelBtn" class="vocal-recording-cancel" title="Annuler">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
         <div id="mediaPreview" class="d-none mb-2 p-2 bg-light rounded">
             <div class="preview-header">
                 <small class="text-muted mb-0">Fichier selectionne</small>
@@ -467,13 +764,17 @@
         {# Input row: file + text + send #}
         <div class="composer-row">
             <div class="composer-input-wrap">
-                <button type="button" class="composer-emoji-btn" title="Emoji">
-                    <i class="bi bi-emoji-smile"></i>
-                </button>
+                <div class="composer-emoji-wrap">
+                    <button type="button" class="composer-emoji-btn" id="composerEmojiBtn" title="Emoji">
+                        <i class="bi bi-emoji-smile"></i>
+                    </button>
+                    <div id="emojiPickerPanel" class="emoji-picker-panel d-none" aria-label="Emoji list"></div>
+                </div>
                 <input type="text" name="message" id="textMessage" class="form-control composer-text-input text-dark" placeholder="Type Message..." autocomplete="off" {{ current_conv ? '' : 'disabled' }}>
             </div>
             
             <input type="file" id="mediaFile" name="mediaFile" accept="image/*,video/*,audio/*,application/pdf,.gif" class="d-none">
+            <input type="hidden" id="isRecordedVocale" name="is_recorded_vocale" value="0">
 
             <button type="submit" class="composer-send-btn shadow-sm" {{ current_conv ? '' : 'disabled' }} title="Envoyer">
                 <i class="bi bi-send"></i>
@@ -684,6 +985,18 @@
     </div>
 </div>
 
+<div class="modal fade" id="genericMediaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h6 class="modal-title">Apercu media</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bg-black p-2" id="genericMediaModalBody"></div>
+        </div>
+    </div>
+</div>
+
 {# --- MODAL CREATION GROUPE --- #}
 <div class="modal fade" id="createGroupModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -751,15 +1064,170 @@ const textInput = document.getElementById('textMessage');
 const previewDiv = document.getElementById('mediaPreview');
 const previewContentDiv = document.getElementById('mediaPreviewContent');
 const clearMediaBtn = document.getElementById('clearMediaBtn');
+const composerEmojiBtn = document.getElementById('composerEmojiBtn');
+const emojiPickerPanel = document.getElementById('emojiPickerPanel');
+const attachVocaleBtn = document.getElementById('attachVocaleBtn');
+const isRecordedVocaleInput = document.getElementById('isRecordedVocale');
+const vocalRecordingBar = document.getElementById('vocalRecordingBar');
+const vocalRecordingTimer = document.getElementById('vocalRecordingTimer');
+const vocalStopBtn = document.getElementById('vocalStopBtn');
+const vocalCancelBtn = document.getElementById('vocalCancelBtn');
+
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingStream = null;
+let isRecording = false;
+let recordingInterval = null;
+let recordingSeconds = 0;
+
+function formatRecordingTime(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function startRecordingTimer() {
+    recordingSeconds = 0;
+    if (vocalRecordingTimer) {
+        vocalRecordingTimer.textContent = formatRecordingTime(0);
+    }
+    clearInterval(recordingInterval);
+    recordingInterval = setInterval(() => {
+        recordingSeconds += 1;
+        if (vocalRecordingTimer) {
+            vocalRecordingTimer.textContent = formatRecordingTime(recordingSeconds);
+        }
+    }, 1000);
+}
+
+function stopRecordingTimer() {
+    clearInterval(recordingInterval);
+    recordingInterval = null;
+}
+
+function stopRecordingTracks() {
+    if (recordingStream) {
+        recordingStream.getTracks().forEach(track => track.stop());
+        recordingStream = null;
+    }
+}
+
+function updateVocalButtonState(recording) {
+    if (!attachVocaleBtn) return;
+    attachVocaleBtn.classList.toggle('recording', recording);
+    attachVocaleBtn.innerHTML = recording ? '<i class="bi bi-stop-fill"></i>' : '<i class="bi bi-mic"></i>';
+    attachVocaleBtn.setAttribute('title', recording ? 'Arreter enregistrement' : 'Message vocale');
+    if (vocalRecordingBar) {
+        vocalRecordingBar.classList.toggle('d-none', !recording);
+    }
+}
 
 function clearSelectedMedia() {
+    if (isRecording && mediaRecorder) {
+        mediaRecorder.stop();
+    }
+    stopRecordingTracks();
+    stopRecordingTimer();
+    isRecording = false;
+    updateVocalButtonState(false);
     fileInput.value = '';
+    if (isRecordedVocaleInput) isRecordedVocaleInput.value = '0';
     if (previewContentDiv) previewContentDiv.innerHTML = '';
     previewDiv.classList.add('d-none');
     textInput.placeholder = 'Type Message...';
 }
 
+function showComposerError(message) {
+    const errorBox = document.getElementById('composerError');
+    if (!errorBox) return;
+    errorBox.textContent = message;
+    errorBox.classList.remove('d-none');
+}
+
+function hideComposerError() {
+    const errorBox = document.getElementById('composerError');
+    if (!errorBox) return;
+    errorBox.classList.add('d-none');
+    errorBox.textContent = '';
+}
+
+function appendEmojiToMessage(emojiValue) {
+    if (!textInput) return;
+    const current = textInput.value || '';
+    textInput.value = current + emojiValue;
+    textInput.focus();
+}
+
+function buildLargeEmojiList(limit = 500) {
+    const ranges = [
+        [0x1F600, 0x1F64F], // emoticons
+        [0x1F300, 0x1F5FF], // symbols & pictographs
+        [0x1F680, 0x1F6FF], // transport & map
+        [0x1F700, 0x1F77F], // alchemical
+        [0x1F780, 0x1F7FF], // geometric extended
+        [0x1F800, 0x1F8FF], // arrows-c
+        [0x1F900, 0x1F9FF], // supplemental symbols
+        [0x1FA70, 0x1FAFF], // symbols & pictographs extended-a
+        [0x2600, 0x26FF],   // misc symbols
+        [0x2700, 0x27BF],   // dingbats
+    ];
+
+    const emojis = [];
+    const seen = new Set();
+    for (const [start, end] of ranges) {
+        for (let cp = start; cp <= end && emojis.length < limit; cp++) {
+            const char = String.fromCodePoint(cp);
+            // Keep only likely emoji pictographs to avoid too many plain symbols
+            if (!/\p{Extended_Pictographic}/u.test(char)) continue;
+            if (seen.has(char)) continue;
+            seen.add(char);
+            emojis.push(char);
+        }
+        if (emojis.length >= limit) break;
+    }
+    return emojis;
+}
+
+function linkifyElementContent(element) {
+    if (!element) return;
+    const sourceText = element.textContent || '';
+    const urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    let match;
+
+    while ((match = urlRegex.exec(sourceText)) !== null) {
+        const urlText = match[0];
+        const start = match.index;
+        if (start > lastIndex) {
+            fragment.appendChild(document.createTextNode(sourceText.slice(lastIndex, start)));
+        }
+
+        const href = urlText.startsWith('http://') || urlText.startsWith('https://')
+            ? urlText
+            : `https://${urlText}`;
+        const anchor = document.createElement('a');
+        anchor.href = href;
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        anchor.className = 'text-decoration-underline';
+        anchor.textContent = urlText;
+        fragment.appendChild(anchor);
+        lastIndex = start + urlText.length;
+    }
+
+    if (lastIndex < sourceText.length) {
+        fragment.appendChild(document.createTextNode(sourceText.slice(lastIndex)));
+    }
+
+    if (sourceText.match(urlRegex)) {
+        element.innerHTML = '';
+        element.appendChild(fragment);
+    }
+}
+
 function openFilePicker(acceptValue, placeholderText) {
+    if (isRecordedVocaleInput) isRecordedVocaleInput.value = '0';
     fileInput.setAttribute('accept', acceptValue);
     fileInput.value = '';
     fileInput.click();
@@ -771,8 +1239,75 @@ function openFilePicker(acceptValue, placeholderText) {
 document.getElementById('attachImageBtn')?.addEventListener('click', () => {
     openFilePicker('image/*,video/*,audio/*,application/pdf,.gif', 'Ajouter un commentaire (optionnel)');
 });
-document.getElementById('attachVocaleBtn')?.addEventListener('click', () => {
-    openFilePicker('audio/*', 'Ajouter un message vocale (optionnel)');
+attachVocaleBtn?.addEventListener('click', async () => {
+    hideComposerError();
+
+    if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia) {
+        showComposerError('Votre navigateur ne supporte pas lenregistrement vocal.');
+        return;
+    }
+
+    if (isRecording && mediaRecorder) {
+        isRecording = false;
+        updateVocalButtonState(false);
+        stopRecordingTimer();
+        mediaRecorder.stop();
+        return;
+    }
+
+    try {
+        recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(recordingStream);
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+        mediaRecorder.onstop = () => {
+            isRecording = false;
+            updateVocalButtonState(false);
+            stopRecordingTimer();
+            const mimeType = mediaRecorder?.mimeType || 'audio/webm';
+            const blob = new Blob(recordedChunks, { type: mimeType });
+            if (!blob.size) {
+                showComposerError('Aucun son detecte. Reessayez.');
+                stopRecordingTracks();
+                return;
+            }
+
+            const extension = mimeType.includes('ogg') ? 'ogg' : 'webm';
+            const file = new File([blob], `vocale-${Date.now()}.${extension}`, { type: mimeType });
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            if (isRecordedVocaleInput) isRecordedVocaleInput.value = '1';
+            showPreview(file);
+            stopRecordingTracks();
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        updateVocalButtonState(true);
+        startRecordingTimer();
+        textInput.placeholder = 'Enregistrement en cours... cliquez encore pour stopper';
+    } catch (error) {
+        showComposerError('Acces micro refuse. Autorisez le microphone.');
+        stopRecordingTracks();
+        stopRecordingTimer();
+        isRecording = false;
+        updateVocalButtonState(false);
+    }
+});
+vocalStopBtn?.addEventListener('click', function () {
+    if (isRecording && mediaRecorder) {
+        isRecording = false;
+        updateVocalButtonState(false);
+        stopRecordingTimer();
+        mediaRecorder.stop();
+    }
+});
+vocalCancelBtn?.addEventListener('click', function () {
+    clearSelectedMedia();
 });
 
 fileInput.addEventListener('change', function(e) {
@@ -785,7 +1320,7 @@ fileInput.addEventListener('change', function(e) {
         video.preload = 'metadata';
         video.onloadedmetadata = function() {
             if (video.duration > 300) { // 5 min = 300 sec
-                alert('La vidéo ne doit pas dépasser 5 minutes.');
+                showComposerError('La video ne doit pas depasser 5 minutes.');
                 clearSelectedMedia();
                 return;
             }
@@ -805,26 +1340,55 @@ function showPreview(file) {
     } else if (file.type.startsWith('video/')) {
         html = `<video controls class="rounded" style="max-height: 150px;"><source src="${fileURL}"></video>`;
     } else if (file.type.startsWith('audio/')) {
-        html = `<audio controls src="${fileURL}"></audio>`;
+        html = `<div class="small text-success mb-1">Ecouter la vocale avant envoi</div><audio controls src="${fileURL}" class="w-100"></audio>`;
     } else if (file.type === 'application/pdf') {
         html = `<embed src="${fileURL}" type="application/pdf" style="height: 150px; width: 100%;">`;
     } else {
         html = `<div class="alert alert-info">Fichier: ${file.name}</div>`;
     }
+    hideComposerError();
     previewContentDiv.innerHTML = html + `<div class="small text-muted mt-1">${file.name}</div>`;
     previewDiv.classList.remove('d-none');
+    isRecording = false;
+    updateVocalButtonState(false);
     
     // Optional: disable text input if file is attached (or allow both)
     textInput.placeholder = file ? "Ajouter un commentaire (optionnel)" : "Écrivez votre message...";
 }
 
 clearMediaBtn?.addEventListener('click', clearSelectedMedia);
+composerEmojiBtn?.addEventListener('click', function (event) {
+    event.stopPropagation();
+    emojiPickerPanel?.classList.toggle('d-none');
+});
+
+if (emojiPickerPanel) {
+    const largeEmojiList = buildLargeEmojiList(500);
+    emojiPickerPanel.innerHTML = largeEmojiList
+        .map(emojiChar => `<button type="button" class="emoji-item-btn" data-emoji-item="${emojiChar}">${emojiChar}</button>`)
+        .join('');
+
+    emojiPickerPanel.addEventListener('click', function (event) {
+        const target = event.target.closest('[data-emoji-item]');
+        if (!target) return;
+        const emojiValue = target.getAttribute('data-emoji-item');
+        if (!emojiValue) return;
+        appendEmojiToMessage(emojiValue);
+        emojiPickerPanel.classList.add('d-none');
+    });
+}
+
+document.addEventListener('click', function (event) {
+    if (!emojiPickerPanel || emojiPickerPanel.classList.contains('d-none')) return;
+    if (emojiPickerPanel.contains(event.target) || composerEmojiBtn?.contains(event.target)) return;
+    emojiPickerPanel.classList.add('d-none');
+});
 
 // On form submit, ensure we send the file
-document.querySelector('form').addEventListener('submit', function(e) {
+document.getElementById('messageComposerForm')?.addEventListener('submit', function(e) {
     if (!fileInput.files.length && !textInput.value.trim()) {
         e.preventDefault();
-        alert("Veuillez écrire un message ou joindre un fichier.");
+        showComposerError('Veuillez ecrire un message ou joindre un fichier.');
     }
 });
 // ✅ Global: scroll vers le bas du container messages
@@ -947,6 +1511,8 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelector('[data-filter="all"]')?.classList.add('active');
     }
 
+    document.querySelectorAll('.js-linkify').forEach(linkifyElementContent);
+
     // Confirmation popup personnalisee (remplace confirm natif)
     const confirmModalEl = document.getElementById('actionConfirmModal');
     const confirmTitleEl = document.getElementById('actionConfirmTitle');
@@ -958,6 +1524,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const videoModal = videoModalEl ? new bootstrap.Modal(videoModalEl) : null;
     const videoPlayer = document.getElementById('videoPreviewPlayer');
     const videoSource = document.getElementById('videoPreviewSource');
+    const genericMediaModalEl = document.getElementById('genericMediaModal');
+    const genericMediaModal = genericMediaModalEl ? new bootstrap.Modal(genericMediaModalEl) : null;
+    const genericMediaBody = document.getElementById('genericMediaModalBody');
 
     document.querySelectorAll('[data-confirm-link]').forEach(link => {
         link.addEventListener('click', function (event) {
@@ -994,6 +1563,101 @@ document.addEventListener('DOMContentLoaded', function () {
         videoPlayer.pause();
         videoSource.setAttribute('src', '');
         videoPlayer.load();
+    });
+
+    document.querySelectorAll('.js-open-media').forEach(el => {
+        el.addEventListener('dblclick', function (event) {
+            event.preventDefault();
+            const src = this.getAttribute('data-media-url');
+            const kind = this.getAttribute('data-media-kind');
+            if (!src || !genericMediaModal || !genericMediaBody) return;
+
+            if (kind === 'image') {
+                genericMediaBody.innerHTML = `<img src="${src}" class="img-fluid rounded mx-auto d-block" style="max-height:70vh;">`;
+            } else if (kind === 'video') {
+                genericMediaBody.innerHTML = `<video controls autoplay class="w-100 rounded" style="max-height:70vh;"><source src="${src}"></video>`;
+            } else if (kind === 'audio') {
+                genericMediaBody.innerHTML = `<audio controls autoplay class="w-100"><source src="${src}"></audio>`;
+            } else if (kind === 'pdf') {
+                genericMediaBody.innerHTML = `<iframe src="${src}" class="w-100 rounded" style="height:70vh; border:0;"></iframe>`;
+            } else {
+                genericMediaBody.innerHTML = `<a class="btn btn-light" href="${src}" target="_blank">Ouvrir le fichier</a>`;
+            }
+
+            genericMediaModal.show();
+        });
+    });
+
+    genericMediaModalEl?.addEventListener('hidden.bs.modal', function () {
+        if (genericMediaBody) {
+            genericMediaBody.innerHTML = '';
+        }
+    });
+
+    document.querySelectorAll('.voice-message-card').forEach(card => {
+        const audio = card.querySelector('audio');
+        const playBtn = card.querySelector('[data-voice-play]');
+        const timeEl = card.querySelector('[data-voice-time]');
+        if (!audio || !playBtn || !timeEl) return;
+
+        const setTime = (seconds) => {
+            const safe = Number.isFinite(seconds) ? Math.floor(seconds) : 0;
+            const m = Math.floor(safe / 60);
+            const s = safe % 60;
+            timeEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+        };
+
+        audio.addEventListener('loadedmetadata', () => setTime(audio.duration));
+        audio.addEventListener('timeupdate', () => setTime(audio.currentTime));
+        audio.addEventListener('ended', () => {
+            playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+            setTime(audio.duration);
+        });
+
+        playBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (audio.paused) {
+                audio.play();
+                playBtn.innerHTML = '<i class="bi bi-pause-fill"></i>';
+            } else {
+                audio.pause();
+                playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+            }
+        });
+    });
+
+    document.querySelectorAll('.message-reactions').forEach(box => {
+        const reactUrl = box.getAttribute('data-react-url');
+        if (!reactUrl) return;
+
+        box.querySelectorAll('.reaction-btn').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const emoji = this.getAttribute('data-emoji');
+                if (!emoji) return;
+                const payload = new URLSearchParams({ emoji });
+
+                try {
+                    const response = await fetch(reactUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: payload.toString()
+                    });
+                    const data = await response.json();
+                    if (!data.success) return;
+
+                    box.querySelectorAll('.reaction-btn').forEach(button => {
+                        const e = button.getAttribute('data-emoji');
+                        const countEl = button.querySelector('[data-count]');
+                        if (countEl && data.counts && Object.prototype.hasOwnProperty.call(data.counts, e)) {
+                            countEl.textContent = data.counts[e];
+                        }
+                        button.classList.toggle('active', data.selected === e);
+                    });
+                } catch (error) {
+                    // keep UI stable on request failure
+                }
+            });
+        });
     });
 
     filterConversations();

@@ -48,6 +48,9 @@ class Message
     )]
     private ?\DateTimeInterface $date_modifier = null;
 
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $reactions = [];
+
     #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
     #[ORM\JoinColumn(name: 'id_conversation', referencedColumnName: 'id_conversation', nullable: false)]
     #[Assert\NotNull(message: "Le message doit être rattaché à une conversation.")]
@@ -138,6 +141,17 @@ class Message
     public function setDate_modifier(?\DateTimeInterface $date_modifier): self
     {
         $this->date_modifier = $date_modifier;
+        return $this;
+    }
+
+    public function getReactions(): array
+    {
+        return $this->reactions ?? [];
+    }
+
+    public function setReactions(?array $reactions): self
+    {
+        $this->reactions = $reactions ?? [];
         return $this;
     }
 
