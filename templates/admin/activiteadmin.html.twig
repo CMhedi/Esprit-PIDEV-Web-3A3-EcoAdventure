@@ -1,0 +1,90 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Gestion des Activites{% endblock %}
+{% block page_title %}Gestion des Activites{% endblock %}
+
+{% block body %}
+<div class="mb-4">
+    <form method="GET" action="{{ path('app_admin_activites') }}" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label for="nom" class="form-label">Recherche</label>
+            <input
+                type="text"
+                id="nom"
+                name="nom"
+                class="form-control"
+                placeholder="Rechercher par nom"
+                value="{{ nom|default('') }}"
+            >
+        </div>
+        <div class="col-md-3">
+            <label for="sort_by" class="form-label">Trier par</label>
+            <select id="sort_by" name="sort_by" class="form-select">
+                <option value="prix" {% if sort_by|default('prix') == 'prix' %}selected{% endif %}>Prix</option>
+                <option value="nom" {% if sort_by|default('prix') == 'nom' %}selected{% endif %}>Nom</option>
+                <option value="type" {% if sort_by|default('prix') == 'type' %}selected{% endif %}>Type</option>
+                <option value="statut" {% if sort_by|default('prix') == 'statut' %}selected{% endif %}>Statut</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="tri" class="form-label">Ordre</label>
+            <select id="tri" name="tri" class="form-select">
+                <option value="asc" {% if tri|default('asc') == 'asc' %}selected{% endif %}>Croissant</option>
+                <option value="desc" {% if tri|default('asc') == 'desc' %}selected{% endif %}>Decroissant</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-success w-100">Filtrer</button>
+            <a href="{{ path('app_admin_activites') }}" class="btn btn-outline-secondary w-100">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="mb-3 text-muted">
+    {{ activites|length }} activite{{ activites|length > 1 ? 's' : '' }} trouvee{{ activites|length > 1 ? 's' : '' }}
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Nom</th>
+                <th>Type</th>
+                <th>Categorie</th>
+                <th>Niveau</th>
+                <th>Prix</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activite in activites %}
+                <tr>
+                    <td>{{ activite.nom }}</td>
+                    <td>{{ activite.typeActivite.value }}</td>
+                    <td>{{ activite.categorieAct.value }}</td>
+                    <td>{{ activite.niveauAct.value }}</td>
+                    <td>{{ activite.prix }} DT</td>
+                    <td>
+                        {% if activite.statut.value == 'DISPONIBLE' %}
+                            <span class="badge bg-success">{{ activite.statut.value }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ activite.statut.value }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ path('app_admin_activite_edit', {'id': activite.idActivite}) }}" class="btn btn-sm btn-primary">Modifier</a>
+                        <form method="POST" action="{{ path('app_admin_activite_delete', {'id': activite.idActivite}) }}" style="display:inline-block;">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Voulez-vous vraiment supprimer cette activite ?');">Supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center">Aucune activite disponible</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

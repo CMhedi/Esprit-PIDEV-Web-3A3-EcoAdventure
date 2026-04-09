@@ -6,38 +6,42 @@ use App\Entity\Activite;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<Activite>
- */
 class ActiviteRepository extends ServiceEntityRepository
 {
+    private const SORT_FIELDS = [
+        'nom' => 'a.nom',
+        'prix' => 'a.prix',
+        'type' => 'a.type_activite',
+        'categorie' => 'a.categorie_act',
+        'niveau' => 'a.niveau_act',
+        'statut' => 'a.statut',
+    ];
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Activite::class);
     }
 
-//    /**
-//     * @return Activite[] Returns an array of Activite objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('a')
-//            ->andWhere('a.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('a.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    public function findBySearchAndSort(
+        string $search = '',
+        string $sortBy = 'prix',
+        string $direction = 'asc'
+    ): array {
+        $queryBuilder = $this->createQueryBuilder('a');
+        $search = trim($search);
+        $sortField = self::SORT_FIELDS[$sortBy] ?? self::SORT_FIELDS['prix'];
+        $sortDirection = strtolower($direction) === 'desc' ? 'DESC' : 'ASC';
 
-//    public function findOneBySomeField($value): ?Activite
-//    {
-//        return $this->createQueryBuilder('a')
-//            ->andWhere('a.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        if ($search !== '') {
+            $queryBuilder
+                ->andWhere('LOWER(a.nom) LIKE :search')
+                ->setParameter('search', '%' . strtolower($search) . '%');
+        }
+
+        return $queryBuilder
+            ->orderBy($sortField, $sortDirection)
+            ->addOrderBy('a.nom', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

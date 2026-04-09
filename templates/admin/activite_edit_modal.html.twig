@@ -1,0 +1,61 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Modifier Activité{% endblock %}
+{% block page_title %}Modifier Activité{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+    <h4 class="fw-bold mb-4">Modifier l'activité : {{ activite.nom }}</h4>
+
+    <form method="POST" action="{{ path('app_admin_activite_edit', {'id': activite.idActivite}) }}">
+        <div class="mb-3">
+            <label class="form-label">Nom</label>
+            <input type="text" name="nom" class="form-control" value="{{ activite.nom }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Type</label>
+            <select name="typeActivite" class="form-select" required>
+                {% for type in ['SPORT','CAMPING','INTELECTUEL','CULTUREL'] %}
+                    <option value="{{ type }}" {% if activite.typeActivite.value == type %}selected{% endif %}>{{ type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Catégorie</label>
+            <select name="categorieAct" class="form-select" required>
+                {% for cat in ['FITNESS','RUNNING','FOOTBALL','BASKETBALL','TENNIS','NATATION','RANDONNEE','CYCLISME','YOGA','AUTRE'] %}
+                    <option value="{{ cat }}" {% if activite.categorieAct.value == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Niveau</label>
+            <select name="niveauAct" class="form-select" required>
+                {% for niveau in ['DEBUTANT','INTERMEDIAIRE','AVANCE'] %}
+                    <option value="{{ niveau }}" {% if activite.niveauAct.value == niveau %}selected{% endif %}>{{ niveau }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Prix (DT)</label>
+            <input type="number" name="prix" class="form-control" value="{{ activite.prix }}" step="0.01" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Statut</label>
+            <select name="statut" class="form-select" required>
+                {% for s in ['DISPONIBLE','INDISPONIBLE'] %}
+                    <option value="{{ s }}" {% if activite.statut.value == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+        <a href="{{ path('app_admin_activites') }}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+{% endblock %}
