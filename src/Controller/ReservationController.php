@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Entity\Activite;
 use App\Entity\ReservationActivite;
-use App\Entity\UserApp;
 use App\Enum\StatutReservationActivite;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -41,10 +40,10 @@ class ReservationController extends AbstractController
             throw $this->createNotFoundException('Activite non trouvee');
         }
 
-        $user = $em->getRepository(UserApp::class)->find(1);
+        $user = $this->resolveCurrentUser($request, $em);
 
         if (!$user) {
-            throw $this->createNotFoundException('Utilisateur avec ID 1 non trouve');
+            throw $this->createAccessDeniedException('Aucun utilisateur connecte n a ete trouve pour cette reservation.');
         }
 
         $formData = [
@@ -145,5 +144,28 @@ class ReservationController extends AbstractController
         }
 
         return $fieldErrors;
+    }
+
+    private function resolveCurrentUser(Request $request, EntityManagerInterface $em): ?\App\Entity\UserApp
+    {
+        $authenticatedUser = $this->getUser();
+
+        if ($authenticatedUser instanceof \App\Entity\UserApp) {
+            return $authenticatedUser;
+        }
+
+        $session = $request->getSession();
+
+        if ($session === null) {
+            return null;
+        }
+
+        $sessionUserId = $session->get('id_user') ?? $session->get('user_id');
+
+        if (!is_numeric($sessionUserId)) {
+            return null;
+        }
+
+        return $em->getRepository(\App\Entity\UserApp::class)->find((int) $sessionUserId);
     }
 }
