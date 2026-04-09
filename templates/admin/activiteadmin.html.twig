@@ -4,63 +4,64 @@
 {% block page_title %}Gestion des Activités{% endblock %}
 
 {% block body %}
-<div class="row g-4">
-    <div class="col-12">
-        <div class="admin-card">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="fw-bold mb-0">Toutes les Activités</h4>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Nom</th>
-                            <th>Type</th>
-                            <th>Catégorie</th>
-                            <th>Niveau</th>
-                            <th>Prix</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for activite in activites %}
-                            <tr>
-                                <td>{{ activite.nom }}</td>
-                                <td>{{ activite.typeActivite.value }}</td>
-                                <td>{{ activite.categorieAct.value }}</td>
-                                <td>{{ activite.niveauAct.value }}</td>
-                                <td>{{ activite.prix }} DT</td>
-                                <td>
-                                    {% if activite.statut.value == 'ACTIVE' %}
-                                        <span class="badge bg-success">{{ activite.statut.value }}</span>
-                                    {% elseif activite.statut.value == 'INACTIVE' %}
-                                        <span class="badge bg-secondary">{{ activite.statut.value }}</span>
-                                    {% else %}
-                                        <span class="badge bg-warning text-dark">{{ activite.statut.value }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{{ path('app_admin_activite_edit', {'id': activite.idActivite}) }}" 
-                                       class="btn btn-sm btn-primary">Modifier</a>
-
-                                    <form action="{{ path('app_admin_activite_delete', {'id': activite.idActivite}) }}" 
-                                          method="POST" style="display:inline-block;" 
-                                          onsubmit="return confirm('Voulez-vous vraiment supprimer cette activité ?');">
-                                        <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="7" class="text-center">Aucune activité disponible</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+<div class="mb-4">
+    <form method="GET" class="row g-2">
+        <div class="col-md-4">
+            <input type="text" name="nom" class="form-control" placeholder="Rechercher par nom" value="{{ nom|default('') }}">
         </div>
-    </div>
+        <div class="col-md-4">
+            <select name="tri" class="form-select">
+                <option value="asc" {% if tri|default('asc') == 'asc' %}selected{% endif %}>Prix croissant</option>
+                <option value="desc" {% if tri|default('asc') == 'desc' %}selected{% endif %}>Prix décroissant</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-success">Filtrer</button>
+        </div>
+    </form>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Nom</th>
+                <th>Type</th>
+                <th>Catégorie</th>
+                <th>Niveau</th>
+                <th>Prix</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activite in activites %}
+                <tr>
+                    <td>{{ activite.nom }}</td>
+                    <td>{{ activite.typeActivite.value }}</td>
+                    <td>{{ activite.categorieAct.value }}</td>
+                    <td>{{ activite.niveauAct.value }}</td>
+                    <td>{{ activite.prix }} DT</td>
+                    <td>
+                        {% if activite.statut.value == 'DISPONIBLE' %}
+                            <span class="badge bg-success">{{ activite.statut.value }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ activite.statut.value }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ path('app_admin_activite_edit', {'id': activite.idActivite}) }}" class="btn btn-sm btn-primary">Modifier</a>
+                        <form method="POST" action="{{ path('app_admin_activite_delete', {'id': activite.idActivite}) }}" style="display:inline-block;">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Voulez-vous vraiment supprimer cette activité ?');">Supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center">Aucune activité disponible</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}
