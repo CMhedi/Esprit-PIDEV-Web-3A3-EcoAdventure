@@ -50,42 +50,34 @@ final class UserAppController extends AbstractController
         ]);
     }
 
-    #[Route('/{id_user}/edit', name: 'app_user_app_edit', methods: ['GET', 'POST'])]
-    public function edit(
-        Request $request, 
-        UserApp $userApp, 
-        EntityManagerInterface $entityManager, 
-        UserPasswordHasherInterface $passwordHasher // Zidna hedha houni
-    ): Response {
-        
-        // 1. Create el form
-        $form = $this->createForm(UserAppType::class, $userApp);
-        $form->handleRequest($request);
+// src/Controller/UserAppController.php
 
-        // 2. Thabbet f'el submission
-        if ($form->isSubmitted() && $form->isValid()) {
-            
-            // 3. Khoudh el plainPassword mel field elli mouch mapped
-            $plainPassword = $form->get('plainPassword')->getData();
-            
-            if ($plainPassword) {
-                // Hashiha bech ma to93odch clair f'el database
-                $hashedPassword = $passwordHasher->hashPassword($userApp, $plainPassword);
-                $userApp->setPassword($hashedPassword);
-            }
+#[Route('/{id_user}/edit', name: 'app_user_app_edit', methods: ['GET', 'POST'])]
+public function edit(Request $request, UserApp $user, EntityManagerInterface $entityManager, UserPasswordHasherInterface $userPasswordHasher): Response
+{
+    $form = $this->createForm(UserAppType::class, $user);
+    $form->handleRequest($request);
 
-            // 4. Save el changes
-            $entityManager->flush();
-
-            return $this->redirectToRoute('app_user_app_index', [], Response::HTTP_SEE_OTHER);
+    if ($form->isSubmitted() && $form->isValid()) {
+        // 1. Gérer le mot de passe s'il est rempli
+        $plainPassword = $form->get('plainPassword')->getData();
+        if ($plainPassword) {
+            $user->setMot_de_passe(
+                $userPasswordHasher->hashPassword($user, $plainPassword)
+            );
         }
 
-        // 5. Render el view glamorous mte3ek
-        return $this->render('user_app/edit.html.twig', [
-            'user_app' => $userApp,
-            'form' => $form,
-        ]);
+        $entityManager->flush();
+
+        // REDIRECTION LEL PROFIL (Mouch lel index/list)
+        return $this->redirectToRoute('app_profile_index'); 
     }
+
+    return $this->render('user_app/edit.html.twig', [
+        'user' => $user,
+        'form' => $form,
+    ]);
+}
     #[Route('/{id_user}', name: 'app_user_app_delete', methods: ['POST'])]
     public function delete(Request $request, UserApp $userApp, EntityManagerInterface $entityManager): Response
     {

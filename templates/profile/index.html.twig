@@ -36,7 +36,6 @@
 </head>
 <body>
 <div class="profile-card">
-    {# Salla7na el path mta3 el taswira houni #}
     <img src="{{ user.imageUrl ? asset('uploads/' ~ user.imageUrl) : asset('image/profil.png') }}" class="avatar" alt="Avatar">    
     <h2 class="fw-bold">{{ user.prenom|capitalize }} {{ user.nom|upper }}</h2>
     
@@ -44,14 +43,17 @@
     <span class="badge rounded-pill bg-primary mb-3">{{ user.role.value|upper }}</span>
 
     <div class="row text-start mt-3 g-3">
-        <div class="col-md-6">
-            <label class="text-muted small">Email</label>
-            <p class="fw-medium text-break">{{ user.email }}</p>
-        </div>
-        <div class="col-md-6">
-            <label class="text-muted small">Téléphone</label>
-            <p class="fw-medium">{{ user.telephone ?? 'Non renseigné' }}</p>
-        </div>
+    <div class="col-md-6">
+        <label class="text-muted small">Email</label>
+        <p class="fw-medium text-break">{{ user.email }}</p>
+    </div>
+    <div class="col-md-6">
+        <label class="text-muted small">Téléphone</label>
+        <p class="fw-medium">{{ user.telephone ?? 'Non renseigné' }}</p>
+    </div>
+
+    {# Matwarri el détails hadhom ken ki yabda COACH #}
+    {% if user.role.value == 'COACH' %}
         <div class="col-md-6">
             <label class="text-muted small">Âge</label>
             <p class="fw-medium">{{ user.age ? user.age ~ ' ans' : '---' }}</p>
@@ -64,16 +66,14 @@
                 </span>
             </p>
         </div>
-
         <div class="col-12">
             <label class="text-muted small">Bio et Certificats</label>
-            <div class="bg-light p-3 rounded shadow-sm" style="min-height: 60px;">
-                <p class="mb-0 text-muted" style="font-style: italic;">
-                    {{ user.bioCertifs ?? 'Aucune biographie ajoutée pour le moment.' }}
-                </p>
+            <div class="bg-light p-3 rounded shadow-sm">
+                <p class="mb-0 text-muted italic">{{ user.bioCertifs ?? 'Aucune biographie.' }}</p>
             </div>
         </div>
-    </div>
+    {% endif %}
+</div>
 
     <div class="mt-4 d-flex gap-2 justify-content-center">
         {# Taw n'zidou el route mta3 el edit ba3d ma ta3mel make:crud #}

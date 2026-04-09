@@ -8,7 +8,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class ProfileController extends AbstractController
 {
-#[Route('/profile', name: 'app_profile')]
+#[Route('/profile', name: 'app_profile_index')]
 public function index(): Response
 {
     // Symfony ya3tik el User elli 3mal login tawa direct
