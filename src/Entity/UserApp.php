@@ -91,8 +91,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: ReservationSeance::class, mappedBy: 'userApp')]
     private Collection $reservationSeances;
 
-    #[ORM\OneToMany(targetEntity: Seance::class, mappedBy: 'userApp')]
-    private Collection $seances;
+#[ORM\OneToMany(mappedBy: "coach", targetEntity: Seance::class)]
+private Collection $seances;
 
 #[Assert\Callback]
     public function validateCoachRequirements(ExecutionContextInterface $context): void

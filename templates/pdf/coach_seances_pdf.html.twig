@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            page-break-after: avoid;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+
+        /* ===== COACH INFO ===== */
+        .coach-info {
+            background: #f8faf9;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #27ae60;
+            page-break-after: avoid;
+        }
+
+        .coach-info h3 {
+            color: #27ae60;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .coach-info p {
+            font-size: 12px;
+            margin: 5px 0;
+        }
+
+        /* ===== STATS SECTION ===== */
+        .stats-section {
+            margin-bottom: 30px;
+            page-break-after: avoid;
+        }
+
+        .stats-section h2 {
+            color: #27ae60;
+            font-size: 16px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #27ae60;
+            padding-bottom: 8px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #ecf0f1;
+            border-top: 4px solid #27ae60;
+            padding: 15px;
+            text-align: center;
+            border-radius: 3px;
+        }
+
+        .stat-card h4 {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .stat-card .value {
+            font-size: 24px;
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .stat-card .label {
+            font-size: 10px;
+            color: #95a5a6;
+            margin-top: 5px;
+        }
+
+        /* ===== TABLE ===== */
+        .seances-section h2 {
+            color: #27ae60;
+            font-size: 16px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #27ae60;
+            padding-bottom: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 11px;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #1e8449;
+        }
+
+        td {
+            padding: 10px 12px;
+            border: 1px solid #ecf0f1;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f8faf9;
+        }
+
+        tbody tr:hover {
+            background-color: #e8f8f5;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ecf0f1;
+            font-size: 10px;
+            color: #7f8c8d;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+
+        /* ===== PAGE BREAK ===== */
+        @page {
+            margin: 15mm;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+        }
+
+        /* ===== BADGES ===== */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .badge-success {
+            background-color: #27ae60;
+        }
+
+        .badge-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .badge-danger {
+            background-color: #e74c3c;
+        }
+
+        .badge-info {
+            background-color: #3498db;
+        }
+
+        /* ===== PROGRESS BAR ===== */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #ecf0f1;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #27ae60;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+    <h1>📊 Rapport des Séances</h1>
+    <div class="header-info">
+        <div>
+            <strong>Coach :</strong> {{ coach.nom }} {{ coach.prenom }}<br>
+            <strong>Généré le :</strong> {{ generated_at|date('d/m/Y H:i:s') }}
+        </div>
+        <div style="text-align: right;">
+            <strong>Total séances :</strong> {{ seances|length }}<br>
+            <strong>Plateforme :</strong> Eco
+        </div>
+    </div>
+</div>
+
+<!-- ===== COACH INFO ===== -->
+<div class="coach-info">
+    <h3>👤 Informations du Coach</h3>
+    <p><strong>Nom :</strong> {{ coach.nom }} {{ coach.prenom }}</p>
+    <p><strong>Email :</strong> {{ coach.email ?? 'Non renseigné' }}</p>
+    <p><strong>Téléphone :</strong> {{ coach.telephone ?? 'Non renseigné' }}</p>
+</div>
+
+<!-- ===== STATISTIQUES ===== -->
+<div class="stats-section">
+    <h2>📈 Statistiques Globales</h2>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h4>Total Séances</h4>
+            <div class="value">{{ stats.total_seances }}</div>
+            <div class="label">Toutes les séances</div>
+        </div>
+
+        <div class="stat-card">
+            <h4>Participants</h4>
+            <div class="value">{{ stats.total_participants }}</div>
+            <div class="label">{{ stats.total_places }} places</div>
+        </div>
+
+        <div class="stat-card">
+            <h4>Taux Participation</h4>
+            <div class="value">{{ stats.taux_participation }}%</div>
+            <div class="label">Moyenne</div>
+        </div>
+
+        <div class="stat-card">
+            <h4>Revenus Potentiels</h4>
+            <div class="value">{{ stats.revenus_potentiels }}€</div>
+            <div class="label">Estimés</div>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h4>À Venir</h4>
+            <div class="value">{{ stats.seances_a_venir }}</div>
+            <div class="label">Prochaines séances</div>
+        </div>
+
+        <div class="stat-card">
+            <h4>Terminées</h4>
+            <div class="value">{{ stats.seances_terminees }}</div>
+            <div class="label">Complétées</div>
+        </div>
+
+        <div class="stat-card">
+            <h4>Cette Semaine</h4>
+            <div class="value">{{ stats.semaine_actuelle }}</div>
+            <div class="label">Prévues</div>
+        </div>
+
+        <div class="stat-card">
+            <h4>Prochaine Séance</h4>
+            <div class="value">
+                {% if stats.prochaine_seance %}
+                    {{ stats.prochaine_seance.dateSeance|date('d') }}
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+            <div class="label">{{ stats.prochaine_seance.dateSeance|date('M Y') |default('Aucune') }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TABLEAU DES SÉANCES ===== -->
+<div class="seances-section">
+    <h2>📅 Détail des Séances</h2>
+
+    {% if seances|length > 0 %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Nom de la Séance</th>
+                    <th>Date</th>
+                    <th>Horaire</th>
+                    <th>Capacité</th>
+                    <th>Réservées</th>
+                    <th>Taux</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in seances %}
+                    {% set participants = s.reservationSeances|length %}
+                    {% set taux = (participants / s.capacite * 100)|round(0) %}
+                    <tr>
+                        <td><strong>{{ s.nom }}</strong></td>
+                        <td>{{ s.dateSeance|date('d/m/Y') }}</td>
+                        <td>{{ s.heureDebut|date('H:i') }} - {{ s.heureFin|date('H:i') }}</td>
+                        <td style="text-align: center;">{{ s.capacite }}</td>
+                        <td style="text-align: center;">{{ participants }}</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ taux }}%;"></div>
+                            </div>
+                            {{ taux }}%
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="badge 
+                                {% if s.statutSeance.value == 'PLANIFIEE' %}
+                                    badge-info
+                                {% elseif s.statutSeance.value == 'TERMINEE' %}
+                                    badge-success
+                                {% else %}
+                                    badge-warning
+                                {% endif %}
+                            ">
+                                {{ s.statutSeance.value }}
+                            </span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="text-align: center; color: #95a5a6; padding: 20px;">
+            Aucune séance à afficher
+        </p>
+    {% endif %}
+</div>
+
+<!-- ===== RÉSUMÉ ===== -->
+<div class="stats-section" style="margin-top: 30px;">
+    <h2>📋 Résumé Exécutif</h2>
+    
+    <table style="font-size: 12px;">
+        <tbody>
+            <tr>
+                <td style="width: 50%; border: none; padding: 10px 0;">
+                    <strong>Total Places Disponibles :</strong>
+                </td>
+                <td style="border: none; padding: 10px 0; text-align: right;">
+                    <strong>{{ stats.total_places }}</strong>
+                </td>
+            </tr>
+            <tr>
+                <td style="border: none; padding: 10px 0;">
+                    <strong>Total Participants :</strong>
+                </td>
+                <td style="border: none; padding: 10px 0; text-align: right;">
+                    <strong style="color: #27ae60;">{{ stats.total_participants }}</strong>
+                </td>
+            </tr>
+            <tr>
+                <td style="border: none; padding: 10px 0;">
+                    <strong>Taux de Participation Moyen :</strong>
+                </td>
+                <td style="border: none; padding: 10px 0; text-align: right;">
+                    <strong style="color: #27ae60;">{{ stats.taux_participation }}%</strong>
+                </td>
+            </tr>
+            <tr>
+                <td style="border: none; padding: 10px 0;">
+                    <strong>Revenus Potentiels Estimés :</strong>
+                </td>
+                <td style="border: none; padding: 10px 0; text-align: right;">
+                    <strong style="color: #f39c12;">{{ stats.revenus_potentiels }}€</strong>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<div class="footer">
+    <p>
+        📄 Rapport généré automatiquement le {{ generated_at|date('d/m/Y à H:i:s') }}<br>
+        Ce document contient les informations confidentielles relatives aux séances du coach.<br>
+        © Plateforme Eco - Tous droits réservés
+    </p>
+</div>
+
+</body>
+</html>
