@@ -43,6 +43,115 @@
     </main>
 </div>
 
+<div class="modal fade" id="adminConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <h5 class="modal-title fw-bold" id="adminConfirmTitle">Confirmation</h5>
+                    <small class="text-muted" id="adminConfirmLabel">Vérifiez bien avant de continuer.</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <p class="mb-2" id="adminConfirmMessage">Voulez-vous continuer ?</p>
+                <div class="small text-muted" id="adminConfirmNote"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="adminConfirmSubmit">Confirmer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #adminConfirmModal .modal-content {
+        border-radius: 20px;
+    }
+
+    #adminConfirmModal .modal-title {
+        color: #10233f;
+    }
+
+    #adminConfirmModal .btn-danger {
+        border-radius: 999px;
+        padding-inline: 1.25rem;
+    }
+
+    #adminConfirmModal .btn-outline-secondary {
+        border-radius: 999px;
+        padding-inline: 1.25rem;
+    }
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modalElement = document.getElementById('adminConfirmModal');
+        if (!modalElement || typeof bootstrap === 'undefined') {
+            return;
+        }
+
+        const modal = new bootstrap.Modal(modalElement);
+        const titleEl = document.getElementById('adminConfirmTitle');
+        const labelEl = document.getElementById('adminConfirmLabel');
+        const messageEl = document.getElementById('adminConfirmMessage');
+        const noteEl = document.getElementById('adminConfirmNote');
+        const submitBtn = document.getElementById('adminConfirmSubmit');
+        let pendingForm = null;
+
+        const getConfirmCopy = (form) => {
+            const submitButton = form.querySelector('button[type="submit"], input[type="submit"]');
+            const actionLabel = form.dataset.confirmTitle || submitButton?.title || submitButton?.textContent?.trim() || 'Confirmation';
+            const rawOnsubmit = form.getAttribute('onsubmit') || '';
+            const confirmMatch = rawOnsubmit.match(/confirm\('(.+?)'\)/);
+            const fallbackMessage = confirmMatch ? confirmMatch[1] : 'Voulez-vous continuer cette action ?';
+
+            return {
+                title: actionLabel,
+                label: form.dataset.confirmLabel || 'Action sensible',
+                message: form.dataset.confirmMessage || fallbackMessage,
+                note: form.dataset.confirmNote || 'Cette action peut être irreversible.',
+                confirmText: form.dataset.confirmButton || 'Confirmer',
+            };
+        };
+
+        const forms = Array.from(document.querySelectorAll('form[onsubmit*="confirm"], form[data-confirm-form]'));
+        forms.forEach((form) => {
+            form.removeAttribute('onsubmit');
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                pendingForm = form;
+
+                const copy = getConfirmCopy(form);
+                titleEl.textContent = copy.title;
+                labelEl.textContent = copy.label;
+                messageEl.textContent = copy.message;
+                noteEl.textContent = copy.note;
+                submitBtn.textContent = copy.confirmText;
+
+                modal.show();
+            });
+        });
+
+        submitBtn.addEventListener('click', () => {
+            if (!pendingForm) {
+                modal.hide();
+                return;
+            }
+
+            const formToSubmit = pendingForm;
+            pendingForm = null;
+            modal.hide();
+            HTMLFormElement.prototype.submit.call(formToSubmit);
+        });
+
+        modalElement.addEventListener('hidden.bs.modal', () => {
+            pendingForm = null;
+        });
+    });
+</script>
 </body>
 </html>
