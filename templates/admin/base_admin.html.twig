@@ -18,13 +18,15 @@
         </div>
 
         <ul class="sidebar-menu list-unstyled">
-           <li><a href="{{ path('app_admin_dashboard') }}" class="active"><i class="bi bi-grid"></i> Tableau de bord</a></li>
-<li><a href="#"><i class="bi bi-calendar-event"></i> Événements</a></li>
-<li><a href="#"><i class="bi bi-people"></i> Utilisateurs</a></li>
-<li><a href="{{ path('app_admin_packs') }}"><i class="bi bi-box-seam"></i> Packs</a></li>
-<li><a href="{{ path('app_admin_inscriptions') }}"><i class="bi bi-journal-check"></i> Inscriptions</a></li>
-<li><a href="#"><i class="bi bi-gear"></i> Paramètres</a></li>
-<li><a href="#"><i class="bi bi-box-arrow-right"></i> Déconnexion</a></li>
+            <li><a href="{{ path('app_admin_dashboard') }}" class="active"><i class="bi bi-grid"></i> Tableau de bord</a></li>
+            <li><a href="{{ path('app_admin_activites') }}"><i class="bi bi-tree"></i> Activites</a></li>
+            <li><a href="{{ path('app_admin_reservations') }}"><i class="bi bi-journal-check"></i> Reservations</a></li>
+            <li><a href="#"><i class="bi bi-calendar-event"></i> Evenements</a></li>
+            <li><a href="#"><i class="bi bi-people"></i> Utilisateurs</a></li>
+            <li><a href="{{ path('app_admin_packs') }}"><i class="bi bi-box-seam"></i> Packs</a></li>
+            <li><a href="{{ path('app_admin_inscriptions') }}"><i class="bi bi-journal-check"></i> Inscriptions</a></li>
+            <li><a href="#"><i class="bi bi-gear"></i> Parametres</a></li>
+            <li><a href="#"><i class="bi bi-box-arrow-right"></i> Deconnexion</a></li>
         </ul>
     </aside>
 
@@ -32,7 +34,7 @@
         <div class="admin-topbar d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h2 class="fw-bold mb-0">{% block page_title %}Dashboard{% endblock %}</h2>
-                <small class="text-muted">Gestion de l’agence sportive</small>
+                <small class="text-muted">Gestion de l'agence sportive</small>
             </div>
             <div class="admin-user">
                 <span class="badge text-bg-light px-3 py-2 rounded-pill">Admin</span>
@@ -49,7 +51,7 @@
             <div class="modal-header border-0 pb-0">
                 <div>
                     <h5 class="modal-title fw-bold" id="adminConfirmTitle">Confirmation</h5>
-                    <small class="text-muted" id="adminConfirmLabel">Vérifiez bien avant de continuer.</small>
+                    <small class="text-muted" id="adminConfirmLabel">Verifiez bien avant de continuer.</small>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
@@ -113,7 +115,7 @@
                 title: actionLabel,
                 label: form.dataset.confirmLabel || 'Action sensible',
                 message: form.dataset.confirmMessage || fallbackMessage,
-                note: form.dataset.confirmNote || 'Cette action peut être irreversible.',
+                note: form.dataset.confirmNote || 'Cette action peut etre irreversible.',
                 confirmText: form.dataset.confirmButton || 'Confirmer',
             };
         };

@@ -1,0 +1,78 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Reservation Activite{% endblock %}
+
+{% block body %}
+{% set fieldErrors = fieldErrors|default({}) %}
+{% set formData = formData|default({}) %}
+
+<div class="container my-5">
+    <h2 class="mb-4">Reserver une Activite</h2>
+
+    <style>
+        .error-label {
+            color: #dc3545;
+            display: block;
+            font-size: 0.9rem;
+            margin-top: 0.35rem;
+        }
+    </style>
+
+    <form action="{{ path('app_reservation_create', {'id': activite.idActivite}) }}" method="POST" novalidate>
+        <div class="mb-3">
+            <label class="form-label">Activite selectionnee</label>
+            <input type="text" class="form-control" value="{{ activite.nom }}" readonly>
+        </div>
+
+        <div class="mb-3">
+            <label for="date_res" class="form-label">Date Reservation</label>
+            <input
+                type="text"
+                class="form-control"
+                id="date_res"
+                name="date_res"
+                placeholder="AAAA-MM-JJ HH:MM"
+                value="{{ formData.date_res|default('') }}"
+            >
+            {% for message in fieldErrors.dateRes|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
+            {% for message in fieldErrors.date_res|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            <label for="statut_res" class="form-label">Statut Reservation</label>
+            <select class="form-select" id="statut_res" name="statut_res">
+                <option value="">Choisir le statut</option>
+                <option value="EN_ATTENTE" {{ formData.statut_res|default('') == 'EN_ATTENTE' ? 'selected' : '' }}>EN_ATTENTE</option>
+                <option value="CONFIRMEE" {{ formData.statut_res|default('') == 'CONFIRMEE' ? 'selected' : '' }}>CONFIRMEE</option>
+                <option value="ANNULEE" {{ formData.statut_res|default('') == 'ANNULEE' ? 'selected' : '' }}>ANNULEE</option>
+            </select>
+            {% for message in fieldErrors.statut_res|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            <label for="nb_personnes" class="form-label">Nombre de personnes</label>
+            <input
+                type="text"
+                class="form-control"
+                id="nb_personnes"
+                name="nb_personnes"
+                placeholder="Nombre de personnes"
+                value="{{ formData.nb_personnes|default('') }}"
+            >
+            {% for message in fieldErrors.nb_personnes|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn-success rounded-pill px-5">
+            Reserver
+        </button>
+    </form>
+</div>
+{% endblock %}
