@@ -12,6 +12,7 @@
                 <h5 class="fw-bold">{{ event.titre }}</h5>
                 <p class="mb-1"><i class="bi bi-geo-alt me-2"></i>{{ event.lieu }}</p>
                 <p class="mb-1"><i class="bi bi-calendar-event me-2"></i>{{ event.date_event ? event.date_event|date('d M Y') : '' }}</p>
+                <p class="mb-1 text-success fw-bold"><i class="bi bi-tag me-2"></i>{{ event.prix|number_format(2, ',', ' ') }} DT</p>
                 <p class="price-text mb-3"><i class="bi bi-people me-2"></i>{{ event.nb_places }} Places</p>
 
                 <div class="d-flex gap-2">

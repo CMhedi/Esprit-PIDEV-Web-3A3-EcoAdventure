@@ -50,6 +50,7 @@
                 
                 <h4 class="mt-4">Informations Pratiques</h4>
                 <ul class="list-unstyled">
+                    <li><i class="bi bi-tag text-warning me-2"></i><strong>Prix:</strong> <span class="fs-5 fw-bold text-success">{{ evenement.prix|number_format(2, ',', ' ') }} DT</span> / billet</li>
                     <li><i class="bi bi-geo-alt text-warning me-2"></i><strong>Lieu:</strong> {{ evenement.lieu }}</li>
                     <li><i class="bi bi-calendar-event text-warning me-2"></i><strong>Date:</strong> {{ evenement.date_event|date('d/m/Y H:i') }}</li>
                     <li><i class="bi bi-people text-warning me-2"></i><strong>Places Restantes:</strong> 

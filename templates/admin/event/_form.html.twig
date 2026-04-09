@@ -1,29 +1,102 @@
-{{ form_start(form, {'attr': {'class': 'needs-validation'}}) }}
-    {{ form_errors(form) }}
-    <div class="row g-3">
-        <div class="col-md-6">
-            {{ form_row(form.titre, {'attr': {'class': 'form-control'}}) }}
+{{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+    <div class="row g-4">
+        {# Titre & Catégorie #}
+        <div class="col-md-8">
+            <div class="form-group mb-3">
+                {{ form_label(form.titre, 'Titre de l\'événement', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-type"></i></span>
+                    {{ form_widget(form.titre, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Randonnée à Zaghouan'}}) }}
+                </div>
+                {{ form_errors(form.titre) }}
+            </div>
         </div>
-        <div class="col-md-6">
-            {{ form_row(form.categorie_evt, {'attr': {'class': 'form-select'}}) }}
+        <div class="col-md-4">
+            <div class="form-group mb-3">
+                {{ form_label(form.categorie_evt, 'Catégorie', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-tag"></i></span>
+                    {{ form_widget(form.categorie_evt, {'attr': {'class': 'form-select'}}) }}
+                </div>
+                {{ form_errors(form.categorie_evt) }}
+            </div>
         </div>
+
+        {# Description #}
         <div class="col-12">
-            {{ form_row(form.description, {'attr': {'class': 'form-control', 'rows': '3'}}) }}
+            <div class="form-group mb-3">
+                {{ form_label(form.description, 'Description détaillée', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': '4', 'placeholder': 'Décrivez l\'événement...'}}) }}
+                {{ form_errors(form.description) }}
+            </div>
+        </div>
+
+        {# Date & Lieu #}
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                {{ form_label(form.date_event, 'Date et Heure', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
+                    {{ form_widget(form.date_event, {'attr': {'class': 'form-control'}}) }}
+                </div>
+                {{ form_errors(form.date_event) }}
+            </div>
         </div>
         <div class="col-md-6">
-            {{ form_row(form.date_event, {'attr': {'class': 'form-control'}}) }}
+            <div class="form-group mb-3">
+                {{ form_label(form.lieu, 'Lieu / Ville', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-geo-alt"></i></span>
+                    {{ form_widget(form.lieu, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Tunis, Bizerte...'}}) }}
+                </div>
+                {{ form_errors(form.lieu) }}
+            </div>
+        </div>
+
+        {# Places & Prix #}
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                {{ form_label(form.nb_places, 'Nombre de places total', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-people"></i></span>
+                    {{ form_widget(form.nb_places, {'attr': {'class': 'form-control', 'placeholder': '0'}}) }}
+                </div>
+                {{ form_errors(form.nb_places) }}
+            </div>
         </div>
         <div class="col-md-6">
-            {{ form_row(form.lieu, {'attr': {'class': 'form-control'}}) }}
+            <div class="form-group mb-3">
+                {{ form_label(form.prix, 'Prix du billet (DT)', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                <div class="input-group">
+                    <span class="input-group-text bg-light fw-bold">DT</span>
+                    {{ form_widget(form.prix, {'attr': {'class': 'form-control', 'placeholder': '0.00'}}) }}
+                </div>
+                {{ form_errors(form.prix) }}
+            </div>
         </div>
-        <div class="col-md-6">
-            {{ form_row(form.nb_places, {'attr': {'class': 'form-control'}}) }}
-        </div>
-        <div class="col-md-6">
-            {{ form_row(form.image_url, {'attr': {'class': 'form-control'}}) }}
+
+        {# Image #}
+        <div class="col-12">
+            <div class="form-group mb-3">
+                {{ form_label(form.image_url, 'Image de l\'événement', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-image"></i></span>
+                    {{ form_widget(form.image_url, {'attr': {'class': 'form-control'}}) }}
+                </div>
+                <div class="form-text">Format suggéré : JPG, PNG ou WebP. Taille max 2Mo.</div>
+                {{ form_errors(form.image_url) }}
+            </div>
         </div>
     </div>
-    <div class="mt-4 text-end">
-        <button class="btn btn-success"><i class="bi bi-save"></i> {{ button_label|default('Enregistrer') }}</button>
+
+    <hr class="my-4">
+
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="{{ path('app_event_admin_index') }}" class="btn btn-outline-secondary px-4">
+            <i class="bi bi-arrow-left me-1"></i> Annuler
+        </a>
+        <button class="btn btn-success px-5 py-2 fw-bold shadow-sm">
+            <i class="bi bi-check-circle me-1"></i> {{ button_label|default('Enregistrer l\'événement') }}
+        </button>
     </div>
 {{ form_end(form) }}

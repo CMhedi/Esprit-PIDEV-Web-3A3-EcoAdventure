@@ -28,6 +28,9 @@ class EvenementType extends AbstractType
             ])
             ->add('lieu')
             ->add('nb_places')
+            ->add('prix', null, [
+                'label' => 'Prix par billet (DT)',
+            ])
             ->add('image_url', \Symfony\Component\Form\Extension\Core\Type\FileType::class, [
                 'label' => 'Image (Optionnelle)',
                 'mapped' => false,

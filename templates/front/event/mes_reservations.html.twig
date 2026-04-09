@@ -70,6 +70,14 @@
                                 <span class="fw-bold"><i class="bi bi-ticket-perforated text-success"></i> Billets Total :</span>
                                 <span class="fs-5 fw-bold text-success">{{ res.total_billets }}</span>
                             </div>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <span class="fw-bold text-muted small">Prix unitaire :</span>
+                                <span class="small">{{ res.evenement.prix|number_format(2, ',', ' ') }} DT</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-1 border-top pt-1">
+                                <span class="fw-bold">Total à payer :</span>
+                                <span class="fs-5 fw-bold text-primary">{{ (res.total_billets * res.evenement.prix)|number_format(2, ',', ' ') }} DT</span>
+                            </div>
                             <div class="text-muted small mt-2">
                                 Dernière réservation le {{ res.latest_date|date('d/m/Y H:i') }}
                             </div>
