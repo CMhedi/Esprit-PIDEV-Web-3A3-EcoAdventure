@@ -132,9 +132,15 @@ public function edit(
 #[Route('/admin/planning/{id}/delete', name: 'app_admin_planning_delete')]
 public function delete(Planning $planning, PlanningRepository $repo): Response
 {
-    // (optionnel plus tard) vérifier séances
+    if (!$planning->getSeances()->isEmpty()) {
+        $this->addFlash('error', '❌ Impossible de supprimer ce planning car il contient des séances.');
+
+        return $this->redirectToRoute('app_admin_planning');
+    }
 
     $repo->remove($planning, true);
+
+    $this->addFlash('success', '✅ Planning supprimé avec succès.');
 
     return $this->redirectToRoute('app_admin_planning');
 }
