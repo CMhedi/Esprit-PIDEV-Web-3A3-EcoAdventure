@@ -23,6 +23,7 @@
                         <th>Catégorie</th>
                         <th>Date</th>
                         <th>Lieu</th>
+                        <th>Prix</th>
                         <th>Places</th>
                         <th>Statut</th>
                         <th>Actions</th>
@@ -42,6 +43,7 @@
                         <td><span class="badge bg-secondary">{{ evenement.categorie_evt.value }}</span></td>
                         <td>{{ evenement.date_event ? evenement.date_event|date('d/m/Y') : '' }}</td>
                         <td>{{ evenement.lieu }}</td>
+                        <td class="fw-bold">{{ evenement.prix|number_format(2, ',', ' ') }} DT</td>
                         <td>{{ evenement.nb_places }}</td>
                         <td>
                             <span class="badge {% if evenement.statut == 'Active' %}bg-success{% else %}bg-warning{% endif %}">

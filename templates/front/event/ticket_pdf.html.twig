@@ -2,69 +2,128 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Ticket Événement - {{ evenement.titre }}</title>
+    <title>Ticket - {{ evenement.titre }}</title>
     <style>
-        body { font-family: 'Helvetica', 'Arial', sans-serif; color: #333; margin: 0; padding: 40px; }
-        .ticket-container { border: 2px solid #28a745; border-radius: 10px; overflow: hidden; width: 100%; }
-        .header { background-color: #28a745; color: white; padding: 20px; text-align: center; }
-        .header h1 { margin: 0; font-size: 24px; }
-        .content { padding: 30px; }
-        .event-info { margin-bottom: 30px; }
-        .event-title { font-size: 20px; font-weight: bold; color: #28a745; margin-bottom: 10px; }
-        .details { display: table; width: 100%; }
-        .details-row { display: table-row; }
-        .details-cell { display: table-cell; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .label { font-weight: bold; width: 150px; }
-        .qr-section { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px dashed #ccc; }
-        .footer { text-align: center; font-size: 12px; color: #888; margin-top: 30px; }
+        @page { margin: 0; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; color: #1a2b3c; margin: 0; padding: 50px; background-color: #f0f4f8; }
+        .ticket-wrapper { width: 100%; height: 380px; position: relative; }
+        
+        /* Main Card */
+        .ticket-card { 
+            background: white; 
+            border-radius: 25px; 
+            overflow: hidden; 
+            width: 100%; 
+            height: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* Left Section */
+        .left-side { width: 70%; padding: 40px; float: left; box-sizing: border-box; }
+        .logo-area { margin-bottom: 30px; }
+        .logo-text { color: #1a4731; font-weight: bold; font-size: 24px; letter-spacing: 1px; }
+        .logo-icon { color: #8bc34a; font-size: 24px; margin-right: 5px; }
+        
+        .event-title { font-size: 32px; font-weight: bold; margin-bottom: 35px; color: #0d1b2a; }
+        
+        .info-grid { width: 100%; border-collapse: collapse; }
+        .info-label { font-size: 12px; color: #a0aec0; text-transform: uppercase; font-weight: bold; padding-bottom: 5px; }
+        .info-value { font-size: 16px; font-weight: bold; color: #1a202c; padding-bottom: 25px; }
+        
+        .price-box { 
+            display: inline-block; 
+            background-color: #e8f5e9; 
+            color: #1a4731; 
+            padding: 12px 25px; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            font-size: 20px;
+            border: 1px solid #c8e6c9;
+            margin-top: 10px;
+        }
+
+        /* Right Section */
+        .right-side { 
+            width: 30%; 
+            height: 100%; 
+            background-color: #1a4731; 
+            float: right; 
+            text-align: center; 
+            padding: 40px 20px;
+            box-sizing: border-box;
+            position: relative;
+        }
+        
+        .qr-white-bg {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .qr-image { width: 140px; height: 140px; }
+        
+        .validator-text { color: #a0aec0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; font-weight: bold; }
+        .instructions { color: #e2e8f0; font-size: 11px; line-height: 1.5; padding: 0 10px; }
+
+        /* Notches */
+        .notch-top { position: absolute; top: -15px; right: 29%; width: 30px; height: 30px; background: #f0f4f8; border-radius: 50%; z-index: 5; }
+        .notch-bottom { position: absolute; bottom: -15px; right: 29%; width: 30px; height: 30px; background: #f0f4f8; border-radius: 50%; z-index: 5; }
+        
+        .clear { clear: both; }
     </style>
 </head>
 <body>
-    <div class="ticket-container">
-        <div class="header">
-            <h1>EcoAdventure - Ticket Officiel</h1>
-        </div>
+    <div class="ticket-wrapper">
+        <div class="notch-top"></div>
+        <div class="notch-bottom"></div>
         
-        <div class="content">
-            <div class="event-info">
+        <div class="ticket-card">
+            <div class="left-side">
+                <div class="logo-area">
+                    <span class="logo-text">ECOADVENTURE</span>
+                </div>
+                
                 <div class="event-title">{{ evenement.titre }}</div>
-                <p>Merci pour votre confiance ! Voici votre ticket pour votre prochaine aventure.</p>
+                
+                <table class="info-grid">
+                    <tr>
+                        <td width="50%" class="info-label">Passager</td>
+                        <td width="50%" class="info-label">Date de l'aventure</td>
+                    </tr>
+                    <tr>
+                        <td class="info-value">{{ user.nom }} {{ user.prenom }}</td>
+                        <td class="info-value">{{ evenement.date_event|date('Y-m-d') }}</td>
+                    </tr>
+                    <tr>
+                        <td class="info-label">Places réservées</td>
+                        <td class="info-label">ID Billet</td>
+                    </tr>
+                    <tr>
+                        <td class="info-value">{{ totalBillets }} Billets</td>
+                        <td class="info-value">#{{ reference|replace({'EVT-': 'EA'}) }}</td>
+                    </tr>
+                </table>
+                
+                <div class="price-box">
+                    {% set price = totalBillets * evenement.prix %}
+                    {{ price|number_format(2, ',', ' ') }} DT
+                </div>
             </div>
-
-            <div class="details">
-                <div class="details-row">
-                    <div class="details-cell label">Client :</div>
-                    <div class="details-cell">{{ user.nom }} {{ user.prenom }}</div>
+            
+            <div class="right-side">
+                <div class="qr-white-bg">
+                    <img src="data:image/svg+xml;base64,{{ qrCode }}" class="qr-image" alt="QR Code">
                 </div>
-                <div class="details-row">
-                    <div class="details-cell label">Lieu :</div>
-                    <div class="details-cell">{{ evenement.lieu }}</div>
-                </div>
-                <div class="details-row">
-                    <div class="details-cell label">Date :</div>
-                    <div class="details-cell">{{ evenement.date_event|date('d/m/Y à H:i') }}</div>
-                </div>
-                <div class="details-row">
-                    <div class="details-cell label">Billets :</div>
-                    <div class="details-cell">{{ totalBillets }}</div>
-                </div>
-                <div class="details-row">
-                    <div class="details-cell label">Réf :</div>
-                    <div class="details-cell">{{ reference }}</div>
+                
+                <div class="validator-text">Validateur d'entrée</div>
+                <div class="instructions">
+                    Présentez ce coupon à l'entrée du site EcoAdventure.
                 </div>
             </div>
-
-            <div class="qr-section">
-                <p>Scannez ce QR Code à l'entrée</p>
-                <img src="data:image/svg+xml;base64,{{ qrCode }}" alt="QR Code Reservation" style="width: 150px; height: 150px;">
-                <p style="font-size: 10px; color: #aaa;">REF: {{ reference }}</p>
-            </div>
+            <div class="clear"></div>
         </div>
-    </div>
-    
-    <div class="footer">
-        <p>EcoAdventure - Vivez l'aventure grandeur nature</p>
-        <p>Ce ticket est personnel et ne peut être revendu.</p>
     </div>
 </body>
 </html>
