@@ -18,7 +18,7 @@ final class PackAfficheController extends AbstractController
         $type = $request->query->get('type', '');
         $statut = $request->query->get('statut', '');
 
-        $packs = $packRepository->findForFront($search, $sort, $type, $statut);
+        $packs = $packRepository->findForFront($search, $type, $statut, $sort);
 
         return $this->render('front/hedisPackInscription/packs.html.twig', [
             'packs' => $packs,
