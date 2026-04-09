@@ -1,4 +1,6 @@
-{% extends 'base.html.twig' %}
+{# templates/reclamation/index.html.twig #}
+
+{% extends is_granted('ROLE_ADMIN') ? 'admin/base_admin.html.twig' : 'base.html.twig' %}
 
 {% block body %}
 <style>
@@ -18,10 +20,10 @@
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
     }
 
-    .main-title { 
-        color: white !important; 
-        font-weight: 700; 
-        font-size: 2.8rem; 
+    .main-title {
+        color: white !important;
+        font-weight: 700;
+        font-size: 2.8rem;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
 
@@ -67,39 +69,56 @@
         cursor: pointer;
     }
 
-/* Barre de recherche dhyifa */
 .search-wrapper {
     position: relative;
-    max-width: 300px; /* na9asna f'el kobr */
-    margin-bottom: 20px;
+    max-width: 400px;
+    margin: 20px 0;
 }
 
+/* El Input bidhet */
 .search-input {
     width: 100%;
-    padding: 10px 20px 10px 45px !important; /* padding mel lissar bech el icon ma todkholch f'el ktiba */
+    padding: 12px 20px 12px 50px !important;
     border-radius: 50px !important;
-    border: 1px solid rgba(255, 255, 255, 0.4) !important;
-    background: rgba(255, 255, 255, 0.2) !important;
-    backdrop-filter: blur(10px);
-    color: white !important;
-    transition: 0.3s;
+    
+    /* El Alwen tawa bech t'ban dima */
+    background: rgba(255, 255, 255, 0.9) !important; /* Abyadh ghamaq chwaya */
+    border: 1px solid #e0e0e0 !important; /* Border gris dhyif */
+    color: #333 !important; /* Ktiba ghamaqa */
+    
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important; /* Dhall khfif */
+    transition: all 0.3s ease;
 }
 
-.search-input::placeholder { color: rgba(255, 255, 255, 0.7); }
+/* Ki t'7ott el mouse fouqha (hover) */
+.search-input:hover {
+    border-color: #007bff !important;
+    background: #ffffff !important;
+}
 
+/* Ki t'enzel 3liha (focus) */
 .search-input:focus {
-    background: rgba(255, 255, 255, 0.3) !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background: #ffffff !important;
+    border-color: #007bff !important;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.15) !important;
     outline: none;
 }
 
+/* El Icon mta3 el Loupe */
 .search-icon {
     position: absolute;
-    left: 18px;
+    left: 20px;
     top: 50%;
     transform: translateY(-50%);
-    color: white;
+    color: #007bff; /* Louneha bleu kima el theme mte3ek */
+    font-size: 1.1rem;
     z-index: 10;
+}
+
+/* Placeholder louneha mrigel bech ya3ref el user chnouwa y'kteb */
+.search-input::placeholder {
+    color: #999 !important;
+    font-weight: 400;
 }
 </style>
 
@@ -107,6 +126,7 @@
     <div class="glass-wrapper shadow-lg">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="main-title">EcoAdventure</h1>
+            {# --- ZEDNA EL FAZA: Kenou USER barka i-chouf el bouton Nouvelle Plainte --- #}
             {% if not is_granted('ROLE_ADMIN') %}
                 <a href="{{ path('app_reclamation_new') }}" class="btn btn-nouvelle shadow">
                     <i class="fas fa-plus-circle me-2"></i>Nouvelle Plainte
@@ -114,17 +134,10 @@
             {% endif %}
         </div>
 
-        <div class="search-box">
-            <div class="input-group shadow-sm rounded-pill">
-                <span class="input-group-text bg-white border-0 rounded-start-pill text-primary">
-                    <i class="fas fa-search"></i>
-                </span>
         <div class="search-wrapper">
             <i class="fas fa-search search-icon"></i>
             <input type="text" id="rechercheReclamation" class="form-control search-input" placeholder="Chercher une réclamation...">
         </div>            
-        </div>
-        </div>
 
         <div class="table-responsive rounded-3">
             <table class="table table-glass mb-0" id="tableReclamation">
@@ -162,13 +175,14 @@
                                     <i class="fas fa-eye me-1"></i> details
                                 </a>
                                 
-                                {# Modifier makhbi 3al Admin #}
+                                {# --- FAZET EL USER: I-chouf Modifier barka --- #}
                                 {% if not is_granted('ROLE_ADMIN') %}
                                     <a href="{{ path('app_reclamation_edit', {'id_reclamation': reclamation.id_reclamation}) }}" class="btn btn-sm btn-warning text-dark action-btn">
                                         <i class="fas fa-edit me-1"></i> Modifier
                                     </a>
                                 {% endif %}
 
+                                {# --- FAZET EL ADMIN: Yejem i-fasakh dima --- #}
                                 <form method="post" action="{{ path('app_reclamation_delete', {'id_reclamation': reclamation.id_reclamation}) }}" onsubmit="return confirm('Etes-vous sûr ?');" style="display:inline-block;">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ reclamation.id_reclamation) }}">
                                     <button class="btn btn-sm btn-danger action-btn">
@@ -189,6 +203,7 @@
     </div>
 </div>
 
+{# --- MODAL REPONSE (ADMIN ONLY) --- #}
 <div class="modal fade" id="reponseModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
@@ -221,23 +236,26 @@
 </div>
 
 <script>
-// --- Script de Recherche en temps réel ---
-document.getElementById('rechercheReclamation').addEventListener('keyup', function() {
-    let value = this.value.toLowerCase();
-    let rows = document.querySelectorAll('#tableReclamation tbody tr');
-
-    rows.forEach(row => {
-        let text = row.textContent.toLowerCase();
-        row.style.display = text.includes(value) ? '' : 'none';
+// --- Recherche Logic ---
+const searchInput = document.getElementById('rechercheReclamation');
+if(searchInput) {
+    searchInput.addEventListener('keyup', function() {
+        let value = this.value.toLowerCase();
+        let rows = document.querySelectorAll('#tableReclamation tbody tr');
+        rows.forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(value) ? '' : 'none';
+        });
     });
-});
+}
 
-// --- Script Modal Double Click ---
+// --- Modal Logic ---
 function openReponseModal(id, currentReponse) {
     const modalElement = document.getElementById('reponseModal');
+    if(!modalElement) return;
     const modal = new bootstrap.Modal(modalElement);
     const form = document.getElementById('reponseForm');
     
+    // Thabet f'el route mte3ek mta3 el reply
     form.action = "/reclamation/admin-reply/" + id;
     
     const cleanReponse = (currentReponse === "Pas encore de réponse") ? "" : currentReponse;
