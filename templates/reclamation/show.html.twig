@@ -1,0 +1,118 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails Réclamation{% endblock %}
+
+{% block body %}
+<style>
+    /* Background mta3 el "Nature" bech el glass y'ban */
+    body {
+        background: url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070') no-repeat center center fixed !important;
+        background-size: cover !important;
+    }
+
+    .glass-wrapper {
+        background: rgba(255, 255, 255, 0.25) !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 40px;
+        margin-top: 50px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .content-card {
+        background: white !important;
+        border-radius: 15px !important;
+        padding: 30px !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    }
+
+    .label-pro {
+        color: #1b4f72 !important; /* Bleu kima screenshot */
+        font-weight: 800 !important;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+    }
+
+    .value-pro {
+        font-size: 1.1rem !important;
+        color: #333 !important;
+        margin-bottom: 25px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+    }
+
+    .badge-pro {
+        border-radius: 50px !important;
+        padding: 10px 20px !important;
+        font-weight: 700 !important;
+        font-size: 0.8rem !important;
+    }
+
+    .btn-action {
+        border-radius: 50px !important;
+        padding: 10px 25px !important;
+        font-weight: 600 !important;
+    }
+</style>
+
+<div class="container pb-5">
+    <div class="glass-wrapper shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <h1 class="text-white fw-bold mb-0">Réclamation</h1> {# Na77ina el ID kima t'7eb #}
+            
+            <span class="badge badge-pro 
+                {% if reclamation.statut.value == 'TRAITEE' %}bg-success
+                {% elseif reclamation.statut.value == 'REJETEE' %}bg-danger
+                {% else %}bg-warning text-dark{% endif %} shadow-sm">
+                {{ reclamation.statut.value }} {# Salla7na el Enum render #}
+            </span>
+        </div>
+
+        <div class="content-card">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="label-pro">Type de Problème</p>
+                    <p class="value-pro">{{ reclamation.type }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="label-pro">Date de Soumission</p>
+                    <p class="value-pro">{{ reclamation.date_creation|date('d/m/Y H:i') }}</p> {# Salla7na el property name #}
+                </div>
+            </div>
+
+            <div class="mt-2">
+                <p class="label-pro">Description</p>
+                <div class="p-3 bg-light rounded mb-4" style="border-left: 5px solid #1b4f72;">
+                    {{ reclamation.contenu|nl2br }}
+                </div>
+            </div>
+
+            <div class="mt-2">
+                <p class="label-pro">Réponse de l'administration</p>
+                <p class="value-pro" style="border-bottom: none; font-style: italic; color: #2980b9;">
+                    {{ reclamation.reponse ?: 'En attente d\'un retour de notre équipe...' }}
+                </p>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="{{ path('app_reclamation_index') }}" class="btn btn-outline-secondary btn-action">
+                    <i class="fas fa-arrow-left me-2"></i>Retour
+                </a>
+                
+                <div class="d-flex gap-2">
+                    <a href="{{ path('app_reclamation_edit', {'id_reclamation': reclamation.id_reclamation}) }}" class="btn btn-warning btn-action text-dark">
+                        <i class="fas fa-edit me-2"></i>Modifier
+                    </a>
+                    {{ include('reclamation/_delete_form.html.twig') }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

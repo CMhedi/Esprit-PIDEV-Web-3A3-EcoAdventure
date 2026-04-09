@@ -1,0 +1,87 @@
+{# templates/profile/index.html.twig #}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Profil - EcoAdventure</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: url("{{ asset('image/im.jpg') }}") no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .profile-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #00d2ff;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="profile-card">
+    {# Salla7na el path mta3 el taswira houni #}
+    <img src="{{ user.imageUrl ? asset('uploads/' ~ user.imageUrl) : asset('image/profil.png') }}" class="avatar" alt="Avatar">    
+    <h2 class="fw-bold">{{ user.prenom|capitalize }} {{ user.nom|upper }}</h2>
+    
+    {# Display el Role mte3ek mrigel #}
+    <span class="badge rounded-pill bg-primary mb-3">{{ user.role.value|upper }}</span>
+
+    <div class="row text-start mt-3 g-3">
+        <div class="col-md-6">
+            <label class="text-muted small">Email</label>
+            <p class="fw-medium text-break">{{ user.email }}</p>
+        </div>
+        <div class="col-md-6">
+            <label class="text-muted small">Téléphone</label>
+            <p class="fw-medium">{{ user.telephone ?? 'Non renseigné' }}</p>
+        </div>
+        <div class="col-md-6">
+            <label class="text-muted small">Âge</label>
+            <p class="fw-medium">{{ user.age ? user.age ~ ' ans' : '---' }}</p>
+        </div>
+        <div class="col-md-6">
+            <label class="text-muted small">Disponibilité</label>
+            <p>
+                <span class="badge {{ user.disponibilite and user.disponibilite.value == 'DISPONIBLE' ? 'bg-success' : 'bg-secondary' }}">
+                    {{ user.disponibilite.value ?? 'Non définie' }}
+                </span>
+            </p>
+        </div>
+
+        <div class="col-12">
+            <label class="text-muted small">Bio et Certificats</label>
+            <div class="bg-light p-3 rounded shadow-sm" style="min-height: 60px;">
+                <p class="mb-0 text-muted" style="font-style: italic;">
+                    {{ user.bioCertifs ?? 'Aucune biographie ajoutée pour le moment.' }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2 justify-content-center">
+        {# Taw n'zidou el route mta3 el edit ba3d ma ta3mel make:crud #}
+        <a href="{{ path('app_user_app_edit', {'id_user': user.id_user}) }}" class="btn btn-primary rounded-pill">
+            Modifier Profil
+        </a>
+        <a href="{{ path('app_logout') }}" class="btn btn-outline-danger px-4 rounded-pill shadow-sm">Déconnexion</a>
+    </div>
+</div>
+</body>
+</html>
