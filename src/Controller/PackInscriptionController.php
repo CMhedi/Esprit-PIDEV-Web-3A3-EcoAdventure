@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Inscription;
 use App\Entity\Pack;
+use App\Entity\UserApp;
 use App\Form\InscriptionPackType;
 use App\Enum\StatutInscription;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,14 +21,25 @@ final class PackInscriptionController extends AbstractController
         Request $request,
         EntityManagerInterface $entityManager
     ): Response {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+
+        $user = $this->getUser();
+        if (!$user instanceof UserApp) {
+            throw $this->createAccessDeniedException('Utilisateur non authentifie.');
+        }
+
         $pack = $entityManager->getRepository(Pack::class)->find($id);
 
         if (!$pack) {
             throw $this->createNotFoundException('Pack introuvable.');
         }
 
+        $displayName = trim(sprintf('%s %s', $user->getPrenom(), $user->getNom()));
+
         $inscription = new Inscription();
         $inscription->setPack($pack);
+        $inscription->setUserApp($user);
+        $inscription->setNomUser($displayName);
         $inscription->setNomPack($pack->getNom());
         $inscription->setMontantTotal((string) $pack->getPrixFinal());
         $inscription->setDateInscription(new \DateTime());
@@ -37,6 +49,8 @@ final class PackInscriptionController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $inscription->setUserApp($user);
+            $inscription->setNomUser($displayName);
             $inscription->setNomPack($pack->getNom());
             $inscription->setMontantTotal((string) $pack->getPrixFinal());
             $inscription->setDateInscription(new \DateTime());
@@ -52,6 +66,7 @@ final class PackInscriptionController extends AbstractController
         return $this->render('front/hedisPackInscription/pack_inscription.html.twig', [
             'pack' => $pack,
             'form' => $form->createView(),
+            'currentUser' => $user,
         ]);
     }
 }
