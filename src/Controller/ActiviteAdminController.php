@@ -7,6 +7,7 @@ use App\Enum\TypeActivite;
 use App\Enum\CategorieAct;
 use App\Enum\NiveauAct;
 use App\Enum\Statut;
+use App\Repository\ActiviteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,26 +17,28 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/admin/activites')]
 class ActiviteAdminController extends AbstractController
 {
-    #[Route('/', name: 'app_admin_activites')]
-    public function index(Request $request, EntityManagerInterface $em): Response
+    #[Route('', name: 'app_admin_activites')]
+    public function index(Request $request, ActiviteRepository $activiteRepository): Response
     {
-        $nom = $request->query->get('nom', '');
-        $tri = $request->query->get('tri', 'asc');
+        $nom = trim((string) $request->query->get('nom', ''));
+        $sortBy = (string) $request->query->get('sort_by', 'prix');
+        $tri = strtolower((string) $request->query->get('tri', 'asc'));
+        $allowedSortFields = ['prix', 'nom', 'type', 'statut'];
 
-        $qb = $em->getRepository(Activite::class)->createQueryBuilder('a');
-
-        if ($nom) {
-            $qb->where('a.nom LIKE :nom')
-               ->setParameter('nom', '%'.$nom.'%');
+        if (!in_array($sortBy, $allowedSortFields, true)) {
+            $sortBy = 'prix';
         }
 
-        $qb->orderBy('a.prix', $tri === 'desc' ? 'DESC' : 'ASC');
+        if (!in_array($tri, ['asc', 'desc'], true)) {
+            $tri = 'asc';
+        }
 
-        $activites = $qb->getQuery()->getResult();
+        $activites = $activiteRepository->findBySearchAndSort($nom, $sortBy, $tri);
 
         return $this->render('admin/activiteadmin.html.twig', [
             'activites' => $activites,
             'nom' => $nom,
+            'sort_by' => $sortBy,
             'tri' => $tri,
         ]);
     }
