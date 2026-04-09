@@ -17,25 +17,27 @@ use Symfony\Component\Routing\Annotation\Route;
 class ActiviteAdminController extends AbstractController
 {
     #[Route('/', name: 'app_admin_activites')]
-    public function index(EntityManagerInterface $em): Response
+    public function index(Request $request, EntityManagerInterface $em): Response
     {
-        $activites = $em->getRepository(Activite::class)->findAll();
+        $nom = $request->query->get('nom', '');
+        $tri = $request->query->get('tri', 'asc');
+
+        $qb = $em->getRepository(Activite::class)->createQueryBuilder('a');
+
+        if ($nom) {
+            $qb->where('a.nom LIKE :nom')
+               ->setParameter('nom', '%'.$nom.'%');
+        }
+
+        $qb->orderBy('a.prix', $tri === 'desc' ? 'DESC' : 'ASC');
+
+        $activites = $qb->getQuery()->getResult();
 
         return $this->render('admin/activiteadmin.html.twig', [
-            'activites' => $activites
+            'activites' => $activites,
+            'nom' => $nom,
+            'tri' => $tri,
         ]);
-    }
-
-    #[Route('/delete/{id}', name: 'app_admin_activite_delete', methods: ['POST'])]
-    public function delete(int $id, EntityManagerInterface $em): Response
-    {
-        $activite = $em->getRepository(Activite::class)->find($id);
-        if ($activite) {
-            $em->remove($activite);
-            $em->flush();
-            $this->addFlash('success', 'Activité supprimée avec succès !');
-        }
-        return $this->redirectToRoute('app_admin_activites');
     }
 
     #[Route('/edit/{id}', name: 'app_admin_activite_edit', methods: ['GET','POST'])]
@@ -61,7 +63,20 @@ class ActiviteAdminController extends AbstractController
         }
 
         return $this->render('admin/activite_edit_modal.html.twig', [
-            'activite' => $activite
+            'activite' => $activite,
         ]);
+    }
+
+    #[Route('/delete/{id}', name: 'app_admin_activite_delete', methods: ['POST'])]
+    public function delete(int $id, EntityManagerInterface $em): Response
+    {
+        $activite = $em->getRepository(Activite::class)->find($id);
+        if ($activite) {
+            $em->remove($activite);
+            $em->flush();
+            $this->addFlash('success', 'Activité supprimée avec succès !');
+        }
+
+        return $this->redirectToRoute('app_admin_activites');
     }
 }

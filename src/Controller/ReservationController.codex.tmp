@@ -59,8 +59,7 @@ class ReservationController extends AbstractController
         if ($formData['date_res'] === '') {
             $reservation->setDateRes(null);
         } else {
-            $normalizedDate = str_replace('T', ' ', $formData['date_res']);
-            $dateRes = \DateTime::createFromFormat('Y-m-d H:i', $normalizedDate);
+            $dateRes = \DateTime::createFromFormat('Y-m-d H:i', $formData['date_res']);
 
             if ($dateRes === false) {
                 $fieldErrors['date_res'][] = 'Le format de date doit etre AAAA-MM-JJ HH:MM.';

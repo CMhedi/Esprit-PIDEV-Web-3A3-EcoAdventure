@@ -1,103 +1,151 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Ajouter une Activité{% endblock %}
+{% block title %}Ajouter une Activite{% endblock %}
 
 {% block body %}
-<div class="container my-5">
-    <h2 class="mb-4">Ajouter une Nouvelle Activité</h2>
+{% set fieldErrors = fieldErrors|default({}) %}
+{% set formData = formData|default({}) %}
 
-    <form action="{{ path('app_activite_create') }}" method="POST" enctype="multipart/form-data">
-        <!-- Nom de l'activité -->
+<div class="container my-5">
+    <h2 class="mb-4">Ajouter une Nouvelle Activite</h2>
+
+    <style>
+        .btn-eco {
+            background: linear-gradient(135deg, #28a745, #218838);
+            color: #fff;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-eco:hover {
+            background: linear-gradient(135deg, #218838, #28a745);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .error-label {
+            color: #dc3545;
+            display: block;
+            font-size: 0.9rem;
+            margin-top: 0.35rem;
+        }
+    </style>
+
+    <form action="{{ path('app_activite_create') }}" method="POST" enctype="multipart/form-data" novalidate>
         <div class="mb-3">
             <label for="nom" class="form-label">Nom</label>
-            <input type="text" class="form-control" id="nom" name="nom" placeholder="Nom" required>
+            <input
+                type="text"
+                class="form-control"
+                id="nom"
+                name="nom"
+                placeholder="Nom"
+                value="{{ formData.nom|default('') }}"
+            >
+            {% for message in fieldErrors.nom|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
         </div>
 
-        <!-- Type d'activité -->
         <div class="mb-3">
-            <label for="type_activite" class="form-label">Type d'activité</label>
-            <select class="form-select" id="type_activite" name="type_activite" required>
+            <label for="type_activite" class="form-label">Type d'activite</label>
+            <select class="form-select" id="type_activite" name="type_activite">
                 <option value="">Choisir le type</option>
-                <option value="SPORT">SPORT</option>
-                <option value="CAMPING">CAMPING</option>
-                <option value="INTELECTUEL">INTELECTUEL</option>
-                <option value="CULTUREL">CULTUREL</option>
+                <option value="SPORT" {{ formData.type_activite|default('') == 'SPORT' ? 'selected' : '' }}>SPORT</option>
+                <option value="CAMPING" {{ formData.type_activite|default('') == 'CAMPING' ? 'selected' : '' }}>CAMPING</option>
+                <option value="INTELECTUEL" {{ formData.type_activite|default('') == 'INTELECTUEL' ? 'selected' : '' }}>INTELECTUEL</option>
+                <option value="CULTUREL" {{ formData.type_activite|default('') == 'CULTUREL' ? 'selected' : '' }}>CULTUREL</option>
             </select>
+            {% for message in fieldErrors.type_activite|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
         </div>
 
-        <!-- Catégorie -->
         <div class="mb-3">
-            <label for="categorie_act" class="form-label">Catégorie</label>
-            <select class="form-select" id="categorie_act" name="categorie_act" required>
-                <option value="">Choisir la catégorie</option>
-                <option value="FITNESS">FITNESS</option>
-                <option value="RUNNING">RUNNING</option>
-                <option value="FOOTBALL">FOOTBALL</option>
-                <option value="BASKETBALL">BASKETBALL</option>
-                <option value="TENNIS">TENNIS</option>
-                <option value="NATATION">NATATION</option>
-                <option value="RANDONNEE">RANDONNEE</option>
-                <option value="CYCLISME">CYCLISME</option>
-                <option value="YOGA">YOGA</option>
-                <option value="AUTRE">AUTRE</option>
+            <label for="categorie_act" class="form-label">Categorie</label>
+            <select class="form-select" id="categorie_act" name="categorie_act">
+                <option value="">Choisir la categorie</option>
+                <option value="FITNESS" {{ formData.categorie_act|default('') == 'FITNESS' ? 'selected' : '' }}>FITNESS</option>
+                <option value="RUNNING" {{ formData.categorie_act|default('') == 'RUNNING' ? 'selected' : '' }}>RUNNING</option>
+                <option value="FOOTBALL" {{ formData.categorie_act|default('') == 'FOOTBALL' ? 'selected' : '' }}>FOOTBALL</option>
+                <option value="BASKETBALL" {{ formData.categorie_act|default('') == 'BASKETBALL' ? 'selected' : '' }}>BASKETBALL</option>
+                <option value="TENNIS" {{ formData.categorie_act|default('') == 'TENNIS' ? 'selected' : '' }}>TENNIS</option>
+                <option value="NATATION" {{ formData.categorie_act|default('') == 'NATATION' ? 'selected' : '' }}>NATATION</option>
+                <option value="RANDONNEE" {{ formData.categorie_act|default('') == 'RANDONNEE' ? 'selected' : '' }}>RANDONNEE</option>
+                <option value="CYCLISME" {{ formData.categorie_act|default('') == 'CYCLISME' ? 'selected' : '' }}>CYCLISME</option>
+                <option value="YOGA" {{ formData.categorie_act|default('') == 'YOGA' ? 'selected' : '' }}>YOGA</option>
+                <option value="AUTRE" {{ formData.categorie_act|default('') == 'AUTRE' ? 'selected' : '' }}>AUTRE</option>
             </select>
+            {% for message in fieldErrors.categorie_act|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
         </div>
 
-        <!-- Niveau -->
         <div class="mb-3">
             <label for="niveau_act" class="form-label">Niveau</label>
-            <select class="form-select" id="niveau_act" name="niveau_act" required>
+            <select class="form-select" id="niveau_act" name="niveau_act">
                 <option value="">Choisir le niveau</option>
-                <option value="DEBUTANT">Débutant</option>
-                <option value="INTERMEDIAIRE">Intermédiaire</option>
-                <option value="AVANCE">Avancé</option>
+                <option value="DEBUTANT" {{ formData.niveau_act|default('') == 'DEBUTANT' ? 'selected' : '' }}>Debutant</option>
+                <option value="INTERMEDIAIRE" {{ formData.niveau_act|default('') == 'INTERMEDIAIRE' ? 'selected' : '' }}>Intermediaire</option>
+                <option value="AVANCE" {{ formData.niveau_act|default('') == 'AVANCE' ? 'selected' : '' }}>Avance</option>
             </select>
+            {% for message in fieldErrors.niveau_act|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
         </div>
 
-        <!-- Prix -->
         <div class="mb-3">
             <label for="prix" class="form-label">Prix</label>
-            <input type="number" class="form-control" id="prix" name="prix" placeholder="Prix en DT" step="0.01" required>
+            <input
+                type="text"
+                class="form-control"
+                id="prix"
+                name="prix"
+                placeholder="Prix en DT"
+                value="{{ formData.prix|default('') }}"
+            >
+            {% for message in fieldErrors.prix|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
         </div>
 
-        <!-- Statut -->
         <div class="mb-3">
             <label for="statut" class="form-label">Statut</label>
-            <select class="form-select" id="statut" name="statut" required>
+            <select class="form-select" id="statut" name="statut">
                 <option value="">Choisir le statut</option>
-                <option value="DISPONIBLE">Disponible</option>
-                <option value="INDISPONIBLE">Indisponible</option>
+                <option value="DISPONIBLE" {{ formData.statut|default('') == 'DISPONIBLE' ? 'selected' : '' }}>Disponible</option>
+                <option value="INDISPONIBLE" {{ formData.statut|default('') == 'INDISPONIBLE' ? 'selected' : '' }}>Indisponible</option>
             </select>
+            {% for message in fieldErrors.statut|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
         </div>
 
-        <!-- Image -->
         <div class="mb-3">
-            <label for="image_url" class="form-label">Image de l'activité</label>
-            <input type="file" class="form-control" id="image_url" name="image_url" accept="image/*" required>
+            <label for="image_url" class="form-label">Image de l'activite</label>
+            <input type="file" class="form-control" id="image_url" name="image_url">
+            {% for message in fieldErrors.image_url|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
         </div>
 
-        <!-- Pack associé -->
         <div class="mb-3">
-            <label for="id_pack" class="form-label">Pack associé</label>
-            <input type="number" class="form-control" id="id_pack" name="id_pack" placeholder="ID du pack" required>
+            <label for="id_pack" class="form-label">Pack associe</label>
+            <input
+                type="text"
+                class="form-control"
+                id="id_pack"
+                name="id_pack"
+                placeholder="ID du pack"
+                value="{{ formData.id_pack|default('') }}"
+            >
+            {% for message in fieldErrors.id_pack|default([]) %}
+                <label class="error-label">{{ message }}</label>
+            {% endfor %}
         </div>
 
-        <!-- Bouton Ajouter -->
-        <style>
-            .btn-eco {
-                background: linear-gradient(135deg, #28a745, #218838);
-                color: #fff;
-                border: none;
-                transition: all 0.3s ease;
-            }
-            .btn-eco:hover {
-                background: linear-gradient(135deg, #218838, #28a745);
-                transform: translateY(-2px);
-                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            }
-        </style>
         <button type="submit" class="btn btn-eco btn-lg rounded-pill px-5">
-            <i class="bi bi-plus-circle me-2"></i> Ajouter l'activité
+            <i class="bi bi-plus-circle me-2"></i> Ajouter l'activite
         </button>
     </form>
 </div>

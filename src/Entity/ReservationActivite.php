@@ -2,9 +2,10 @@
 
 namespace App\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
 use App\Enum\StatutReservationActivite;
 use App\Repository\ReservationActiviteRepository;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ReservationActiviteRepository::class)]
 #[ORM\Table(name: 'reservation_activite')]
@@ -16,12 +17,22 @@ class ReservationActivite
     private ?int $id_res_act = null;
 
     #[ORM\Column(name: 'date_res', type: 'datetime')]
+    #[Assert\NotNull(message: 'La date de reservation est obligatoire.')]
+    #[Assert\GreaterThanOrEqual('today', message: 'La date de reservation doit etre aujourd hui ou dans le futur.')]
     private ?\DateTimeInterface $dateRes = null;
 
     #[ORM\Column(enumType: StatutReservationActivite::class)]
+    #[Assert\NotNull(message: 'Le statut de reservation est obligatoire.')]
     private ?StatutReservationActivite $statut_res = null;
 
     #[ORM\Column(type: 'integer')]
+    #[Assert\NotNull(message: 'Le nombre de personnes est obligatoire.')]
+    #[Assert\Positive(message: 'Le nombre de personnes doit etre positif.')]
+    #[Assert\Range(
+        min: 1,
+        max: 100,
+        notInRangeMessage: 'Le nombre de personnes doit etre entre {{ min }} et {{ max }}.'
+    )]
     private ?int $nb_personnes = null;
 
     #[ORM\ManyToOne(targetEntity: UserApp::class, inversedBy: 'reservationActivites')]
@@ -42,7 +53,7 @@ class ReservationActivite
         return $this->dateRes;
     }
 
-    public function setDateRes(\DateTimeInterface $dateRes): self
+    public function setDateRes(?\DateTimeInterface $dateRes): self
     {
         $this->dateRes = $dateRes;
         return $this;
@@ -53,7 +64,7 @@ class ReservationActivite
         return $this->statut_res;
     }
 
-    public function setStatutRes(StatutReservationActivite $statut_res): self
+    public function setStatutRes(?StatutReservationActivite $statut_res): self
     {
         $this->statut_res = $statut_res;
         return $this;
@@ -64,7 +75,7 @@ class ReservationActivite
         return $this->nb_personnes;
     }
 
-    public function setNbPersonnes(int $nb_personnes): self
+    public function setNbPersonnes(?int $nb_personnes): self
     {
         $this->nb_personnes = $nb_personnes;
         return $this;
