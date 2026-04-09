@@ -14,6 +14,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
+
 #[ORM\Entity(repositoryClass: UserAppRepository::class)]
 #[ORM\Table(name: 'user_app')]
 #[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé.')]
@@ -47,7 +48,6 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private ?RoleUser $role = null;
 
     #[ORM\Column(type: 'string', length: 255)]
-   
     private ?string $mot_de_passe = null;
 
     #[ORM\Column(type: 'datetime')]
@@ -63,7 +63,6 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $experience = null;
 
     #[ORM\Column(enumType: Specialite::class, nullable: true)]
-    
     private ?Specialite $specialite = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
@@ -71,6 +70,12 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(enumType: Disponibilite::class, nullable: true)]
     private ?Disponibilite $disponibilite = null;
+
+    #[ORM\Column(type: 'string', length: 10, nullable: true)]
+    private ?string $referralCode = null;
+
+    #[ORM\Column(type: 'integer', options: ["default" => 0])]
+    private int $loyaltyPoints = 0;
 
     // RELATIONS
     #[ORM\OneToMany(targetEntity: Inscription::class, mappedBy: 'userApp')]
@@ -91,31 +96,29 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: ReservationSeance::class, mappedBy: 'userApp')]
     private Collection $reservationSeances;
 
-#[ORM\OneToMany(mappedBy: "coach", targetEntity: Seance::class)]
-private Collection $seances;
+    #[ORM\OneToMany(mappedBy: "coach", targetEntity: Seance::class)]
+    private Collection $seances;
 
-#[Assert\Callback]
+    #[Assert\Callback]
     public function validateCoachRequirements(ExecutionContextInterface $context): void
     {
         if ($this->role === \App\Enum\RoleUser::COACH) {
-            // L'âge est obligatoire pour le Coach
             if (null === $this->age) {
                 $context->buildViolation("L'âge est obligatoire pour un coach.")
                     ->atPath('age')
                     ->addViolation();
             }
 
-            // L'expérience est obligatoire pour le Coach
             if (null === $this->experience || $this->experience === '') {
                 $context->buildViolation("Le nombre d'années d'expérience est obligatoire.")
                     ->atPath('experience')
                     ->addViolation();
             }
             if (null === $this->specialite) {
-            $context->buildViolation("Choisir une spécialité est obligatoire pour un coach.")
-                ->atPath('specialite')
-                ->addViolation();
-        }
+                $context->buildViolation("Choisir une spécialité est obligatoire pour un coach.")
+                    ->atPath('specialite')
+                    ->addViolation();
+            }
 
             if (null === $this->disponibilite) {
                 $context->buildViolation("Choisir votre disponibilité est obligatoire pour un coach.")
@@ -123,7 +126,6 @@ private Collection $seances;
                     ->addViolation();
             }
             
-            // Validation de cohérence (optionnel mais recommandé)
             if ($this->age && $this->experience && ($this->age - (int)$this->experience < 16)) {
                 $context->buildViolation("L'expérience est incohérente avec votre âge.")
                     ->atPath('experience')
@@ -142,6 +144,7 @@ private Collection $seances;
         $this->reservationEvenements = new ArrayCollection();
         $this->reservationSeances = new ArrayCollection();
         $this->seances = new ArrayCollection();
+        $this->referralCode = strtoupper(substr(uniqid(), -6));
     }
 
     // ========== SYMFONY SECURITY METHODS ==========
@@ -172,98 +175,60 @@ private Collection $seances;
 
     // ========== GETTERS & SETTERS ==========
 
-    public function getId(): ?int
-    {
-        return $this->id_user;
-    }
-
-    public function getId_user(): ?int
-    {
-        return $this->id_user;
-    }
-
+    public function getId(): ?int { return $this->id_user; }
+    public function getId_user(): ?int { return $this->id_user; }
     public function getNom(): ?string { return $this->nom; }
     public function setNom(string $nom): self { $this->nom = $nom; return $this; }
-
     public function getPrenom(): ?string { return $this->prenom; }
     public function setPrenom(string $prenom): self { $this->prenom = $prenom; return $this; }
-
     public function getEmail(): ?string { return $this->email; }
     public function setEmail(string $email): self { $this->email = $email; return $this; }
-
     public function getTelephone(): ?string { return $this->telephone; }
     public function setTelephone(?string $telephone): self { $this->telephone = $telephone; return $this; }
-
-
-
     public function getRole(): ?RoleUser { return $this->role; }
     public function setRole(RoleUser $role): self { $this->role = $role; return $this; }
-
     public function getMot_de_passe(): ?string { return $this->mot_de_passe; }
     public function setMot_de_passe(string $mot_de_passe): self { $this->mot_de_passe = $mot_de_passe; return $this; }
-
     public function getDate_creation(): ?\DateTimeInterface { return $this->date_creation; }
     public function setDate_creation(\DateTimeInterface $date_creation): self { $this->date_creation = $date_creation; return $this; }
-
     public function getLast_seen(): ?\DateTimeInterface { return $this->last_seen; }
     public function setLast_seen(?\DateTimeInterface $last_seen): self { $this->last_seen = $last_seen; return $this; }
-
     public function getAge(): ?int { return $this->age; }
     public function setAge(?int $age): self { $this->age = $age; return $this; }
-
     public function getExperience(): ?string { return $this->experience; }
     public function setExperience(?string $experience): self { $this->experience = $experience; return $this; }
-
     public function getSpecialite(): ?Specialite { return $this->specialite; }
     public function setSpecialite(?Specialite $specialite): self { $this->specialite = $specialite; return $this; }
-
-// Salla7 el asami mte3 el Getters/Setters hadhom bedhabt:
-
-public function getBioCertifs(): ?string // Na7i el underscore houni
-{ 
-    return $this->bio_certifs; 
-}
-
-public function setBioCertifs(?string $bio_certifs): self 
-{ 
-    $this->bio_certifs = $bio_certifs; 
-    return $this; 
-}
-
-public function getImageUrl(): ?string // Zeda houni khir
-{ 
-    return $this->image_url; 
-}
-
-public function setImageUrl(?string $image_url): self 
-{ 
-    $this->image_url = $image_url; 
-    return $this; 
-}
-
-    public function getImage_url(): ?string
-    {
-        return $this->image_url;
-    }
-
-    public function setImage_url(?string $image_url): self
-    {
-        $this->image_url = $image_url;
-        return $this;
-    }
-
+    public function getBioCertifs(): ?string { return $this->bio_certifs; }
+    public function setBioCertifs(?string $bio_certifs): self { $this->bio_certifs = $bio_certifs; return $this; }
+    public function getBio_certifs(): ?string { return $this->bio_certifs; }
+    public function setBio_certifs(?string $bio_certifs): self { $this->bio_certifs = $bio_certifs; return $this; }
+    public function getImageUrl(): ?string { return $this->image_url; }
+    public function setImageUrl(?string $image_url): self { $this->image_url = $image_url; return $this; }
+    public function getImage_url(): ?string { return $this->image_url; }
+    public function setImage_url(?string $image_url): self { $this->image_url = $image_url; return $this; }
     public function getDisponibilite(): ?Disponibilite { return $this->disponibilite; }
     public function setDisponibilite(?Disponibilite $disponibilite): self { $this->disponibilite = $disponibilite; return $this; }
+    public function getReferralCode(): ?string { return $this->referralCode; }
+    public function setReferralCode(?string $code): self { $this->referralCode = $code; return $this; }
+    public function getLoyaltyPoints(): int { return $this->loyaltyPoints; }
+    public function setLoyaltyPoints(int $points): self { $this->loyaltyPoints = $points; return $this; }
+    public function addLoyaltyPoints(int $points): self { $this->loyaltyPoints += $points; return $this; }
 
-    // Collection Getters (Inscriptions, Messages, etc.)
-    public function getInscriptions(): Collection { return $this->inscriptions; }
+    /**
+     * @return Collection<int, Inscription>
+     */
+    public function getInscriptions(): Collection
+    {
+        return $this->inscriptions;
+    }
+
     public function addInscription(Inscription $inscription): self
     {
         if (!$this->inscriptions->contains($inscription)) {
             $this->inscriptions->add($inscription);
             $inscription->setUserApp($this);
         }
-
         return $this;
     }
 
@@ -272,7 +237,6 @@ public function setImageUrl(?string $image_url): self
         if ($this->inscriptions->removeElement($inscription) && $inscription->getUserApp() === $this) {
             $inscription->setUserApp(null);
         }
-
         return $this;
     }
 
@@ -282,6 +246,4 @@ public function setImageUrl(?string $image_url): self
     public function getReservationEvenements(): Collection { return $this->reservationEvenements; }
     public function getReservationSeances(): Collection { return $this->reservationSeances; }
     public function getSeances(): Collection { return $this->seances; }
-
- 
 }

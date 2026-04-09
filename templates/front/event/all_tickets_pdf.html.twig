@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Tous mes Tickets | EcoAdventure</title>
+    <style>
+        @page { margin: 0; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; color: #1a2b3c; margin: 0; padding: 0; background-color: #f0f4f8; }
+        .page-break { page-break-after: always; }
+        .ticket-page { padding: 50px; }
+        .ticket-wrapper { width: 100%; height: 380px; position: relative; }
+        
+        /* Main Card */
+        .ticket-card { 
+            background: white; 
+            border-radius: 25px; 
+            overflow: hidden; 
+            width: 100%; 
+            height: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* Left Section */
+        .left-side { width: 70%; padding: 40px; float: left; box-sizing: border-box; }
+        .logo-area { margin-bottom: 30px; }
+        .logo-text { color: #1a4731; font-weight: bold; font-size: 24px; letter-spacing: 1px; }
+        
+        .event-title { font-size: 32px; font-weight: bold; margin-bottom: 35px; color: #0d1b2a; }
+        
+        .info-grid { width: 100%; border-collapse: collapse; }
+        .info-label { font-size: 12px; color: #a0aec0; text-transform: uppercase; font-weight: bold; padding-bottom: 5px; }
+        .info-value { font-size: 16px; font-weight: bold; color: #1a202c; padding-bottom: 25px; }
+        
+        .price-box { 
+            display: inline-block; 
+            background-color: #e8f5e9; 
+            color: #1a4731; 
+            padding: 12px 25px; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            font-size: 20px;
+            border: 1px solid #c8e6c9;
+            margin-top: 10px;
+        }
+
+        /* Right Section */
+        .right-side { 
+            width: 30%; 
+            height: 100%; 
+            background-color: #1a4731; 
+            float: right; 
+            text-align: center; 
+            padding: 40px 20px;
+            box-sizing: border-box;
+            position: relative;
+        }
+        
+        .qr-white-bg {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .qr-image { width: 140px; height: 140px; }
+        
+        .validator-text { color: #a0aec0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; font-weight: bold; }
+        .instructions { color: #e2e8f0; font-size: 11px; line-height: 1.5; padding: 0 10px; }
+
+        /* Notches */
+        .notch-top { position: absolute; top: -15px; right: 29%; width: 30px; height: 30px; background: #f0f4f8; border-radius: 50%; z-index: 5; }
+        .notch-bottom { position: absolute; bottom: -15px; right: 29%; width: 30px; height: 30px; background: #f0f4f8; border-radius: 50%; z-index: 5; }
+        
+        .clear { clear: both; }
+    </style>
+</head>
+<body>
+    {% for ticket in tickets %}
+    <div class="ticket-page {% if not loop.last %}page-break{% endif %}">
+        <div class="ticket-wrapper">
+            <div class="notch-top"></div>
+            <div class="notch-bottom"></div>
+            
+            <div class="ticket-card">
+                <div class="left-side">
+                    <div class="logo-area">
+                        <span class="logo-text">ECOADVENTURE</span>
+                    </div>
+                    
+                    <div class="event-title">{{ ticket.evenement.titre }}</div>
+                    
+                    <table class="info-grid">
+                        <tr>
+                            <td width="50%" class="info-label">Passager</td>
+                            <td width="50%" class="info-label">Date de l'aventure</td>
+                        </tr>
+                        <tr>
+                            <td class="info-value">{{ user.nom }} {{ user.prenom }}</td>
+                            <td class="info-value">{{ ticket.evenement.date_event|date('Y-m-d') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="info-label">Places réservées</td>
+                            <td class="info-label">ID Billet</td>
+                        </tr>
+                        <tr>
+                            <td class="info-value">{{ ticket.totalBillets }} Billets</td>
+                            <td class="info-value">#{{ ticket.reference|replace({'EVT-': 'EA'}) }}</td>
+                        </tr>
+                    </table>
+                    
+                    <div class="price-box">
+                        {% set price = ticket.totalBillets * ticket.evenement.prix %}
+                        {{ price|number_format(2, ',', ' ') }} DT
+                    </div>
+                </div>
+                
+                <div class="right-side">
+                    <div class="qr-white-bg">
+                        <img src="data:image/svg+xml;base64,{{ ticket.qrCode }}" class="qr-image" alt="QR Code">
+                    </div>
+                    
+                    <div class="validator-text">Validateur d'entrée</div>
+                    <div class="instructions">
+                        Présentez ce coupon à l'entrée du site EcoAdventure.
+                    </div>
+                </div>
+                <div class="clear"></div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</body>
+</html>
