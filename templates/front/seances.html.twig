@@ -1,0 +1,476 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Séances - Plateforme Eco{% endblock %}
+
+{% block body %}
+
+<div class="container-fluid py-5" style="background: linear-gradient(135deg, #ffffff 0%, #f8faf9 100%); min-height: 100vh;">
+
+    <!-- ===== MESSAGES FLASH ===== -->
+    <div class="container">
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ type == 'success' ? 'success' : (type == 'error' ? 'danger' : 'warning') }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+                    <div class="d-flex align-items-center">
+                        {% if type == 'success' %}
+                            <i class="bi bi-check-circle-fill fs-5 me-2" style="color: #27ae60;"></i>
+                        {% elseif type == 'error' %}
+                            <i class="bi bi-exclamation-circle-fill fs-5 me-2" style="color: #e74c3c;"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill fs-5 me-2" style="color: #f39c12;"></i>
+                        {% endif %}
+                        <span>{{ message }}</span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+    <div class="container">
+
+       <!-- ===== HEADER SECTION ===== -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <!-- Titre et sous-titre -->
+            <div>
+                <h1 class="fw-bold" style="color: #27ae60; margin-bottom: 0.5rem;">
+                    <i class="bi bi-calendar2-event"></i>
+                    Réservez vos séances
+                </h1>
+                <p class="text-muted mb-0" style="font-size: 1rem;">
+                    Découvrez nos séances et réservez vos places dès maintenant
+                </p>
+            </div>
+
+            <!-- Profil utilisateur et actions -->
+            <div class="d-flex align-items-center gap-3">
+                
+                <!-- Bouton Mes séances -->
+                <a href="{{ path('app_mes_seances') }}" class="btn btn-outline-success">
+                    <i class="bi bi-calendar-check"></i>
+                    Mes séances
+                </a>
+
+                <!-- Profil utilisateur -->
+                <div class="d-flex align-items-center gap-3 px-4 py-3 rounded-pill shadow-sm" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
+                    <img src="{{ asset('assets/images/user.png') }}"
+                         class="rounded-circle shadow-sm"
+                         width="45"
+                         alt="Profil utilisateur">
+                    <div>
+                        <small class="text-white-50 d-block">Utilisateur</small>
+                        <strong class="text-white">{{ app.user ? app.user.nom : 'Invité' }}</strong>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+        <!-- ===== SEARCH & FILTERS SECTION ===== -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" style="border-left: 4px solid #27ae60;">
+                    <div class="card-body p-4">
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-white border-0">
+                                <i class="bi bi-search" style="color: #27ae60; font-size: 1.2rem;"></i>
+                            </span>
+                            <input type="text"
+                                   class="form-control border-0 fs-6"
+                                   placeholder="Rechercher par nom, coach, horaire..."
+                                   id="searchInput"
+                                   autocomplete="off"
+                                   style="border-bottom: 2px solid #27ae60 !important; padding: 0.75rem;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+       <!-- ===== QUICK STATS ===== -->
+{% if seances|length > 0 %}
+<div class="row mb-5 g-3">
+    
+    <!-- Prochaine séance -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #27ae60;">
+            <div class="card-body">
+                <h6 class="text-muted mb-2" style="font-size: 0.85rem;">Prochaine séance</h6>
+                {% set prochaine = seances|filter(s => s.statutSeance.value == 'PLANIFIEE')|first %}
+                {% if prochaine %}
+                    <h5 class="fw-bold mb-1" style="color: #27ae60;">{{ prochaine.nom }}</h5>
+                    <small class="text-muted">{{ prochaine.dateSeance|date('d MMM') }} à {{ prochaine.heureDebut|date('H:i') }}</small>
+                {% else %}
+                    <p class="text-muted">Aucune séance</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Séance la plus réservée -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #27ae60;">
+            <div class="card-body">
+                <h6 class="text-muted mb-2" style="font-size: 0.85rem;">⭐ Plus populaire</h6>
+              {% set plusPopulaire = null %}
+{% set maxReservations = 0 %}
+
+{% for s in seances %}
+    {% set nb = s.reservationSeances|length %}
+    
+    {% if nb > maxReservations %}
+        {% set maxReservations = nb %}
+        {% set plusPopulaire = s %}
+    {% endif %}
+{% endfor %}
+                {% if plusPopulaire %}
+                    <h5 class="fw-bold mb-1" style="color: #27ae60;">{{ plusPopulaire.nom }}</h5>
+                    <small class="text-muted">{{ plusPopulaire.reservationSeances|length }}/{{ plusPopulaire.capacite }} places</small>
+                {% else %}
+                    <p class="text-muted">Aucune données</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Séances disponibles -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #27ae60;">
+            <div class="card-body">
+                <h6 class="text-muted mb-2" style="font-size: 0.85rem;">Séances disponibles</h6>
+                {% set disponibles = seances|filter(s => s.statutSeance.value == 'PLANIFIEE')|length %}
+                <h5 class="fw-bold mb-1" style="color: #27ae60;">{{ disponibles }}</h5>
+                <small class="text-muted">Prêtes à réserver</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conseil personnalisé -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #f39c12;">
+            <div class="card-body">
+                <h6 class="text-muted mb-2" style="font-size: 0.85rem;">💡 Conseil du jour</h6>
+                <p class="mb-0" style="font-size: 0.9rem; color: #2c3e50;">
+                    {% if pourcentage >= 80 %}
+                        <strong>Dépêchez-vous !</strong> Les séances se remplissent vite
+                    {% elseif disponibles == 0 %}
+                        <strong>Revenez bientôt</strong> pour les nouvelles séances
+                    {% else %}
+                        <strong>Bonne période !</strong> Réservez vos séances préférées
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endif %}
+
+        <!-- ===== SÉANCES CARDS ===== -->
+        <div class="row g-4" id="seanceContainer">
+
+            {% for s in seances %}
+
+                <div class="col-lg-4 col-md-6 seance-card" data-seance="{{ s.nom|lower }} {{ s.coach.nom|lower }} {{ s.coach.prenom|lower }}">
+
+                    <div class="card border-0 shadow-sm h-100 overflow-hidden transition-all"
+                         style="cursor: pointer; transition: all 0.3s ease; border-top: 5px solid #27ae60;">
+
+                      <!-- CARD HEADER avec image/couleur -->
+<div class="position-relative overflow-hidden" style="height: 150px; background: linear-gradient(135deg, #27ae60 0%, #229954 100%); display: flex; align-items: center; justify-content: center;">
+    
+    <!-- Icône ou image selon le type de séance -->
+    <div style="font-size: 4rem; color: rgba(255, 255, 255, 0.3); z-index: 1;">
+        {% if 'yoga' in s.nom|lower %}
+            <i class="bi bi-flower1"></i>
+        {% elseif 'pilates' in s.nom|lower %}
+            <i class="bi bi-heart-pulse"></i>
+        {% elseif 'cardio' in s.nom|lower %}
+            <i class="bi bi-lightning-fill"></i>
+        {% elseif 'renforcement' in s.nom|lower %}
+            <i class="bi bi-dumbbell"></i>
+        {% else %}
+            <i class="bi bi-activity"></i>
+        {% endif %}
+    </div>
+
+    <!-- Badge places (en haut à gauche) -->
+    <div class="position-absolute top-3 start-3">
+        <span class="badge bg-white shadow-sm p-2" style="color: #27ae60; font-weight: 600;">
+            {% set placesRestantes = s.capacite - s.reservationSeances|length %}
+            {% if placesRestantes <= 0 %}
+                <i class="bi bi-exclamation-circle"></i> COMPLÈTE
+            {% elseif placesRestantes <= 2 %}
+                <i class="bi bi-exclamation-triangle"></i> {{ placesRestantes }} place(s)
+            {% else %}
+                <i class="bi bi-check-circle"></i> {{ placesRestantes }} places
+            {% endif %}
+        </span>
+    </div>
+
+    <!-- Badge statut (en haut à droite) -->
+    <div class="position-absolute top-3 end-3">
+        <span class="badge bg-white shadow-sm p-2" style="color: #27ae60; font-weight: 600;">
+            <i class="bi bi-dot"></i>
+            {{ s.statutSeance.value }}
+        </span>
+    </div>
+</div>
+
+                        <!-- CARD BODY -->
+                        <div class="card-body position-relative mt-3">
+
+                            <!-- Titre de la séance -->
+                            <h5 class="fw-bold mb-3 pe-5" style="color: #27ae60;">
+                                <i class="bi bi-lightning-fill" style="color: #f39c12;"></i>
+                                {{ s.nom }}
+                            </h5>
+
+                            <!-- Infos séance -->
+                            <div class="space-y-2">
+
+                                <!-- Date -->
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-calendar3 me-3" style="color: #27ae60; font-size: 1.1rem;"></i>
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.85rem;">Date</small>
+                                        <strong style="color: #2c3e50;">{{ s.dateSeance|date('d M Y') }}</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Horaire -->
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-clock-history me-3" style="color: #27ae60; font-size: 1.1rem;"></i>
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.85rem;">Horaire</small>
+                                        <strong style="color: #2c3e50;">{{ s.heureDebut|date('H:i') }} - {{ s.heureFin|date('H:i') }}</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Coach -->
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-person-badge me-3" style="color: #27ae60; font-size: 1.1rem;"></i>
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.85rem;">Coach</small>
+                                        <strong style="color: #2c3e50;">{{ s.coach.nom }} {{ s.coach.prenom }}</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Capacité avec barre de progression -->
+                                <div class="d-flex align-items-center mt-3">
+                                    <i class="bi bi-people-fill me-3" style="color: #27ae60; font-size: 1.1rem;"></i>
+                                    <div style="width: 100%;">
+                                        <small class="text-muted d-block" style="font-size: 0.85rem;">Places réservées</small>
+                                        <div class="progress mt-1" style="height: 10px;">
+                                            {% set pourcentage = (s.reservationSeances|length / s.capacite) * 100 %}
+                                            <div class="progress-bar" 
+                                                 role="progressbar" 
+                                                 style="width: {{ pourcentage }}%; background-color: #27ae60; transition: width 0.3s ease;"
+                                                 aria-valuenow="{{ pourcentage }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted" style="font-size: 0.8rem;">
+                                            {{ s.reservationSeances|length }} / {{ s.capacite }} places
+                                        </small>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!-- CARD FOOTER - ACTION -->
+                        <div class="card-footer bg-white border-top-0 p-3">
+
+                            {% if s.statutSeance.value == 'PLANIFIEE' and (s.capacite - s.reservationSeances|length) > 0 %}
+                                <a href="{{ path('app_reserver', {'id': s.idSeance}) }}"
+                                   class="btn w-100 fw-bold shadow-sm btn-eco"
+                                   style="background-color: #27ae60; color: white; border: none; transition: all 0.3s ease; padding: 0.6rem;"
+                                   onmouseover="this.style.backgroundColor='#229954'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(39, 174, 96, 0.3)';"
+                                   onmouseout="this.style.backgroundColor='#27ae60'; this.style.transform='translateY(0)'; this.style.boxShadow='';">
+                                    <i class="bi bi-calendar-check me-2"></i>
+                                    Réserver maintenant
+                                </a>
+                            {% elseif s.statutSeance.value != 'PLANIFIEE' %}
+                                <button class="btn w-100 fw-bold" 
+                                        style="background-color: #95a5a6; color: white; border: none; cursor: not-allowed;"
+                                        disabled>
+                                    <i class="bi bi-lock me-2"></i>
+                                    Séance non disponible
+                                </button>
+                            {% else %}
+                                <button class="btn w-100 fw-bold" 
+                                        style="background-color: #e74c3c; color: white; border: none; cursor: not-allowed;"
+                                        disabled>
+                                    <i class="bi bi-x-circle me-2"></i>
+                                    Séance complète
+                                </button>
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% else %}
+
+                <div class="col-12">
+                    <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #ffffff 0%, #f8faf9 100%); border-top: 4px solid #27ae60;">
+                        <div class="card-body text-center py-5">
+                            <div style="font-size: 4rem; margin-bottom: 1rem; color: #bdc3c7;">
+                                <i class="bi bi-inbox"></i>
+                            </div>
+                            <h4 class="fw-bold mb-2" style="color: #27ae60;">Aucune séance disponible</h4>
+                            <p class="text-muted mb-0">
+                                Nous n'avons pas de séances à proposer pour le moment. <br>
+                                Revenez plus tard pour consulter les prochaines séances !
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <!-- ===== MESSAGE "AUCUN RÉSULTAT RECHERCHE" ===== -->
+        <div id="noSearchResults" class="d-none">
+            <div class="col-12">
+                <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #fff9e6 0%, #ffe6cc 100%); border-top: 4px solid #f39c12;">
+                    <div class="card-body text-center py-5">
+                        <div style="font-size: 3rem; margin-bottom: 1rem; color: #f39c12;">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2" style="color: #e67e22;">Aucune séance ne correspond</h4>
+                        <p class="text-muted mb-0">
+                            Essayez une autre recherche ou parcourez toutes nos séances disponibles.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+    .btn-eco {
+        background-color: #27ae60 !important;
+        color: white !important;
+        border: none !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .btn-eco:hover {
+        background-color: #229954 !important;
+        color: white !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3) !important;
+    }
+
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+
+    .seance-card:hover .card {
+        box-shadow: 0 10px 30px rgba(39, 174, 96, 0.15) !important;
+        transform: translateY(-5px);
+    }
+
+    .progress {
+        background-color: #ecf0f1;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        background-color: #27ae60 !important;
+        transition: width 0.3s ease;
+    }
+
+    /* Animation douce au chargement */
+    .seance-card {
+        animation: fadeInUp 0.5s ease forwards;
+        opacity: 0;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .seance-card:nth-child(1) { animation-delay: 0.1s; }
+    .seance-card:nth-child(2) { animation-delay: 0.2s; }
+    .seance-card:nth-child(3) { animation-delay: 0.3s; }
+    .seance-card:nth-child(4) { animation-delay: 0.4s; }
+    .seance-card:nth-child(5) { animation-delay: 0.5s; }
+    .seance-card:nth-child(6) { animation-delay: 0.6s; }
+
+    /* Input focus */
+    .form-control:focus {
+        border-color: #27ae60 !important;
+        box-shadow: 0 0 0 0.2rem rgba(39, 174, 96, 0.25) !important;
+    }
+</style>
+
+{% block js %}
+<script>
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const searchValue = this.value.toLowerCase().trim();
+        const cards = document.querySelectorAll('.seance-card');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const cardData = card.getAttribute('data-seance');
+            const cardText = card.innerText.toLowerCase();
+            const isVisible = (cardData && cardData.includes(searchValue)) || 
+                            (cardText.includes(searchValue)) || 
+                            searchValue === '';
+            
+            card.style.display = isVisible ? 'block' : 'none';
+            
+            if (isVisible) {
+                visibleCount++;
+            }
+        });
+
+        // Afficher/Masquer le message "aucun résultat"
+        const noResultsMsg = document.getElementById('noSearchResults');
+        
+        if (visibleCount === 0 && searchValue !== '') {
+            noResultsMsg.classList.remove('d-none');
+        } else {
+            noResultsMsg.classList.add('d-none');
+        }
+    });
+
+    // Hover effect sur les cartes
+    document.querySelectorAll('.seance-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.querySelector('.card').style.boxShadow = '0 10px 30px rgba(39, 174, 96, 0.15)';
+            this.querySelector('.card').style.transform = 'translateY(-5px)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            this.querySelector('.card').style.boxShadow = '';
+            this.querySelector('.card').style.transform = '';
+        });
+    });
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Ajouter Séance{% endblock %}
+
+{% block page_title %}
+    {{ editMode ? 'Modifier la séance' : 'Ajouter une séance' }}
+    <small class="text-muted d-block">
+        Planning : {{ planning.titre }}
+    </small>
+{% endblock %}
+{% block body %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="admin-card p-4 shadow-sm rounded">
+
+            <!-- HEADER -->
+            <div class="d-flex align-items-center mb-4">
+                <i class="bi bi-calendar-plus fs-3 text-success me-2"></i>
+                <div>
+                    <h5 class="fw-bold mb-0">Nouvelle séance</h5>
+                    <small class="text-muted">
+                        Planning : {{ planning.titre }}
+                    </small>
+                </div>
+            </div>
+
+            {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+
+            <!-- NOM -->
+            <div class="mb-3">
+                {{ form_label(form.nom, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+              {{ form_widget(form.nom, {'attr': {
+    'class': 'form-control ' ~ (form.nom.vars.errors|length ? 'is-invalid' : ''),
+    'placeholder': 'Ex : Yoga débutant'
+}}) }}
+                <div class="text-danger small">
+                    {{ form_errors(form.nom) }}
+                </div>
+            </div>
+
+            <!-- DATE -->
+            <div class="mb-3">
+                {{ form_label(form.dateSeance, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                {{ form_widget(form.dateSeance, {'attr': {
+    'class': 'form-control ' ~ (form.dateSeance.vars.errors|length ? 'is-invalid' : '')
+}}) }}
+                <div class="text-danger small">
+                    {{ form_errors(form.dateSeance) }}
+                </div>
+            </div>
+
+            <!-- HEURES -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form_label(form.heureDebut, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                    {{ form_widget(form.heureDebut, {'attr': {
+    'class': 'form-control ' ~ (form.heureDebut.vars.errors|length ? 'is-invalid' : '')
+}}) }}
+                    <div class="text-danger small">
+                        {{ form_errors(form.heureDebut) }}
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    {{ form_label(form.heureFin, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                    {{ form_widget(form.heureFin, {'attr': {
+    'class': 'form-control ' ~ (form.heureFin.vars.errors|length ? 'is-invalid' : '')
+}}) }}
+                    <div class="text-danger small">
+                        {{ form_errors(form.heureFin) }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- CAPACITE -->
+            <div class="mb-3">
+                {{ form_label(form.capacite, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+                {{ form_widget(form.capacite, {'attr': {
+    'class': 'form-control ' ~ (form.capacite.vars.errors|length ? 'is-invalid' : ''),
+    'placeholder': 'Nombre de places'
+}}) }}
+                <div class="text-danger small">
+                    {{ form_errors(form.capacite) }}
+                </div>
+            </div>
+
+<!-- STATUT -->
+<div class="mb-3">
+    {{ form_label(form.statutSeance, 'Statut de la séance', {
+        'label_attr': {'class': 'form-label fw-semibold'}
+    }) }}
+
+    <div class="input-group">
+        <span class="input-group-text bg-success text-white">
+            <i class="bi bi-flag"></i>
+        </span>
+
+{{ form_widget(form.statutSeance, {
+    'attr': form.statutSeance.vars.attr|merge({
+        'class': (form.statutSeance.vars.attr.class|default('') ~ ' form-select custom-select ' ~ (form.statutSeance.vars.errors|length ? 'is-invalid' : '')),
+        'data-placeholder': 'Choisir un statut'
+    })
+}) }}
+    </div>
+
+    <div class="text-danger small mt-1">
+        {{ form_errors(form.statutSeance) }}
+    </div>
+</div>
+
+<!-- COACH -->
+<div class="mb-4">
+    {{ form_label(form.coach, 'Coach responsable', {
+        'label_attr': {'class': 'form-label fw-semibold'}
+    }) }}
+
+    <div class="input-group">
+        <span class="input-group-text bg-success text-white">
+            <i class="bi bi-person"></i>
+        </span>
+
+{{ form_widget(form.coach, {
+    'attr': form.coach.vars.attr|merge({
+        'class': 'form-select custom-select ' ~ (form.coach.vars.errors|length ? 'is-invalid' : '')
+    }),
+    'placeholder': 'Choisir un coach'
+}) }}
+
+    <div class="text-danger small mt-1">
+        {{ form_errors(form.coach) }}
+    </div>
+</div>
+
+            <!-- ACTIONS -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+
+                <a href="{{ path('app_admin_seances', {'id': planning.idPlanning}) }}"
+                   class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour
+                </a>
+
+<button class="btn btn-success">
+    <i class="bi bi-check-circle"></i>
+    {{ editMode ? 'Modifier' : 'Enregistrer' }}
+</button>
+
+            </div>
+
+            {{ form_end(form) }}
+
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
