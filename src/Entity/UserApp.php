@@ -241,6 +241,17 @@ public function setImageUrl(?string $image_url): self
     return $this; 
 }
 
+    public function getImage_url(): ?string
+    {
+        return $this->image_url;
+    }
+
+    public function setImage_url(?string $image_url): self
+    {
+        $this->image_url = $image_url;
+        return $this;
+    }
+
     public function getDisponibilite(): ?Disponibilite { return $this->disponibilite; }
     public function setDisponibilite(?Disponibilite $disponibilite): self { $this->disponibilite = $disponibilite; return $this; }
 
