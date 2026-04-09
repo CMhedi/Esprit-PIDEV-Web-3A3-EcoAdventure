@@ -53,6 +53,9 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $date_creation = null;
 
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $last_seen = null;
+
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $age = null;
 
@@ -201,6 +204,9 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getDate_creation(): ?\DateTimeInterface { return $this->date_creation; }
     public function setDate_creation(\DateTimeInterface $date_creation): self { $this->date_creation = $date_creation; return $this; }
+
+    public function getLast_seen(): ?\DateTimeInterface { return $this->last_seen; }
+    public function setLast_seen(?\DateTimeInterface $last_seen): self { $this->last_seen = $last_seen; return $this; }
 
     public function getAge(): ?int { return $this->age; }
     public function setAge(?int $age): self { $this->age = $age; return $this; }

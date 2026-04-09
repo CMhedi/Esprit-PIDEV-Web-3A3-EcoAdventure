@@ -8,6 +8,12 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class AdminController extends AbstractController
 {
+    #[Route('/admin', name: 'app_admin_home')]
+    public function home(): Response
+    {
+        return $this->redirectToRoute('app_admin_dashboard');
+    }
+
     #[Route('/admin/dashboard', name: 'app_admin_dashboard')]
     public function dashboard(): Response
     {
