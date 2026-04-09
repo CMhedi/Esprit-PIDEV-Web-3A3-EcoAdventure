@@ -55,7 +55,7 @@
                        name="search"
                        id="liveSearchInput"
                        class="form-control"
-                       placeholder="Rechercher par nom utilisateur, pack ou statut..."
+                       placeholder="Rechercher par nom, email, pack ou statut..."
                        value="{{ search|default('') }}"
                        autocomplete="off">
             </div>
@@ -78,11 +78,16 @@
                     </thead>
                     <tbody>
                         {% for inscription in inscriptions %}
+                            {% set userName = inscription.userApp ? inscription.userApp.prenom ~ ' ' ~ inscription.userApp.nom : (inscription.nomUser ?: 'Utilisateur inconnu') %}
+                            {% set userEmail = inscription.userApp ? inscription.userApp.email : null %}
                             <tr>
                                 <td>
                                     <div class="cell-title">
-                                        {{ inscription.nomUser ?: 'Utilisateur inconnu' }}
+                                        {{ userName|trim }}
                                     </div>
+                                    {% if userEmail %}
+                                        <small class="text-muted">{{ userEmail }}</small>
+                                    {% endif %}
                                 </td>
 
                                 <td>
@@ -117,7 +122,7 @@
                                     <button type="button"
                                             class="btn btn-delete-inscription"
                                             data-inscription-id="{{ inscription.idInscription }}"
-                                            data-inscription-user="{{ inscription.nomUser ?: 'Utilisateur inconnu' }}"
+                                            data-inscription-user="{{ userName|trim }}"
                                             data-inscription-pack="{{ inscription.nomPack ?: (inscription.pack ? inscription.pack.nom : 'Pack non défini') }}"
                                             data-inscription-token="{{ csrf_token('delete_inscription_' ~ inscription.idInscription) }}">
                                         <i class="bi bi-trash me-1"></i> Supprimer

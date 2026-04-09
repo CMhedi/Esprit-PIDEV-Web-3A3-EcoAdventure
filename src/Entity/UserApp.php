@@ -240,6 +240,25 @@ public function setImageUrl(?string $image_url): self
 
     // Collection Getters (Inscriptions, Messages, etc.)
     public function getInscriptions(): Collection { return $this->inscriptions; }
+    public function addInscription(Inscription $inscription): self
+    {
+        if (!$this->inscriptions->contains($inscription)) {
+            $this->inscriptions->add($inscription);
+            $inscription->setUserApp($this);
+        }
+
+        return $this;
+    }
+
+    public function removeInscription(Inscription $inscription): self
+    {
+        if ($this->inscriptions->removeElement($inscription) && $inscription->getUserApp() === $this) {
+            $inscription->setUserApp(null);
+        }
+
+        return $this;
+    }
+
     public function getMessages(): Collection { return $this->messages; }
     public function getReclamations(): Collection { return $this->reclamations; }
     public function getReservationActivites(): Collection { return $this->reservationActivites; }

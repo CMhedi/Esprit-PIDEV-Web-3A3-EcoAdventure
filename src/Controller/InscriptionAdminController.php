@@ -45,7 +45,9 @@ final class InscriptionAdminController extends AbstractController
             return $this->redirectToRoute('app_admin_inscriptions');
         }
 
-        $nomUser = $inscription->getNomUser() ?: 'Utilisateur';
+        $nomUser = $inscription->getUserApp()
+            ? trim(sprintf('%s %s', $inscription->getUserApp()->getPrenom(), $inscription->getUserApp()->getNom()))
+            : ($inscription->getNomUser() ?: 'Utilisateur');
         $nomPack = $inscription->getNomPack() ?: ($inscription->getPack() ? $inscription->getPack()->getNom() : 'Pack');
 
         $entityManager->remove($inscription);

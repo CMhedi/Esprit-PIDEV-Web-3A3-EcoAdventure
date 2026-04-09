@@ -26,7 +26,7 @@ class UserAppType extends AbstractType
             ->add('role', EnumType::class, ['class' => RoleUser::class])
             ->add('specialite', EnumType::class, ['class' => Specialite::class])
             ->add('disponibilite', EnumType::class, ['class' => Disponibilite::class])
-            ->add('bio_certifs')
+            ->add('bioCertifs')
             ->add('plainPassword', TextType::class, [
                 'mapped' => false, // Symfony ma i-lawajch 3liha f'el Entity
                 'required' => false,
