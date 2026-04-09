@@ -1,0 +1,556 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes séances - Plateforme Eco{% endblock %}
+
+{% block body %}
+
+<div class="container-fluid py-5" style="background: linear-gradient(135deg, #ffffff 0%, #f8faf9 100%); min-height: 100vh;">
+
+    <div class="container">
+
+        <!-- ===== HEADER SECTION ===== -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <!-- Titre et sous-titre -->
+                    <div>
+                        <h1 class="fw-bold" style="color: #27ae60; margin-bottom: 0.5rem;">
+                            <i class="bi bi-calendar-check"></i>
+                            Mes séances réservées
+                        </h1>
+                        <p class="text-muted mb-0" style="font-size: 1rem;">
+                            Consultez et gérez vos réservations
+                        </p>
+                    </div>
+
+                    <!-- Retour aux séances disponibles -->
+                    <a href="{{ path('app_user_seances') }}" class="btn btn-outline-success">
+                        <i class="bi bi-arrow-left"></i>
+                        Retour aux séances
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== STATS SECTION ===== -->
+        <div class="row mb-5 g-3">
+            
+            <!-- Total réservations -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #27ae60;">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2" style="font-size: 0.85rem;">Mes réservations</h6>
+                        <h5 class="fw-bold mb-1" style="color: #27ae60;" id="totalReservations">{{ reservations|length }}</h5>
+                        <small class="text-muted">Séances confirmées</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prochaine réservation -->
+           <div class="col-md-6 col-lg-3">
+    <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #27ae60;">
+        <div class="card-body">
+
+            <h6 class="text-muted mb-2" style="font-size: 0.85rem;">
+                Prochaine séance
+            </h6>
+
+            {% set prochaine = reservations
+                |filter(r => r.seance.statutSeance.value == 'PLANIFIEE')
+                |sort((a, b) => a.seance.dateSeance <=> b.seance.dateSeance)
+                |first
+            %}
+
+            {% if prochaine %}
+
+                {% set today = "now"|date("Y-m-d") %}
+                {% set seanceDate = prochaine.seance.dateSeance|date("Y-m-d") %}
+
+                {% set diffDays = ((prochaine.seance.dateSeance|date('U') - "now"|date('U')) / 86400)|round(0, 'floor') %}
+
+                <h5 class="fw-bold mb-1" style="color: #27ae60;">
+                    {{ prochaine.seance.nom }}
+                </h5>
+
+                <small class="text-muted">
+
+                    {# 🎯 AUJOURD’HUI / DEMAIN / AUTRE #}
+                    {% if seanceDate == today %}
+                        🔥 <strong>Aujourd’hui</strong>
+                    {% elseif diffDays == 1 %}
+                        ⏳ <strong>Demain</strong>
+                    {% else %}
+                        📅 {{ prochaine.seance.dateSeance|format_date(locale='fr', pattern='d MMM') }}
+                    {% endif %}
+
+                    à {{ prochaine.seance.heureDebut|date('H:i') }}
+
+                    <br>
+
+                    {# 🎯 COMPTEUR #}
+                    {% if diffDays > 1 %}
+                        <span class="text-success">
+                            dans {{ diffDays }} jours
+                        </span>
+                    {% elseif diffDays == 1 %}
+                        <span class="text-warning">
+                            dans 1 jour
+                        </span>
+                    {% elseif diffDays == 0 %}
+                        <span class="text-danger">
+                            aujourd’hui
+                        </span>
+                    {% endif %}
+
+                </small>
+
+            {% else %}
+                <p class="text-muted mb-0">
+                    Aucune séance à venir
+                </p>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+            <!-- Séances complétées -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #27ae60;">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2" style="font-size: 0.85rem;">Séances complétées</h6>
+                        {% set completees = reservations|filter(r => r.seance.statutSeance.value == 'TERMINEE')|length %}
+                        <h5 class="fw-bold mb-1" style="color: #27ae60;">{{ completees }}</h5>
+                        <small class="text-muted">Merci de votre participation !</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conseil -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #f39c12;">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2" style="font-size: 0.85rem;">💡 Conseil</h6>
+                        <p class="mb-0" style="font-size: 0.9rem; color: #2c3e50;">
+                            {% if reservations|length == 0 %}
+                                <strong>Commencez !</strong> Réservez votre première séance
+                            {% elseif reservations|filter(r => r.seance.statutSeance.value == 'PLANIFIEE')|length == 0 %}
+                                <strong>À bientôt !</strong> Nouvelles séances en préparation
+                            {% else %}
+                                <strong>C'est parti !</strong> {{ reservations|filter(r => r.seance.statutSeance.value == 'PLANIFIEE')|length }} séance(s) à venir
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ===== SEARCH & FILTER SECTION ===== -->
+        {% if reservations|length > 0 %}
+        <div class="row mb-4 g-3">
+            
+            <!-- Recherche -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-0">
+                                <i class="bi bi-search" style="color: #27ae60;"></i>
+                            </span>
+                            <input type="text"
+                                   class="form-control border-0"
+                                   placeholder="Rechercher une séance..."
+                                   id="searchInput"
+                                   autocomplete="off"
+                                   style="border-bottom: 2px solid #27ae60 !important;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-success filter-btn active" data-filter="tous">
+                                <i class="bi bi-funnel"></i>
+                                Tous
+                            </button>
+                            <button class="btn btn-sm btn-outline-success filter-btn" data-filter="PLANIFIEE">
+                                <i class="bi bi-calendar-event"></i>
+                                À venir
+                            </button>
+                            <button class="btn btn-sm btn-outline-success filter-btn" data-filter="TERMINEE">
+                                <i class="bi bi-check-circle"></i>
+                                Complétées
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {% endif %}
+
+        <!-- ===== SÉANCES RÉSERVÉES ===== -->
+        <div class="row g-4" id="reservationsContainer">
+
+            {% for r in reservations %}
+
+                <div class="col-lg-4 col-md-6 reservation-card" 
+                     data-reservation="{{ r.seance.nom|lower }}"
+                     data-statut="{{ r.seance.statutSeance.value }}">
+
+                    <div class="card border-0 shadow-sm h-100 overflow-hidden transition-all" 
+                         style="cursor: pointer; transition: all 0.3s ease; border-top: 5px solid #27ae60;">
+<!-- CARD HEADER -->
+<div class="position-relative" style="background: linear-gradient(135deg, 
+    {% if r.seance.statutSeance.value == 'PLANIFIEE' %}
+        #27ae60 0%, #229954 100%
+    {% elseif r.seance.statutSeance.value == 'TERMINEE' %}
+        #95a5a6 0%, #7f8c8d 100%
+    {% else %}
+        #bdc3c7 0%, #95a5a6 100%
+    {% endif %}
+); height: 120px; display: flex; align-items: center; justify-content: center;">
+    
+    <!-- Icône grande -->
+    <div style="font-size: 3rem; color: rgba(255, 255, 255, 0.3); z-index: 1;">
+        <i class="bi bi-activity"></i>
+    </div>
+
+     <!-- Badge date (haut gauche) -->
+    <div class="position-absolute top-3 start-3">
+        <span class="badge bg-white shadow-sm p-2" style="color: #27ae60; font-weight: 600;">
+            <i class="bi bi-calendar-event me-1"></i>
+            {{ r.seance.dateSeance|date('d/m/Y') }}
+        </span>
+    </div>
+
+    <!-- Badge horaire (haut droite) -->
+    <div class="position-absolute top-3 end-3">
+        <span class="badge bg-white shadow-sm p-2" style="color: #27ae60; font-weight: 600;">
+            <i class="bi bi-clock me-1"></i>
+            {{ r.seance.heureDebut|date('H:i') }}
+        </span>
+    </div>
+
+
+    <!-- Badge statut (bas) -->
+    <div class="position-absolute bottom-3 start-50 translate-middle-x">
+        <span class="badge bg-white shadow-sm p-2" style="color: #27ae60; font-weight: 600;">
+            <i class="bi bi-dot"></i>
+            {{ r.seance.statutSeance.value }}
+        </span>
+    </div>
+
+</div>
+
+                        <!-- CARD BODY -->
+                        <div class="card-body position-relative">
+
+                            <!-- Titre -->
+                            <h5 class="fw-bold mb-3" style="color: #27ae60;">
+                                <i class="bi bi-lightning-fill" style="color: #f39c12;"></i>
+                                {{ r.seance.nom }}
+                            </h5>
+
+                            <!-- Infos -->
+                            <div class="space-y-2">
+
+                                <!-- Horaire -->
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-clock-history me-3" style="color: #27ae60; font-size: 1.1rem;"></i>
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.85rem;">Horaire</small>
+                                        <strong style="color: #2c3e50;">{{ r.seance.heureDebut|date('H:i') }} - {{ r.seance.heureFin|date('H:i') }}</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Coach -->
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-person-badge me-3" style="color: #27ae60; font-size: 1.1rem;"></i>
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.85rem;">Coach</small>
+                                        <strong style="color: #2c3e50;">{{ r.seance.coach.nom }} {{ r.seance.coach.prenom }}</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Statut réservation -->
+                                <div class="d-flex align-items-center mt-3 pt-3" style="border-top: 1px solid #ecf0f1;">
+                                    <i class="bi bi-check-circle me-3" style="color: #27ae60; font-size: 1.1rem;"></i>
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.85rem;">Statut</small>
+                                        <span class="badge" 
+                                            style="background-color: #27ae60; color: white;">
+                                            {{ r.statut.value }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!-- CARD FOOTER -->
+                        <div class="card-footer bg-white border-top-0 p-3">
+                            
+                            {% if r.seance.statutSeance.value == 'PLANIFIEE' %}
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-sm fw-bold shadow-sm" 
+                                            style="background-color: #27ae60; color: white; border: none;"
+                                            disabled>
+                                        <i class="bi bi-check-lg me-2"></i>
+                                        Confirmation reçue
+                                    </button>
+<button class="btn btn-sm btn-outline-danger fw-bold"
+        data-bs-toggle="modal"
+        data-bs-target="#cancelModal"
+        data-reservation-id="{{ r.id_reservation }}"
+        data-cancel-url="{{ path('app_reservation_cancel', {'id': r.id_reservation}) }}"
+        data-seance-name="{{ r.seance.nom }}">
+    <i class="bi bi-trash me-2"></i>
+    Annuler
+</button>
+                                </div>
+                            {% elseif r.seance.statutSeance.value == 'TERMINEE' %}
+                                <button class="btn w-100 btn-sm fw-bold" 
+                                        style="background-color: #95a5a6; color: white; border: none;">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    Séance complétée
+                                </button>
+                            {% else %}
+                                <button class="btn w-100 btn-sm fw-bold" 
+                                        style="background-color: #bdc3c7; color: white; border: none;">
+                                    <i class="bi bi-clock me-2"></i>
+                                    En attente
+                                </button>
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% else %}
+
+                <div class="col-12">
+                    <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #ffffff 0%, #f8faf9 100%); border-top: 4px solid #27ae60;">
+                        <div class="card-body text-center py-5">
+                            <div style="font-size: 4rem; margin-bottom: 1rem; color: #bdc3c7;">
+                                <i class="bi bi-inbox"></i>
+                            </div>
+                            <h4 class="fw-bold mb-2" style="color: #27ae60;">Aucune réservation</h4>
+                            <p class="text-muted mb-4">
+                                Vous n'avez pas encore réservé de séance. Commencez dès maintenant !
+                            </p>
+                            <a href="{{ path('app_user_seances') }}" class="btn" style="background-color: #27ae60; color: white;">
+                                <i class="bi bi-calendar-check me-2"></i>
+                                Voir les séances disponibles
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <!-- Message "aucun résultat" -->
+        <div id="noResultsMessage" class="d-none">
+            <div class="col-12">
+                <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #fff9e6 0%, #ffe6cc 100%); border-top: 4px solid #f39c12;">
+                    <div class="card-body text-center py-5">
+                        <div style="font-size: 3rem; margin-bottom: 1rem; color: #f39c12;">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2" style="color: #e67e22;">Aucune réservation ne correspond</h4>
+                        <p class="text-muted mb-0">
+                            Essayez une autre recherche ou modifiez vos filtres.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ===== MODAL ANNULATION ===== -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger bg-opacity-10 border-0">
+                <h5 class="modal-title fw-bold" style="color: #e74c3c;">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Confirmer l'annulation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">
+                    Êtes-vous sûr de vouloir annuler votre réservation pour <strong id="seanceName"></strong> ?
+                </p>
+                <div class="alert alert-warning" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Attention :</strong> Cette action est irréversible. Vous ne pourrez pas récupérer cette place après l'annulation.
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x me-2"></i>
+                    Garder ma réservation
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmCancelBtn">
+                    <i class="bi bi-trash me-2"></i>
+                    Annuler la réservation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+
+    .reservation-card:hover .card {
+        box-shadow: 0 10px 30px rgba(39, 174, 96, 0.15) !important;
+        transform: translateY(-5px);
+    }
+
+    /* Animation au chargement */
+    .reservation-card {
+        animation: fadeInUp 0.5s ease forwards;
+        opacity: 0;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .reservation-card:nth-child(1) { animation-delay: 0.1s; }
+    .reservation-card:nth-child(2) { animation-delay: 0.2s; }
+    .reservation-card:nth-child(3) { animation-delay: 0.3s; }
+    .reservation-card:nth-child(4) { animation-delay: 0.4s; }
+    .reservation-card:nth-child(5) { animation-delay: 0.5s; }
+    .reservation-card:nth-child(6) { animation-delay: 0.6s; }
+
+    .filter-btn {
+        transition: all 0.3s ease;
+    }
+
+    .filter-btn.active {
+        background-color: #27ae60 !important;
+        color: white !important;
+    }
+
+    .input-group-text {
+        border-right: none !important;
+    }
+
+    .form-control:focus {
+        border-color: #27ae60 !important;
+        box-shadow: none !important;
+    }
+</style>
+
+{% block js %}
+<script>
+    let currentReservationId = null;
+    let currentCancelUrl = null;
+
+    // ===== SEARCH DYNAMIQUE =====
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        filterReservations();
+    });
+
+    // ===== FILTRES DYNAMIQUES =====
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            filterReservations();
+        });
+    });
+
+    // ===== FONCTION DE FILTRAGE =====
+    function filterReservations() {
+        const searchValue = document.getElementById('searchInput').value.toLowerCase();
+        const activeFilter = document.querySelector('.filter-btn.active').getAttribute('data-filter');
+        const cards = document.querySelectorAll('.reservation-card');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const seanceName = card.getAttribute('data-reservation');
+            const statut = card.getAttribute('data-statut');
+            
+            // Vérifie la recherche
+            const matchSearch = seanceName.includes(searchValue) || searchValue === '';
+            
+            // Vérifie le filtre
+            const matchFilter = activeFilter === 'tous' || statut === activeFilter;
+            
+            // Affiche/masque la carte
+            const isVisible = matchSearch && matchFilter;
+            card.style.display = isVisible ? 'block' : 'none';
+            
+            if (isVisible) {
+                visibleCount++;
+            }
+        });
+
+        // Affiche/masque le message "aucun résultat"
+        const noResultsMsg = document.getElementById('noResultsMessage');
+        if (visibleCount === 0) {
+            noResultsMsg.classList.remove('d-none');
+        } else {
+            noResultsMsg.classList.add('d-none');
+        }
+
+        // Met à jour le total
+        document.getElementById('totalReservations').textContent = visibleCount;
+    }
+
+    // ===== MODAL ANNULATION =====
+    const cancelModal = document.getElementById('cancelModal');
+    
+    cancelModal.addEventListener('show.bs.modal', function(e) {
+        const button = e.relatedTarget;
+        currentReservationId = button.getAttribute('data-reservation-id');
+        currentCancelUrl = button.getAttribute('data-cancel-url');
+        const seanceName = button.getAttribute('data-seance-name');
+        
+        document.getElementById('seanceName').textContent = seanceName;
+    });
+
+    // ===== CONFIRMER L'ANNULATION =====
+    document.getElementById('confirmCancelBtn').addEventListener('click', function() {
+        if (currentCancelUrl) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = currentCancelUrl;
+            
+            document.body.appendChild(form);
+            form.submit();
+        } else {
+            console.error('URL d\'annulation manquante');
+            alert('Erreur : impossible d\'annuler la réservation');
+        }
+    });
+</script>
+{% endblock %}
+
+{% endblock %}
