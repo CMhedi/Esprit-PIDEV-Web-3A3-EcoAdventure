@@ -62,13 +62,13 @@
 <div class="container pb-5">
     <div class="glass-wrapper shadow-lg">
         <div class="d-flex justify-content-between align-items-center mb-5">
-            <h1 class="text-white fw-bold mb-0">Réclamation</h1> {# Na77ina el ID kima t'7eb #}
+            <h1 class="text-white fw-bold mb-0">Réclamation</h1>
             
             <span class="badge badge-pro 
                 {% if reclamation.statut.value == 'TRAITEE' %}bg-success
                 {% elseif reclamation.statut.value == 'REJETEE' %}bg-danger
                 {% else %}bg-warning text-dark{% endif %} shadow-sm">
-                {{ reclamation.statut.value }} {# Salla7na el Enum render #}
+                {{ reclamation.statut.value }} 
             </span>
         </div>
 
@@ -80,7 +80,7 @@
                 </div>
                 <div class="col-md-6">
                     <p class="label-pro">Date de Soumission</p>
-                    <p class="value-pro">{{ reclamation.date_creation|date('d/m/Y H:i') }}</p> {# Salla7na el property name #}
+                    <p class="value-pro">{{ reclamation.date_creation|date('d/m/Y H:i') }}</p> 
                 </div>
             </div>
 
