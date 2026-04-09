@@ -1,0 +1,91 @@
+{# templates/user_app/index.html.twig #}
+
+{% extends 'base.html.twig' %}
+
+{% block title %}EcoAdventure - Dashboard{% endblock %}
+
+{% block body %}
+<style>
+    body {
+        background: url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1350&q=80') no-repeat center center fixed;
+        background-size: cover;
+        font-family: 'Poppins', sans-serif;
+    }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 25px;
+        padding: 40px;
+        margin-top: 40px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .table { color: #fff !important; }
+</style>
+
+<div class="container">
+    <div class="glass-card">
+        <div class="d-flex justify-content-between mb-4">
+            <h1 class="text-white">EcoAdventure Index</h1>
+            <a href="{{ path('app_user_app_new') }}" class="btn btn-primary rounded-pill">Nouveau Membre</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Membre</th>
+                        <th>Contact (Email & Tel)</th> 
+                        <th>Rôle</th>
+                        <th>Détails Pro</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for user_app in user_apps %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-white text-dark rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px; font-weight: bold;">
+                                    {{ user_app.nom|first|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ user_app.nom }} {{ user_app.prenom }}</div>
+                                    <small class="text-white-50">#EcoMember</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        
+                        <td>
+                            <div class="fw-bold"><i class="fas fa-envelope me-1"></i> {{ user_app.email }}</div>
+                            <div class="text-warning mt-1">
+                                <i class="fas fa-phone-alt me-1"></i> {{ user_app.telephone ?: 'Pas de numéro' }}
+                            </div>
+                        </td>
+
+                        <td>
+                            <span class="badge bg-primary text-uppercase">
+                                {{ user_app.role ? user_app.role.value : 'USER' }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <div class="fw-bold text-info">{{ user_app.specialite ? user_app.specialite.value : 'Sans Spécialité' }}</div>
+                            <small>{{ user_app.experience ?: '0' }} ans d'exp.</small>
+                        </td>
+
+                        <td>
+                            <div class="d-flex gap-2">
+                                <a href="{{ path('app_user_app_show', {'id_user': user_app.id_user}) }}" class="btn btn-sm btn-outline-info">Show</a>
+                                <a href="{{ path('app_user_app_edit', {'id_user': user_app.id_user}) }}" class="btn btn-sm btn-warning">Modifier</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

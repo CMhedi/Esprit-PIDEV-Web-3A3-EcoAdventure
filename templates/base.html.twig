@@ -32,10 +32,43 @@
                 <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
             </ul>
 
-            <div class="d-flex gap-2">
-                <a href="#" class="btn btn-outline-success rounded-pill px-4">Connexion</a>
-                <a href="#" class="btn btn-eco rounded-pill px-4">S'inscrire</a>
-            </div>
+{# base.html.twig #}
+
+<div class="d-flex align-items-center gap-3">
+    {% if app.user %}
+        {# 1. Ken el user connecte: nwarriw esmou w dropdown #}
+        <div class="dropdown">
+            <a class="btn btn-light rounded-pill dropdown-toggle d-flex align-items-center gap-2 border shadow-sm" 
+               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle fs-5 text-success"></i>
+                <span class="fw-semibold">{{ app.user.prenom }}</span>
+            </a>
+
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                <li>
+                    <a class="dropdown-item py-2" href="{{ path('app_profile_index') }}">
+                        <i class="bi bi-person me-2"></i>Mon Profil
+                    </a>
+                </li>
+                {# Tnajem tzid houni links okhrin kima Mes Réclamations #}
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item py-2 text-danger" href="{{ path('app_logout') }}">
+                        <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+                    </a>
+                </li>
+            </ul>
+        </div>
+    {% else %}
+        {# 2. Ken mouch connecte: nwarriw el buttons mta3 el mbekri #}
+        <a href="{{ path('app_login') }}" class="btn btn-outline-success rounded-pill px-4 fw-semibold">
+            Connexion
+        </a>
+        <a href="{{ path('app_register') }}" class="btn btn-eco rounded-pill px-4 fw-semibold text-white">
+            S'inscrire
+        </a>
+    {% endif %}
+</div>
         </div>
     </div>
 </nav>
