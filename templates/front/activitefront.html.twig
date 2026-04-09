@@ -5,6 +5,9 @@
 {% block body %}
 {% set fieldErrors = fieldErrors|default({}) %}
 {% set formData = formData|default({}) %}
+{% set packs = packs|default([]) %}
+{% set selectedPack = selectedPack|default(null) %}
+{% set selectedPackId = formData.id_pack|default('') %}
 
 <div class="container my-5">
     <h2 class="mb-4">Ajouter une Nouvelle Activite</h2>
@@ -28,6 +31,129 @@
             display: block;
             font-size: 0.9rem;
             margin-top: 0.35rem;
+        }
+
+        .pack-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1rem;
+        }
+
+        .pack-choice-label {
+            display: block;
+            cursor: pointer;
+        }
+
+        .pack-choice-input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .pack-choice-card {
+            height: 100%;
+            border: 1px solid #dbe7dd;
+            border-radius: 1rem;
+            padding: 1rem;
+            background: #fff;
+            box-shadow: 0 10px 24px rgba(15, 67, 34, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        .pack-choice-label:hover .pack-choice-card {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(15, 67, 34, 0.14);
+        }
+
+        .pack-choice-input:checked + .pack-choice-card {
+            border-color: #198754;
+            background: linear-gradient(180deg, #f6fff8 0%, #ffffff 100%);
+            box-shadow: 0 16px 32px rgba(25, 135, 84, 0.18);
+        }
+
+        .pack-choice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.9rem;
+        }
+
+        .pack-choice-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #17331f;
+            margin-bottom: 0.25rem;
+        }
+
+        .pack-choice-type {
+            font-size: 0.9rem;
+            color: #4d6755;
+        }
+
+        .pack-status-badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 0.35rem 0.7rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .pack-status-badge.dispo {
+            background: #d1f7df;
+            color: #157347;
+        }
+
+        .pack-status-badge.other {
+            background: #f2f4f7;
+            color: #495057;
+        }
+
+        .pack-mini-info {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .pack-mini-info-item {
+            background: #f8faf9;
+            border-radius: 0.85rem;
+            padding: 0.75rem;
+        }
+
+        .pack-mini-info-item span {
+            display: block;
+            font-size: 0.8rem;
+            color: #64706a;
+            margin-bottom: 0.2rem;
+        }
+
+        .pack-mini-info-item strong {
+            color: #1f2d24;
+            font-size: 0.98rem;
+        }
+
+        .selected-pack-summary {
+            border: 1px solid #cae8d3;
+            background: linear-gradient(135deg, #f6fff8, #ffffff);
+            border-radius: 1rem;
+            padding: 1rem 1.2rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .selected-pack-summary h5 {
+            margin-bottom: 0.5rem;
+            color: #14532d;
+        }
+
+        .selected-pack-summary p {
+            margin-bottom: 0;
+            color: #425046;
         }
     </style>
 
@@ -129,22 +255,74 @@
             {% endfor %}
         </div>
 
-        <div class="mb-3">
-            <label for="id_pack" class="form-label">Pack associe</label>
-            <input
-                type="text"
-                class="form-control"
-                id="id_pack"
-                name="id_pack"
-                placeholder="ID du pack"
-                value="{{ formData.id_pack|default('') }}"
-            >
+        <div class="mb-4">
+            <label class="form-label">Pack associe</label>
+            {% if packs is empty %}
+                <div class="alert alert-warning mb-0">
+                    Aucun pack n'est disponible pour le moment. Ajoute d'abord un pack avant de creer cette activite.
+                </div>
+            {% else %}
+                <div class="pack-selection-grid">
+                    {% for pack in packs %}
+                        {% set packId = pack.idPack %}
+                        {% set packStatusClass = pack.statutPack|lower == 'dispo' ? 'dispo' : 'other' %}
+                        <label class="pack-choice-label">
+                            <input
+                                class="pack-choice-input"
+                                type="radio"
+                                name="id_pack"
+                                value="{{ packId }}"
+                                {{ selectedPackId == packId ? 'checked' : '' }}
+                            >
+                            <div class="pack-choice-card">
+                                <div class="pack-choice-header">
+                                    <div>
+                                        <div class="pack-choice-title">{{ pack.nom }}</div>
+                                        <div class="pack-choice-type">Type : {{ pack.typePack }}</div>
+                                    </div>
+                                    <span class="pack-status-badge {{ packStatusClass }}">{{ pack.statutPack }}</span>
+                                </div>
+
+                                <div class="pack-mini-info">
+                                    <div class="pack-mini-info-item">
+                                        <span>Prix de base</span>
+                                        <strong>{{ pack.prixBase|number_format(2, '.', ' ') }} DT</strong>
+                                    </div>
+                                    <div class="pack-mini-info-item">
+                                        <span>Reduction</span>
+                                        <strong>{{ pack.reduction|number_format(2, '.', ' ') }} DT</strong>
+                                    </div>
+                                    <div class="pack-mini-info-item">
+                                        <span>Prix final</span>
+                                        <strong>{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</strong>
+                                    </div>
+                                    <div class="pack-mini-info-item">
+                                        <span>Activites max</span>
+                                        <strong>{{ pack.nbActivitesMax }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    {% endfor %}
+                </div>
+            {% endif %}
             {% for message in fieldErrors.id_pack|default([]) %}
                 <label class="error-label">{{ message }}</label>
             {% endfor %}
         </div>
 
-        <button type="submit" class="btn btn-eco btn-lg rounded-pill px-5">
+        {% if selectedPack is not null %}
+            <div class="selected-pack-summary">
+                <h5>Pack selectionne : {{ selectedPack.nom }}</h5>
+                <p>
+                    Type {{ selectedPack.typePack }}, prix final {{ selectedPack.prixFinal|number_format(2, '.', ' ') }} DT,
+                    reduction {{ selectedPack.reduction|number_format(2, '.', ' ') }} DT,
+                    limite {{ selectedPack.nbActivitesMax }} activites.
+                </p>
+            </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-eco btn-lg rounded-pill px-5" {{ packs is empty ? 'disabled' : '' }}>
             <i class="bi bi-plus-circle me-2"></i> Ajouter l'activite
         </button>
     </form>

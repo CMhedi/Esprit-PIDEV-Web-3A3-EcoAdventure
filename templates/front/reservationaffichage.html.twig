@@ -4,6 +4,36 @@
 
 {% block body %}
 <div class="container my-5">
+    <style>
+        .reservation-image-preview {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 0.9rem;
+            border: 1px solid #dce9df;
+            cursor: zoom-in;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .reservation-image-preview:hover {
+            transform: scale(1.03);
+            box-shadow: 0 12px 24px rgba(25, 135, 84, 0.16);
+        }
+
+        .reservation-image-note {
+            color: #617166;
+            font-size: 0.92rem;
+            margin-top: 0.75rem;
+        }
+
+        .activite-lightbox-image {
+            width: 100%;
+            max-height: 75vh;
+            object-fit: contain;
+            border-radius: 1rem;
+        }
+    </style>
+
     <div class="card shadow-lg border-0 rounded-4">
         <div class="card-header bg-success text-white py-3">
             <h3 class="mb-0">
@@ -20,6 +50,7 @@
                         <th>Date</th>
                         <th>Statut</th>
                         <th>Nombre de personnes</th>
+                        <th>Image</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -31,9 +62,26 @@
                         <td>{{ reservation.statutRes.value }}</td>
 
                         <td>{{ reservation.nbPersonnes }}</td>
+                        <td>
+                            {% if reservation.activite.imageUrl %}
+                                <img
+                                    src="{{ asset(reservation.activite.imageUrl) }}"
+                                    alt="{{ reservation.activite.nom }}"
+                                    class="reservation-image-preview"
+                                    data-activite-image-preview
+                                    data-image-src="{{ asset(reservation.activite.imageUrl) }}"
+                                >
+                            {% endif %}
+                        </td>
                     </tr>
                 </tbody>
             </table>
+
+            {% if reservation.activite.imageUrl %}
+                <div class="reservation-image-note">
+                    Double-clique sur la photo pour l'ouvrir en grand.
+                </div>
+            {% endif %}
 
             <div class="mt-4">
                 <a href="{{ path('app_activitefront') }}" class="btn btn-primary rounded-pill px-4">
@@ -48,4 +96,41 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="activiteImageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title">Image de l'activite</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body pt-2 text-center">
+                <img src="" alt="Apercu de l'activite" class="activite-lightbox-image" id="activiteImageModalPreview">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const previews = document.querySelectorAll('[data-activite-image-preview]');
+        const modalElement = document.getElementById('activiteImageModal');
+        const modalImage = document.getElementById('activiteImageModalPreview');
+
+        if (!previews.length || !modalElement || !modalImage || typeof bootstrap === 'undefined') {
+            return;
+        }
+
+        const modal = new bootstrap.Modal(modalElement);
+
+        previews.forEach((preview) => {
+            preview.addEventListener('dblclick', () => {
+                modalImage.src = preview.dataset.imageSrc || preview.src;
+                modal.show();
+            });
+        });
+    });
+</script>
 {% endblock %}

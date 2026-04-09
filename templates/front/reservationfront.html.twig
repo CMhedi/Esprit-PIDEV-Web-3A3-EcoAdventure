@@ -16,7 +16,63 @@
             font-size: 0.9rem;
             margin-top: 0.35rem;
         }
+
+        .activite-image-card {
+            border: 1px solid #d9e7dc;
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: 0 12px 30px rgba(18, 62, 32, 0.08);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .activite-image-preview {
+            width: 100%;
+            max-width: 360px;
+            max-height: 240px;
+            object-fit: cover;
+            border-radius: 0.9rem;
+            border: 1px solid #dce9df;
+            cursor: zoom-in;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .activite-image-preview:hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 24px rgba(25, 135, 84, 0.16);
+        }
+
+        .activite-image-note {
+            color: #617166;
+            font-size: 0.92rem;
+            margin-top: 0.7rem;
+        }
+
+        .activite-lightbox-image {
+            width: 100%;
+            max-height: 75vh;
+            object-fit: contain;
+            border-radius: 1rem;
+        }
     </style>
+
+    {% if activite.imageUrl %}
+        <div class="activite-image-card">
+            <label class="form-label">Image de l'activite</label>
+            <div>
+                <img
+                    src="{{ asset(activite.imageUrl) }}"
+                    alt="{{ activite.nom }}"
+                    class="activite-image-preview"
+                    data-activite-image-preview
+                    data-image-src="{{ asset(activite.imageUrl) }}"
+                >
+            </div>
+            <div class="activite-image-note">
+                Double-clique sur la photo pour l'ouvrir en grand.
+            </div>
+        </div>
+    {% endif %}
 
     <form action="{{ path('app_reservation_create', {'id': activite.idActivite}) }}" method="POST" novalidate>
         <div class="mb-3">
@@ -75,4 +131,39 @@
         </button>
     </form>
 </div>
+
+<div class="modal fade" id="activiteImageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title">Image de l'activite</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body pt-2 text-center">
+                <img src="" alt="Apercu de l'activite" class="activite-lightbox-image" id="activiteImageModalPreview">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const preview = document.querySelector('[data-activite-image-preview]');
+        const modalElement = document.getElementById('activiteImageModal');
+        const modalImage = document.getElementById('activiteImageModalPreview');
+
+        if (!preview || !modalElement || !modalImage || typeof bootstrap === 'undefined') {
+            return;
+        }
+
+        const modal = new bootstrap.Modal(modalElement);
+
+        preview.addEventListener('dblclick', () => {
+            modalImage.src = preview.dataset.imageSrc || preview.src;
+            modal.show();
+        });
+    });
+</script>
 {% endblock %}

@@ -8,6 +8,7 @@ use App\Enum\CategorieAct;
 use App\Enum\NiveauAct;
 use App\Enum\Statut;
 use App\Enum\TypeActivite;
+use App\Repository\PackRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
@@ -20,16 +21,17 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class ActiviteController extends AbstractController
 {
     #[Route('/activitefront', name: 'app_activitefront')]
-    public function activiteFront(): Response
+    public function activiteFront(PackRepository $packRepository): Response
     {
-        return $this->renderCreateForm();
+        return $this->renderCreateForm($packRepository);
     }
 
     #[Route('/activite/create', name: 'app_activite_create', methods: ['POST'])]
     public function create(
         Request $request,
         EntityManagerInterface $em,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        PackRepository $packRepository
     ): Response {
         $formData = [
             'nom' => trim((string) $request->request->get('nom', '')),
@@ -85,23 +87,28 @@ class ActiviteController extends AbstractController
         $fieldErrors = array_merge_recursive($fieldErrors, $validationErrors);
 
         if ($fieldErrors !== []) {
-            return $this->renderCreateForm($fieldErrors, $formData);
+            return $this->renderCreateForm($packRepository, $fieldErrors, $formData);
         }
 
         if ($imageFile !== null) {
-            $uploadPath = 'C:/wamp64/www/uploads/';
+            $uploadPath = rtrim((string) $this->getParameter('activite_resv_image_directory'), '/\\');
+            $publicPath = trim((string) $this->getParameter('activite_resv_image_public_path'), '/\\');
             $extension = $imageFile->guessExtension() ?: $imageFile->getClientOriginalExtension() ?: 'bin';
             $newFilename = uniqid('activite_', true) . '.' . $extension;
 
             try {
+                if (!is_dir($uploadPath) && !mkdir($uploadPath, 0775, true) && !is_dir($uploadPath)) {
+                    throw new FileException("Impossible de creer le dossier d'upload.");
+                }
+
                 $imageFile->move($uploadPath, $newFilename);
             } catch (FileException) {
-                return $this->renderCreateForm([
+                return $this->renderCreateForm($packRepository, [
                     'image_url' => ["Erreur lors du telechargement de l'image."],
                 ], $formData);
             }
 
-            $activite->setImageUrl('uploads/' . $newFilename);
+            $activite->setImageUrl($publicPath . '/' . $newFilename);
         }
 
         $em->persist($activite);
@@ -122,11 +129,24 @@ class ActiviteController extends AbstractController
         ]);
     }
 
-    private function renderCreateForm(array $fieldErrors = [], array $formData = []): Response
+    private function renderCreateForm(
+        PackRepository $packRepository,
+        array $fieldErrors = [],
+        array $formData = []
+    ): Response
     {
+        $packs = $packRepository->findBy([], ['nom' => 'ASC']);
+        $selectedPack = null;
+
+        if (($formData['id_pack'] ?? '') !== '' && ctype_digit((string) $formData['id_pack'])) {
+            $selectedPack = $packRepository->find((int) $formData['id_pack']);
+        }
+
         return $this->render('front/activitefront.html.twig', [
             'fieldErrors' => $fieldErrors,
             'formData' => $formData,
+            'packs' => $packs,
+            'selectedPack' => $selectedPack,
         ]);
     }
 
