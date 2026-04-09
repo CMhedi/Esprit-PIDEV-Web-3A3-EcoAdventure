@@ -7,7 +7,6 @@
 {% endblock %}
 
 {% block body %}
-
 <section class="pack-inscription-section py-5">
     <div class="container">
         {% for message in app.flashes('success') %}
@@ -34,7 +33,7 @@
 
                     <div class="pack-card-body mt-4">
                         <div class="pack-feature-row">
-                            <span><i class="bi bi-percent me-2"></i>Réduction</span>
+                            <span><i class="bi bi-percent me-2"></i>Reduction</span>
                             <strong>{{ pack.reduction|number_format(2, '.', ' ') }} DT</strong>
                         </div>
 
@@ -44,7 +43,7 @@
                         </div>
 
                         <div class="pack-feature-row">
-                            <span><i class="bi bi-lightning-charge-fill me-2"></i>Activités max</span>
+                            <span><i class="bi bi-lightning-charge-fill me-2"></i>Activites max</span>
                             <strong>{{ pack.nbActivitesMax }}</strong>
                         </div>
 
@@ -58,29 +57,42 @@
 
             <div class="col-lg-7">
                 <div class="pack-form-card">
-                    <h2 class="form-title">Formulaire d’inscription</h2>
+                    <h2 class="form-title">Formulaire d'inscription</h2>
                     <p class="form-subtitle">
-                        Remplissez ce formulaire pour vous inscrire au pack sélectionné.
+                        Votre compte connecte sera utilise automatiquement pour cette inscription.
                     </p>
 
                     {{ form_start(form) }}
-                        <div class="mb-3">
-                            {{ form_label(form.nom_user) }}
-                            {{ form_widget(form.nom_user) }}
-                            <div class="text-danger small mt-1">
-                                {{ form_errors(form.nom_user) }}
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Compte connecte</label>
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ currentUser.prenom }} {{ currentUser.nom }}"
+                                       disabled>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ currentUser.email }}"
+                                       disabled>
                             </div>
                         </div>
 
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Pack sélectionné</label>
+                                <label class="form-label">Pack selectionne</label>
                                 <input type="text" class="form-control" value="{{ pack.nom }}" disabled>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label">Montant à payer</label>
-                                <input type="text" class="form-control" value="{{ pack.prixFinal|number_format(2, '.', ' ') }} DT" disabled>
+                                <label class="form-label">Montant a payer</label>
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ pack.prixFinal|number_format(2, '.', ' ') }} DT"
+                                       disabled>
                             </div>
                         </div>
 

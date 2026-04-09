@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Export PDF - Packs EcoAdventure</title>
+    <style>
+        @page {
+            margin: 28px 24px 24px 24px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            margin: 0;
+            color: #374151;
+            background: #F9FAFB;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .page {
+            width: 100%;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #2D5A27 0%, #3B82F6 55%, #F28C28 100%);
+            color: #ffffff;
+            border-radius: 22px;
+            padding: 28px 30px;
+            margin-bottom: 22px;
+        }
+
+        .hero-top {
+            width: 100%;
+            margin-bottom: 18px;
+        }
+
+        .brand {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.92;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 900;
+            margin: 10px 0 8px 0;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            max-width: 540px;
+            opacity: 0.95;
+        }
+
+        .hero-meta {
+            margin-top: 20px;
+        }
+
+        .hero-chip {
+            display: inline-block;
+            background: rgba(255,255,255,0.18);
+            border: 1px solid rgba(255,255,255,0.22);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-right: 8px;
+        }
+
+        .stats {
+            width: 100%;
+            margin-bottom: 22px;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 10px 0;
+            margin-left: -10px;
+            margin-right: -10px;
+        }
+
+        .stat-card {
+            width: 33.33%;
+            background: #ffffff;
+            border: 1px solid #dce7dc;
+            border-radius: 18px;
+            padding: 16px 18px;
+            vertical-align: top;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #6b7280;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 900;
+            color: #2D5A27;
+            margin-bottom: 4px;
+        }
+
+        .stat-note {
+            font-size: 11px;
+            color: #7b8794;
+        }
+
+        .section-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 900;
+            color: #374151;
+            margin: 0 0 6px 0;
+        }
+
+        .section-line {
+            width: 70px;
+            height: 4px;
+            background: linear-gradient(135deg, #2D5A27, #F28C28, #3B82F6);
+            border-radius: 999px;
+            margin-bottom: 14px;
+        }
+
+        .section-text {
+            color: #6b7280;
+            font-size: 11.5px;
+            margin-bottom: 0;
+        }
+
+        .table-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        table.pack-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .pack-table thead th {
+            background: #edf5ee;
+            color: #374151;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 14px 12px;
+            border-bottom: 1px solid #dbe4dd;
+            text-align: left;
+        }
+
+        .pack-table tbody td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #eef1f4;
+            vertical-align: middle;
+            font-size: 11.5px;
+        }
+
+        .pack-table tbody tr:nth-child(even) {
+            background: #fcfcfd;
+        }
+
+        .pack-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .pack-name {
+            font-weight: 800;
+            color: #374151;
+            margin-bottom: 3px;
+        }
+
+        .pack-type {
+            font-size: 10.5px;
+            color: #6b7280;
+        }
+
+        .price-main {
+            font-weight: 900;
+            color: #F28C28;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .badge-active {
+            background: rgba(45, 90, 39, 0.12);
+            color: #2D5A27;
+            border: 1px solid rgba(45, 90, 39, 0.18);
+        }
+
+        .badge-inactive {
+            background: rgba(55, 65, 81, 0.10);
+            color: #374151;
+            border: 1px solid rgba(55, 65, 81, 0.14);
+        }
+
+        .summary-box {
+            margin-top: 18px;
+            background: linear-gradient(135deg, rgba(45,90,39,0.08), rgba(59,130,246,0.06));
+            border: 1px solid #d7e2da;
+            border-radius: 18px;
+            padding: 16px 18px;
+        }
+
+        .summary-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .summary-text {
+            font-size: 11.5px;
+            color: #4b5563;
+            margin: 0;
+        }
+
+        .footer {
+            margin-top: 18px;
+            padding-top: 12px;
+            border-top: 1px solid #dfe5e8;
+            font-size: 10.5px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .empty-box {
+            text-align: center;
+            padding: 40px 20px;
+            background: #ffffff;
+            border: 1px dashed #cfd8dc;
+            border-radius: 18px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <div class="hero">
+        <div class="hero-top">
+            <div class="brand">EcoAdventure • Administration</div>
+            <div class="title">Rapport Officiel des Packs</div>
+            <div class="subtitle">
+                Synthèse professionnelle des packs disponibles dans la plateforme,
+                présentée sous un format entreprise moderne pour consultation, archivage et suivi administratif.
+            </div>
+        </div>
+
+        <div class="hero-meta">
+            <span class="hero-chip">Export généré le {{ dateExport|date('d/m/Y à H:i') }}</span>
+            <span class="hero-chip">Document de gestion interne</span>
+        </div>
+    </div>
+
+    <div class="stats">
+        <table class="stats-table">
+            <tr>
+                <td class="stat-card">
+                    <div class="stat-label">Total Packs</div>
+                    <div class="stat-value">{{ packs|length }}</div>
+                    <div class="stat-note">Nombre total de packs présents dans la base.</div>
+                </td>
+                <td class="stat-card">
+                    <div class="stat-label">Disponibilité</div>
+                    <div class="stat-value">
+                        {% set actifs = 0 %}
+                        {% for pack in packs %}
+                            {% if pack.statutPack|lower in ['actif', 'active', 'disponible'] %}
+                                {% set actifs = actifs + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ actifs }}
+                    </div>
+                    <div class="stat-note">Packs actuellement actifs ou disponibles.</div>
+                </td>
+                <td class="stat-card">
+                    <div class="stat-label">Inactifs</div>
+                    <div class="stat-value">{{ packs|length - actifs }}</div>
+                    <div class="stat-note">Packs non disponibles ou inactifs.</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-card">
+        <div class="section-title">Vue d’ensemble</div>
+        <div class="section-line"></div>
+        <p class="section-text">
+            Ce rapport présente les informations essentielles des packs enregistrés :
+            nom, type, prix de base, réduction appliquée, prix final, capacité d’activités et statut.
+            Le format a été optimisé pour un usage administratif, une lecture claire et une présentation moderne.
+        </p>
+    </div>
+
+    {% if packs|length > 0 %}
+        <div class="table-card">
+            <table class="pack-table">
+                <thead>
+                    <tr>
+                        <th>Pack</th>
+                        <th>Prix de base</th>
+                        <th>Réduction</th>
+                        <th>Prix final</th>
+                        <th>Nb activités</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pack in packs %}
+                        <tr>
+                            <td>
+                                <div class="pack-name">{{ pack.nom }}</div>
+                                <div class="pack-type">{{ pack.typePack }}</div>
+                            </td>
+                            <td>{{ pack.prixBase }} DT</td>
+                            <td>{{ pack.reduction }} DT</td>
+                            <td><span class="price-main">{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</span></td>
+                            <td>{{ pack.nbActivitesMax }}</td>
+                            <td>
+                                {% if pack.statutPack|lower in ['actif', 'active', 'disponible'] %}
+                                    <span class="badge badge-active">{{ pack.statutPack }}</span>
+                                {% else %}
+                                    <span class="badge badge-inactive">{{ pack.statutPack }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="summary-box">
+            <div class="summary-title">Résumé de gestion</div>
+            <p class="summary-text">
+                Les packs présentés dans ce rapport constituent l’offre actuellement enregistrée sur la plateforme EcoAdventure.
+                Ce document peut être utilisé comme support de pilotage pour le suivi commercial, la vérification administrative
+                et la préparation des décisions liées à la mise à jour de l’offre.
+            </p>
+        </div>
+    {% else %}
+        <div class="empty-box">
+            Aucun pack disponible pour cet export.
+        </div>
+    {% endif %}
+
+    <div class="footer">
+        EcoAdventure — Rapport d’export PDF des packs • Généré automatiquement depuis l’interface d’administration
+    </div>
+
+</div>
+</body>
+</html>
