@@ -24,12 +24,26 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class MessagerieController extends AbstractController
 {
+    #[Route('/messagerie/open', name: 'app_messagerie_open')]
+    public function openCurrentSessionMessenger(
+        Request $request
+    ): Response {
+        $sessionUserId = $request->getSession()->get('current_user_id');
+        if (!$sessionUserId) {
+            $this->addFlash('error', 'Connectez-vous d\'abord pour ouvrir la messagerie.');
+            return $this->redirectToRoute('app_login');
+        }
+
+        return $this->redirectToRoute('app_messagerie_auto', ['id_user' => $sessionUserId]);
+    }
+
     /**
      * Vérifier le rôle de l'utilisateur et rediriger automatiquement
      */
     #[Route('/messagerie/auto/{id_user}', name: 'app_messagerie_auto', requirements: ['id_user' => '\d+'])]
     public function autoRedirectByRole(
         int $id_user,
+        Request $request,
         UserAppRepository $userAppRepo
     ): Response {
         $user = $userAppRepo->find($id_user);
@@ -38,6 +52,10 @@ class MessagerieController extends AbstractController
             // Si l'utilisateur n'existe pas, rediriger vers l'accueil
             return $this->redirectToRoute('app_home');
         }
+
+        $request->getSession()->set('current_user_id', $user->getId_user());
+        $request->getSession()->set('current_user_name', trim(($user->getPrenom() ?? '') . ' ' . ($user->getNom() ?? '')));
+        $request->getSession()->set('current_user_role', $user->getRole()?->value);
         
         // Vérifier le rôle de l'utilisateur
         $role = $user->getRole();
@@ -54,21 +72,38 @@ class MessagerieController extends AbstractController
     /**
      * Page principale de la messagerie
      */
-    #[Route('/messagerie', name: 'app_messagerie_root', defaults: ['id_user' => 1, 'id_conversation' => null])]
-    #[Route('/messagerie/{id_user}', name: 'app_messagerie', requirements: ['id_user' => '\d+'], defaults: ['id_user' => 1])]
+    #[Route('/messagerie', name: 'app_messagerie_root', defaults: ['id_user' => null, 'id_conversation' => null])]
+    #[Route('/messagerie/{id_user}', name: 'app_messagerie', requirements: ['id_user' => '\d+'], defaults: ['id_user' => null])]
     #[Route('/messagerie/{id_user}/{id_conversation}', name: 'app_messagerie_selected', requirements: ['id_user' => '\d+', 'id_conversation' => '\d+'])]
     public function index(
-        int $id_user,
+        ?int $id_user,
         ?int $id_conversation,
+        Request $request,
         UserAppRepository $userAppRepo,
         ConversationRepository $conversationRepo,
         MessageRepository $messageRepo,
         EntityManagerInterface $em
     ): Response {
+        if ($id_user === null) {
+            $id_user = $request->getSession()->get('current_user_id');
+        }
+
+        if (!$id_user) {
+            $this->addFlash('error', 'Connectez-vous pour accéder à votre messagerie.');
+            return $this->redirectToRoute('app_login');
+        }
+
         $user = $userAppRepo->find($id_user);
         if (!$user) {
+            $request->getSession()->remove('current_user_id');
+            $request->getSession()->remove('current_user_name');
+            $request->getSession()->remove('current_user_role');
             return $this->redirectToRoute('app_home');
         }
+
+        $request->getSession()->set('current_user_id', $user->getId_user());
+        $request->getSession()->set('current_user_name', trim(($user->getPrenom() ?? '') . ' ' . ($user->getNom() ?? '')));
+        $request->getSession()->set('current_user_role', $user->getRole()?->value);
 
         if ($user->getRole() === RoleUser::ADMIN) {
             return $this->redirectToRoute('admin_messagerie_index');
