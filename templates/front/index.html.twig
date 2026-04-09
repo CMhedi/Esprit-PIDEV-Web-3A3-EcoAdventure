@@ -17,6 +17,8 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    flex: 0 0 32%;
+    max-width: 32%;
 }
 .conversation-scroll-area {
     flex: 1;
@@ -62,11 +64,24 @@
     }
     .chat-window {
     background: white;
-    flex: 1;
+    flex: 1 1 68%;
+    max-width: 68%;
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-width: 0;
 }
+    @media (max-width: 767.98px) {
+        .chat-container {
+            display: block;
+            height: auto;
+        }
+        .conversation-list,
+        .chat-window {
+            max-width: 100%;
+            flex: 1 1 100%;
+        }
+    }
     .messages-area {
     flex: 1;
     overflow-y: auto;
@@ -479,79 +494,81 @@
             </div>
             <div class="flex-grow-1 p-2" style="overflow-y:auto">
                 {% for conversation in conversations %}
-                    {% set conversationAvatar = '' %}
-                    {% set conversationOtherId = null %}
-                    {% set conversationOtherPresence = null %}
-                    {% set conversationDisplayTitle = conversation.titre %}
-                    {% if not conversation.est_groupe %}
-                        {% for participant in conversation.participants %}
-                            {% if participant.id_user != mon_id and participant.image_url %}
-                                {% set conversationAvatar = participant.image_url %}
+                    {% if conversation is not null %}
+                        {% set conversationAvatar = '' %}
+                        {% set conversationOtherId = null %}
+                        {% set conversationOtherPresence = null %}
+                        {% set conversationDisplayTitle = conversation.titre %}
+                        {% if not conversation.est_groupe %}
+                            {% for participant in conversation.participants %}
+                                {% if participant.id_user != mon_id and participant.image_url %}
+                                    {% set conversationAvatar = participant.image_url %}
+                                {% endif %}
+                                {% if participant.id_user != mon_id %}
+                                    {% set conversationOtherId = participant.id_user %}
+                                    {% set conversationDisplayTitle = participant.nom ~ ' ' ~ participant.prenom %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if conversationOtherId and presence_by_user_id[conversationOtherId] is defined %}
+                                {% set conversationOtherPresence = presence_by_user_id[conversationOtherId] %}
                             {% endif %}
-                            {% if participant.id_user != mon_id %}
-                                {% set conversationOtherId = participant.id_user %}
-                                {% set conversationDisplayTitle = participant.nom ~ ' ' ~ participant.prenom %}
-                            {% endif %}
-                        {% endfor %}
-                        {% if conversationOtherId and presence_by_user_id[conversationOtherId] is defined %}
-                            {% set conversationOtherPresence = presence_by_user_id[conversationOtherId] %}
                         {% endif %}
-                    {% endif %}
-                    {% set conversationAvatarUrl = conversationAvatar
-                        ? (conversationAvatar starts with 'http'
-                            ? conversationAvatar
-                            : (conversationAvatar starts with '/'
+                        {% set conversationAvatarUrl = conversationAvatar
+                            ? (conversationAvatar starts with 'http'
                                 ? conversationAvatar
-                                : asset(conversationAvatar)))
-                        : '' %}
-                    <a href="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
-                       class="card conversation-item mb-1 {% if current_conv is defined and current_conv.id_conversation == conversation.id_conversation %}active{% endif %}"
-                       data-open-url="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
-                       data-title="{{ conversationDisplayTitle|lower }}"
-                       data-date="{{ conversation.date_creation ? conversation.date_creation|date('YmdHis') : '' }}"
-                       data-type="{{ conversation.est_groupe ? 'groupe' : 'prive' }}">
-                        <div class="card-body p-3">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="rounded-circle bg-eco d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 45px; height: 45px;">
-                                        {% if conversationAvatarUrl %}
-                                            <img src="{{ conversationAvatarUrl }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                                : (conversationAvatar starts with '/'
+                                    ? conversationAvatar
+                                    : asset(conversationAvatar)))
+                            : '' %}
+                        <a href="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
+                           class="card conversation-item mb-1 {% if current_conv is defined and current_conv and current_conv.id_conversation == conversation.id_conversation %}active{% endif %}"
+                           data-open-url="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
+                           data-title="{{ conversationDisplayTitle|lower }}"
+                           data-date="{{ conversation.date_creation ? conversation.date_creation|date('YmdHis') : '' }}"
+                           data-type="{{ conversation.est_groupe ? 'groupe' : 'prive' }}">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="rounded-circle bg-eco d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 45px; height: 45px;">
+                                            {% if conversationAvatarUrl %}
+                                                <img src="{{ conversationAvatarUrl }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                                            {% else %}
+                                                <i class="bi {{ conversation.est_groupe ? 'bi-people-fill' : 'bi-person-fill' }}"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3 text-dark">
+                                        <div class="d-flex justify-content-between">
+                                            <h6 class="mb-0 fw-bold text-truncate" style="max-width: 140px;">{{ conversationDisplayTitle }}</h6>
+                                            <div class="d-flex align-items-center gap-2">
+                                                {% set unreadCount = unread_by_conversation_id[conversation.id_conversation]|default(0) %}
+                                                {% if unreadCount > 0 %}
+                                                    <span class="unread-badge">{{ unreadCount }}</span>
+                                                {% endif %}
+                                                <small class="text-muted">{{ conversation.date_creation|date('d/m') }}</small>
+                                            </div>
+                                        </div>
+                                        {% if conversation.est_groupe %}
+                                            <small class="text-muted">Groupe</small>
                                         {% else %}
-                                            <i class="bi {{ conversation.est_groupe ? 'bi-people-fill' : 'bi-person-fill' }}"></i>
+                                            <small class="text-muted">
+                                                <span class="online-dot {{ conversationOtherPresence and conversationOtherPresence.online ? '' : 'offline' }}"></span>
+                                                {{ conversationOtherPresence and conversationOtherPresence.online ? 'En ligne' : 'Hors ligne' }}
+                                            </small>
                                         {% endif %}
                                     </div>
                                 </div>
-                                <div class="flex-grow-1 ms-3 text-dark">
-                                    <div class="d-flex justify-content-between">
-                                        <h6 class="mb-0 fw-bold text-truncate" style="max-width: 140px;">{{ conversationDisplayTitle }}</h6>
-                                        <div class="d-flex align-items-center gap-2">
-                                            {% set unreadCount = unread_by_conversation_id[conversation.id_conversation]|default(0) %}
-                                            {% if unreadCount > 0 %}
-                                                <span class="unread-badge">{{ unreadCount }}</span>
-                                            {% endif %}
-                                            <small class="text-muted">{{ conversation.date_creation|date('d/m') }}</small>
-                                        </div>
-                                    </div>
-                                    {% if conversation.est_groupe %}
-                                        <small class="text-muted">Groupe</small>
-                                    {% else %}
-                                        <small class="{{ conversationOtherPresence and conversationOtherPresence.online ? 'text-success' : 'text-muted' }}">
-                                            <span class="online-dot {{ conversationOtherPresence and conversationOtherPresence.online ? '' : 'offline' }}"></span>
-                                            {{ conversationOtherPresence and conversationOtherPresence.online ? 'En ligne' : 'Hors ligne' }}
-                                        </small>
-                                    {% endif %}
-                                </div>
                             </div>
-                        </div>
-                    </a>
+                            </a>
+                        {% endif %}
                 {% else %}
-                    <div class="text-center mt-5 text-muted">
-                        <i class="bi bi-chat-square-dots fs-1 opacity-25"></i>
-                        <p>Aucune discussion</p>
-                    </div>
+                        <div class="text-center mt-5 text-muted">
+                            <i class="bi bi-chat-square-dots fs-1 opacity-25"></i>
+                            <p>Aucune discussion</p>
+                        </div>
                 {% endfor %}
             </div>
-        </div>
+            </div>
 
         {# --- COLONNE DROITE (CHAT) --- #}
         <div class="col-md-8 d-flex flex-column chat-window">
@@ -597,7 +614,11 @@
                                 <span class="badge bg-light text-success border ms-2" style="font-size: 0.7rem;">{{ current_conv.est_groupe ? 'Groupe' : 'Privé' }}</span>
                             {% endif %}
                         </h5>
-                        {% if current_conv and not current_conv.est_groupe and headerPresence %}
+                        {% if current_conv and not current_conv.est_groupe and current_conv.privateBlocked %}
+                            <small class="text-danger fw-semibold">
+                                <i class="bi bi-slash-circle me-1"></i>Conversation privee bloquee
+                            </small>
+                        {% elseif current_conv and not current_conv.est_groupe and headerPresence %}
                             <small class="{{ headerPresence.online ? 'text-success' : 'text-muted' }} fw-semibold">
                                 <span class="online-dot {{ headerPresence.online ? '' : 'offline' }}"></span>
                                 {{ headerPresence.online ? 'En ligne' : 'Hors ligne' }}
@@ -622,6 +643,7 @@
                 {% if current_conv %}
                     {% set is_group_admin = current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
                 {% endif %}
+                {% if current_conv %}
                 {% for message in messages %}
                     {% set is_mine = (message.userApp is defined and message.userApp.id_user == mon_id) %}
                     {% set msgType = message.type_message and message.type_message.value is defined ? message.type_message.value : (message.type_message ?? '') %}
@@ -631,9 +653,10 @@
                     <div class="d-flex {{ is_mine ? 'justify-content-end' : 'justify-content-start' }} mb-3 message-item">
                         <div class="message-bubble {{ (is_mine and isTextStyled) ? 'message-sent shadow' : 'message-received shadow-sm' }}" style="position: relative;">
                             <div class="mb-2 fw-bold small text-muted">{{ message.userApp ? (message.userApp.nom ~ ' ' ~ message.userApp.prenom) : 'Utilisateur' }}</div>
+                            {% set attachments = message.attachments|default([]) %}
                             {% set contentParts = rawContent ? rawContent|split('|', 2) : [''] %}
-                            {% set mediaPath = contentParts[0] ?? '' %}
-                            {% set mediaComment = contentParts[1] ?? '' %}
+                            {% set mediaPath = attachments is empty ? (contentParts[0] ?? '') : '' %}
+                            {% set mediaComment = attachments is empty ? (contentParts[1] ?? '') : rawContent %}
                             {% set mediaRelative = mediaPath starts with '/uploads/' ? mediaPath|slice(9) : '' %}
                             {% set mediaUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative}) : '' %}
                             {% set mediaDownloadUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative, 'download': 1}) : '' %}
@@ -654,7 +677,50 @@
                                 {% endif %}
                             {% endfor %}
 
-                            {% if mediaUrl %}
+                            {% if attachments is not empty %}
+                                {% for attachment in attachments %}
+                                    {% set attachmentPath = attachment.path|default('') %}
+                                    {% set attachmentRelative = attachmentPath starts with '/uploads/' ? attachmentPath|slice(9) : '' %}
+                                    {% set attachmentUrl = attachmentRelative ? path('app_media_file', {'file': attachmentRelative}) : '' %}
+                                    {% set attachmentDownloadUrl = attachmentRelative ? path('app_media_file', {'file': attachmentRelative, 'download': 1}) : '' %}
+                                    {% set attachmentName = attachment.name|default(attachmentPath ? (attachmentPath|split('/')|last) : 'fichier') %}
+                                    {% set attachmentMime = attachment.mime|default('') %}
+                                    {% set attachmentType = attachment.type|default('') %}
+                                    <div class="mb-2">
+                                        {% if attachmentType in ['AUDIO', 'VOCALE', 'APPEL_AUDIO'] or attachmentMime starts with 'audio/' %}
+                                            <div class="voice-message-card js-open-media" data-media-url="{{ attachmentUrl }}" data-media-kind="audio" title="Double-clic pour ouvrir">
+                                                <span class="voice-message-time" data-voice-time>0:00</span>
+                                                <div class="voice-wave" aria-hidden="true">
+                                                    <span></span><span></span><span></span><span></span><span></span>
+                                                    <span></span>
+                                                    <span></span><span></span><span></span><span></span><span></span>
+                                                </div>
+                                                <button type="button" class="voice-play-btn" data-voice-play>
+                                                    <i class="bi bi-play-fill"></i>
+                                                </button>
+                                                <audio class="d-none" preload="metadata">
+                                                    <source src="{{ attachmentUrl }}">
+                                                </audio>
+                                            </div>
+                                        {% elseif attachmentType in ['VIDEO', 'APPEL_VIDEO'] or attachmentMime starts with 'video/' %}
+                                            <video controls class="rounded chat-video-inline js-open-media" data-media-url="{{ attachmentUrl }}" data-media-kind="video" title="Double-clic pour ouvrir">
+                                                <source src="{{ attachmentUrl }}">
+                                            </video>
+                                        {% elseif attachmentType in ['IMAGE', 'GIF'] or attachmentMime starts with 'image/' %}
+                                            <img src="{{ attachmentUrl }}" alt="media" class="img-fluid rounded js-open-media" data-media-url="{{ attachmentUrl }}" data-media-kind="image" style="max-height: 220px; cursor: zoom-in;" title="Double-clic pour ouvrir">
+                                        {% elseif attachmentType == 'PDF' or attachmentMime == 'application/pdf' %}
+                                            <a href="{{ attachmentDownloadUrl }}" class="btn btn-sm btn-light border" download="{{ attachmentName }}" target="_blank" rel="noopener">
+                                                <i class="bi bi-file-earmark-pdf me-1"></i> {{ attachmentName }}
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ attachmentDownloadUrl }}" class="text-decoration-underline" download="{{ attachmentName }}" target="_blank" rel="noopener">{{ attachmentName }}</a>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                                {% if mediaComment is not empty %}
+                                    <div class="mt-2 js-linkify">{{ mediaComment }}</div>
+                                {% endif %}
+                            {% elseif mediaUrl %}
                                 {% if isAudioFile or msgType in ['AUDIO', 'APPEL_AUDIO', 'VOCALE'] %}
                                     <div class="voice-message-card js-open-media" data-media-url="{{ mediaUrl }}" data-media-kind="audio" title="Double-clic pour ouvrir">
                                         <span class="voice-message-time" data-voice-time>0:00</span>
@@ -757,6 +823,12 @@
                         <p>Dites bonjour à Ahmed !</p>
                     </div>
                 {% endfor %}
+                {% else %}
+                    <div class="my-auto text-center text-muted">
+                        <i class="bi bi-chat-square-text fs-1 d-block mb-2 text-success opacity-25"></i>
+                        <p>Selectionnez une conversation a gauche pour afficher les messages.</p>
+                    </div>
+                {% endif %}
             </div>
 
           <div class="p-3 message-footer">
@@ -798,19 +870,19 @@
                     </button>
                     <div id="emojiPickerPanel" class="emoji-picker-panel d-none" aria-label="Emoji list"></div>
                 </div>
-                <input type="text" name="message" id="textMessage" class="form-control composer-text-input text-dark" placeholder="Type Message..." autocomplete="off" {{ current_conv ? '' : 'disabled' }}>
+                <input type="text" name="message" id="textMessage" class="form-control composer-text-input text-dark" placeholder="{{ current_conv and current_conv.privateBlocked ? 'Conversation privee bloquee' : 'Type Message...' }}" autocomplete="off" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
             </div>
             
-            <input type="file" id="mediaFile" name="mediaFile" accept="image/*,video/*,audio/*,application/pdf,.gif" class="d-none">
+            <input type="file" id="mediaFile" name="mediaFiles[]" accept="image/*,video/*,audio/*,application/pdf,.gif" class="d-none" multiple>
             <input type="hidden" id="isRecordedVocale" name="is_recorded_vocale" value="0">
 
-            <button type="submit" class="composer-send-btn shadow-sm" {{ current_conv ? '' : 'disabled' }} title="Envoyer">
+            <button type="submit" class="composer-send-btn shadow-sm" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }} title="Envoyer">
                 <i class="bi bi-send"></i>
             </button>
-            <button type="button" class="media-action-btn" id="attachVocaleBtn" title="Message vocale">
+            <button type="button" class="media-action-btn" id="attachVocaleBtn" title="Message vocale" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
                 <i class="bi bi-mic"></i>
             </button>
-            <button type="button" class="media-action-btn" id="attachImageBtn" title="Joindre un fichier">
+            <button type="button" class="media-action-btn" id="attachImageBtn" title="Joindre un fichier" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
                 <i class="bi bi-paperclip"></i>
             </button>
         </div>
@@ -1001,7 +1073,7 @@
             </div>
             <div class="modal-body p-0" style="max-height: 400px; overflow-y: auto;">
                 <div class="list-group list-group-flush">
-                    {% if conversations|length > 0 and current_conv is defined and current_conv.est_groupe and is_group_admin %}
+                    {% if conversations|length > 0 and current_conv is defined and current_conv and current_conv.est_groupe and is_group_admin %}
                         {% for user in tous_les_users %}
                             {% if user.id_user != mon_id and user not in current_conv.participants %}
                                 <div class="list-group-item d-flex align-items-center justify-content-between p-3">
@@ -1220,6 +1292,10 @@ function clearSelectedMedia() {
     textInput.placeholder = 'Type Message...';
 }
 
+function getSelectedFiles() {
+    return Array.from(fileInput?.files || []);
+}
+
 function showComposerError(message) {
     const errorBox = document.getElementById('composerError');
     if (!errorBox) return;
@@ -1309,29 +1385,6 @@ function linkifyElementContent(element) {
     }
 }
 
-function playSendNotificationSound() {
-    try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        const oscillator = ctx.createOscillator();
-        const gainNode = ctx.createGain();
-
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(880, ctx.currentTime);
-        gainNode.gain.setValueAtTime(0.0001, ctx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
-
-        oscillator.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.2);
-    } catch (error) {
-        // ignore sound failures, keep message send behavior
-    }
-}
-
 function playIncomingNotificationSound() {
     try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -1417,7 +1470,7 @@ attachVocaleBtn?.addEventListener('click', async () => {
             dt.items.add(file);
             fileInput.files = dt.files;
             if (isRecordedVocaleInput) isRecordedVocaleInput.value = '1';
-            showPreview(file);
+            showPreviewFiles(file);
             stopRecordingTracks();
         };
         mediaRecorder.start();
@@ -1446,26 +1499,70 @@ vocalCancelBtn?.addEventListener('click', function () {
 });
 
 fileInput.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // Validation: video max 5 min
-    if (file.type.startsWith('video/')) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    if (files.length > 3) {
+        showComposerError('Vous pouvez joindre au maximum 3 fichiers.');
+        clearSelectedMedia();
+        return;
+    }
+
+    const videoFiles = files.filter(file => file.type.startsWith('video/'));
+    if (!videoFiles.length) {
+        showPreviewFiles(files);
+        return;
+    }
+
+    let checkedVideos = 0;
+    let hasError = false;
+    videoFiles.forEach((file) => {
         const video = document.createElement('video');
         video.preload = 'metadata';
         video.onloadedmetadata = function() {
-            if (video.duration > 300) { // 5 min = 300 sec
-                showComposerError('La video ne doit pas depasser 5 minutes.');
+            if (video.duration > 300 && !hasError) {
+                hasError = true;
+                showComposerError('Chaque video ne doit pas depasser 5 minutes.');
                 clearSelectedMedia();
                 return;
             }
-            showPreview(file);
+            checkedVideos += 1;
+            if (checkedVideos === videoFiles.length && !hasError) {
+                showPreviewFiles(files);
+            }
         };
         video.src = URL.createObjectURL(file);
-    } else {
-        showPreview(file);
-    }
+    });
 });
+
+function renderPreviewItem(file) {
+    const fileURL = URL.createObjectURL(file);
+    if (file.type.startsWith('image/')) {
+        return `<div class="mb-2"><img src="${fileURL}" class="img-fluid rounded" style="max-height: 150px;"><div class="small text-muted mt-1">${file.name}</div></div>`;
+    } else if (file.type.startsWith('video/')) {
+        return `<div class="mb-2"><video controls class="rounded" style="max-height: 150px;"><source src="${fileURL}"></video><div class="small text-muted mt-1">${file.name}</div></div>`;
+    } else if (file.type.startsWith('audio/')) {
+        return `<div class="mb-2"><div class="small text-success mb-1">Ecouter le fichier audio avant envoi</div><audio controls src="${fileURL}" class="w-100"></audio><div class="small text-muted mt-1">${file.name}</div></div>`;
+    } else if (file.type === 'application/pdf') {
+        return `<div class="mb-2"><embed src="${fileURL}" type="application/pdf" style="height: 150px; width: 100%;"><div class="small text-muted mt-1">${file.name}</div></div>`;
+    }
+
+    return `<div class="alert alert-info mb-2">Fichier: ${file.name}</div>`;
+}
+
+function showPreviewFiles(files) {
+    const selectedFiles = Array.isArray(files) ? files : [files];
+    let html = '';
+    selectedFiles.forEach(file => {
+        html += renderPreviewItem(file);
+    });
+    hideComposerError();
+    previewContentDiv.innerHTML = html;
+    previewDiv.classList.remove('d-none');
+    isRecording = false;
+    updateVocalButtonState(false);
+    textInput.placeholder = selectedFiles.length ? 'Ajouter un commentaire (optionnel)' : 'Ecrivez votre message...';
+}
 
 function showPreview(file) {
     const fileURL = URL.createObjectURL(file);
@@ -1521,14 +1618,17 @@ document.addEventListener('click', function (event) {
 
 // On form submit, ensure we send the file
 document.getElementById('messageComposerForm')?.addEventListener('submit', function(e) {
-    if (!fileInput.files.length && !textInput.value.trim()) {
+    if (!getSelectedFiles().length && !textInput.value.trim()) {
         e.preventDefault();
         showComposerError('Veuillez ecrire un message ou joindre un fichier.');
         return;
     }
-    playSendNotificationSound();
+    if (getSelectedFiles().length > 3) {
+        e.preventDefault();
+        showComposerError('Vous pouvez envoyer au maximum 3 fichiers.');
+    }
 });
-// ✅ Global: scroll vers le bas du container messages
+// ✅ Helper scroll
 function scrollToBottom() {
     const container = document.getElementById('messagesContainer');
     if (container) {
@@ -1611,18 +1711,7 @@ function sortConversations(method) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-
-    // ✅ Scroll initial vers le dernier message
-    scrollToBottom();
-
-    // ✅ MutationObserver: scroll automatique si nouveau message ajouté au DOM
     const container = document.getElementById('messagesContainer');
-    if (container) {
-        const observer = new MutationObserver(() => {
-            scrollToBottom();
-        });
-        observer.observe(container, { childList: true, subtree: true });
-    }
 
     // Checkboxes groupe
     document.querySelectorAll('.participant-checkbox').forEach(checkbox => {
@@ -1649,9 +1738,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.querySelectorAll('.js-linkify').forEach(linkifyElementContent);
-    const totalUnreadCount = {{ total_unread_count|default(0) }};
-    if (totalUnreadCount > 0) {
-        document.title = `(${totalUnreadCount}) Messagerie - EcoAdventure`;
+    let currentTotalUnreadCount = {{ total_unread_count|default(0) }};
+    if (currentTotalUnreadCount > 0) {
+        document.title = `(${currentTotalUnreadCount}) Messagerie - EcoAdventure`;
     }
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission().catch(() => {});
@@ -1804,11 +1893,31 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    function updateUnreadUI(conversationId, conversationUnread, totalUnread) {
+        currentTotalUnreadCount = Math.max(0, Number(totalUnread || 0));
+        const activeConversation = document.querySelector(`.conversation-item[data-open-url*='/${conversationId}']`);
+        if (activeConversation) {
+            let badge = activeConversation.querySelector('.unread-badge');
+            if (conversationUnread > 0) {
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'unread-badge';
+                    const metaBox = activeConversation.querySelector('.d-flex.align-items-center.gap-2');
+                    metaBox?.insertBefore(badge, metaBox.firstChild);
+                }
+                badge.textContent = String(conversationUnread);
+            } else if (badge) {
+                badge.remove();
+            }
+        }
+
+        document.title = currentTotalUnreadCount > 0
+            ? `(${currentTotalUnreadCount}) Messagerie - EcoAdventure`
+            : 'Messagerie - EcoAdventure';
+    }
+
     document.querySelectorAll('.conversation-item').forEach(item => {
-        item.addEventListener('click', (event) => {
-            event.preventDefault();
-        });
-        item.addEventListener('dblclick', () => {
+        item.addEventListener('click', () => {
             const openUrl = item.getAttribute('data-open-url');
             if (openUrl) {
                 window.location.href = openUrl;
@@ -1818,6 +1927,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const messagesContainer = document.getElementById('messagesContainer');
     let pollingActive = true;
+    let readSyncInProgress = false;
+
+    function isNearBottom(container) {
+        if (!container) return false;
+        const threshold = 48;
+        return container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
+    }
+
+    async function syncConversationReadState() {
+        if (!messagesContainer || readSyncInProgress || !isNearBottom(messagesContainer)) return;
+
+        const userId = messagesContainer.getAttribute('data-my-user-id');
+        const conversationId = messagesContainer.getAttribute('data-current-conversation-id');
+        if (!userId || !conversationId) return;
+
+        readSyncInProgress = true;
+        try {
+            const response = await fetch(`/messagerie/read/${userId}/${conversationId}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            if (data.success) {
+                updateUnreadUI(conversationId, Number(data.conversation_unread || 0), Number(data.total_unread || 0));
+            }
+        } catch (error) {
+            // keep silent
+        } finally {
+            readSyncInProgress = false;
+        }
+    }
+
     async function pollIncomingMessages() {
         if (!pollingActive || !messagesContainer) return;
         const userId = messagesContainer.getAttribute('data-my-user-id');
@@ -1844,7 +1986,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 }
 
-                setTimeout(() => window.location.reload(), 500);
+                if (isNearBottom(messagesContainer)) {
+                    setTimeout(() => window.location.reload(), 350);
+                } else {
+                    updateUnreadUI(conversationId, incomingCount, currentTotalUnreadCount + incomingCount);
+                }
             } else if (latestId > lastSeenId) {
                 messagesContainer.setAttribute('data-last-message-id', String(latestId));
             }
@@ -1854,6 +2000,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const pollInterval = setInterval(pollIncomingMessages, 4000);
+    messagesContainer?.addEventListener('scroll', syncConversationReadState, { passive: true });
     window.addEventListener('beforeunload', () => {
         pollingActive = false;
         clearInterval(pollInterval);
@@ -1864,7 +2011,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ✅ Scroll quand l'utilisateur revient sur l'onglet
 document.addEventListener('visibilitychange', function () {
-    if (!document.hidden) scrollToBottom();
+    if (!document.hidden) {
+        const messagesContainer = document.getElementById('messagesContainer');
+        const userId = messagesContainer?.getAttribute('data-my-user-id');
+        const conversationId = messagesContainer?.getAttribute('data-current-conversation-id');
+        if (messagesContainer && userId && conversationId && (messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight <= 48)) {
+            fetch(`/messagerie/read/${userId}/${conversationId}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).catch(() => {});
+        }
+    }
 });
 </script>
 {% endblock %}

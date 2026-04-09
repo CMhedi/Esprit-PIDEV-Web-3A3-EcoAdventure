@@ -51,6 +51,9 @@ class Message
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $reactions = [];
 
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $attachments = [];
+
     #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
     #[ORM\JoinColumn(name: 'id_conversation', referencedColumnName: 'id_conversation', nullable: false)]
     #[Assert\NotNull(message: "Le message doit être rattaché à une conversation.")]
@@ -163,6 +166,17 @@ class Message
     public function setConversation(?Conversation $conversation): self
     {
         $this->conversation = $conversation;
+        return $this;
+    }
+
+    public function getAttachments(): array
+    {
+        return $this->attachments ?? [];
+    }
+
+    public function setAttachments(?array $attachments): self
+    {
+        $this->attachments = $attachments ?? [];
         return $this;
     }
 

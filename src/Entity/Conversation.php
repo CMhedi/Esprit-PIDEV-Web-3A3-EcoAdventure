@@ -12,6 +12,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'conversation')]
 class Conversation
 {
+    private const PRIVATE_BLOCK_PREFIX = '[PRIVATE_BLOCKED] ';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
@@ -106,12 +108,34 @@ class Conversation
 
     public function getTitre(): ?string
     {
+        if ($this->titre === null) {
+            return null;
+        }
+
+        if (str_starts_with($this->titre, self::PRIVATE_BLOCK_PREFIX)) {
+            return substr($this->titre, strlen(self::PRIVATE_BLOCK_PREFIX));
+        }
+
         return $this->titre;
     }
 
     public function setTitre(?string $titre): self
     {
         $this->titre = $titre;
+        return $this;
+    }
+
+    public function isPrivateBlocked(): bool
+    {
+        return !$this->isEst_groupe() && $this->titre !== null && str_starts_with($this->titre, self::PRIVATE_BLOCK_PREFIX);
+    }
+
+    public function blockPrivateConversation(): self
+    {
+        if (!$this->isEst_groupe() && !$this->isPrivateBlocked()) {
+            $this->titre = self::PRIVATE_BLOCK_PREFIX . ($this->titre ?? '');
+        }
+
         return $this;
     }
 

@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\UserApp;
+use App\Enum\RoleUser;
 use App\Enum\StatutMessage;
 use App\Enum\TypeMessage;
 use App\Repository\ConversationRepository;
@@ -24,6 +25,33 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class MessagerieController extends AbstractController
 {
     /**
+     * Vérifier le rôle de l'utilisateur et rediriger automatiquement
+     */
+    #[Route('/messagerie/auto/{id_user}', name: 'app_messagerie_auto', requirements: ['id_user' => '\d+'])]
+    public function autoRedirectByRole(
+        int $id_user,
+        UserAppRepository $userAppRepo
+    ): Response {
+        $user = $userAppRepo->find($id_user);
+        
+        if (!$user) {
+            // Si l'utilisateur n'existe pas, rediriger vers l'accueil
+            return $this->redirectToRoute('app_home');
+        }
+        
+        // Vérifier le rôle de l'utilisateur
+        $role = $user->getRole();
+        
+        if ($role === RoleUser::ADMIN) {
+            // Si admin, rediriger vers l'interface admin
+            return $this->redirectToRoute('admin_messagerie_index');
+        } else {
+            // Si non-admin, rediriger vers l'interface front-end
+            return $this->redirectToRoute('app_messagerie', ['id_user' => $id_user]);
+        }
+    }
+
+    /**
      * Page principale de la messagerie
      */
     #[Route('/messagerie', name: 'app_messagerie_root', defaults: ['id_user' => 1, 'id_conversation' => null])]
@@ -41,6 +69,11 @@ class MessagerieController extends AbstractController
         if (!$user) {
             return $this->redirectToRoute('app_home');
         }
+
+        if ($user->getRole() === RoleUser::ADMIN) {
+            return $this->redirectToRoute('admin_messagerie_index');
+        }
+
         $user->setLast_seen(new \DateTime());
         $em->persist($user);
 
@@ -67,44 +100,16 @@ class MessagerieController extends AbstractController
         $messages = [];
         $currentConvLastContact = null;
         if ($currentConv) {
-            $messages = $messageRepo->findBy(
-                ['conversation' => $currentConv],
-                ['date_envoi' => 'ASC']
-            );
+            $messages = $messageRepo->findMessagesForConversation($currentConv);
             if (!empty($messages)) {
                 $lastMessage = end($messages);
                 $currentConvLastContact = $lastMessage?->getDate_envoi();
                 reset($messages);
             }
-
-            // Marquer comme lus les messages des autres utilisateurs
-            foreach ($messages as $message) {
-                if ($message->getUserApp()?->getId_user() !== $user->getId_user() && $message->getDate_lecture() === null) {
-                    $message->setDate_lecture(new \DateTime());
-                    $em->persist($message);
-                }
-            }
         }
 
-        $unreadByConversationId = [];
-        $totalUnreadCount = 0;
-        foreach ($conversations as $conversation) {
-            $convMessages = $messageRepo->findBy(['conversation' => $conversation]);
-            $unreadCount = 0;
-            foreach ($convMessages as $convMessage) {
-                if (
-                    $convMessage->getUserApp()?->getId_user() !== $user->getId_user()
-                    && $convMessage->getDate_lecture() === null
-                ) {
-                    $unreadCount++;
-                }
-            }
-            $conversationId = $conversation->getId_conversation();
-            if ($conversationId !== null) {
-                $unreadByConversationId[$conversationId] = $unreadCount;
-            }
-            $totalUnreadCount += $unreadCount;
-        }
+        $unreadByConversationId = $conversationRepo->getUnreadCountsForUser($user);
+        $totalUnreadCount = array_sum($unreadByConversationId);
 
         $em->flush();
 
@@ -146,6 +151,11 @@ class MessagerieController extends AbstractController
         if ($type !== 'groupe') {
             $existingConv = $conversationRepo->findOneByParticipants($createur, $destinataire);
             if ($existingConv) {
+                if ($existingConv->isPrivateBlocked()) {
+                    $this->addFlash('error', 'Cette conversation privée a été bloquée par l\'administration.');
+                    return $this->redirectToRoute('app_messagerie', ['id_user' => $id_createur]);
+                }
+
                 return $this->redirectToRoute('app_messagerie_selected', [
                     'id_user' => $id_createur,
                     'id_conversation' => $existingConv->getId_conversation()
@@ -268,6 +278,11 @@ class MessagerieController extends AbstractController
                 $destinataire = $userRepo->find($idDestinataire);
                 if ($destinataire) {
                     $conversation = $conversationRepo->findOneByParticipants($user, $destinataire);
+                    if ($conversation && $conversation->isPrivateBlocked()) {
+                        $this->addFlash('error', 'Cette conversation privée a été bloquée par l\'administration.');
+                        return $this->redirectToRoute('app_messagerie', ['id_user' => $id_user]);
+                    }
+
                     if (!$conversation) {
                         $conversation = new Conversation();
                         $conversation->setCreateur($user);
@@ -287,6 +302,14 @@ class MessagerieController extends AbstractController
             throw $this->createNotFoundException();
         }
 
+        if (!$conversation->isEst_groupe() && $conversation->isPrivateBlocked()) {
+            $this->addFlash('error', 'Cette conversation privée est bloquée. Vous pouvez continuer à discuter dans les groupes.');
+            return $this->redirectToRoute('app_messagerie_selected', [
+                'id_user' => $id_user,
+                'id_conversation' => $conversation->getId_conversation()
+            ]);
+        }
+
         $message = new Message();
         $message->setUserApp($user);
         $message->setConversation($conversation);
@@ -294,71 +317,86 @@ class MessagerieController extends AbstractController
         $message->setStatut_message(StatutMessage::ENVOYE);
         $message->setType_message(TypeMessage::TEXTE);
 
-        $uploadedFile = $request->files->get('mediaFile');
+        $uploadedFiles = $request->files->all('mediaFiles');
         $textContent = trim($request->request->get('message', ''));
         $isRecordedVocale = $request->request->getBoolean('is_recorded_vocale', false);
+        $uploadedFiles = array_values(array_filter(is_array($uploadedFiles) ? $uploadedFiles : ($uploadedFiles ? [$uploadedFiles] : [])));
+
+        if (count($uploadedFiles) > 3) {
+            $this->addFlash('error', 'Vous pouvez envoyer au maximum 3 fichiers par message.');
+            return $this->redirectToRoute('app_messagerie_selected', [
+                'id_user' => $id_user,
+                'id_conversation' => $id_conversation
+            ]);
+        }
 
         // Gestion du fichier
-        if ($uploadedFile) {
-            if (!$uploadedFile->isValid() || !$uploadedFile->isReadable()) {
-                $this->addFlash('error', 'Fichier invalide ou introuvable. Veuillez reessayer.');
-                return $this->redirectToRoute('app_messagerie_selected', [
-                    'id_user' => $id_user,
-                    'id_conversation' => $id_conversation
-                ]);
-            }
-
-            $originalFilename = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
-            $safeFilename = $slugger->slug($originalFilename);
-            $newFilename = $safeFilename . '-' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
-            $mime = $uploadedFile->getMimeType() ?? '';
-
-            // Vérification durée vidéo (max 5 min)
-            if (!$isRecordedVocale && str_starts_with($mime, 'video/')) {
-                $duration = $this->getVideoDuration($uploadedFile->getPathname());
-                if ($duration > 300) {
-                    $this->addFlash('error', 'La vidéo ne doit pas dépasser 5 minutes.');
-                    return $this->redirectToRoute('app_messagerie_selected', [
-                        'id_user' => $id_user,
-                        'id_conversation' => $id_conversation
-                    ]);
-                }
-            }
+        if (!empty($uploadedFiles)) {
+            $attachments = [];
 
             try {
-                if ($isRecordedVocale) {
-                    $message->setType_message(TypeMessage::VOCALE);
-                } elseif ($mime === 'image/gif') {
-                    $message->setType_message(TypeMessage::GIF);
-                } elseif (str_starts_with($mime, 'image/')) {
-                    $message->setType_message(TypeMessage::IMAGE);
-                } elseif (str_starts_with($mime, 'video/')) {
-                    $message->setType_message(TypeMessage::VIDEO);
-                } elseif (str_starts_with($mime, 'audio/')) {
-                    $message->setType_message(TypeMessage::AUDIO);
-                } elseif ($mime === 'application/pdf') {
-                    $message->setType_message(TypeMessage::PDF);
+                foreach ($uploadedFiles as $index => $uploadedFile) {
+                    if (!$uploadedFile->isValid() || !$uploadedFile->isReadable()) {
+                        throw new FileException('Invalid uploaded file.');
+                    }
+
+                    $originalFilename = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $safeFilename = $slugger->slug($originalFilename);
+                    $newFilename = $safeFilename . '-' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+                    $mime = $uploadedFile->getMimeType() ?? '';
+
+                    if (!$isRecordedVocale && str_starts_with($mime, 'video/')) {
+                        $duration = $this->getVideoDuration($uploadedFile->getPathname());
+                        if ($duration > 300) {
+                            $this->addFlash('error', 'La vidéo ne doit pas dépasser 5 minutes.');
+                            return $this->redirectToRoute('app_messagerie_selected', [
+                                'id_user' => $id_user,
+                                'id_conversation' => $id_conversation
+                            ]);
+                        }
+                    }
+
+                    $attachmentType = $isRecordedVocale && $index === 0
+                        ? TypeMessage::VOCALE
+                        : match (true) {
+                            $mime === 'image/gif' => TypeMessage::GIF,
+                            str_starts_with($mime, 'image/') => TypeMessage::IMAGE,
+                            str_starts_with($mime, 'video/') => TypeMessage::VIDEO,
+                            str_starts_with($mime, 'audio/') => TypeMessage::AUDIO,
+                            $mime === 'application/pdf' => TypeMessage::PDF,
+                            default => TypeMessage::TEXTE,
+                        };
+
+                    if ($index === 0) {
+                        $message->setType_message($attachmentType);
+                    }
+
+                    $targetFolder = match ($attachmentType) {
+                        TypeMessage::IMAGE, TypeMessage::GIF => 'images',
+                        TypeMessage::VIDEO, TypeMessage::APPEL_VIDEO => 'video',
+                        TypeMessage::AUDIO => 'Audio',
+                        TypeMessage::VOCALE, TypeMessage::APPEL_AUDIO => 'Vocale',
+                        TypeMessage::PDF => 'files',
+                        default => 'files',
+                    };
+
+                    $baseUploadDir = rtrim((string) $this->getParameter('messages_upload_directory'), '/\\');
+                    $targetUploadDir = $baseUploadDir . DIRECTORY_SEPARATOR . $targetFolder;
+
+                    if (!is_dir($targetUploadDir)) {
+                        mkdir($targetUploadDir, 0775, true);
+                    }
+
+                    $uploadedFile->move($targetUploadDir, $newFilename);
+                    $attachments[] = [
+                        'path' => '/uploads/' . $targetFolder . '/' . $newFilename,
+                        'name' => $uploadedFile->getClientOriginalName(),
+                        'mime' => $mime,
+                        'type' => $attachmentType->value,
+                    ];
                 }
 
-                $targetFolder = match ($message->getType_message()) {
-                    TypeMessage::IMAGE => 'images',
-                    TypeMessage::GIF => 'images',
-                    TypeMessage::VIDEO, TypeMessage::APPEL_VIDEO => 'video',
-                    TypeMessage::AUDIO => 'Audio',
-                    TypeMessage::VOCALE, TypeMessage::APPEL_AUDIO => 'Vocale',
-                    TypeMessage::PDF => 'files',
-                    default => 'files',
-                };
-
-                $baseUploadDir = rtrim((string) $this->getParameter('messages_upload_directory'), '/\\');
-                $targetUploadDir = $baseUploadDir . DIRECTORY_SEPARATOR . $targetFolder;
-
-                if (!is_dir($targetUploadDir)) {
-                    mkdir($targetUploadDir, 0775, true);
-                }
-
-                $uploadedFile->move($targetUploadDir, $newFilename);
-                $message->setContenu('/uploads/' . $targetFolder . '/' . $newFilename);
+                $message->setAttachments($attachments);
             } catch (FileException $e) {
                 $this->addFlash('error', 'Erreur lors de l\'upload du fichier.');
                 return $this->redirectToRoute('app_messagerie_selected', [
@@ -370,16 +408,15 @@ class MessagerieController extends AbstractController
 
         // Gestion du texte (commentaire éventuel)
         if (!empty($textContent)) {
-            if ($uploadedFile) {
-                // Si un fichier est joint, on stocke le texte en commentaire (séparé par '|')
-                $message->setContenu($message->getContenu() . '|' . $textContent);
+            if (!empty($uploadedFiles)) {
+                $message->setContenu($textContent);
             } else {
                 $message->setContenu($textContent);
                 if ($this->isEmojiOnlyMessage($textContent)) {
                     $message->setType_message(TypeMessage::EMOJI);
                 }
             }
-        } elseif (!$uploadedFile) {
+        } elseif (empty($uploadedFiles)) {
             $this->addFlash('error', 'Vous ne pouvez pas envoyer un message vide.');
             return $this->redirectToRoute('app_messagerie_selected', [
                 'id_user' => $id_user,
@@ -747,26 +784,36 @@ public function callLog(
         }
 
         $lastSeenId = (int) $request->query->get('last_seen_id', 0);
-        $messages = $messageRepo->findBy(
-            ['conversation' => $conversation],
-            ['date_envoi' => 'ASC']
-        );
-
-        $latestId = $lastSeenId;
-        $incomingCount = 0;
-        foreach ($messages as $message) {
-            $msgId = (int) ($message->getId_message() ?? 0);
-            if ($msgId > $latestId) {
-                $latestId = $msgId;
-            }
-            if ($msgId > $lastSeenId && $message->getUserApp()?->getId_user() !== $id_user) {
-                $incomingCount++;
-            }
-        }
+        $stats = $messageRepo->getLatestIdAndIncomingCount($conversation, $user, $lastSeenId);
 
         return $this->json([
-            'latest_id' => $latestId,
-            'incoming_count' => $incomingCount,
+            'latest_id' => $stats['latest_id'],
+            'incoming_count' => $stats['incoming_count'],
+        ]);
+    }
+
+    #[Route('/messagerie/read/{id_user}/{id_conversation}', name: 'app_messagerie_read', methods: ['POST'])]
+    public function markConversationRead(
+        int $id_user,
+        int $id_conversation,
+        UserAppRepository $userRepo,
+        ConversationRepository $conversationRepo,
+        MessageRepository $messageRepo
+    ): Response {
+        $user = $userRepo->find($id_user);
+        $conversation = $conversationRepo->find($id_conversation);
+
+        if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
+            return $this->json(['error' => 'Not found'], 404);
+        }
+
+        $messageRepo->markConversationAsRead($conversation, $user);
+        $unreadByConversationId = $conversationRepo->getUnreadCountsForUser($user);
+
+        return $this->json([
+            'success' => true,
+            'conversation_unread' => (int) ($unreadByConversationId[$id_conversation] ?? 0),
+            'total_unread' => array_sum($unreadByConversationId),
         ]);
     }
 }

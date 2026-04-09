@@ -1,0 +1,1033 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Gestion de la Messagerie{% endblock %}
+{% block page_title %}Gestion de la Messagerie{% endblock %}
+
+{% block body %}
+<div class="admin-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0">
+            <i class="bi bi-chat-dots me-2"></i>
+            Toutes les Conversations
+        </h4>
+        <div class="d-flex gap-2">
+            <button class="btn btn-eco-outline btn-sm" onclick="refreshConversations()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Actualiser
+            </button>
+            <button class="btn btn-eco btn-sm" onclick="toggleFilters()">
+                <i class="bi bi-funnel me-1"></i>Filtres
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div id="filtersSection" class="filters-section mb-4" style="display: none;">
+        <div class="card bg-light">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">Recherche</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ filters.search }}" placeholder="Nom, titre...">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="type" class="form-label">Type</label>
+                        <select class="form-select" id="type" name="type">
+                            <option value="">Tous</option>
+                            <option value="groupe" {% if filters.type == 'groupe' %}selected{% endif %}>Groupe</option>
+                            <option value="privee" {% if filters.type == 'privee' %}selected{% endif %}>Privée</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_from" class="form-label">Date début</label>
+                        <input type="date" class="form-control" id="date_from" name="date_from" 
+                               value="{{ filters.date_from }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_to" class="form-label">Date fin</label>
+                        <input type="date" class="form-control" id="date_to" name="date_to" 
+                               value="{{ filters.date_to }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-eco btn-sm">
+                                <i class="bi bi-search me-1"></i>Filtrer
+                            </button>
+                            <a href="{{ path('admin_messagerie_index') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-x-circle me-1"></i>Réinitialiser
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle" id="conversationsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Titre</th>
+                    <th>Type</th>
+                    <th>Créateur</th>
+                    <th>Participants</th>
+                    <th>Date de création</th>
+                    <th>Dernier message</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conversation in conversations %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-secondary">#{{ conversation.id_conversation }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if conversation.est_groupe %}
+                                    <div class="conversation-avatar group-avatar me-2">
+                                        <i class="bi bi-people-fill"></i>
+                                    </div>
+                                {% else %}
+                                    {% set otherParticipant = conversation.participants|filter(p => p.id_user != conversation.createur.id_user)|first %}
+                                    {% if otherParticipant %}
+                                        <div class="conversation-avatar me-2">
+                                            {{ otherParticipant.nom|first }}{{ otherParticipant.prenom|first }}
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                                <div>
+                                    <strong>{{ conversation.titre }}</strong>
+                                    {% if conversation.est_groupe %}
+                                        <span class="badge bg-info ms-2">Groupe</span>
+                                    {% else %}
+                                        <span class="badge bg-primary ms-2">Privée</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if conversation.est_groupe %}
+                                <span class="badge bg-info">
+                                    <i class="bi bi-people me-1"></i>Groupe
+                                </span>
+                            {% else %}
+                                <span class="badge bg-primary">
+                                    <i class="bi bi-person me-1"></i>Privée
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar-sm me-2">
+                                    {{ conversation.createur.nom|first }}{{ conversation.createur.prenom|first }}
+                                </div>
+                                <div>
+                                    <div class="fw-semibold">{{ conversation.createur.nom }} {{ conversation.createur.prenom }}</div>
+                                    <small class="text-muted">@{{ conversation.createur.nom|lower }}{{ conversation.createur.prenom|lower }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="participants-list">
+                                {% for participant in conversation.participants|slice(0, 3) %}
+                                    <div class="participant-item">
+                                        <div class="user-avatar-xs">
+                                            {{ participant.nom|first }}{{ participant.prenom|first }}
+                                        </div>
+                                        <span class="ms-1">{{ participant.nom }} {{ participant.prenom }}</span>
+                                    </div>
+                                {% endfor %}
+                                {% if conversation.participants|length > 3 %}
+                                    <div class="text-muted">
+                                        <small>+{{ conversation.participants|length - 3 }} autres</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <div class="fw-semibold">{{ conversation.date_creation|date('d/m/Y') }}</div>
+                                <small class="text-muted">{{ conversation.date_creation|date('H:i') }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if conversation.lastMessage %}
+                                <div>
+                                    <div class="fw-semibold">{{ conversation.lastMessage.date_envoi|date('d/m/Y H:i') }}</div>
+                                    <small class="text-muted">
+                                        {% if conversation.lastMessage.type_message.value == 'TEXTE' %}
+                                            {{ conversation.lastMessage.contenu|slice(0, 30) }}{% if conversation.lastMessage.contenu|length > 30 %}...{% endif %}
+                                        {% else %}
+                                            <i class="bi bi-file-earmark me-1"></i>{{ conversation.lastMessage.type_message.value }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">Aucun message</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ path('admin_messagerie_view', {'id': conversation.id_conversation}) }}" 
+                                   class="btn btn-eco-outline btn-sm" title="Voir la conversation">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <form method="POST" 
+                                      action="{{ path('admin_messagerie_ban_conversation', {'id': conversation.id_conversation}) }}" 
+                                      onsubmit="return confirm('Êtes-vous sûr de vouloir bannir cette conversation ? Tous les messages seront supprimés.')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('ban' ~ conversation.id_conversation) }}">
+                                    <button type="submit" class="btn btn-warning btn-sm" title="Bannir la conversation">
+                                        <i class="bi bi-shield-exclamation"></i>
+                                    </button>
+                                </form>
+                                <form method="POST" 
+                                      action="{{ path('admin_messagerie_delete', {'id': conversation.id_conversation}) }}" 
+                                      onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette conversation ?')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ conversation.id_conversation) }}">
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="bi bi-chat-dots display-4 d-block mb-2"></i>
+                                Aucune conversation trouvée
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Statistics Section -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-trophy me-2"></i>
+                Utilisateurs les plus actifs (Conversations)
+            </h5>
+            {% if stats.most_conversations %}
+                {% for user in stats.most_conversations %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar-sm me-2">
+                                {{ user.nom|first }}{{ user.prenom|first }}
+                            </div>
+                            <span>{{ user.nom }} {{ user.prenom }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="circular-stat primary-stat">
+                                <span class="stat-number">{{ user.conversation_count }}</span>
+                                <span class="stat-label">conv.</span>
+                            </div>
+                            <form method="POST" 
+                                  action="{{ path('admin_messagerie_ban_user', {'id': user.user_id}) }}" 
+                                  onsubmit="return confirm('Êtes-vous sûr de vouloir bannir cet utilisateur ? Tous ses messages seront supprimés.')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('ban_user' ~ user.user_id) }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Bannir l'utilisateur">
+                                    <i class="bi bi-person-x"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">Aucune donnée disponible</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-chat-square-text me-2"></i>
+                Utilisateurs les plus communicatifs (7 derniers jours)
+            </h5>
+            {% if stats.most_messages %}
+                {% for user in stats.most_messages %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar-sm me-2">
+                                {{ user.nom|first }}{{ user.prenom|first }}
+                            </div>
+                            <span>{{ user.nom }} {{ user.prenom }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="circular-stat success-stat">
+                                <span class="stat-number">{{ user.message_count }}</span>
+                                <span class="stat-label">msg.</span>
+                            </div>
+                            <form method="POST" 
+                                  action="{{ path('admin_messagerie_ban_user', {'id': user.user_id}) }}" 
+                                  onsubmit="return confirm('Êtes-vous sûr de vouloir bannir cet utilisateur ? Tous ses messages seront supprimés.')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('ban_user' ~ user.user_id) }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Bannir l'utilisateur">
+                                    <i class="bi bi-person-x"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">Aucune donnée disponible</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Pie Charts Section -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-pie-chart-fill me-2"></i>
+                Distribution des conversations
+            </h5>
+            <div class="chart-container">
+                <canvas id="conversationTypeChart" width="400" height="400"></canvas>
+            </div>
+            <div class="chart-legend mt-3">
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #007bff;"></span>
+                    <span>Conversations privées: {{ stats.type_distribution.private }}</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #17a2b8;"></span>
+                    <span>Groupes: {{ stats.type_distribution.group }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-graph-up me-2"></i>
+                Types de messages (7 derniers jours)
+            </h5>
+            <div class="chart-container">
+                <canvas id="messageTypeChart" width="400" height="400"></canvas>
+            </div>
+            <div class="chart-legend mt-3" id="messageTypeLegend">
+                <!-- Legend will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Messages Chart -->
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-calendar-week me-2"></i>
+                Messages par jour (7 derniers jours)
+            </h5>
+            <div class="chart-container">
+                <canvas id="dailyMessagesChart" width="800" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.conversation-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.group-avatar {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.user-avatar-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.user-avatar-xs {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 10px;
+}
+
+.participants-list {
+    max-width: 200px;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.participant-item:last-child {
+    margin-bottom: 0;
+}
+
+#conversationsTable {
+    font-size: 14px;
+}
+
+#conversationsTable th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+}
+
+#conversationsTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.filters-section {
+    animation: slideDown 0.3s ease-in-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stat-card-small {
+    padding: 15px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    margin-bottom: 10px;
+}
+
+.user-avatar-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.badge.bg-eco {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.voice-message-card {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.voice-message-time {
+    font-size: 12px;
+    color: #6c757d;
+    position: absolute;
+    top: 5px;
+    left: 10px;
+}
+
+.voice-wave {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 30px;
+    margin: 10px 0;
+}
+
+.voice-wave span {
+    width: 3px;
+    background: #667eea;
+    border-radius: 2px;
+    animation: wave 1.2s ease-in-out infinite;
+}
+
+.voice-wave span:nth-child(2) { animation-delay: 0.1s; }
+.voice-wave span:nth-child(3) { animation-delay: 0.2s; }
+.voice-wave span:nth-child(4) { animation-delay: 0.3s; }
+.voice-wave span:nth-child(5) { animation-delay: 0.4s; }
+.voice-wave span:nth-child(6) { animation-delay: 0.5s; }
+.voice-wave span:nth-child(7) { animation-delay: 0.6s; }
+.voice-wave span:nth-child(8) { animation-delay: 0.7s; }
+.voice-wave span:nth-child(9) { animation-delay: 0.8s; }
+.voice-wave span:nth-child(10) { animation-delay: 0.9s; }
+
+@keyframes wave {
+    0%, 100% { height: 5px; }
+    50% { height: 20px; }
+}
+
+.voice-play-btn {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-video-inline {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Circular Statistics Styles */
+.circular-stat {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: pulse 2s infinite;
+}
+
+.circular-stat:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.circular-stat.large {
+    width: 80px;
+    height: 80px;
+}
+
+.circular-stat.primary-stat {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.circular-stat.success-stat {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+.circular-stat.info-stat {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+}
+
+.circular-stat.eco-stat {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-number {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.circular-stat.large .stat-number {
+    font-size: 20px;
+}
+
+.stat-label {
+    font-size: 8px;
+    text-transform: uppercase;
+    opacity: 0.8;
+    line-height: 1;
+}
+
+.circular-stat.large .stat-label {
+    font-size: 10px;
+}
+
+.circular-stat-card {
+    padding: 15px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    margin-bottom: 10px;
+    transition: transform 0.3s ease;
+}
+
+.circular-stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.daily-stats-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+}
+
+.daily-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.date-label {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+    }
+}
+
+@keyframes pulse-once {
+    0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 15px rgba(40, 167, 69, 0);
+        transform: scale(1.1);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+        transform: scale(1);
+    }
+}
+
+.pulse-once {
+    animation: pulse-once 1s ease-out;
+}
+
+/* Chart Styles */
+.chart-container {
+    position: relative;
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #495057;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid #dee2e6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .circular-stat {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .circular-stat.large {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .stat-number {
+        font-size: 12px;
+    }
+    
+    .circular-stat.large .stat-number {
+        font-size: 16px;
+    }
+    
+    .daily-stats-container {
+        gap: 10px;
+    }
+    
+    .chart-container {
+        height: 300px;
+        padding: 10px;
+    }
+    
+    .chart-legend {
+        gap: 10px;
+    }
+    
+    .legend-item {
+        font-size: 12px;
+    }
+}
+</style>
+
+<script>
+function refreshConversations() {
+    window.location.reload();
+}
+
+function toggleFilters() {
+    const filtersSection = document.getElementById('filtersSection');
+    if (filtersSection.style.display === 'none') {
+        filtersSection.style.display = 'block';
+    } else {
+        filtersSection.style.display = 'none';
+    }
+}
+
+// Animate circular statistics on page load
+function animateCircularStats() {
+    const stats = document.querySelectorAll('.circular-stat');
+    stats.forEach((stat, index) => {
+        // Stagger the animation
+        setTimeout(() => {
+            stat.style.opacity = '0';
+            stat.style.transform = 'scale(0.5)';
+            
+            setTimeout(() => {
+                stat.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                stat.style.opacity = '1';
+                stat.style.transform = 'scale(1)';
+            }, 100);
+        }, index * 100);
+    });
+}
+
+// Dynamic statistics update (simulated real-time)
+function updateStatistics() {
+    // Fetch updated statistics via AJAX
+    fetch('{{ path("admin_messagerie_stats") }}')
+        .then(response => response.json())
+        .then(data => {
+            // Update circular stats with animation
+            updateCircularStat('total-conversations', data.total_conversations);
+            updateCircularStat('total-messages', data.total_messages);
+            updateCircularStat('recent-conversations', data.recent_conversations);
+            updateCircularStat('recent-messages', data.recent_messages);
+        })
+        .catch(error => console.error('Error updating stats:', error));
+}
+
+function updateCircularStat(id, newValue) {
+    const element = document.getElementById(id);
+    if (element) {
+        const currentValue = parseInt(element.textContent);
+        const increment = (newValue - currentValue) / 20;
+        let current = currentValue;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if ((increment > 0 && current >= newValue) || (increment < 0 && current <= newValue)) {
+                element.textContent = newValue;
+                clearInterval(timer);
+                // Add pulse effect on completion
+                element.parentElement.classList.add('pulse-once');
+                setTimeout(() => {
+                    element.parentElement.classList.remove('pulse-once');
+                }, 1000);
+            } else {
+                element.textContent = Math.round(current);
+            }
+        }, 50);
+    }
+}
+
+// Add hover effects for circular stats
+function addInteractiveEffects() {
+    const stats = document.querySelectorAll('.circular-stat');
+    stats.forEach(stat => {
+        stat.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.15) rotate(5deg)';
+        });
+        
+        stat.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1) rotate(0deg)';
+        });
+        
+        // Add click effect for mobile
+        stat.addEventListener('click', function() {
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
+    });
+}
+
+// Auto-refresh statistics every 30 seconds
+function startAutoRefresh() {
+    setInterval(updateStatistics, 30000);
+}
+
+// Create Pie Charts
+function createPieCharts() {
+    // Conversation Type Distribution Pie Chart
+    const conversationCtx = document.getElementById('conversationTypeChart').getContext('2d');
+    const conversationData = {
+        labels: ['Conversations privées', 'Groupes'],
+        datasets: [{
+            data: [{{ stats.type_distribution.private }}, {{ stats.type_distribution.group }}],
+            backgroundColor: [
+                '#007bff',
+                '#17a2b8'
+            ],
+            borderColor: [
+                '#ffffff',
+                '#ffffff'
+            ],
+            borderWidth: 2,
+            hoverOffset: 4
+        }]
+    };
+
+    new Chart(conversationCtx, {
+        type: 'pie',
+        data: conversationData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            animation: {
+                animateScale: true,
+                animateRotate: true
+            }
+        }
+    });
+
+    // Message Type Distribution Pie Chart
+    const messageTypeCtx = document.getElementById('messageTypeChart').getContext('2d');
+    const messageTypeData = {
+        labels: [{% for stat in stats.message_type_distribution %}'{{ stat.type.value }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for stat in stats.message_type_distribution %}{{ stat.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [
+                '#28a745',
+                '#dc3545',
+                '#ffc107',
+                '#6610f2',
+                '#e83e8c',
+                '#fd7e14',
+                '#20c997',
+                '#6f42c1'
+            ],
+            borderColor: [
+                '#ffffff',
+                '#ffffff',
+                '#ffffff',
+                '#ffffff',
+                '#ffffff',
+                '#ffffff',
+                '#ffffff',
+                '#ffffff'
+            ],
+            borderWidth: 2,
+            hoverOffset: 4
+        }]
+    };
+
+    const messageTypeChart = new Chart(messageTypeCtx, {
+        type: 'pie',
+        data: messageTypeData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            animation: {
+                animateScale: true,
+                animateRotate: true
+            }
+        }
+    });
+
+    // Populate custom legend for message types
+    const messageTypeLegend = document.getElementById('messageTypeLegend');
+    messageTypeLegend.innerHTML = '';
+    messageTypeData.labels.forEach((label, index) => {
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        legendItem.innerHTML = `
+            <span class="legend-color" style="background: ${messageTypeData.datasets[0].backgroundColor[index]};"></span>
+            <span>${label}: ${messageTypeData.datasets[0].data[index]}</span>
+        `;
+        messageTypeLegend.appendChild(legendItem);
+    });
+
+    // Daily Messages Bar Chart
+    const dailyMessagesCtx = document.getElementById('dailyMessagesChart').getContext('2d');
+    const dailyMessagesData = {
+        labels: [{% for day in stats.messages_per_day %}'{{ day.date|date('d/m') }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Messages par jour',
+            data: [{% for day in stats.messages_per_day %}{{ day.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: 'rgba(102, 126, 234, 0.8)',
+            borderColor: 'rgba(102, 126, 234, 1)',
+            borderWidth: 2,
+            borderRadius: 5,
+            hoverBackgroundColor: 'rgba(102, 126, 234, 1)'
+        }]
+    };
+
+    new Chart(dailyMessagesCtx, {
+        type: 'bar',
+        data: dailyMessagesData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Messages: ${context.parsed.y}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+}
+
+// Activer DataTable pour le filtrage
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate statistics on load
+    animateCircularStats();
+    
+    // Add interactive effects
+    addInteractiveEffects();
+    
+    // Create pie charts
+    createPieCharts();
+    
+    // Start auto-refresh
+    startAutoRefresh();
+    
+    if (typeof $.fn.DataTable !== 'undefined') {
+        $('#conversationsTable').DataTable({
+            language: {
+                search: "Rechercher:",
+                lengthMenu: "Afficher _MENU_ conversations",
+                info: "Affichage de _START_ à _END_ sur _TOTAL_ conversations",
+                paginate: {
+                    first: "Premier",
+                    last: "Dernier",
+                    next: "Suivant",
+                    previous: "Précédent"
+                }
+            },
+            order: [[5, 'desc']], // Trier par date de création
+            pageLength: 25,
+            initComplete: function() {
+                // Hide default search since we have custom filters
+                $('.dataTables_filter').hide();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
