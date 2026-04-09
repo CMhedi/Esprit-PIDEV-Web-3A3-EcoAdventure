@@ -47,19 +47,22 @@ class AppAuthenticator extends AbstractAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
-            return new JsonResponse(['redirect' => $targetPath]);
-        }
-
-        // Redirect based on user role
         $user = $token->getUser();
         $roles = $user->getRoles();
 
+        // Redirection selon el rôle dakhél el JSON
         if (in_array('ROLE_ADMIN', $roles)) {
-            return new JsonResponse(['redirect' => $this->router->generate('admin_dashboard')]);
+            $url = $this->router->generate('admin_dashboard');
         } else {
-            return new JsonResponse(['redirect' => $this->router->generate('app_messagerie')]);
+            // Redirection lil Profil walla Home
+            $url = $this->router->generate('app_home');
         }
+
+        if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
+            $url = $targetPath;
+        }
+
+        return new JsonResponse(['redirect' => $url]);
     }
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response

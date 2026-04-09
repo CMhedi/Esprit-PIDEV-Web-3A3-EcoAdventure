@@ -44,12 +44,23 @@ class LoginManagerAuthenticator extends AbstractLoginFormAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
+        // 1. Njibou el roles mta3 el user elli t'connecta tawa
+        $user = $token->getUser();
+        $roles = $user->getRoles();
+
+        // 2. Kenou ADMIN, n'hizzouh lil dashboard direct
+        if (in_array('ROLE_ADMIN', $roles)) {
+            // Thabbet elli el route name 'admin_dashboard' mawjoud 3andek
+            return new RedirectResponse($this->urlGenerator->generate('app_admin_dashboard'));
+        }
+
+        // 3. Ken famma targetPath (mathalan dakhél l'page directe), n'hizzouh liha
         if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
             return new RedirectResponse($targetPath);
         }
 
-        // Fi 3oudh el throw new \Exception, 7ot el route mta3 el Home mte3ek
-        return new RedirectResponse($this->urlGenerator->generate('app_home')); 
+        // 4. Par défaut, i-hizzou lil Home mta3 EcoAdventure
+        return new RedirectResponse($this->urlGenerator->generate('app_home'));
     }
 
     protected function getLoginUrl(Request $request): string
