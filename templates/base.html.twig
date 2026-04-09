@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{% block html_lang %}fr{% endblock %}">
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}EcoAdventure{% endblock %}</title>
@@ -10,9 +10,12 @@
     <link rel="stylesheet" href="{{ asset('assets/css/ecoadventure.css') }}">
 
     {% block css %}{% endblock %}
+    {% block stylesheets %}{% endblock %}
+    {% block head_extra %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
 
+{% block navbar %}
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top custom-navbar">
     <div class="container">
         <a class="navbar-brand fw-bold brand-text" href="{{ path('app_home') }}">
@@ -75,9 +78,11 @@
         </div>
     </div>
 </nav>
+{% endblock %}
 
 {% block body %}{% endblock %}
 
+{% block footer %}
 <footer class="footer-eco text-white mt-5">
     <div class="footer-overlay py-5">
         <div class="container">
@@ -109,8 +114,10 @@
         </div>
     </div>
 </footer>
+{% endblock %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% block js %}{% endblock %}
+{% block javascripts %}{% endblock %}
 </body>
 </html>

@@ -1,9 +1,9 @@
 # config/services.yaml
 
 parameters:
-    messages_upload_directory: 'C:/xampp2002/htdocs/uploads'
-    # dossier pour uploader les images des activites
-    upload_dir: 'C:/wamp64/www/uploads'
+    messages_upload_directory: '%kernel.project_dir%/public/uploads'
+    activite_resv_image_directory: '%kernel.project_dir%/public/ActivieResvImage'
+    activite_resv_image_public_path: 'ActivieResvImage'
 
 services:
     _defaults:
