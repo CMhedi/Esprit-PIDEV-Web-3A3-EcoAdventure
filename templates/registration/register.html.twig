@@ -111,22 +111,26 @@
                 {{ form_errors(registrationForm.experience) }}
             </div>
 
-            {# Section Spécialité #}
+            {# templates/registration/register.html.twig #}
+
             <div class="mb-3">
-                {{ form_label(registrationForm.specialite, 'Spécialité', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                <label class="small fw-bold">Spécialité</label>
                 {{ form_widget(registrationForm.specialite, {
-                    'attr': {'class': 'form-select ' ~ (registrationForm.specialite.vars.errors|length > 0 ? 'is-invalid' : '')}
+                    'attr': {'class': 'form-select ' ~ (registrationForm.specialite.vars.valid ? '' : 'is-invalid')}
                 }) }}
-                {{ form_errors(registrationForm.specialite) }}
+                <div class="invalid-feedback">
+                    {{ form_errors(registrationForm.specialite) }}
+                </div>
             </div>
 
-            {# Section Disponibilité #}
             <div class="mb-3">
-                {{ form_label(registrationForm.disponibilite, 'Disponibilité', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                <label class="small fw-bold">Disponibilité</label>
                 {{ form_widget(registrationForm.disponibilite, {
-                    'attr': {'class': 'form-select ' ~ (registrationForm.disponibilite.vars.errors|length > 0 ? 'is-invalid' : '')}
+                    'attr': {'class': 'form-select ' ~ (registrationForm.disponibilite.vars.valid ? '' : 'is-invalid')}
                 }) }}
-                {{ form_errors(registrationForm.disponibilite) }}
+                <div class="invalid-feedback">
+                    {{ form_errors(registrationForm.disponibilite) }}
+                </div>
             </div>
                         
             <div class="mb-3">

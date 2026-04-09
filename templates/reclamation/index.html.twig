@@ -66,12 +66,47 @@
         background-color: #f8f9fa !important;
         cursor: pointer;
     }
+
+/* Barre de recherche dhyifa */
+.search-wrapper {
+    position: relative;
+    max-width: 300px; /* na9asna f'el kobr */
+    margin-bottom: 20px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 20px 10px 45px !important; /* padding mel lissar bech el icon ma todkholch f'el ktiba */
+    border-radius: 50px !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(10px);
+    color: white !important;
+    transition: 0.3s;
+}
+
+.search-input::placeholder { color: rgba(255, 255, 255, 0.7); }
+
+.search-input:focus {
+    background: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    outline: none;
+}
+
+.search-icon {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: white;
+    z-index: 10;
+}
 </style>
 
 <div class="container pb-5">
     <div class="glass-wrapper shadow-lg">
-        <div class="d-flex justify-content-between align-items-center mb-5">
-            <h1 class="main-title">EcoAdventure </h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="main-title">EcoAdventure</h1>
             {% if not is_granted('ROLE_ADMIN') %}
                 <a href="{{ path('app_reclamation_new') }}" class="btn btn-nouvelle shadow">
                     <i class="fas fa-plus-circle me-2"></i>Nouvelle Plainte
@@ -79,8 +114,20 @@
             {% endif %}
         </div>
 
+        <div class="search-box">
+            <div class="input-group shadow-sm rounded-pill">
+                <span class="input-group-text bg-white border-0 rounded-start-pill text-primary">
+                    <i class="fas fa-search"></i>
+                </span>
+        <div class="search-wrapper">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="rechercheReclamation" class="form-control search-input" placeholder="Chercher une réclamation...">
+        </div>            
+        </div>
+        </div>
+
         <div class="table-responsive rounded-3">
-            <table class="table table-glass mb-0">
+            <table class="table table-glass mb-0" id="tableReclamation">
                 <thead>
                     <tr>
                         <th>Type</th>
@@ -115,6 +162,7 @@
                                     <i class="fas fa-eye me-1"></i> details
                                 </a>
                                 
+                                {# Modifier makhbi 3al Admin #}
                                 {% if not is_granted('ROLE_ADMIN') %}
                                     <a href="{{ path('app_reclamation_edit', {'id_reclamation': reclamation.id_reclamation}) }}" class="btn btn-sm btn-warning text-dark action-btn">
                                         <i class="fas fa-edit me-1"></i> Modifier
@@ -145,26 +193,27 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
             <div class="modal-header bg-success text-white" style="border-radius: 20px 20px 0 0;">
-                <h5 class="modal-title fw-bold"><i class="fas fa-reply me-2"></i>Répondre</h5>
+                <h5 class="modal-title fw-bold"><i class="fas fa-reply me-2"></i>Action Administrateur</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="reponseForm" method="POST">
                 <div class="modal-body p-4 text-start">
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-muted">Votre Réponse</label>
-                        <textarea name="reponse" id="reponseText" class="form-control" rows="4" required placeholder="Tapez votre réponse ici..."></textarea>
+                        <label class="form-label fw-bold text-muted">Réponse</label>
+                        <textarea name="reponse" id="reponseText" class="form-control" rows="4" placeholder="Votre message ici..."></textarea>
+                        <small class="text-primary">Si vous écrivez une réponse, le statut passera à <strong>TRAITEE</strong> automatique.</small>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-muted">Changer le Statut</label>
+                        <label class="form-label fw-bold text-muted">Ou changer direct</label>
                         <select name="statut" id="statutSelect" class="form-select">
-                            <option value="TRAITEE">Traitée (Acceptée)</option>
-                            <option value="REJETEE">Rejetée</option>
+                            <option value="TRAITEE">Accepter (TRAITEE)</option>
+                            <option value="REJETEE">Rejeter (REJETEE)</option>
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer border-0 p-3">
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">Enregistrer</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">Valider</button>
                 </div>
             </form>
         </div>
@@ -172,13 +221,28 @@
 </div>
 
 <script>
+// --- Script de Recherche en temps réel ---
+document.getElementById('rechercheReclamation').addEventListener('keyup', function() {
+    let value = this.value.toLowerCase();
+    let rows = document.querySelectorAll('#tableReclamation tbody tr');
+
+    rows.forEach(row => {
+        let text = row.textContent.toLowerCase();
+        row.style.display = text.includes(value) ? '' : 'none';
+    });
+});
+
+// --- Script Modal Double Click ---
 function openReponseModal(id, currentReponse) {
     const modalElement = document.getElementById('reponseModal');
     const modal = new bootstrap.Modal(modalElement);
     const form = document.getElementById('reponseForm');
+    
     form.action = "/reclamation/admin-reply/" + id;
+    
     const cleanReponse = (currentReponse === "Pas encore de réponse") ? "" : currentReponse;
     document.getElementById('reponseText').value = cleanReponse;
+    
     modal.show();
 }
 </script>

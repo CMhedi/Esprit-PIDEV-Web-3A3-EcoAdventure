@@ -4,7 +4,7 @@ namespace App\Controller;
 use App\Repository\ReclamationRepository;
 use App\Entity\UserApp;
 use App\Form\RegistrationFormType;
-use App\Enum\RoleUser; // <--- Thabbet elli el namespace hadha s7i7 hasb dossier Enum mte3ek
+use App\Enum\RoleUser; 
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;

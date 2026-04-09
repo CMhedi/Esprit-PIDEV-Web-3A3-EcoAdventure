@@ -26,45 +26,65 @@
     </style>
 </head>
 <body>
+{# templates/user_app/edit.html.twig #}
+
 <div class="glass-card">
     <h2 class="text-center fw-bold mb-4" style="color: #2c3e50;">Modifier Profil</h2>
 
-    {{ form_start(form) }}
+    {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }} {# 'novalidate' bech t'khalli Symfony ya3mel el contrôle #}
+        
         <div class="row">
             <div class="col-md-6">
                 <label class="small fw-bold">Nom</label>
                 {{ form_widget(form.nom, {'attr': {'class': 'form-control'}}) }}
+                <div class="text-danger small">{{ form_errors(form.nom) }}</div>
             </div>
             <div class="col-md-6">
                 <label class="small fw-bold">Prénom</label>
                 {{ form_widget(form.prenom, {'attr': {'class': 'form-control'}}) }}
+                <div class="text-danger small">{{ form_errors(form.prenom) }}</div>
             </div>
         </div>
 
-        <label class="small fw-bold">E-mail</label>
+        <label class="small fw-bold mt-2">E-mail</label>
         {{ form_widget(form.email, {'attr': {'class': 'form-control'}}) }}
+        <div class="text-danger small">{{ form_errors(form.email) }}</div>
+
         <div class="col-12 mt-2">
             <label class="small fw-bold">Mot de passe (Laisser vide pour garder l'actuel)</label>
-            {{ form_widget(form.plainPassword) }}
-        </div>
-        <div class="row">
-            <div class="col-md-6">
-                <label class="small fw-bold">Spécialité</label>
-                {{ form_widget(form.specialite, {'attr': {'class': 'form-select'}}) }}
-            </div>
-            <div class="col-md-6">
-                <label class="small fw-bold">Disponibilité</label>
-                {{ form_widget(form.disponibilite, {'attr': {'class': 'form-select'}}) }}
-            </div>
+            {{ form_widget(form.plainPassword, {'attr': {'class': 'form-control'}}) }}
+            <div class="text-danger small">{{ form_errors(form.plainPassword) }}</div>
         </div>
 
-        <label class="small fw-bold">Bio & Certificats</label>
-        {{ form_widget(form.bio_certifs, {'attr': {'class': 'form-control', 'rows': 3}}) }}
+{% if user.role.value == 'COACH' %}
+    <div class="row">
+        <div class="col-md-6">
+            <label class="small fw-bold">Spécialité</label>
+            {{ form_widget(form.specialite, {'attr': {'class': 'form-select'}}) }}
+        </div>
+        <div class="col-md-6">
+            <label class="small fw-bold">Disponibilité</label>
+            {{ form_widget(form.disponibilite, {'attr': {'class': 'form-select'}}) }}
+        </div>
+    </div>
 
-        {# Khalli form_rest f'div mkhabbi bech ma ya3melch error #}
+    <label class="small fw-bold mt-2">Bio & Certificats</label>
+    {{ form_widget(form.bio_certifs, {'attr': {'class': 'form-control', 'rows': 3}}) }}
+{% else %}
+    {# Behi: lezem n'khabiw el fields hadhom bech Symfony ma ya3melch error #}
+    <div class="d-none">
+        {{ form_widget(form.specialite) }}
+        {{ form_widget(form.disponibilite) }}
+        {{ form_widget(form.bio_certifs) }}
+    </div>
+{% endif %}
+
         <div style="display:none;">{{ form_rest(form) }}</div>
 
-        <button type="submit" class="btn btn-update mt-3">Mettre à jour</button>
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-update">Mettre à jour</button>
+            <a href="{{ path('app_profile_index') }}" class="btn btn-outline-secondary rounded-pill w-50 d-flex align-items-center justify-content-center">Annuler</a>
+        </div>
     {{ form_end(form) }}
 </div>
 </body>

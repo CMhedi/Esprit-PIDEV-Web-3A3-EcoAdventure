@@ -60,6 +60,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $experience = null;
 
     #[ORM\Column(enumType: Specialite::class, nullable: true)]
+    
     private ?Specialite $specialite = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
@@ -105,6 +106,17 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
             if (null === $this->experience || $this->experience === '') {
                 $context->buildViolation("Le nombre d'années d'expérience est obligatoire.")
                     ->atPath('experience')
+                    ->addViolation();
+            }
+            if (null === $this->specialite) {
+            $context->buildViolation("Choisir une spécialité est obligatoire pour un coach.")
+                ->atPath('specialite')
+                ->addViolation();
+        }
+
+            if (null === $this->disponibilite) {
+                $context->buildViolation("Choisir votre disponibilité est obligatoire pour un coach.")
+                    ->atPath('disponibilite')
                     ->addViolation();
             }
             
