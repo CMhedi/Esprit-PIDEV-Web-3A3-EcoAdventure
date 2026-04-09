@@ -33,13 +33,8 @@ class MessagerieController extends AbstractController
             return $this->redirectToRoute('app_messagerie_auto', ['id_user' => $sessionUser->getId_user()]);
         }
 
-        $sessionUserId = $request->getSession()->get('current_user_id');
-        if (!$sessionUserId) {
-            $this->addFlash('error', 'Connectez-vous d\'abord pour ouvrir la messagerie.');
-            return $this->redirectToRoute('app_login');
-        }
-
-        return $this->redirectToRoute('app_messagerie_auto', ['id_user' => $sessionUserId]);
+        $this->addFlash('error', 'Connectez-vous d\'abord pour ouvrir la messagerie.');
+        return $this->redirectToRoute('app_login');
     }
 
     /**
@@ -48,9 +43,13 @@ class MessagerieController extends AbstractController
     #[Route('/messagerie/auto/{id_user}', name: 'app_messagerie_auto', requirements: ['id_user' => '\d+'])]
     public function autoRedirectByRole(
         int $id_user,
-        Request $request,
         UserAppRepository $userAppRepo
     ): Response {
+        $authenticatedUser = $this->getUser();
+        if ($authenticatedUser instanceof UserApp) {
+            $id_user = $authenticatedUser->getId_user();
+        }
+
         $user = $userAppRepo->find($id_user);
         
         if (!$user) {
@@ -58,20 +57,15 @@ class MessagerieController extends AbstractController
             return $this->redirectToRoute('app_home');
         }
 
-        $request->getSession()->set('current_user_id', $user->getId_user());
-        $request->getSession()->set('current_user_name', trim(($user->getPrenom() ?? '') . ' ' . ($user->getNom() ?? '')));
-        $request->getSession()->set('current_user_role', $user->getRole()?->value);
         
         // Vérifier le rôle de l'utilisateur
         $role = $user->getRole();
         
         if ($role === RoleUser::ADMIN) {
-            // Si admin, rediriger vers l'interface admin
             return $this->redirectToRoute('admin_messagerie_index');
-        } else {
-            // Si non-admin, rediriger vers l'interface front-end
-            return $this->redirectToRoute('app_messagerie', ['id_user' => $id_user]);
         }
+
+        return $this->redirectToRoute('app_messagerie', ['id_user' => $id_user]);
     }
 
     /**
@@ -90,12 +84,8 @@ class MessagerieController extends AbstractController
         EntityManagerInterface $em
     ): Response {
         $authenticatedUser = $this->getUser();
-        if ($authenticatedUser instanceof UserApp && ($id_user === null || $authenticatedUser->getId_user() === $id_user)) {
+        if ($authenticatedUser instanceof UserApp) {
             $id_user = $authenticatedUser->getId_user();
-        }
-
-        if ($id_user === null) {
-            $id_user = $request->getSession()->get('current_user_id');
         }
 
         if (!$id_user) {
@@ -105,15 +95,8 @@ class MessagerieController extends AbstractController
 
         $user = $userAppRepo->find($id_user);
         if (!$user) {
-            $request->getSession()->remove('current_user_id');
-            $request->getSession()->remove('current_user_name');
-            $request->getSession()->remove('current_user_role');
             return $this->redirectToRoute('app_home');
         }
-
-        $request->getSession()->set('current_user_id', $user->getId_user());
-        $request->getSession()->set('current_user_name', trim(($user->getPrenom() ?? '') . ' ' . ($user->getNom() ?? '')));
-        $request->getSession()->set('current_user_role', $user->getRole()?->value);
 
         if ($user->getRole() === RoleUser::ADMIN) {
             return $this->redirectToRoute('admin_messagerie_index');
