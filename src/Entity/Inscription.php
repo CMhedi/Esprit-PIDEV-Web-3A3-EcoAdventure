@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Entity;
-
+use App\Entity\UserApp;
 use App\Repository\InscriptionRepository;
 use App\Enum\StatutInscription;
 use Doctrine\ORM\Mapping as ORM;
@@ -47,6 +47,7 @@ class Inscription
     {
         return $this->date_inscription;
     }
+    
 
     public function setDateInscription(\DateTimeInterface $date_inscription): self
     {

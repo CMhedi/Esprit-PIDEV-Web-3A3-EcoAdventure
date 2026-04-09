@@ -29,7 +29,21 @@
         opacity: 0.14;
         pointer-events: none;
     }
+.btn-chart-pack {
+    background: linear-gradient(135deg, #6c5ce7, #8e44ad);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-weight: 600;
+    box-shadow: 0 10px 20px rgba(108, 92, 231, 0.20);
+    transition: 0.25s ease;
+}
 
+.btn-chart-pack:hover {
+    transform: translateY(-2px);
+    color: #fff;
+}
     .packs-page::before {
         width: 240px;
         height: 240px;
@@ -601,6 +615,7 @@
                                             <a href="{{ path('app_admin_pack_edit', {id: pack.idPack}) }}"
                                             class="btn action-btn btn-warning"> <i class="bi bi-pencil-square me-1"></i> Modifier
                                             </a>
+                                            
 
                                             <form method="post"
                                                   action="{{ path('app_admin_pack_delete', {id: pack.idPack}) }}"
