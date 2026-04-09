@@ -92,4 +92,24 @@ final class ReclamationController extends AbstractController
 
         return $this->redirectToRoute('app_reclamation_index', [], Response::HTTP_SEE_OTHER);
     }
+    #[Route('/admin-reply/{id_reclamation}', name: 'app_reclamation_admin_reply', methods: ['POST'])]
+    public function adminReply(Request $request, int $id_reclamation, EntityManagerInterface $entityManager, ReclamationRepository $repo): Response
+    {
+        $reclamation = $repo->find($id_reclamation);
+        
+        if ($reclamation && $this->isGranted('ROLE_ADMIN')) {
+            $reponse = $request->request->get('reponse');
+            $statut = $request->request->get('statut');
+
+            $reclamation->setReponse($reponse);
+            
+            // Houni thabbet f'el Enum mte3ek (TRAITEE / REJETEE)
+            // Par exemple: $reclamation->setStatut(\App\Enum\StatutReclamation::from($statut));
+            
+            $entityManager->flush();
+            $this->addFlash('success', 'Réponse enregistrée avec succès !');
+        }
+
+        return $this->redirectToRoute('app_reclamation_index');
+    }
 }

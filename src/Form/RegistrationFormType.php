@@ -22,41 +22,44 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
 class RegistrationFormType extends AbstractType
 {
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('nom', TextType::class)
             ->add('prenom', TextType::class)
             ->add('telephone', \Symfony\Component\Form\Extension\Core\Type\TelType::class, [
-            'attr' => ['class' => 'form-control', 'placeholder' => 'Votre numéro de téléphone'],
-            'label' => 'Téléphone',
-            'required' => true, 
-        ])
+                'attr' => ['class' => 'form-control', 'placeholder' => 'Votre numéro de téléphone'],
+                'label' => 'Téléphone',
+                'required' => true, 
+            ])
             ->add('email', TextType::class)
             ->add('role', EnumType::class, [
                 'class' => RoleUser::class,
                 'choices' => [RoleUser::USER_SIMPLE, RoleUser::COACH],
                 'choice_label' => fn (RoleUser $choice) => $choice->value,
             ])
-            // Champs Coach
 
+            // Fields Coach: Kolhom lezem yabdaw 'required' => false
             ->add('age', IntegerType::class, [
-                'required' => false, // Géré par le Callback pour le Coach
+                'required' => false, 
                 'attr' => ['min' => 18, 'placeholder' => 'Votre âge']
             ])
             ->add('experience', IntegerType::class, [
-                'required' => false, // Géré par le Callback
+                'required' => false, 
                 'label' => "Années d'expérience",
                 'attr' => ['min' => 0, 'placeholder' => 'Ex: 2']
             ])
             ->add('bio_certifs', TextareaType::class, [
-                'required' => false, // Désormais optionnel
+                'required' => false, 
                 'label' => 'Bio (Optionnel)',
             ])
+
+            // Salla7na el required houni bech el USER_SIMPLE i-najem i-3addi
             ->add('specialite', EnumType::class, [
                 'class' => Specialite::class,
-                'choice_label' => fn ($choice) => $choice->value, // walla esm el label elli t7eb 3lih
-                'required' => true,
+                'choice_label' => fn ($choice) => $choice->value,
+                'required' => false, // <--- Kenet TRUE, badeltha FALSE
                 'placeholder' => 'Choisir une spécialité',
                 'attr' => ['class' => 'form-select']
             ])
@@ -64,7 +67,7 @@ class RegistrationFormType extends AbstractType
             ->add('disponibilite', EnumType::class, [
                 'class' => Disponibilite::class,
                 'choice_label' => fn ($choice) => $choice->value, 
-                'required' => true,
+                'required' => false, // <--- Kenet TRUE, badeltha FALSE
                 'placeholder' => 'Choisir votre disponibilité',
                 'attr' => ['class' => 'form-select']
             ])
@@ -72,7 +75,13 @@ class RegistrationFormType extends AbstractType
             ->add('agreeTerms', CheckboxType::class, ['mapped' => false])
             ->add('motdepasse', PasswordType::class, [
                 'mapped' => false,
-                'constraints' => [new NotBlank(), new Length(['min' => 6])]
+                'constraints' => [
+                    new NotBlank(['message' => 'Veuillez entrer un mot de passe']),
+                    new Length([
+                        'min' => 6,
+                        'minMessage' => 'Le mot de passe doit faire au moins {{ limit }} caractères'
+                    ])
+                ]
             ]);
     }
 
