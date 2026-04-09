@@ -16,6 +16,7 @@
             align-items: center;
             justify-content: center;
             margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         .register-card {
             background: rgba(255, 255, 255, 0.85);
@@ -25,6 +26,7 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.2);
             width: 100%;
             max-width: 500px;
+            margin: 20px;
         }
         h2 { 
             color: #333; 
@@ -33,7 +35,7 @@
             margin-bottom: 30px;
         }
         .btn-info-custom {
-            background: #00d2ff;
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
             color: white;
             border: none;
             border-radius: 50px;
@@ -45,6 +47,7 @@
             background: #0099cc;
             transform: translateY(-2px);
             color: white;
+            box-shadow: 0 5px 15px rgba(0, 210, 255, 0.4);
         }
         #coach_section {
             background: rgba(248, 249, 250, 0.6);
@@ -53,8 +56,19 @@
             padding: 20px;
             margin-bottom: 20px;
         }
-        .invalid-feedback {
-            font-weight: 500;
+        /* Style l'el errors bi rouge */
+        .text-danger ul {
+            list-style: none;
+            padding: 0;
+            margin: 5px 0 0 0;
+        }
+        .text-danger li {
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .form-control.is-invalid {
+            border-color: #dc3545;
+            background-image: none;
         }
     </style>
 </head>
@@ -63,99 +77,86 @@
 <div class="register-card">
     <h2>Inscription EcoAdventure</h2>
 
-    {# Na7ina novalidate bech el validation dji mrigla #}
-    {{ form_start(registrationForm) }}
+    {# 1. novalidate tna7i el message mta3 el browser #}
+    {{ form_start(registrationForm, {'attr': {'novalidate': 'novalidate'}}) }}
         
         <div class="mb-3">
-            {{ form_label(registrationForm.nom, 'Nom', {'label_attr': {'class': 'form-label fw-bold'}}) }}
-            {{ form_widget(registrationForm.nom, {'attr': {'class': 'form-control ' ~ (registrationForm.nom.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
-            {{ form_errors(registrationForm.nom) }}
+            {{ form_label(registrationForm.nom, 'Nom', {'label_attr': {'class': 'form-label fw-bold small'}}) }}
+            {{ form_widget(registrationForm.nom, {'attr': {'class': 'form-control rounded-pill ' ~ (registrationForm.nom.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
+            <div class="text-danger small">{{ form_errors(registrationForm.nom) }}</div>
         </div>
 
         <div class="mb-3">
-            {{ form_label(registrationForm.prenom, 'Prénom', {'label_attr': {'class': 'form-label fw-bold'}}) }}
-            {{ form_widget(registrationForm.prenom, {'attr': {'class': 'form-control ' ~ (registrationForm.prenom.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
-            {{ form_errors(registrationForm.prenom) }}
-        </div>
-
-        {# Champ Téléphone jdid #}
-        <div class="mb-3">
-            {{ form_label(registrationForm.telephone, 'Téléphone', {'label_attr': {'class': 'form-label fw-bold'}}) }}
-            {{ form_widget(registrationForm.telephone, {'attr': {'class': 'form-control ' ~ (registrationForm.telephone.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
-            {{ form_errors(registrationForm.telephone) }}
+            {{ form_label(registrationForm.prenom, 'Prénom', {'label_attr': {'class': 'form-label fw-bold small'}}) }}
+            {{ form_widget(registrationForm.prenom, {'attr': {'class': 'form-control rounded-pill ' ~ (registrationForm.prenom.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
+            <div class="text-danger small">{{ form_errors(registrationForm.prenom) }}</div>
         </div>
 
         <div class="mb-3">
-            {{ form_label(registrationForm.email, 'Email', {'label_attr': {'class': 'form-label fw-bold'}}) }}
-            {{ form_widget(registrationForm.email, {'attr': {'class': 'form-control ' ~ (registrationForm.email.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
-            {{ form_errors(registrationForm.email) }}
+            {{ form_label(registrationForm.telephone, 'Téléphone', {'label_attr': {'class': 'form-label fw-bold small'}}) }}
+            {{ form_widget(registrationForm.telephone, {'attr': {'class': 'form-control rounded-pill ' ~ (registrationForm.telephone.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
+            <div class="text-danger small">{{ form_errors(registrationForm.telephone) }}</div>
         </div>
 
         <div class="mb-3">
-            {{ form_label(registrationForm.role, 'Rôle', {'label_attr': {'class': 'form-label fw-bold'}}) }}
-            {{ form_widget(registrationForm.role, {'attr': {'id': 'registration_form_role', 'class': 'form-select'}}) }}
+            {{ form_label(registrationForm.email, 'Email', {'label_attr': {'class': 'form-label fw-bold small'}}) }}
+            {{ form_widget(registrationForm.email, {'attr': {'class': 'form-control rounded-pill ' ~ (registrationForm.email.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
+            <div class="text-danger small">{{ form_errors(registrationForm.email) }}</div>
+        </div>
+
+        <div class="mb-3">
+            {{ form_label(registrationForm.role, 'Rôle', {'label_attr': {'class': 'form-label fw-bold small'}}) }}
+            {{ form_widget(registrationForm.role, {'attr': {'id': 'registration_form_role', 'class': 'form-select rounded-pill'}}) }}
         </div>
 
         <div id="coach_section" style="display: none;">
-            <h5 class="mb-3 text-primary" style="font-size: 1rem; border-bottom: 2px solid #00d2ff; display: inline-block;">Détails Coach</h5>
+            <h5 class="mb-3 text-primary small fw-bold" style="border-bottom: 2px solid #00d2ff; display: inline-block;">Détails Coach</h5>
             
             <div class="mb-3">
-                {{ form_label(registrationForm.age, 'Âge') }}
-                {{ form_widget(registrationForm.age, {'attr': {'class': 'form-control ' ~ (registrationForm.age.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
-                {{ form_errors(registrationForm.age) }}
+                {{ form_label(registrationForm.age, 'Âge', {'label_attr': {'class': 'small fw-bold'}}) }}
+                {{ form_widget(registrationForm.age, {'attr': {'class': 'form-control rounded-pill ' ~ (registrationForm.age.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
+                <div class="text-danger small">{{ form_errors(registrationForm.age) }}</div>
             </div>
 
             <div class="mb-3">
-                {{ form_label(registrationForm.experience, 'Années d\'expérience') }}
-                {{ form_widget(registrationForm.experience, {'attr': {'class': 'form-control ' ~ (registrationForm.experience.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
-                {{ form_errors(registrationForm.experience) }}
+                {{ form_label(registrationForm.experience, 'Expérience (ans)', {'label_attr': {'class': 'small fw-bold'}}) }}
+                {{ form_widget(registrationForm.experience, {'attr': {'class': 'form-control rounded-pill ' ~ (registrationForm.experience.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
+                <div class="text-danger small">{{ form_errors(registrationForm.experience) }}</div>
             </div>
-
-            {# templates/registration/register.html.twig #}
 
             <div class="mb-3">
                 <label class="small fw-bold">Spécialité</label>
-                {{ form_widget(registrationForm.specialite, {
-                    'attr': {'class': 'form-select ' ~ (registrationForm.specialite.vars.valid ? '' : 'is-invalid')}
-                }) }}
-                <div class="invalid-feedback">
-                    {{ form_errors(registrationForm.specialite) }}
-                </div>
+                {{ form_widget(registrationForm.specialite, {'attr': {'class': 'form-select rounded-pill'}}) }}
             </div>
 
             <div class="mb-3">
                 <label class="small fw-bold">Disponibilité</label>
-                {{ form_widget(registrationForm.disponibilite, {
-                    'attr': {'class': 'form-select ' ~ (registrationForm.disponibilite.vars.valid ? '' : 'is-invalid')}
-                }) }}
-                <div class="invalid-feedback">
-                    {{ form_errors(registrationForm.disponibilite) }}
-                </div>
+                {{ form_widget(registrationForm.disponibilite, {'attr': {'class': 'form-select rounded-pill'}}) }}
             </div>
                         
             <div class="mb-3">
-                {{ form_label(registrationForm.bio_certifs, 'Bio et Certificats') }}
-                {{ form_widget(registrationForm.bio_certifs, {'attr': {'class': 'form-control', 'rows': '3'}}) }}
+                {{ form_label(registrationForm.bio_certifs, 'Bio & Certificats', {'label_attr': {'class': 'small fw-bold'}}) }}
+                {{ form_widget(registrationForm.bio_certifs, {'attr': {'class': 'form-control', 'rows': '3', 'style': 'border-radius: 15px;'}}) }}
             </div>
         </div>
 
         <div class="mb-3">
-            {{ form_label(registrationForm.motdepasse, 'Mot de passe', {'label_attr': {'class': 'form-label fw-bold'}}) }}
-            {{ form_widget(registrationForm.motdepasse, {'attr': {'class': 'form-control ' ~ (registrationForm.motdepasse.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
-            {{ form_errors(registrationForm.motdepasse) }}
+            {{ form_label(registrationForm.motdepasse, 'Mot de passe', {'label_attr': {'class': 'form-label fw-bold small'}}) }}
+            {{ form_widget(registrationForm.motdepasse, {'attr': {'class': 'form-control rounded-pill ' ~ (registrationForm.motdepasse.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
+            <div class="text-danger small">{{ form_errors(registrationForm.motdepasse) }}</div>
         </div>
 
         <div class="mb-4 form-check">
             {{ form_widget(registrationForm.agreeTerms, {'attr': {'class': 'form-check-input'}}) }}
-            {{ form_label(registrationForm.agreeTerms, 'J\'accepte les termes', {'label_attr': {'class': 'form-check-label'}}) }}
-            <div class="text-danger small">{{ form_errors(registrationForm.agreeTerms) }}</div>
+            {{ form_label(registrationForm.agreeTerms, 'J\'accepte les termes', {'label_attr': {'class': 'form-check-label small'}}) }}
+            <div class="text-danger small fw-bold">{{ form_errors(registrationForm.agreeTerms) }}</div>
         </div>
         
         <button type="submit" class="btn btn-info-custom w-100 shadow-sm">S'inscrire</button>
     {{ form_end(registrationForm) }}
     
     <div class="mt-3 text-center">
-        <small class="text-muted">Déjà inscrit ? <a href="{{ path('app_login') }}" class="text-decoration-none" style="color: #0099cc;">Connectez-vous</a></small>
+        <small class="text-muted">Déjà inscrit ? <a href="{{ path('app_login') }}" class="text-decoration-none fw-bold" style="color: #3a7bd5;">Connectez-vous</a></small>
     </div>
 </div>
 

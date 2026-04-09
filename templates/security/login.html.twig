@@ -24,42 +24,58 @@
             width: 100%;
             max-width: 450px;
         }
+        /* Style l'el error message bech i-ji rouge w wada7 */
+        .alert-error-custom {
+            background-color: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            text-align: center;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 <div class="login-card">
-    <form method="post">
-        <h2 class="text-center mb-4">Connexion</h2>
+    <form method="post" novalidate>
+        <h2 class="text-center mb-4 fw-bold" style="color: #2c3e50;">Connexion</h2>
         
+        {# 1. Houni el message bi rouge ken famma ghalta #}
         {% if error %}
-            <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+            <div class="alert-error-custom">
+                {{ error.messageKey|trans(error.messageData, 'security') }}
+            </div>
         {% endif %}
 
         <div class="mb-3">
-            <label for="inputEmail">Email</label>
-            <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control" autocomplete="email" required autofocus>
+            <label for="inputEmail" class="small fw-bold mb-1">Email</label>
+            <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control rounded-pill" autocomplete="email" autofocus>
         </div>
 
         <div class="mb-3">
-            <label for="inputPassword">Mot de passe</label>
-            <input type="password" name="password" id="inputPassword" class="form-control" autocomplete="current-password" required>
+            <label for="inputPassword" class="small fw-bold mb-1">Mot de passe</label>
+            <input type="password" name="password" id="inputPassword" class="form-control rounded-pill" autocomplete="current-password">
         </div>
 
         <div class="mb-3 form-check">
             <input type="checkbox" name="_remember_me" id="remember_me" class="form-check-input">
-            <label class="form-check-label" for="remember_me">Se souvenir de moi</label>
+            <label class="form-check-label small text-muted" for="remember_me">Se souvenir de moi</label>
         </div>
 
         <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
 
-        <button class="btn btn-primary w-100 py-2" type="submit" style="border-radius: 50px; background: #00d2ff; border: none; font-weight: bold;">
+        <button class="btn btn-primary w-100 py-2 mt-2 shadow-sm" type="submit" style="border-radius: 50px; background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); border: none; font-weight: bold;">
             Se connecter
         </button>
+
         <div class="text-center mt-4">
-    <p class="text-muted small">Vous n'avez pas de compte ? 
-        <a href="{{ path('app_register') }}" class="fw-bold text-primary text-decoration-none">S'inscrire ici</a>
-    </p>
-</div>
+            <p class="text-muted small">Vous n'avez pas de compte ? 
+                <a href="{{ path('app_register') }}" class="fw-bold text-primary text-decoration-none">S'inscrire ici</a>
+            </p>
+        </div>
     </form>
 </div>
 </body>
