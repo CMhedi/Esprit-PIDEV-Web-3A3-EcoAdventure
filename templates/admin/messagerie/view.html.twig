@@ -1,0 +1,609 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Conversation #{{ conversation.id_conversation }}{% endblock %}
+{% block page_title %}Conversation #{{ conversation.id_conversation }}{% endblock %}
+
+{% block body %}
+<div class="admin-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <a href="{{ path('admin_messagerie_index') }}" class="btn btn-eco-outline btn-sm me-3">
+                <i class="bi bi-arrow-left me-1"></i>Retour
+            </a>
+            <div>
+                <h4 class="fw-bold mb-1">
+                    {% if conversation.est_groupe %}
+                        <i class="bi bi-people-fill me-2"></i>
+                    {% else %}
+                        <i class="bi bi-person-fill me-2"></i>
+                    {% endif %}
+                    {{ conversation.titre }}
+                </h4>
+                <small class="text-muted">
+                    {% if conversation.est_groupe %}
+                        Groupe créé le {{ conversation.date_creation|date('d/m/Y à H:i') }}
+                    {% else %}
+                        Conversation privée créée le {{ conversation.date_creation|date('d/m/Y à H:i') }}
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        <div>
+            <span class="badge {% if conversation.est_groupe %}bg-info{% else %}bg-primary{% endif %} me-2">
+                {% if conversation.est_groupe %}Groupe{% else %}Privée{% endif %}
+            </span>
+            <form method="POST" 
+                  action="{{ path('admin_messagerie_delete', {'id': conversation.id_conversation}) }}" 
+                  class="d-inline" 
+                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette conversation ? Cette action est irréversible.')">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ conversation.id_conversation) }}">
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="bi bi-trash me-1"></i>Supprimer la conversation
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Participants -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-people me-2"></i>
+                Participants ({{ participants|length }})
+            </h5>
+            <div class="row g-3">
+                {% for participant in participants %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="participant-card">
+                            <div class="d-flex align-items-center">
+                                <div class="participant-avatar me-3">
+                                    {{ participant.nom|first }}{{ participant.prenom|first }}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold">{{ participant.nom }} {{ participant.prenom }}</div>
+                                    <div class="text-muted small">
+                                        @{{ participant.nom|lower }}{{ participant.prenom|lower }}
+                                        {% if conversation.createur.id_user == participant.id_user %}
+                                            <span class="badge bg-warning text-dark ms-2">Créateur</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="participant-status">
+                                    <div class="status-dot {% if participant.last_seen and participant.last_seen >= '-5 minutes' %}online{% else %}offline{% endif %}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="row">
+        <div class="col-12">
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-chat-dots me-2"></i>
+                Messages ({{ messages|length }})
+            </h5>
+            <div class="messages-container">
+                {% if messages|length > 0 %}
+                    {% for message in messages %}
+                        <div class="message-item" id="message-{{ message.id_message }}">
+                            <div class="message-header">
+                                <div class="d-flex align-items-center">
+                                    <div class="message-avatar">
+                                        {{ message.userApp.nom|first }}{{ message.userApp.prenom|first }}
+                                    </div>
+                                    <div class="ms-2">
+                                        <div class="fw-semibold">{{ message.userApp.nom }} {{ message.userApp.prenom }}</div>
+                                        <div class="text-muted small">
+                                            {{ message.date_envoi|date('d/m/Y H:i:s') }}
+                                            {% if message.date_modifier %}
+                                                <span class="text-muted ms-2">
+                                                    <i class="bi bi-pencil me-1"></i>Modifié le {{ message.date_modifier|date('d/m/Y H:i') }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="message-actions">
+                                    <span class="message-type-badge badge bg-{% if message.type_message.value == 'TEXTE' %}secondary{% elseif message.type_message.value == 'IMAGE' %}primary{% elseif message.type_message.value == 'VIDEO' %}success{% elseif message.type_message.value == 'AUDIO' or message.type_message.value == 'VOCALE' %}info{% elseif message.type_message.value == 'PDF' %}danger{% elseif message.type_message.value == 'APPEL_AUDIO' or message.type_message.value == 'APPEL_VIDEO' %}success{% else %}secondary{% endif %}">
+                                        {{ message.type_message.value }}
+                                    </span>
+                                    <form method="POST" 
+                                          action="{{ path('admin_messagerie_delete_message', {'id': message.id_message}) }}" 
+                                          class="d-inline ms-2" 
+                                          onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce message ?')">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ message.id_message) }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer le message">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="message-content">
+                                {% set rawContent = message.contenu ?? '' %}
+                                {% set attachments = message.attachments|default([]) %}
+                                {% set contentParts = rawContent ? rawContent|split('|', 2) : [''] %}
+                                {% set mediaPath = attachments is empty ? (contentParts[0] ?? '') : '' %}
+                                {% set mediaComment = attachments is empty ? (contentParts[1] ?? '') : rawContent %}
+                                {% set mediaRelative = mediaPath starts with '/uploads/' ? mediaPath|slice(9) : '' %}
+                                {% set mediaUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative}) : '' %}
+                                {% set mediaDownloadUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative, 'download': 1}) : '' %}
+                                {% set mediaFileName = mediaPath ? (mediaPath|split('/')|last) : 'fichier' %}
+                                {% set mediaExt = mediaPath ? (mediaPath|split('.')|last|lower) : '' %}
+                                {% set mediaParts = mediaPath ? mediaPath|split('/') : [] %}
+                                {% set mediaFolder = mediaParts|length > 2 ? mediaParts[2]|lower : '' %}
+                                {% set isVideoFile = (mediaFolder == 'video' and mediaFolder != 'vocale') or (mediaExt in ['mp4', 'mov', 'avi', 'mkv', 'webm'] and mediaFolder != 'vocale') %}
+                                {% set isAudioFile = mediaFolder in ['audio', 'call', 'vocale'] or mediaExt in ['mp3', 'wav', 'm4a', 'ogg', 'aac', 'webm'] %}
+                                {% set isImageFile = mediaFolder == 'images' or mediaExt in ['jpg', 'jpeg', 'png', 'webp', 'gif'] %}
+                                {% set isPdfFile = (mediaFolder == 'files' and mediaExt == 'pdf') or mediaExt == 'pdf' %}
+
+                                {% if attachments is not empty %}
+                                    <div class="media-container">
+                                        {% for attachment in attachments %}
+                                            {% set attachmentPath = attachment.path|default('') %}
+                                            {% set attachmentRelative = attachmentPath starts with '/uploads/' ? attachmentPath|slice(9) : '' %}
+                                            {% set attachmentUrl = attachmentRelative ? path('app_media_file', {'file': attachmentRelative}) : '' %}
+                                            {% set attachmentDownloadUrl = attachmentRelative ? path('app_media_file', {'file': attachmentRelative, 'download': 1}) : '' %}
+                                            {% set attachmentName = attachment.name|default(attachmentPath ? (attachmentPath|split('/')|last) : 'fichier') %}
+                                            {% set attachmentMime = attachment.mime|default('') %}
+                                            {% set attachmentType = attachment.type|default('') %}
+                                            <div class="mb-3">
+                                                {% if attachmentType in ['AUDIO', 'VOCALE', 'APPEL_AUDIO'] or attachmentMime starts with 'audio/' %}
+                                                    <audio controls class="w-100 mt-2"><source src="{{ attachmentUrl }}"></audio>
+                                                {% elseif attachmentType in ['VIDEO', 'APPEL_VIDEO'] or attachmentMime starts with 'video/' %}
+                                                    <video controls class="rounded chat-video-inline" style="max-width: 100%; height: auto;"><source src="{{ attachmentUrl }}"></video>
+                                                {% elseif attachmentType in ['IMAGE', 'GIF'] or attachmentMime starts with 'image/' %}
+                                                    <img src="{{ attachmentUrl }}" alt="media" class="img-fluid rounded" style="max-height: 300px;">
+                                                {% elseif attachmentType == 'PDF' or attachmentMime == 'application/pdf' %}
+                                                    <a href="{{ attachmentUrl }}" target="_blank" class="btn btn-sm btn-outline-primary me-2"><i class="bi bi-eye me-1"></i>Voir {{ attachmentName }}</a>
+                                                    <a href="{{ attachmentDownloadUrl }}" class="btn btn-sm btn-outline-secondary" download="{{ attachmentName }}"><i class="bi bi-download me-1"></i>Télécharger</a>
+                                                {% else %}
+                                                    <a href="{{ attachmentDownloadUrl }}" class="btn btn-sm btn-outline-primary" download="{{ attachmentName }}"><i class="bi bi-download me-1"></i>{{ attachmentName }}</a>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                        {% if mediaComment is not empty %}
+                                            <div class="media-comment mt-2">
+                                                <small class="text-muted">{{ mediaComment }}</small>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% elseif mediaUrl %}
+                                    <div class="media-container">
+                                        {% if isAudioFile or message.type_message.value in ['AUDIO', 'APPEL_AUDIO', 'VOCALE'] %}
+                                            <div class="voice-message-card">
+                                                <div class="voice-header">
+                                                    <span class="voice-message-time">0:00</span>
+                                                    <span class="voice-label">
+                                                        {% if message.type_message.value == 'VOCALE' %}
+                                                            <i class="bi bi-mic-fill me-1"></i>Message vocal
+                                                        {% elseif message.type_message.value == 'APPEL_AUDIO' %}
+                                                            <i class="bi bi-telephone-fill me-1"></i>Appel audio
+                                                        {% else %}
+                                                            <i class="bi bi-music-note-beamed me-1"></i>Fichier audio
+                                                        {% endif %}
+                                                    </span>
+                                                </div>
+                                                <div class="voice-wave" aria-hidden="true">
+                                                    <span></span><span></span><span></span><span></span><span></span>
+                                                    <span></span><span></span><span></span><span></span><span></span><span></span>
+                                                </div>
+                                                <audio controls class="w-100 mt-2">
+                                                    <source src="{{ mediaUrl }}">
+                                                    Votre navigateur ne supporte pas l'audio.
+                                                </audio>
+                                                <div class="mt-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.open('{{ mediaUrl }}', '_blank')">
+                                                        <i class="bi bi-download me-1"></i>Télécharger
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        {% elseif isVideoFile or message.type_message.value in ['VIDEO', 'APPEL_VIDEO'] %}
+                                            <div class="video-container">
+                                                <div class="video-label">
+                                                    {% if message.type_message.value == 'APPEL_VIDEO' %}
+                                                        <i class="bi bi-camera-video-fill me-1"></i>Appel vidéo
+                                                    {% else %}
+                                                        <i class="bi bi-film me-1"></i>Vidéo
+                                                    {% endif %}
+                                                </div>
+                                                <video controls class="rounded chat-video-inline" style="max-width: 100%; height: auto;">
+                                                    <source src="{{ mediaUrl }}">
+                                                    Votre navigateur ne supporte pas les vidéos.
+                                                </video>
+                                                <div class="mt-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.open('{{ mediaUrl }}', '_blank')">
+                                                        <i class="bi bi-arrows-fullscreen me-1"></i>Ouvrir en plein écran
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="window.location.href='{{ mediaDownloadUrl }}'">
+                                                        <i class="bi bi-download me-1"></i>Télécharger
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        {% elseif isImageFile or message.type_message.value in ['IMAGE', 'GIF'] %}
+                                            <div class="image-container">
+                                                <div class="image-label">
+                                                    {% if message.type_message.value == 'GIF' %}
+                                                        <i class="bi bi-filetype-gif me-1"></i>GIF animé
+                                                    {% else %}
+                                                        <i class="bi bi-image me-1"></i>Image
+                                                    {% endif %}
+                                                </div>
+                                                <img src="{{ mediaUrl }}" alt="media" class="img-fluid rounded" style="max-height: 300px; cursor: zoom-in;" onclick="window.open('{{ mediaUrl }}', '_blank')">
+                                                <div class="mt-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.open('{{ mediaUrl }}', '_blank')">
+                                                        <i class="bi bi-zoom-in me-1"></i>Agrandir
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="window.location.href='{{ mediaDownloadUrl }}'">
+                                                        <i class="bi bi-download me-1"></i>Télécharger
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        {% elseif isPdfFile or message.type_message.value == 'PDF' %}
+                                            <div class="pdf-container">
+                                                <div class="pdf-label">
+                                                    <i class="bi bi-file-earmark-pdf me-1"></i>Document PDF
+                                                </div>
+                                                <div class="pdf-preview">
+                                                    <i class="bi bi-file-earmark-pdf pdf-icon"></i>
+                                                    <p class="pdf-filename">{{ mediaFileName }}</p>
+                                                </div>
+                                                <div class="mt-2">
+                                                    <a href="{{ mediaUrl }}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
+                                                        <i class="bi bi-eye me-1"></i>Voir le PDF
+                                                    </a>
+                                                    <a href="{{ mediaDownloadUrl }}" class="btn btn-sm btn-outline-secondary" download="{{ mediaFileName }}">
+                                                        <i class="bi bi-download me-1"></i>Télécharger
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <div class="file-container">
+                                                <div class="file-label">
+                                                    <i class="bi bi-file-earmark me-1"></i>Fichier
+                                                </div>
+                                                <div class="file-info">
+                                                    <p class="file-filename">{{ mediaFileName }}</p>
+                                                    <p class="file-size">Type: {{ mediaExt|upper }}</p>
+                                                </div>
+                                                <div class="mt-2">
+                                                    <a href="{{ mediaDownloadUrl }}" class="btn btn-sm btn-outline-primary" download="{{ mediaFileName }}">
+                                                        <i class="bi bi-download me-1"></i>Télécharger
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if mediaComment is not empty %}
+                                            <div class="media-comment mt-2">
+                                                <small class="text-muted">{{ mediaComment }}</small>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-message">
+                                        <div class="js-linkify">{{ rawContent }}</div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="message-footer">
+                                <div class="message-status">
+                                    <span class="badge bg-{% if message.statut_message.value == 'ENVOYE' %}primary{% elseif message.statut_message.value == 'LU' %}success{% elseif message.statut_message.value == 'NON_LU' %}warning{% else %}secondary{% endif %}">
+                                        {{ message.statut_message.value }}
+                                    </span>
+                                    {% if message.date_lecture %}
+                                        <span class="text-muted ms-2">
+                                            <i class="bi bi-check2-all me-1"></i>
+                                            Lu le {{ message.date_lecture|date('d/m/Y H:i') }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                {% if message.reactions is not empty %}
+                                    <div class="message-reactions">
+                                        {% for emoji, users in message.reactions %}
+                                            <span class="reaction-badge">
+                                                {{ emoji }} {{ users|length }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-chat-dots display-4 d-block mb-2"></i>
+                        Aucun message dans cette conversation
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.participant-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.participant-card:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.participant-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #dc3545;
+}
+
+.status-dot.online {
+    background: #28a745;
+}
+
+.messages-container {
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.message-item {
+    border-bottom: 1px solid #e9ecef;
+    padding: 15px;
+    background: white;
+}
+
+.message-item:last-child {
+    border-bottom: none;
+}
+
+.message-item:hover {
+    background: #f8f9fa;
+}
+
+.message-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.message-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.message-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.message-type-badge {
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.message-content {
+    margin-bottom: 10px;
+}
+
+.message-media img,
+.message-media video {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.call-info {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 6px;
+    padding: 10px;
+    color: #155724;
+}
+
+.message-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+}
+
+.message-reactions {
+    display: flex;
+    gap: 5px;
+}
+
+.reaction-badge {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 12px;
+}
+
+/* Scrollbar styling */
+.messages-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Media Container Styles */
+.media-container {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.voice-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.voice-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.video-container,
+.image-container,
+.pdf-container,
+.file-container {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.video-label,
+.image-label,
+.pdf-label,
+.file-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.pdf-preview {
+    text-align: center;
+    padding: 20px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.pdf-icon {
+    font-size: 48px;
+    color: #dc3545;
+    margin-bottom: 10px;
+}
+
+.pdf-filename {
+    margin: 0;
+    color: #495057;
+    font-weight: 500;
+}
+
+.file-info {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.file-filename {
+    margin: 0 0 5px 0;
+    font-weight: 500;
+    color: #495057;
+}
+
+.file-size {
+    margin: 0;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.media-comment {
+    background: white;
+    border-left: 3px solid #007bff;
+    padding: 8px 12px;
+    border-radius: 0 4px 4px 0;
+    margin-top: 10px;
+}
+
+.text-message {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .media-container {
+        padding: 10px;
+    }
+    
+    .voice-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .btn-sm {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+}
+</style>
+
+<script>
+// Scroll to specific message if hash is present
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash) {
+        const messageId = window.location.hash.substring(1);
+        const messageElement = document.getElementById('message-' + messageId);
+        if (messageElement) {
+            messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            messageElement.style.backgroundColor = '#fff3cd';
+            setTimeout(() => {
+                messageElement.style.backgroundColor = '';
+            }, 2000);
+        }
+    }
+});
+</script>
+{% endblock %}

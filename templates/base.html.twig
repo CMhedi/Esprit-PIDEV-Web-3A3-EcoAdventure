@@ -35,6 +35,13 @@
 {# base.html.twig #}
 
 <div class="d-flex align-items-center gap-3">
+    <div class="position-relative me-2">
+        <a href="{{ app.user ? path('app_messagerie_open') : path('app_login') }}" class="btn btn-link text-success fs-4 p-0 border-0 text-decoration-none" title="Ouvrir la messagerie">
+            <i class="bi bi-chat-text-fill"></i>
+            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+        </a>
+    </div>
+
     {% if app.user %}
         {# 1. Ken el user connecte: nwarriw esmou w dropdown #}
         <div class="dropdown">
