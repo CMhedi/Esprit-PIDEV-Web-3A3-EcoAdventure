@@ -33,20 +33,33 @@
             </ul>
 
             <div class="d-flex align-items-center gap-3">
+                {% set currentSessionUserId = app.session.get('current_user_id') %}
+                {% set currentSessionUserName = app.session.get('current_user_name') %}
                 {# --- L'ICÔNE DE MESSAGERIE --- #}
                 <div class="position-relative me-2">
-    <button type="button" class="btn btn-link text-success fs-4 p-0 border-0" data-bs-toggle="modal" data-bs-target="#userSelectModal" title="Choisir un utilisateur">
+    <a href="{{ path('app_messagerie_open') }}" class="btn btn-link text-success fs-4 p-0 border-0 text-decoration-none" title="Ouvrir la messagerie">
         <i class="bi bi-chat-text-fill"></i>
         <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-    </button>
+    </a>
 </div>
 
-                <a href="#" class="btn btn-outline-success rounded-pill px-4">Connexion</a>
-                <a href="#" class="btn btn-eco rounded-pill px-4 text-white">S'inscrire</a>
+                {% if currentSessionUserId %}
+                    <span class="text-muted small">{{ currentSessionUserName ?: 'Compte connecté' }}</span>
+                    <a href="{{ path('app_logout') }}" class="btn btn-outline-success rounded-pill px-4">Déconnexion</a>
+                {% else %}
+                    <a href="{{ path('app_login') }}" class="btn btn-outline-success rounded-pill px-4">Connexion</a>
+                    <a href="#" class="btn btn-eco rounded-pill px-4 text-white">S'inscrire</a>
+                {% endif %}
             </div>
         </div>
     </div>
 </nav>
+
+{% for message in app.flashes('error') %}
+    <div class="container mt-3">
+        <div class="alert alert-danger mb-0">{{ message }}</div>
+    </div>
+{% endfor %}
 
 {% block body %}{% endblock %}
 

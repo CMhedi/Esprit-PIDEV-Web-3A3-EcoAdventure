@@ -2,32 +2,57 @@
 
 namespace App\Controller;
 
+use App\Entity\UserApp;
+use App\Enum\RoleUser;
+use App\Repository\UserAppRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class SecurityController extends AbstractController
 {
     #[Route('/login', name: 'app_login')]
-    public function login(AuthenticationUtils $authenticationUtils): Response
+    public function login(
+        Request $request,
+        UserAppRepository $userRepository,
+        UserPasswordHasherInterface $passwordHasher
+    ): Response
     {
-        // if user is already logged in, don't display the login page
-        if ($this->getUser()) {
-            $roles = $this->getUser()->getRoles();
-            if (in_array('ROLE_ADMIN', $roles)) {
-                return $this->redirectToRoute('admin_dashboard');
-            } else {
-                return $this->redirectToRoute('app_messagerie');
+        $session = $request->getSession();
+        $sessionUserId = $session->get('current_user_id');
+
+        if ($sessionUserId) {
+            $sessionUser = $userRepository->find($sessionUserId);
+            if ($sessionUser instanceof UserApp) {
+                return $this->redirectAfterLogin($sessionUser);
             }
+
+            $session->remove('current_user_id');
+            $session->remove('current_user_name');
+            $session->remove('current_user_role');
         }
 
-        // get the login error if there is one
-        $error = $authenticationUtils->getLastAuthenticationError();
-        // last username entered by the user
-        $lastUsername = $authenticationUtils->getLastUsername();
+        $error = null;
+        $lastUsername = '';
+
+        if ($request->isMethod('POST')) {
+            $email = trim((string) $request->request->get('_username', ''));
+            $password = (string) $request->request->get('_password', '');
+            $lastUsername = $email;
+
+            $user = $userRepository->findOneBy(['email' => $email]);
+            if ($user instanceof UserApp && $passwordHasher->isPasswordValid($user, $password)) {
+                $session->set('current_user_id', $user->getId_user());
+                $session->set('current_user_name', trim(($user->getPrenom() ?? '') . ' ' . ($user->getNom() ?? '')));
+                $session->set('current_user_role', $user->getRole()?->value);
+
+                return $this->redirectAfterLogin($user);
+            }
+
+            $error = 'Email ou mot de passe invalide.';
+        }
 
         return $this->render('security/login.html.twig', [
             'last_username' => $lastUsername,
@@ -36,18 +61,16 @@ class SecurityController extends AbstractController
     }
 
     #[Route('/logout', name: 'app_logout')]
-    public function logout(): void
+    public function logout(Request $request): Response
     {
-        throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
+        $request->getSession()->invalidate();
+        return $this->redirectToRoute('app_home');
     }
 
-    #[Route('/api/login', name: 'api_login', methods: ['POST'])]
-    public function apiLogin(Request $request, AuthenticationUtils $authenticationUtils): JsonResponse
+    private function redirectAfterLogin(UserApp $user): Response
     {
-        $email = $request->request->get('_email');
-        $password = $request->request->get('_password');
-
-        // This will be handled by the AppAuthenticator
-        return new JsonResponse(['message' => 'Authentication handled by AppAuthenticator']);
+        return $user->getRole() === RoleUser::ADMIN
+            ? $this->redirectToRoute('admin_dashboard')
+            : $this->redirectToRoute('app_messagerie_root');
     }
 }
