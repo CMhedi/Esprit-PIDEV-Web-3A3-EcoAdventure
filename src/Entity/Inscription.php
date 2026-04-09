@@ -38,6 +38,10 @@ class Inscription
     #[ORM\JoinColumn(name: 'id_pack', referencedColumnName: 'id_pack', nullable: true)]
     private ?Pack $pack = null;
 
+    #[ORM\ManyToOne(targetEntity: UserApp::class, inversedBy: 'inscriptions')]
+    #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user', nullable: true)]
+    private ?UserApp $userApp = null;
+
     public function getIdInscription(): ?int
     {
         return $this->id_inscription;
@@ -107,6 +111,17 @@ class Inscription
     public function setPack(?Pack $pack): self
     {
         $this->pack = $pack;
+        return $this;
+    }
+
+    public function getUserApp(): ?UserApp
+    {
+        return $this->userApp;
+    }
+
+    public function setUserApp(?UserApp $userApp): self
+    {
+        $this->userApp = $userApp;
         return $this;
     }
 }

@@ -20,12 +20,17 @@ class InscriptionRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('i')
             ->leftJoin('i.pack', 'p')
+            ->leftJoin('i.userApp', 'u')
             ->addSelect('p')
+            ->addSelect('u')
             ->orderBy('i.date_inscription', 'DESC');
 
         if (!empty($search)) {
             $qb->andWhere('
                 LOWER(i.nom_user) LIKE :search
+                OR LOWER(u.nom) LIKE :search
+                OR LOWER(u.prenom) LIKE :search
+                OR LOWER(u.email) LIKE :search
                 OR LOWER(i.nom_pack) LIKE :search
                 OR LOWER(i.statut_inscr) LIKE :search
                 OR LOWER(p.nom) LIKE :search
