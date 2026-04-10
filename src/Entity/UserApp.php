@@ -99,6 +99,9 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: "coach", targetEntity: Seance::class)]
     private Collection $seances;
 
+    #[ORM\ManyToMany(targetEntity: Conversation::class, mappedBy: 'participants')]
+    private Collection $conversations;
+
     #[Assert\Callback]
     public function validateCoachRequirements(ExecutionContextInterface $context): void
     {
@@ -144,6 +147,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
         $this->reservationEvenements = new ArrayCollection();
         $this->reservationSeances = new ArrayCollection();
         $this->seances = new ArrayCollection();
+        $this->conversations = new ArrayCollection();
         $this->referralCode = strtoupper(substr(uniqid(), -6));
     }
 
@@ -246,4 +250,5 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function getReservationEvenements(): Collection { return $this->reservationEvenements; }
     public function getReservationSeances(): Collection { return $this->reservationSeances; }
     public function getSeances(): Collection { return $this->seances; }
+    public function getConversations(): Collection { return $this->conversations; }
 }

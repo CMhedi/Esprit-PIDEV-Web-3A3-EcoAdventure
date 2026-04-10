@@ -16,10 +16,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Repository\ReservationEvenementRepository;
 use App\Enum\StatutReservationEvenement;
 
-use Symfony\Component\Security\Http\Attribute\IsGranted;
-
 #[Route('/admin/events')]
-#[IsGranted('ROLE_ADMIN')]
 class EventAdminController extends AbstractController
 {
     #[Route('/reservations', name: 'app_event_admin_reservations', methods: ['GET'])]

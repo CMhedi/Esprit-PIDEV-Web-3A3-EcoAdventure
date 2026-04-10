@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Repository\ActiviteRepository;
 use App\Repository\ReservationActiviteRepository;
 use App\Entity\Evenement;
+use App\Entity\Inscription;
 use App\Entity\UserApp;
 use App\Entity\ReservationEvenement;
 use App\Entity\Pack;
@@ -29,6 +30,7 @@ final class AdminController extends AbstractController
         $userCount = $entityManager->getRepository(UserApp::class)->count([]);
         $eventCount = $entityManager->getRepository(Evenement::class)->count([]);
         $reservationCount = $entityManager->getRepository(ReservationEvenement::class)->count([]);
+        $inscriptionCount = $entityManager->getRepository(Inscription::class)->count([]);
         
         // Handle Pack count safely if entity exists
         $packCount = 0;
@@ -43,7 +45,7 @@ final class AdminController extends AbstractController
             'users' => $userCount,
             'events' => $eventCount,
             'packs' => $packCount,
-            'inscriptions' => $reservationCount
+            'inscriptions' => $inscriptionCount
         ];
 
         // 2. Fetch real recent events

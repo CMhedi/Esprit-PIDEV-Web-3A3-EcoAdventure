@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Inscription;
 use App\Entity\Pack;
 use App\Form\PackType;
 use App\Repository\PackRepository;
@@ -53,6 +54,14 @@ final class PackAdminController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            if ((float) $pack->getReduction() > (float) $pack->getPrixBase()) {
+                $this->addFlash('danger', 'La reduction ne peut pas etre superieure au prix de base.');
+
+                return $this->render('admin/packs/AjoutPack_Admin.html.twig', [
+                    'form' => $form->createView()
+                ]);
+            }
+
             $entityManager->persist($pack);
             $entityManager->flush();
 
@@ -156,6 +165,7 @@ public function editPack(
             return $this->redirectToRoute('app_admin_packs');
         }
 
+        $this->detachPackFromInscriptions($pack, $entityManager);
         $nomPack = $pack->getNom();
 
         $entityManager->remove($pack);
@@ -191,6 +201,7 @@ public function editPack(
         $packs = $packRepository->findAll();
 
         foreach ($packs as $pack) {
+            $this->detachPackFromInscriptions($pack, $entityManager);
             $entityManager->remove($pack);
         }
 
@@ -231,5 +242,18 @@ public function editPack(
         $response->headers->set('Content-Disposition', $disposition);
 
         return $response;
+    }
+
+    private function detachPackFromInscriptions(Pack $pack, EntityManagerInterface $entityManager): void
+    {
+        $inscriptions = $entityManager->getRepository(Inscription::class)->findBy(['pack' => $pack]);
+
+        foreach ($inscriptions as $inscription) {
+            if (!$inscription->getNomPack()) {
+                $inscription->setNomPack($pack->getNom());
+            }
+
+            $inscription->setPack(null);
+        }
     }
 }

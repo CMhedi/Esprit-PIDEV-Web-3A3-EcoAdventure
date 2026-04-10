@@ -16,7 +16,7 @@ class ReservationActivite
     #[ORM\Column(name: 'id_res_act', type: 'integer')]
     private ?int $id_res_act = null;
 
-    #[ORM\Column(name: 'date_res', type: 'datetime')]
+    #[ORM\Column(name: 'date_reservation', type: 'datetime')]
     #[Assert\NotNull(message: 'La date de reservation est obligatoire.')]
     #[Assert\GreaterThanOrEqual('today', message: 'La date de reservation doit etre aujourd hui ou dans le futur.')]
     private ?\DateTimeInterface $dateRes = null;
