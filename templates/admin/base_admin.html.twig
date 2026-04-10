@@ -22,27 +22,36 @@
         <ul class="sidebar-menu list-unstyled">
             <li><a href="{{ path('app_admin_dashboard') }}" class="{{ app.request.get('_route') == 'app_admin_dashboard' ? 'active' : '' }}"><i class="bi bi-grid"></i> Tableau de bord</a></li>
             <li>
-                <a href="{{ path('app_user_app_show', {'id_user': app.user.id_user}) }}" class="{{ app.request.get('_route') == 'app_user_app_show' ? 'active' : '' }}">
+                <a href="{{ app.user ? path('app_user_app_show', {'id_user': app.user.id_user}) : '#' }}" class="{{ app.request.get('_route') == 'app_user_app_show' ? 'active' : '' }} {{ app.user ? '' : 'disabled' }}">
                     <i class="bi bi-person-circle"></i> Mon Profil
                 </a>
             </li>
             <li>
-                <a href="{{ path('app_reclamation_index') }}" class="{{ app.request.get('_route') starts with 'app_reclamation' ? 'active' : '' }}">
+                <a href="{{ path('app_admin_reclamation_index') }}" class="{{ app.request.get('_route') starts with 'app_reclamation' or app.request.get('_route') == 'app_admin_reclamation_index' ? 'active' : '' }}">
                     <i class="bi bi-exclamation-octagon"></i> Réclamations
                 </a>
             </li>
             <li><a href="{{ path('app_admin_activites') }}" class="{{ app.request.get('_route') starts with 'app_admin_activites' ? 'active' : '' }}"><i class="bi bi-tree"></i> Activités</a></li>
             <li><a href="{{ path('app_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_admin_reservations' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Réservations Activités</a></li>
-            <li><a href="{{ path('app_admin_planning') }}" class="{{ app.request.get('_route') == 'app_admin_planning' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Planning</a></li>
+            <li><a href="{{ path('app_admin_planning') }}" class="{{ app.request.get('_route') starts with 'app_admin_planning' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Planning</a></li>
             <li><a href="{{ path('app_event_admin_index') }}" class="{{ app.request.get('_route') starts with 'app_event_admin' and app.request.get('_route') != 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-calendar-event"></i> Événements</a></li>
             <li><a href="{{ path('app_event_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-ticket-detailed"></i> Réservations Événements</a></li>
+            <li><a href="{{ path('admin_messagerie_index') }}" class="{{ app.request.get('_route') starts with 'admin_messagerie' ? 'active' : '' }}"><i class="bi bi-chat-dots"></i> Messagerie</a></li>
             <li>
                 <a href="{{ path('app_user_app_index') }}" class="{{ app.request.get('_route') == 'app_user_app_index' ? 'active' : '' }}">
                     <i class="bi bi-people"></i> Utilisateurs
                 </a>
             </li>
-            <li><a href="#"><i class="bi bi-box-seam"></i> Packs</a></li>
-            <li><a href="#"><i class="bi bi-journal-check"></i> Inscriptions</a></li>
+            <li>
+                <a href="{{ path('app_admin_packs') }}" class="{{ app.request.get('_route') starts with 'app_admin_pack' or app.request.get('_route') == 'app_admin_packs' ? 'active' : '' }}">
+                    <i class="bi bi-box-seam"></i> Packs
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_admin_inscriptions') }}" class="{{ app.request.get('_route') starts with 'app_admin_inscription' or app.request.get('_route') == 'app_admin_inscriptions' ? 'active' : '' }}">
+                    <i class="bi bi-journal-check"></i> Inscriptions
+                </a>
+            </li>
             
             <li>
                 <a href="{{ path('app_logout') }}" class="text-danger fw-bold">

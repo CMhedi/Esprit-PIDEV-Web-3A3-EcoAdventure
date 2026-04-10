@@ -14,6 +14,15 @@ use App\Enum\StatutReclamation;
 #[Route('/reclamation')]
 final class ReclamationController extends AbstractController
 {
+    #[Route('/admin', name: 'app_admin_reclamation_index', methods: ['GET'])]
+    public function adminIndex(ReclamationRepository $reclamationRepository): Response
+    {
+        return $this->render('reclamation/index.html.twig', [
+            'reclamations' => $reclamationRepository->findAll(),
+            'admin_mode' => true,
+        ]);
+    }
+
     #[Route(name: 'app_reclamation_index', methods: ['GET'])]
     public function index(ReclamationRepository $reclamationRepository): Response
     {
@@ -21,12 +30,14 @@ final class ReclamationController extends AbstractController
         if ($this->isGranted('ROLE_ADMIN')) {
             return $this->render('reclamation/index.html.twig', [
                 'reclamations' => $reclamationRepository->findAll(),
+                'admin_mode' => true,
             ]);
         }
 
         // Kenou User 3adi, i-chouf ken mte3ou (ken 3andek relation m3a el User)
         return $this->render('reclamation/index.html.twig', [
             'reclamations' => $reclamationRepository->findBy(['userApp' => $this->getUser()]),
+            'admin_mode' => false,
         ]);
     }
 

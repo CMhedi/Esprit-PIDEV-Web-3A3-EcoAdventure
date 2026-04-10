@@ -1,13 +1,16 @@
 {# templates/reclamation/index.html.twig #}
 
-{% extends is_granted('ROLE_ADMIN') ? 'admin/base_admin.html.twig' : 'base.html.twig' %}
+{% set adminMode = admin_mode|default(false) %}
+{% extends adminMode ? 'admin/base_admin.html.twig' : 'base.html.twig' %}
 
 {% block body %}
 <style>
+    {% if not adminMode %}
     body {
         background: url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070') no-repeat center center fixed !important;
         background-size: cover !important;
     }
+    {% endif %}
 
     .glass-wrapper {
         background: rgba(255, 255, 255, 0.2) !important;
@@ -127,7 +130,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="main-title">EcoAdventure</h1>
             {# --- ZEDNA EL FAZA: Kenou USER barka i-chouf el bouton Nouvelle Plainte --- #}
-            {% if not is_granted('ROLE_ADMIN') %}
+            {% if not adminMode %}
                 <a href="{{ path('app_reclamation_new') }}" class="btn btn-nouvelle shadow">
                     <i class="fas fa-plus-circle me-2"></i>Nouvelle Plainte
                 </a>
@@ -152,7 +155,7 @@
                 </thead>
                 <tbody>
                 {% for reclamation in reclamations %}
-                    <tr {% if is_granted('ROLE_ADMIN') %} 
+                    <tr {% if adminMode %} 
                             class="admin-row"
                             ondblclick="openReponseModal('{{ reclamation.id_reclamation }}', '{{ reclamation.reponse|e('js') }}')" 
                             title="Double-cliquez pour répondre"
@@ -176,7 +179,7 @@
                                 </a>
                                 
                                 {# --- FAZET EL USER: I-chouf Modifier barka --- #}
-                                {% if not is_granted('ROLE_ADMIN') %}
+                                {% if not adminMode %}
                                     <a href="{{ path('app_reclamation_edit', {'id_reclamation': reclamation.id_reclamation}) }}" class="btn btn-sm btn-warning text-dark action-btn">
                                         <i class="fas fa-edit me-1"></i> Modifier
                                     </a>
@@ -204,6 +207,7 @@
 </div>
 
 {# --- MODAL REPONSE (ADMIN ONLY) --- #}
+{% if adminMode %}
 <div class="modal fade" id="reponseModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
@@ -234,6 +238,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <script>
 // --- Recherche Logic ---
@@ -250,6 +255,9 @@ if(searchInput) {
 
 // --- Modal Logic ---
 function openReponseModal(id, currentReponse) {
+    {% if not adminMode %}
+    return;
+    {% endif %}
     const modalElement = document.getElementById('reponseModal');
     if(!modalElement) return;
     const modal = new bootstrap.Modal(modalElement);

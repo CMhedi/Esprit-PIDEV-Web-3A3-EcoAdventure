@@ -1,7 +1,8 @@
 # config/services.yaml
 
 parameters:
-    messages_upload_directory: '%kernel.project_dir%/public/uploads'
+    default_messages_upload_directory: 'C:/xampp2002/htdocs/uploads'
+    messages_upload_directory: '%env(default:default_messages_upload_directory:MESSAGES_UPLOAD_DIRECTORY)%'
     activite_resv_image_directory: '%kernel.project_dir%/public/ActivieResvImage'
     activite_resv_image_public_path: 'ActivieResvImage'
 

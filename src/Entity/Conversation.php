@@ -24,7 +24,7 @@ class Conversation
     #[Assert\NotNull(message: "Le créateur de la conversation est obligatoire.")]
     private ?UserApp $createur = null;
 
-    #[ORM\ManyToMany(targetEntity: UserApp::class)]
+    #[ORM\ManyToMany(targetEntity: UserApp::class, inversedBy: 'conversations')]
     #[ORM\JoinTable(
         name: 'conversation_user',
         joinColumns: [new ORM\JoinColumn(name: 'id_conversation', referencedColumnName: 'id_conversation')],
