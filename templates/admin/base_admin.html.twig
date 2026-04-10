@@ -20,21 +20,20 @@
         </div>
 
         <ul class="sidebar-menu list-unstyled">
-        
             <li><a href="{{ path('app_admin_dashboard') }}" class="{{ app.request.get('_route') == 'app_admin_dashboard' ? 'active' : '' }}"><i class="bi bi-grid"></i> Tableau de bord</a></li>
             <li>
-        <a href="{{ path('app_user_app_show', {'id_user': app.user.id_user}) }}" class="{{ app.request.get('_route') == 'app_user_app_show' ? 'active' : '' }}">
-            <i class="bi bi-person-circle"></i> Mon Profil
-        </a>
-    </li>
-    <li>
-        <a href="{{ path('app_reclamation_index') }}" class="{{ app.request.get('_route') starts with 'app_reclamation' ? 'active' : '' }}">
-            <i class="bi bi-exclamation-octagon"></i> Réclamations
-        </a>
-    </li>
-            <li><a href="{{ path('app_admin_activites') }}"><i class="bi bi-tree"></i> Activités</a></li>
-            <li><a href="{{ path('app_admin_reservations') }}"><i class="bi bi-journal-check"></i> Réservations Activités</a></li>
-            <li><a href="{{ path('app_admin_planning') }}"><i class="bi bi-journal-check"></i> Planning</a></li>
+                <a href="{{ path('app_user_app_show', {'id_user': app.user.id_user}) }}" class="{{ app.request.get('_route') == 'app_user_app_show' ? 'active' : '' }}">
+                    <i class="bi bi-person-circle"></i> Mon Profil
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_reclamation_index') }}" class="{{ app.request.get('_route') starts with 'app_reclamation' ? 'active' : '' }}">
+                    <i class="bi bi-exclamation-octagon"></i> Réclamations
+                </a>
+            </li>
+            <li><a href="{{ path('app_admin_activites') }}" class="{{ app.request.get('_route') starts with 'app_admin_activites' ? 'active' : '' }}"><i class="bi bi-tree"></i> Activités</a></li>
+            <li><a href="{{ path('app_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_admin_reservations' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Réservations Activités</a></li>
+            <li><a href="{{ path('app_admin_planning') }}" class="{{ app.request.get('_route') == 'app_admin_planning' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Planning</a></li>
             <li><a href="{{ path('app_event_admin_index') }}" class="{{ app.request.get('_route') starts with 'app_event_admin' and app.request.get('_route') != 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-calendar-event"></i> Événements</a></li>
             <li><a href="{{ path('app_event_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-ticket-detailed"></i> Réservations Événements</a></li>
             <li>
@@ -46,10 +45,10 @@
             <li><a href="#"><i class="bi bi-journal-check"></i> Inscriptions</a></li>
             
             <li>
-        <a href="{{ path('app_logout') }}" class="text-danger fw-bold">
-            <i class="bi bi-box-arrow-right"></i> Déconnexion
-        </a>
-    </li>
+                <a href="{{ path('app_logout') }}" class="text-danger fw-bold">
+                    <i class="bi bi-box-arrow-right"></i> Déconnexion
+                </a>
+            </li>
         </ul>
     </aside>
     {% endblock %}
