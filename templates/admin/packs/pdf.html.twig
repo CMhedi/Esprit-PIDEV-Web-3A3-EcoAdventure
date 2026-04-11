@@ -687,12 +687,14 @@
                         <th>Prix & Réduction</th>
                         <th>Capacité</th>
                         <th>Performance</th>
+                        <th>Risque</th>
                         <th>Statut</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for pack in packs %}
                         {% set insight = packInsights[pack.idPack] ?? null %}
+                        {% set risk = packRiskViews[pack.idPack] ?? null %}
                         <tr>
                             <td>
                                 <div class="pack-name">{{ pack.nom }}</div>
@@ -721,6 +723,14 @@
                                 {% endif %}
                             </td>
                             <td>
+                                {% if risk %}
+                                    <div style="font-weight: 700; color: #1f2937;">{{ risk.riskScore|number_format(1, '.', ' ') }}/100</div>
+                                    <div style="font-size: 9px; color: #6b7280;">{{ risk.riskLevel }}</div>
+                                {% else %}
+                                    <span style="color: #9ca3af; font-size: 10px;">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
                                 {% if pack.statutPack|lower in ['actif', 'active', 'disponible'] %}
                                     <span class="badge badge-active">{{ pack.statutPack }}</span>
                                 {% else %}
@@ -739,6 +749,7 @@
             <p class="section-text">
                 <strong>Points clés d'attention :</strong> Les packs avec les meilleurs scores de performance
                 ({{ stats.topPack ? stats.topPack.nom : 'N/A' }}) montrent une forte attractivité client.
+                Le moteur de risque met egalement en avant les packs a surveiller avant toute mise en avant commerciale.
                 Considérez l'optimisation des prix pour maximiser la conversion tout en maintenant
                 la compétitivité. Les données de ce rapport sont mises à jour automatiquement
                 et peuvent servir de base pour les décisions commerciales stratégiques.

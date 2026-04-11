@@ -3,7 +3,14 @@
 namespace App\Controller;
 
 use App\Repository\ActiviteRepository;
+use App\Repository\InscriptionRepository;
+use App\Repository\PackRepository;
 use App\Repository\ReservationActiviteRepository;
+use App\Service\AI\AiRiskExplainer;
+use App\Service\Pack\PackInsightAssembler;
+use App\Service\Risk\InscriptionRiskEngine;
+use App\Service\Risk\PackRiskEngine;
+use App\Service\Risk\RiskDashboardAggregator;
 use App\Entity\Evenement;
 use App\Entity\Inscription;
 use App\Entity\UserApp;
@@ -24,7 +31,16 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/dashboard', name: 'app_admin_dashboard')]
-    public function dashboard(EntityManagerInterface $entityManager): Response
+    public function dashboard(
+        EntityManagerInterface $entityManager,
+        PackRepository $packRepository,
+        InscriptionRepository $inscriptionRepository,
+        PackInsightAssembler $packInsightAssembler,
+        PackRiskEngine $packRiskEngine,
+        InscriptionRiskEngine $inscriptionRiskEngine,
+        RiskDashboardAggregator $riskDashboardAggregator,
+        AiRiskExplainer $aiRiskExplainer
+    ): Response
     {
         // 1. Fetch real stats
         $userCount = $entityManager->getRepository(UserApp::class)->count([]);
@@ -71,9 +87,16 @@ final class AdminController extends AbstractController
             ];
         }
 
+        $packInsights = $packInsightAssembler->buildInsights($packRepository->findAll());
+        $packRiskViews = $packRiskEngine->evaluate($packInsights);
+        $inscriptionRiskViews = $inscriptionRiskEngine->evaluate($inscriptionRepository->findAll(), $packRiskViews);
+        $riskDashboard = $riskDashboardAggregator->build($packRiskViews, $inscriptionRiskViews);
+
         return $this->render('admin/dashboard.html.twig', [
             'stats' => $stats,
-            'recentEvents' => $recentEvents
+            'recentEvents' => $recentEvents,
+            'riskDashboard' => $riskDashboard,
+            'riskNarrative' => $aiRiskExplainer->summarizeDashboard($riskDashboard),
         ]);
     }
 

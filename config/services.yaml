@@ -37,3 +37,8 @@ services:
         arguments:
             $apiKey: '%openai_api_key%'
             $model: '%openai_model%'
+
+    App\Service\AI\AiRiskExplainer:
+        arguments:
+            $apiKey: '%openai_api_key%'
+            $model: '%openai_model%'

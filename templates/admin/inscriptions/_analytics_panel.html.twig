@@ -54,3 +54,42 @@
         </div>
     </div>
 </div>
+
+{% if riskOverview is defined %}
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-uppercase text-muted mb-2">Risque moyen inscriptions</div>
+                    <div class="h3 fw-bold mb-1">{{ riskOverview.inscription_average|number_format(1, '.', ' ') }}/100</div>
+                    <p class="text-muted small mb-0">{{ riskOverview.priority_inscriptions }} dossier(s) a prioriser.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-uppercase text-muted mb-2">Critiques</div>
+                    <div class="h3 fw-bold mb-1">{{ riskOverview.critical_inscriptions }}</div>
+                    <p class="text-muted small mb-0">Signalements critiques sur les dossiers en cours.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-uppercase text-muted mb-2">Synthese risque admin</div>
+                    <p class="mb-3">{{ riskSummaryNarrative|default('Lecture risque indisponible.') }}</p>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for action in riskOverview.recommended_actions|default([]) %}
+                            <span class="badge rounded-pill text-bg-light border">{{ action }}</span>
+                        {% else %}
+                            <span class="badge rounded-pill text-bg-light border">surveiller les dossiers sensibles</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}

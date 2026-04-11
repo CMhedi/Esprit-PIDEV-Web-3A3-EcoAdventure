@@ -1,0 +1,12 @@
+{% set tone = 'success' %}
+{% if level == 'Critical Risk' %}
+    {% set tone = 'danger' %}
+{% elseif level == 'High Risk' %}
+    {% set tone = 'warning' %}
+{% elseif level == 'Medium Risk' %}
+    {% set tone = 'info' %}
+{% endif %}
+
+<span class="badge rounded-pill text-bg-{{ tone }}">
+    {{ label|default(level) }}
+</span>

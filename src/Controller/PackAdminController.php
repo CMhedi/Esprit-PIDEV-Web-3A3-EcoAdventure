@@ -7,6 +7,7 @@ use App\Entity\Pack;
 use App\Form\PackType;
 use App\Repository\PackRepository;
 use App\Service\Pack\PackInsightAssembler;
+use App\Service\Risk\PackRiskEngine;
 use Doctrine\ORM\EntityManagerInterface;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -24,7 +25,8 @@ final class PackAdminController extends AbstractController
         Request $request,
         PackRepository $packRepository,
         SessionInterface $session,
-        PackInsightAssembler $packInsightAssembler
+        PackInsightAssembler $packInsightAssembler,
+        PackRiskEngine $packRiskEngine
     ): Response {
         $search = $request->query->get('search');
         $sort = $request->query->get('sort');
@@ -32,10 +34,15 @@ final class PackAdminController extends AbstractController
         $packs = $packRepository->findForAdmin($search, $sort);
         $totalPacks = $packRepository->countAllPacks();
         $packInsights = $packInsightAssembler->buildInsights($packs);
+        $packRiskViews = $packRiskEngine->evaluate($packInsights);
         $topPromising = array_slice(array_values($packInsights), 0, 3);
+        $topRiskyPacks = array_slice(array_values($packRiskViews), 0, 3);
         $averagePackScore = $packInsights === []
             ? 0.0
             : array_sum(array_map(static fn ($insight): float => $insight->getScore(), array_values($packInsights))) / count($packInsights);
+        $averagePackRisk = $packRiskViews === []
+            ? 0.0
+            : array_sum(array_map(static fn ($riskView): float => $riskView->getRiskScore(), array_values($packRiskViews))) / count($packRiskViews);
 
         $deleteCaptcha = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
         $deleteAllCaptcha = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
@@ -46,8 +53,11 @@ final class PackAdminController extends AbstractController
         return $this->render('admin/packs/index.html.twig', [
             'packs' => $packs,
             'packInsights' => $packInsights,
+            'packRiskViews' => $packRiskViews,
             'topPromising' => $topPromising,
+            'topRiskyPacks' => $topRiskyPacks,
             'averagePackScore' => round($averagePackScore, 1),
+            'averagePackRisk' => round($averagePackRisk, 1),
             'search' => $search,
             'sort' => $sort,
             'totalPacks' => $totalPacks,
@@ -225,10 +235,15 @@ public function editPack(
     }
 
     #[Route('/admin/packs/export/pdf', name: 'app_admin_packs_export_pdf', methods: ['GET'])]
-    public function exportPdf(PackRepository $packRepository, PackInsightAssembler $packInsightAssembler): Response
+    public function exportPdf(
+        PackRepository $packRepository,
+        PackInsightAssembler $packInsightAssembler,
+        PackRiskEngine $packRiskEngine
+    ): Response
     {
         $packs = $packRepository->findAllForPdf();
         $packInsights = $packInsightAssembler->buildInsights($packs);
+        $packRiskViews = $packRiskEngine->evaluate($packInsights);
 
         // Statistiques avancées
         $stats = [
@@ -285,6 +300,7 @@ public function editPack(
         $html = $this->renderView('admin/packs/pdf.html.twig', [
             'packs' => $packs,
             'packInsights' => $packInsights,
+            'packRiskViews' => $packRiskViews,
             'dateExport' => new \DateTime(),
             'stats' => $stats
         ]);

@@ -5,9 +5,13 @@ namespace App\Controller;
 use App\Repository\InscriptionRepository;
 use App\Repository\PackRepository;
 use App\Service\AI\AiAdminSynthesizer;
+use App\Service\AI\AiRiskExplainer;
 use App\Service\Context\HolidayContextProvider;
 use App\Service\Inscription\InscriptionAnalyticsBuilder;
 use App\Service\Pack\PackInsightAssembler;
+use App\Service\Risk\InscriptionRiskEngine;
+use App\Service\Risk\PackRiskEngine;
+use App\Service\Risk\RiskDashboardAggregator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,7 +28,11 @@ final class InscriptionAdminController extends AbstractController
         PackInsightAssembler $packInsightAssembler,
         InscriptionAnalyticsBuilder $inscriptionAnalyticsBuilder,
         AiAdminSynthesizer $aiAdminSynthesizer,
-        HolidayContextProvider $holidayContextProvider
+        HolidayContextProvider $holidayContextProvider,
+        PackRiskEngine $packRiskEngine,
+        InscriptionRiskEngine $inscriptionRiskEngine,
+        RiskDashboardAggregator $riskDashboardAggregator,
+        AiRiskExplainer $aiRiskExplainer
     ): Response
     {
         $search = $request->query->get('search');
@@ -32,19 +40,30 @@ final class InscriptionAdminController extends AbstractController
         $inscriptions = $inscriptionRepository->findForAdmin($search);
         $totalInscriptions = $inscriptionRepository->countAllInscriptions();
         $packInsights = $packInsightAssembler->buildInsights($packRepository->findAll());
+        $packRiskViews = $packRiskEngine->evaluate($packInsights);
         $analytics = $inscriptionAnalyticsBuilder->build($inscriptions, $packInsights);
+        $inscriptionRiskViews = $inscriptionRiskEngine->evaluate($inscriptions, $packRiskViews);
+        $riskOverview = $riskDashboardAggregator->build($packRiskViews, $inscriptionRiskViews);
         $priorityMap = [];
+        $inscriptionRiskMap = [];
 
         foreach ($analytics['priority_views'] as $priorityView) {
             $priorityMap[$priorityView->getInscription()->getIdInscription()] = $priorityView;
         }
 
+        foreach ($inscriptionRiskViews as $riskView) {
+            $inscriptionRiskMap[$riskView->getInscription()->getIdInscription()] = $riskView;
+        }
+
         return $this->render('admin/inscriptions/InscriptionPacks.html.twig', [
             'inscriptions' => $inscriptions,
             'priorityMap' => $priorityMap,
+            'inscriptionRiskMap' => $inscriptionRiskMap,
             'analyticsSummary' => $analytics['summary'],
             'analyticsSegments' => $analytics['segments'],
             'summaryNarrative' => $aiAdminSynthesizer->summarizeInscriptions($analytics['summary']),
+            'riskOverview' => $riskOverview,
+            'riskSummaryNarrative' => $aiRiskExplainer->summarizeDashboard($riskOverview),
             'holidayContext' => $holidayContextProvider->getContext(),
             'search' => $search,
             'totalInscriptions' => $totalInscriptions
