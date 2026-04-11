@@ -230,28 +230,109 @@ public function editPack(
         $packs = $packRepository->findAllForPdf();
         $packInsights = $packInsightAssembler->buildInsights($packs);
 
+        // Statistiques avancées
+        $stats = [
+            'total' => count($packs),
+            'actifs' => 0,
+            'inactifs' => 0,
+            'totalPrixBase' => 0,
+            'totalReductions' => 0,
+            'moyennePrixFinal' => 0,
+            'topPack' => null,
+            'packTypes' => [],
+            'prixMoyenParType' => []
+        ];
+
+        foreach ($packs as $pack) {
+            $prixBase = (float) $pack->getPrixBase();
+            $reduction = (float) $pack->getReduction();
+            $prixFinal = $prixBase - $reduction;
+
+            $stats['totalPrixBase'] += $prixBase;
+            $stats['totalReductions'] += $reduction;
+
+            $type = $pack->getTypePack();
+            if (!isset($stats['packTypes'][$type])) {
+                $stats['packTypes'][$type] = 0;
+                $stats['prixMoyenParType'][$type] = ['total' => 0, 'count' => 0];
+            }
+            $stats['packTypes'][$type]++;
+            $stats['prixMoyenParType'][$type]['total'] += $prixFinal;
+            $stats['prixMoyenParType'][$type]['count']++;
+
+            if (strtolower($pack->getStatutPack()) === 'actif' ||
+                strtolower($pack->getStatutPack()) === 'active' ||
+                strtolower($pack->getStatutPack()) === 'disponible') {
+                $stats['actifs']++;
+            } else {
+                $stats['inactifs']++;
+            }
+
+            // Trouver le pack avec le meilleur score
+            $insight = $packInsights[$pack->getIdPack()] ?? null;
+            if ($insight && (!$stats['topPack'] || $insight->getScore() > ($packInsights[$stats['topPack']->getIdPack()] ?? null)?->getScore())) {
+                $stats['topPack'] = $pack;
+            }
+        }
+
+        $stats['moyennePrixFinal'] = $stats['total'] > 0 ? ($stats['totalPrixBase'] - $stats['totalReductions']) / $stats['total'] : 0;
+
+        // Calculer les moyennes par type
+        foreach ($stats['prixMoyenParType'] as $type => &$data) {
+            $data['moyenne'] = $data['count'] > 0 ? $data['total'] / $data['count'] : 0;
+        }
+
         $html = $this->renderView('admin/packs/pdf.html.twig', [
             'packs' => $packs,
             'packInsights' => $packInsights,
-            'dateExport' => new \DateTime()
+            'dateExport' => new \DateTime(),
+            'stats' => $stats
         ]);
 
+        // Configuration Dompdf améliorée pour une qualité exceptionnelle
         $options = new Options();
         $options->set('defaultFont', 'DejaVu Sans');
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+        $options->set('isPhpEnabled', true);
+        $options->set('dpi', 150);
+        $options->set('defaultPaperSize', 'a4');
+        $options->set('defaultPaperOrientation', 'portrait');
+        $options->set('isFontSubsettingEnabled', true);
+        $options->set('debugPng', false);
+        $options->set('debugKeepTemp', false);
+        $options->set('debugCss', false);
+        $options->set('debugLayout', false);
+        $options->set('debugLayoutLines', false);
+        $options->set('debugLayoutBlocks', false);
+        $options->set('debugLayoutInline', false);
+        $options->set('debugLayoutPaddingBox', false);
 
         $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
+        $dompdf->loadHtml($html, 'UTF-8');
         $dompdf->setPaper('A4', 'portrait');
+
+        // Métadonnées PDF
+        $dompdf->addInfo('Title', 'Rapport des Packs EcoAdventure');
+        $dompdf->addInfo('Subject', 'Rapport professionnel des packs disponibles');
+        $dompdf->addInfo('Author', 'EcoAdventure Platform');
+        $dompdf->addInfo('Creator', 'Système d\'administration EcoAdventure');
+        $dompdf->addInfo('Producer', 'Dompdf ' . \Dompdf\Version::VERSION);
+        $dompdf->addInfo('CreationDate', date('Y-m-d\TH:i:sP'));
+        $dompdf->addInfo('ModDate', date('Y-m-d\TH:i:sP'));
+
         $dompdf->render();
 
         $response = new Response($dompdf->output());
         $disposition = $response->headers->makeDisposition(
             ResponseHeaderBag::DISPOSITION_ATTACHMENT,
-            'packs_ecoadventure.pdf'
+            'rapport-packs-ecoadventure-' . date('Y-m-d-H-i-s') . '.pdf'
         );
 
         $response->headers->set('Content-Type', 'application/pdf');
         $response->headers->set('Content-Disposition', $disposition);
+        $response->headers->set('Cache-Control', 'private, max-age=0, must-revalidate');
+        $response->headers->set('Pragma', 'public');
 
         return $response;
     }

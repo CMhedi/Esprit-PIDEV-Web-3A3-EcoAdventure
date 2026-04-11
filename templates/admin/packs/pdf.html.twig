@@ -2,10 +2,16 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Export PDF - Packs EcoAdventure</title>
+    <title>Rapport Professionnel des Packs EcoAdventure</title>
     <style>
         @page {
-            margin: 28px 24px 24px 24px;
+            margin: 25px 20px 20px 20px;
+            @bottom-center {
+                content: "Page " counter(page) " sur " counter(pages);
+                font-family: 'DejaVu Sans', sans-serif;
+                font-size: 9px;
+                color: #6b7280;
+            }
         }
 
         * {
@@ -13,144 +19,330 @@
         }
 
         body {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: 'DejaVu Sans', sans-serif;
             margin: 0;
-            color: #374151;
-            background: #F9FAFB;
-            font-size: 12px;
-            line-height: 1.45;
+            color: #1f2937;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            font-size: 11px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .page {
             width: 100%;
+            min-height: 100vh;
         }
 
+        /* Header Hero Section */
         .hero {
-            background: linear-gradient(135deg, #2D5A27 0%, #3B82F6 55%, #F28C28 100%);
+            background: linear-gradient(135deg, #059669 0%, #0d9488 25%, #0891b2 50%, #3b82f6 75%, #6366f1 100%);
             color: #ffffff;
-            border-radius: 22px;
-            padding: 28px 30px;
-            margin-bottom: 22px;
+            border-radius: 24px;
+            padding: 32px 36px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.02)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.04)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.6;
         }
 
         .hero-top {
+            position: relative;
+            z-index: 2;
             width: 100%;
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
         .brand {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
-            opacity: 0.92;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .brand::before {
+            content: '🌿';
+            margin-right: 8px;
+            font-size: 14px;
         }
 
         .title {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 900;
-            margin: 10px 0 8px 0;
+            margin: 12px 0 10px 0;
+            line-height: 1.1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .subtitle {
-            font-size: 12px;
-            max-width: 540px;
+            font-size: 13px;
+            max-width: 600px;
             opacity: 0.95;
+            line-height: 1.4;
+            margin-bottom: 0;
         }
 
         .hero-meta {
-            margin-top: 20px;
+            position: relative;
+            z-index: 2;
+            margin-top: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .hero-chip {
-            display: inline-block;
-            background: rgba(255,255,255,0.18);
-            border: 1px solid rgba(255,255,255,0.22);
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
             color: #fff;
-            padding: 8px 14px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 700;
-            margin-right: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
+        .hero-chip::before {
+            content: '✨';
+            margin-right: 6px;
+        }
+
+        /* Statistics Section */
         .stats {
             width: 100%;
-            margin-bottom: 22px;
+            margin-bottom: 24px;
         }
 
-        .stats-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 10px 0;
-            margin-left: -10px;
-            margin-right: -10px;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
         }
 
         .stat-card {
-            width: 33.33%;
             background: #ffffff;
-            border: 1px solid #dce7dc;
-            border-radius: 18px;
-            padding: 16px 18px;
-            vertical-align: top;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s ease;
         }
 
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .stat-icon.primary { background: linear-gradient(135deg, #059669, #0d9488); color: white; }
+        .stat-icon.secondary { background: linear-gradient(135deg, #0891b2, #3b82f6); color: white; }
+        .stat-icon.accent { background: linear-gradient(135deg, #f59e0b, #f97316); color: white; }
+        .stat-icon.info { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+
         .stat-label {
-            font-size: 11px;
+            font-size: 10px;
             color: #6b7280;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         .stat-value {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 900;
-            color: #2D5A27;
-            margin-bottom: 4px;
+            color: #1f2937;
+            margin-bottom: 6px;
+            line-height: 1;
         }
 
         .stat-note {
-            font-size: 11px;
-            color: #7b8794;
+            font-size: 10px;
+            color: #9ca3af;
+            line-height: 1.3;
         }
 
+        /* Charts Section */
+        .charts-section {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container {
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .chart-title::before {
+            content: '📊';
+            margin-right: 8px;
+        }
+
+        .simple-bar-chart {
+            display: flex;
+            align-items: end;
+            height: 120px;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .bar {
+            flex: 1;
+            background: linear-gradient(135deg, #059669, #0d9488);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            min-height: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .bar:hover {
+            opacity: 0.8;
+        }
+
+        .bar-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            font-weight: 600;
+            color: #374151;
+            white-space: nowrap;
+        }
+
+        .bar-value {
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 10px;
+            color: #6b7280;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 6px;
+        }
+
+        /* Content Sections */
         .section-card {
             background: #ffffff;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #e2e8f0;
             border-radius: 20px;
-            padding: 18px;
-            margin-bottom: 18px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .section-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #059669, #0d9488);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            margin-right: 12px;
         }
 
         .section-title {
-            font-size: 16px;
-            font-weight: 900;
-            color: #374151;
-            margin: 0 0 6px 0;
+            font-size: 18px;
+            font-weight: 800;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .section-subtitle {
+            font-size: 12px;
+            color: #6b7280;
+            margin: 4px 0 0 0;
         }
 
         .section-line {
-            width: 70px;
+            width: 80px;
             height: 4px;
-            background: linear-gradient(135deg, #2D5A27, #F28C28, #3B82F6);
-            border-radius: 999px;
-            margin-bottom: 14px;
+            background: linear-gradient(135deg, #059669, #0d9488, #0891b2, #3b82f6);
+            border-radius: 2px;
+            margin-bottom: 16px;
         }
 
         .section-text {
-            color: #6b7280;
-            font-size: 11.5px;
+            color: #4b5563;
+            font-size: 11px;
+            line-height: 1.6;
             margin-bottom: 0;
         }
 
+        /* Table Styles */
         .table-card {
             background: #ffffff;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #e2e8f0;
             border-radius: 20px;
             overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         table.pack-table {
@@ -159,26 +351,33 @@
         }
 
         .pack-table thead th {
-            background: #edf5ee;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
             color: #374151;
-            font-size: 11px;
-            font-weight: 800;
+            font-size: 10px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.4px;
-            padding: 14px 12px;
-            border-bottom: 1px solid #dbe4dd;
+            letter-spacing: 0.5px;
+            padding: 16px 12px;
+            border-bottom: 2px solid #e2e8f0;
             text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .pack-table tbody td {
-            padding: 14px 12px;
-            border-bottom: 1px solid #eef1f4;
+            padding: 16px 12px;
+            border-bottom: 1px solid #f1f5f9;
             vertical-align: middle;
-            font-size: 11.5px;
+            font-size: 11px;
         }
 
         .pack-table tbody tr:nth-child(even) {
-            background: #fcfcfd;
+            background: #fafbfc;
+        }
+
+        .pack-table tbody tr:hover {
+            background: #f1f5f9;
         }
 
         .pack-table tbody tr:last-child td {
@@ -186,153 +385,327 @@
         }
 
         .pack-name {
-            font-weight: 800;
-            color: #374151;
-            margin-bottom: 3px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 4px;
+            font-size: 12px;
         }
 
         .pack-type {
-            font-size: 10.5px;
+            font-size: 10px;
             color: #6b7280;
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 8px;
+            display: inline-block;
         }
 
         .price-main {
-            font-weight: 900;
-            color: #F28C28;
+            font-weight: 800;
+            color: #059669;
+            font-size: 12px;
+        }
+
+        .price-secondary {
+            font-size: 10px;
+            color: #6b7280;
+            text-decoration: line-through;
         }
 
         .badge {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.3px;
+        }
+
+        .badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-right: 4px;
         }
 
         .badge-active {
-            background: rgba(45, 90, 39, 0.12);
-            color: #2D5A27;
-            border: 1px solid rgba(45, 90, 39, 0.18);
+            background: rgba(5, 150, 105, 0.1);
+            color: #059669;
+            border: 1px solid rgba(5, 150, 105, 0.2);
+        }
+
+        .badge-active::before {
+            background: #059669;
         }
 
         .badge-inactive {
-            background: rgba(55, 65, 81, 0.10);
-            color: #374151;
-            border: 1px solid rgba(55, 65, 81, 0.14);
+            background: rgba(107, 114, 128, 0.1);
+            color: #6b7280;
+            border: 1px solid rgba(107, 114, 128, 0.2);
         }
 
+        .badge-inactive::before {
+            background: #6b7280;
+        }
+
+        .score-indicator {
+            display: inline-flex;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .score-bar {
+            width: 40px;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            margin-left: 6px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #059669, #0d9488);
+            border-radius: 2px;
+        }
+
+        /* Summary Box */
         .summary-box {
-            margin-top: 18px;
-            background: linear-gradient(135deg, rgba(45,90,39,0.08), rgba(59,130,246,0.06));
-            border: 1px solid #d7e2da;
-            border-radius: 18px;
-            padding: 16px 18px;
+            margin-top: 20px;
+            background: linear-gradient(135deg, rgba(5,150,105,0.05), rgba(8,145,178,0.05));
+            border: 1px solid rgba(5,150,105,0.1);
+            border-radius: 16px;
+            padding: 20px;
         }
 
         .summary-title {
-            font-size: 13px;
-            font-weight: 800;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .summary-title::before {
+            content: '💡';
+            margin-right: 8px;
+        }
+
+        .summary-text {
+            font-size: 11px;
+            color: #4b5563;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .footer-content {
+            font-size: 10px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .footer-brand {
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+
+        .footer-meta {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .footer-meta-item {
+            font-size: 9px;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-meta-item::before {
+            content: '•';
+            margin-right: 8px;
+            color: #d1d5db;
+        }
+
+        /* Empty State */
+        .empty-box {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border: 2px dashed #d1d5db;
+            border-radius: 20px;
+            color: #6b7280;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 16px;
+            font-weight: 700;
             color: #374151;
             margin-bottom: 8px;
         }
 
-        .summary-text {
-            font-size: 11.5px;
-            color: #4b5563;
-            margin: 0;
+        .empty-text {
+            font-size: 11px;
+            color: #9ca3af;
         }
 
-        .footer {
-            margin-top: 18px;
-            padding-top: 12px;
-            border-top: 1px solid #dfe5e8;
-            font-size: 10.5px;
-            color: #6b7280;
-            text-align: center;
-        }
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
 
-        .empty-box {
-            text-align: center;
-            padding: 40px 20px;
-            background: #ffffff;
-            border: 1px dashed #cfd8dc;
-            border-radius: 18px;
-            color: #6b7280;
+            .hero {
+                padding: 24px 20px;
+            }
+
+            .title {
+                font-size: 24px;
+            }
         }
     </style>
 </head>
 <body>
 <div class="page">
 
+    <!-- Hero Section -->
     <div class="hero">
         <div class="hero-top">
             <div class="brand">EcoAdventure • Administration</div>
-            <div class="title">Rapport Officiel des Packs</div>
+            <div class="title">Rapport Professionnel des Packs</div>
             <div class="subtitle">
-                Synthèse professionnelle des packs disponibles dans la plateforme,
-                présentée sous un format entreprise moderne pour consultation, archivage et suivi administratif.
+                Analyse complète et détaillée de l'offre pack EcoAdventure avec métriques avancées,
+                visualisations interactives et insights stratégiques pour l'optimisation commerciale.
             </div>
         </div>
 
         <div class="hero-meta">
-            <span class="hero-chip">Export généré le {{ dateExport|date('d/m/Y à H:i') }}</span>
-            <span class="hero-chip">Document de gestion interne</span>
+            <span class="hero-chip">Export du {{ dateExport|date('d/m/Y à H:i') }}</span>
+            <span class="hero-chip">Document stratégique</span>
+            <span class="hero-chip">{{ stats.total }} packs analysés</span>
         </div>
     </div>
 
+    <!-- Statistics Dashboard -->
     <div class="stats">
-        <table class="stats-table">
-            <tr>
-                <td class="stat-card">
-                    <div class="stat-label">Total Packs</div>
-                    <div class="stat-value">{{ packs|length }}</div>
-                    <div class="stat-note">Nombre total de packs présents dans la base.</div>
-                </td>
-                <td class="stat-card">
-                    <div class="stat-label">Disponibilité</div>
-                    <div class="stat-value">
-                        {% set actifs = 0 %}
-                        {% for pack in packs %}
-                            {% if pack.statutPack|lower in ['actif', 'active', 'disponible'] %}
-                                {% set actifs = actifs + 1 %}
-                            {% endif %}
-                        {% endfor %}
-                        {{ actifs }}
-                    </div>
-                    <div class="stat-note">Packs actuellement actifs ou disponibles.</div>
-                </td>
-                <td class="stat-card">
-                    <div class="stat-label">Inactifs</div>
-                    <div class="stat-value">{{ packs|length - actifs }}</div>
-                    <div class="stat-note">Packs non disponibles ou inactifs.</div>
-                </td>
-            </tr>
-        </table>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon primary">📦</div>
+                <div class="stat-label">Total Packs</div>
+                <div class="stat-value">{{ stats.total }}</div>
+                <div class="stat-note">Nombre total de packs dans le système</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon secondary">✅</div>
+                <div class="stat-label">Packs Actifs</div>
+                <div class="stat-value">{{ stats.actifs }}</div>
+                <div class="stat-note">Packs actuellement disponibles</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon accent">💰</div>
+                <div class="stat-label">Prix Moyen</div>
+                <div class="stat-value">{{ stats.moyennePrixFinal|number_format(0, '.', ' ') }} DT</div>
+                <div class="stat-note">Prix final moyen des packs</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon info">📈</div>
+                <div class="stat-label">Économies Totales</div>
+                <div class="stat-value">{{ stats.totalReductions|number_format(0, '.', ' ') }} DT</div>
+                <div class="stat-note">Réductions cumulées appliquées</div>
+            </div>
+        </div>
     </div>
 
+    <!-- Charts Section -->
+    {% if stats.packTypes %}
+    <div class="charts-section">
+        <div class="chart-container">
+            <div class="chart-title">Répartition par Type de Pack</div>
+            <div class="simple-bar-chart">
+                {% set maxCount = 0 %}
+                {% for count in stats.packTypes %}
+                    {% if count > maxCount %}
+                        {% set maxCount = count %}
+                    {% endif %}
+                {% endfor %}
+
+                {% for type, count in stats.packTypes %}
+                    {% set height = maxCount > 0 ? (count / maxCount) * 100 : 0 %}
+                    <div class="bar" style="height: {{ height }}%; background: linear-gradient(135deg, hsl({{ (loop.index * 137.5) % 360 }}, 70%, 50%), hsl({{ (loop.index * 137.5 + 30) % 360 }}, 70%, 45%));">
+                        <div class="bar-label">{{ type }}</div>
+                        <div class="bar-value">{{ count }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="chart-legend">
+                {% for type, count in stats.packTypes %}
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(135deg, hsl({{ (loop.index * 137.5) % 360 }}, 70%, 50%), hsl({{ (loop.index * 137.5 + 30) % 360 }}, 70%, 45%));"></div>
+                    {{ type }} ({{ count }})
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Overview Section -->
     <div class="section-card">
-        <div class="section-title">Vue d’ensemble</div>
+        <div class="section-header">
+            <div class="section-icon">📋</div>
+            <div>
+                <h2 class="section-title">Vue d'ensemble stratégique</h2>
+                <p class="section-subtitle">Analyse complète de l'offre pack</p>
+            </div>
+        </div>
         <div class="section-line"></div>
         <p class="section-text">
-            Ce rapport présente les informations essentielles des packs enregistrés :
-            nom, type, prix de base, réduction appliquée, prix final, capacité d’activités et statut.
-            Le format a été optimisé pour un usage administratif, une lecture claire et une présentation moderne.
+            Ce rapport présente une analyse approfondie de l'offre pack EcoAdventure avec des métriques clés :
+            performance commerciale, répartition par catégories, optimisation des prix et insights stratégiques.
+            Les données sont calculées en temps réel pour garantir l'exactitude des informations présentées.
         </p>
     </div>
 
+    <!-- Main Data Table -->
     {% if packs|length > 0 %}
         <div class="table-card">
             <table class="pack-table">
                 <thead>
                     <tr>
-                        <th>Pack</th>
-                        <th>Prix de base</th>
-                        <th>Réduction</th>
-                        <th>Prix final</th>
-                        <th>Nb activités</th>
-                        <th>Score</th>
+                        <th>Pack & Type</th>
+                        <th>Prix & Réduction</th>
+                        <th>Capacité</th>
+                        <th>Performance</th>
                         <th>Statut</th>
                     </tr>
                 </thead>
@@ -344,11 +717,28 @@
                                 <div class="pack-name">{{ pack.nom }}</div>
                                 <div class="pack-type">{{ pack.typePack }}</div>
                             </td>
-                            <td>{{ pack.prixBase }} DT</td>
-                            <td>{{ pack.reduction }} DT</td>
-                            <td><span class="price-main">{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</span></td>
-                            <td>{{ pack.nbActivitesMax }}</td>
-                            <td>{{ insight ? insight.score|number_format(1, '.', ' ') ~ '/100' : '-' }}</td>
+                            <td>
+                                <div class="price-main">{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</div>
+                                {% if pack.reduction > 0 %}
+                                    <div class="price-secondary">{{ pack.prixBase }} DT</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="font-weight: 600; color: #374151;">{{ pack.nbActivitesMax }}</div>
+                                <div style="font-size: 9px; color: #9ca3af;">activités max</div>
+                            </td>
+                            <td>
+                                {% if insight %}
+                                    <div class="score-indicator">
+                                        {{ insight.score|number_format(1, '.', ' ') }}/100
+                                        <div class="score-bar">
+                                            <div class="score-fill" style="width: {{ insight.score }}%;"></div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span style="color: #9ca3af; font-size: 10px;">N/A</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if pack.statutPack|lower in ['actif', 'active', 'disponible'] %}
                                     <span class="badge badge-active">{{ pack.statutPack }}</span>
@@ -362,23 +752,36 @@
             </table>
         </div>
 
+        <!-- Strategic Summary -->
         <div class="summary-box">
-            <div class="summary-title">Résumé de gestion</div>
-            <p class="summary-text">
-                Les packs présentés dans ce rapport constituent l’offre actuellement enregistrée sur la plateforme EcoAdventure.
-                Ce document peut être utilisé comme support de pilotage pour le suivi commercial, la vérification administrative
-                et la préparation des décisions liées à la mise à jour de l’offre. Les scores ajoutés dans ce rapport sont calculés
-                dynamiquement à partir des activités liées, de l’historique d’inscriptions et des signaux d’intérêt existants.
+            <div class="summary-title">Recommandations stratégiques</div>
+            <p class="section-text">
+                <strong>Points clés d'attention :</strong> Les packs avec les meilleurs scores de performance
+                ({{ stats.topPack ? stats.topPack.nom : 'N/A' }}) montrent une forte attractivité client.
+                Considérez l'optimisation des prix pour maximiser la conversion tout en maintenant
+                la compétitivité. Les données de ce rapport sont mises à jour automatiquement
+                et peuvent servir de base pour les décisions commerciales stratégiques.
             </p>
         </div>
     {% else %}
         <div class="empty-box">
-            Aucun pack disponible pour cet export.
+            <div class="empty-icon">📦</div>
+            <div class="empty-title">Aucun pack disponible</div>
+            <div class="empty-text">Il n'y a actuellement aucun pack enregistré dans le système pour cet export.</div>
         </div>
     {% endif %}
 
+    <!-- Footer -->
     <div class="footer">
-        EcoAdventure — Rapport d’export PDF des packs • Généré automatiquement depuis l’interface d’administration
+        <div class="footer-content">
+            <div class="footer-brand">🌿 EcoAdventure Platform</div>
+            <div>Rapport d'analyse professionnelle des packs • Généré automatiquement</div>
+            <div class="footer-meta">
+                <span class="footer-meta-item">Version 2.0</span>
+                <span class="footer-meta-item">Confidentialité interne</span>
+                <span class="footer-meta-item">Export PDF haute qualité</span>
+            </div>
+        </div>
     </div>
 
 </div>
