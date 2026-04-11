@@ -1,0 +1,112 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Inscription Pack | EcoAdventure{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{{ asset('assets/css/packs.css') }}">
+{% endblock %}
+
+{% block body %}
+<section class="pack-inscription-section py-5">
+    <div class="container">
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success rounded-4 shadow-sm mb-4">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-5">
+                <div class="pack-detail-card">
+                    <span class="pack-type-chip">{{ pack.typePack }}</span>
+                    <h1 class="pack-title mt-3">{{ pack.nom }}</h1>
+
+                    <div class="pack-price-zone mt-4">
+                        <div class="pack-price-main">
+                            {{ pack.prixBase|number_format(2, '.', ' ') }} DT
+                        </div>
+                        <div class="pack-price-sub">
+                            Prix final :
+                            <strong>{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</strong>
+                        </div>
+                    </div>
+
+                    <div class="pack-card-body mt-4">
+                        <div class="pack-feature-row">
+                            <span><i class="bi bi-percent me-2"></i>Reduction</span>
+                            <strong>{{ pack.reduction|number_format(2, '.', ' ') }} DT</strong>
+                        </div>
+
+                        <div class="pack-feature-row">
+                            <span><i class="bi bi-grid-1x2-fill me-2"></i>Type</span>
+                            <strong>{{ pack.typePack }}</strong>
+                        </div>
+
+                        <div class="pack-feature-row">
+                            <span><i class="bi bi-lightning-charge-fill me-2"></i>Activites max</span>
+                            <strong>{{ pack.nbActivitesMax }}</strong>
+                        </div>
+
+                        <div class="pack-feature-row">
+                            <span><i class="bi bi-check-circle me-2"></i>Statut</span>
+                            <strong>{{ pack.statutPack }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="pack-form-card">
+                    <h2 class="form-title">Formulaire d'inscription</h2>
+                    <p class="form-subtitle">
+                        Votre compte connecte sera utilise automatiquement pour cette inscription.
+                    </p>
+
+                    {{ form_start(form) }}
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Compte connecte</label>
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ currentUser.prenom }} {{ currentUser.nom }}"
+                                       disabled>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ currentUser.email }}"
+                                       disabled>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Pack selectionne</label>
+                                <input type="text" class="form-control" value="{{ pack.nom }}" disabled>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Montant a payer</label>
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ pack.prixFinal|number_format(2, '.', ' ') }} DT"
+                                       disabled>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex gap-3 flex-wrap">
+                            {{ form_widget(form.save) }}
+
+                            <a href="{{ path('app_packs') }}" class="btn btn-eco-outline rounded-pill px-4 py-2">
+                                Retour aux packs
+                            </a>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

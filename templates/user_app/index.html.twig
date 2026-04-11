@@ -1,0 +1,106 @@
+{# templates/user_app/index.html.twig #}
+
+{# 1. Nesta3mlou el base mta3 el admin bech n'jibu el Sidebar #}
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}EcoAdventure - Gestion Utilisateurs{% endblock %}
+
+{# 2. Title elli i-ji dhou fou9 el content f'el admin dashboard #}
+{% block page_title %}Gestion des Utilisateurs{% endblock %}
+
+{% block body %}
+<style>
+    /* N'khalliw el glass effect ama n'na7iw el background image 
+       khater el admin dashboard 3andou background blanc/gris ndhif */
+    .glass-card-admin {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        border: 1px solid #eee;
+    }
+    .table thead th {
+        background-color: #f8f9fa;
+        color: #333;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .table tbody td {
+        color: #444 !important; /* Na7iw el white color mta3 el front */
+    }
+</style>
+
+<div class="glass-card-admin">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold mb-0">Liste des membres</h3>
+        <a href="{{ path('app_user_app_new') }}" class="btn btn-primary rounded-pill">
+            <i class="bi bi-person-plus me-1"></i> Nouveau Membre
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Membre</th>
+                    <th>Contact</th> 
+                    <th>Rôle</th>
+                    <th>Détails Pro</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for user_app in user_apps %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; font-weight: bold;">
+                                {{ user_app.nom|first|upper }}
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">{{ user_app.nom }} {{ user_app.prenom }}</div>
+                                
+                            </div>
+                        </div>
+                    </td>
+
+                    <td>
+                        <div class="small"><i class="bi bi-envelope me-1"></i> {{ user_app.email }}</div>
+                        <div class="text-primary small mt-1">
+                            <i class="bi bi-telephone me-1"></i> {{ user_app.telephone ?: 'N/A' }}
+                        </div>
+                    </td>
+
+                    <td>
+                        {% if user_app.role and user_app.role.value == 'ADMIN' %}
+                            <span class="badge bg-danger">ADMIN</span>
+                        {% else %}
+                            <span class="badge bg-info">USER_SIMPLE</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <div class="small fw-bold text-dark">{{ user_app.specialite ? user_app.specialite.value : 'Sans Spécialité' }}</div>
+                        <small class="text-muted">{{ user_app.experience ?: '0' }} ans d'exp.</small>
+                    </td>
+
+                    <td class="text-end">
+                        <div class="btn-group">
+                            <a href="{{ path('app_user_app_show', {'id_user': user_app.id_user}) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ path('app_user_app_edit', {'id_user': user_app.id_user}) }}" class="btn btn-sm btn-warning">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">Aucun utilisateur trouvé</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

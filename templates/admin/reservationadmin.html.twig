@@ -1,0 +1,54 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Gestion Réservations{% endblock %}
+{% block page_title %}Réservations Activités{% endblock %}
+
+{% block body %}
+<div class="admin-card">
+    <h4 class="fw-bold mb-4">Liste des Réservations</h4>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Activité</th>
+                    <th>Utilisateur</th>
+                    <th>Date</th>
+                    <th>Statut</th>
+                    <th>Personnes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reservation in reservations %}
+                    <tr>
+                        <td>{{ reservation.activite.nom }}</td>
+                        <td>{{ reservation.userApp.nom }}</td>
+                        <td>{{ reservation.dateRes|date('Y-m-d H:i') }}</td>
+                        <td>
+                            <span class="badge bg-warning text-dark">
+                                {{ reservation.statutRes.value }}
+                            </span>
+                        </td>
+                        <td>{{ reservation.nbPersonnes }}</td>
+                        <td>
+                            <a href="{{ path('app_admin_reservation_edit', {'id': reservation.idResAct}) }}" 
+                               class="btn btn-sm btn-primary">Modifier</a>
+
+                            <form action="{{ path('app_admin_reservation_delete', {'id': reservation.idResAct}) }}" 
+                                  method="POST" style="display:inline-block;" 
+                                  onsubmit="return confirm('Voulez-vous vraiment supprimer cette réservation ?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">Aucune réservation disponible</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}EcoAdventure - Modifier Réclamation{% endblock %}
+
+{% block body %}
+<style>
+    /* Background mta3 el "Nature" kima screenshot */
+    body {
+        background: url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070') no-repeat center center fixed !important;
+        background-size: cover !important;
+    }
+
+    .glass-wrapper-edit {
+        background: rgba(255, 255, 255, 0.25) !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 40px;
+        margin: 60px auto;
+        max-width: 700px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .form-container-pro {
+        background: white !important;
+        border-radius: 15px !important;
+        padding: 30px !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    }
+
+    .edit-title {
+        color: white !important;
+        font-weight: 700;
+        margin-bottom: 30px;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    }
+
+    /* Styling el form inputs */
+    .form-container-pro input, 
+    .form-container-pro select, 
+    .form-container-pro textarea {
+        border-radius: 8px !important;
+        border: 1px solid #ddd !important;
+        padding: 10px !important;
+        margin-bottom: 15px !important;
+    }
+
+    .btn-update {
+        background-color: #27ae60 !important;
+        color: white !important;
+        border-radius: 50px !important;
+        padding: 10px 30px !important;
+        font-weight: 600 !important;
+        border: none !important;
+    }
+</style>
+
+<div class="container">
+    <div class="glass-wrapper-edit shadow-lg">
+        <h2 class="edit-title text-center">Modifier la Réclamation</h2>
+
+        <div class="form-container-pro">
+            {# Include el form mta3ek elli fih el fields #}
+            {{ include('reclamation/_form.html.twig', {'button_label': 'Mettre à jour'}) }}
+
+            <hr class="my-4">
+
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="{{ path('app_reclamation_index') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                    <i class="fas fa-arrow-left me-2"></i>Retour
+                </a>
+                
+                {# Button delete l'outa #}
+                {{ include('reclamation/_delete_form.html.twig') }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,2027 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Messagerie - EcoAdventure{% endblock %}
+
+{% block css %}
+<style>
+   .chat-container {
+    height: 85vh;
+    background: #f8f9fa;
+    border-radius: 15px;
+    overflow: hidden;
+    display: flex;
+}
+   .conversation-list {
+    background: white;
+    border-right: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    flex: 0 0 32%;
+    max-width: 32%;
+}
+.conversation-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+}
+    .conversation-item {
+        transition: all 0.2s;
+        border: none;
+        border-left: 4px solid transparent;
+        text-decoration: none;
+    }
+    .conversation-item:hover {
+        background-color: #f1f8f4;
+        cursor: pointer;
+    }
+    .conversation-item.active {
+        background-color: #e8f5e9;
+        border-left-color: #28a745;
+    }
+    .conversation-filter-bar {
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .conversation-search-input {
+        border-radius: 50px;
+        border: 1px solid #dee2e6;
+    }
+    .conversation-sort-btns {
+        gap: 0.35rem;
+        flex-wrap: wrap;
+    }
+    .conversation-sort-btns .btn.active {
+        background-color: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+    .conversation-tag {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.45rem;
+        border-radius: 999px;
+        background: #e9f7ef;
+        color: #1b5e20;
+    }
+    .chat-window {
+    background: white;
+    flex: 1 1 68%;
+    max-width: 68%;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+}
+    @media (max-width: 767.98px) {
+        .chat-container {
+            display: block;
+            height: auto;
+        }
+        .conversation-list,
+        .chat-window {
+            max-width: 100%;
+            flex: 1 1 100%;
+        }
+    }
+    .messages-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    scroll-behavior: smooth;
+}
+    .messages-area::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .messages-area::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    .messages-area::-webkit-scrollbar-thumb {
+        background: #28a745;
+        border-radius: 4px;
+    }
+    
+    .messages-area::-webkit-scrollbar-thumb:hover {
+        background: #218838;
+    }
+    .message-bubble {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 18px;
+        margin-bottom: 10px;
+        position: relative;
+        font-size: 0.95rem;
+        word-break: break-word;
+    }
+    .message-sent {
+        background-color: #28a745;
+        color: white;
+        border-bottom-right-radius: 2px;
+    }
+    .message-received {
+        background-color: white;
+        color: #333;
+        border-bottom-left-radius: 2px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .time-stamp {
+        font-size: 0.7rem;
+        opacity: 0.8;
+        display: block;
+        margin-top: 4px;
+    }
+    .bg-eco { background-color: #28a745; }
+    .btn-eco { background-color: #28a745; border: none; color: white; }
+    .btn-eco:hover { background-color: #218838; color: white; }
+    .online-dot {
+        height: 10px;
+        width: 10px;
+        background-color: #28a745;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+        border: 2px solid white;
+    }
+    .online-dot.offline {
+        background-color: #9aa0a6;
+    }
+    .unread-badge {
+        min-width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0 6px;
+        background: #0d6efd;
+        color: #fff;
+    }
+    .message-item {
+        transition: all 0.2s ease;
+    }
+    .message-item .message-actions-hover {
+        position: absolute;
+        top: 5px;
+        right: 45px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 4px 6px;
+        border-radius: 4px;
+        display: flex;
+        gap: 4px;
+    }
+    .message-item:hover .message-actions-hover {
+        opacity: 1;
+    }
+    .message-actions-hover .btn {
+        padding: 2px 4px !important;
+        font-size: 0.85rem;
+    }
+    .message-actions-hover .btn:hover {
+        opacity: 0.8;
+    }
+    .message-footer {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        z-index: 100;
+        border-top: 1px solid #ddd;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+    }
+    .composer-row {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+    }
+    .composer-input-wrap {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        background: #ffffff;
+        border: 1px solid #e3e7ee;
+        border-radius: 10px;
+        overflow: visible;
+        position: relative;
+    }
+    .composer-emoji-btn {
+        width: 46px;
+        height: 46px;
+        border: 0;
+        border-right: 1px solid #edf1f6;
+        background: #fbf6df;
+        color: #d7b24c;
+    }
+    .composer-emoji-wrap {
+        position: relative;
+    }
+    .emoji-picker-panel {
+        position: absolute;
+        left: 0;
+        bottom: 52px;
+        width: 340px;
+        max-height: 260px;
+        overflow-y: auto;
+        background: #fff;
+        border: 1px solid #e1e6ef;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        padding: 0.4rem;
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 0.2rem;
+        z-index: 1400;
+    }
+    .emoji-picker-panel.d-none {
+        display: none;
+    }
+    .emoji-item-btn {
+        border: 0;
+        background: transparent;
+        font-size: 1.1rem;
+        border-radius: 6px;
+        line-height: 1;
+        padding: 0.25rem;
+    }
+    .emoji-item-btn:hover {
+        background: #f1f4f9;
+    }
+    .composer-text-input {
+        border: 0 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        padding-left: 0.85rem !important;
+        padding-right: 0.85rem !important;
+    }
+    .media-action-btn {
+        width: 46px;
+        height: 46px;
+        border: 0;
+        border-radius: 8px;
+        background: #e9f4ff;
+        color: #57a7e6;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .media-action-btn:hover {
+        background: #d8ecff;
+        color: #368ed2;
+    }
+    .media-action-btn.recording {
+        background: #ffebee;
+        color: #c62828;
+        animation: pulseMic 1s infinite;
+    }
+    @keyframes pulseMic {
+        0% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.35); }
+        70% { box-shadow: 0 0 0 10px rgba(198, 40, 40, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0); }
+    }
+    .composer-send-btn {
+        width: 46px;
+        height: 46px;
+        border: 0;
+        border-radius: 8px;
+        background: #1ecf6b;
+        color: #fff;
+    }
+    .composer-send-btn:hover {
+        background: #17b95e;
+        color: #fff;
+    }
+    .preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    .composer-error {
+        border: 1px solid #f5c2c7;
+        background: #f8d7da;
+        color: #842029;
+        border-radius: 8px;
+        padding: 0.45rem 0.65rem;
+        font-size: 0.85rem;
+    }
+    .chat-video-inline {
+        width: 100%;
+        min-width: 260px;
+        max-width: 520px;
+        max-height: 320px;
+        background: #000;
+    }
+    .video-open-btn {
+        margin-top: 0.45rem;
+    }
+    .message-reactions {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0.4rem;
+        flex-wrap: wrap;
+    }
+    .reaction-btn {
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        background: rgba(255, 255, 255, 0.2);
+        color: inherit;
+        border-radius: 999px;
+        padding: 0.05rem 0.45rem;
+        font-size: 0.85rem;
+        line-height: 1.2;
+        cursor: pointer;
+    }
+    .reaction-btn.active {
+        background: #fff;
+        color: #222;
+    }
+    .reaction-btn .reaction-label {
+        margin-left: 0.2rem;
+        font-size: 0.78rem;
+    }
+    .voice-message-card {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        background: linear-gradient(135deg, #1f73e0, #2a5ee8);
+        color: #fff;
+        border-radius: 18px;
+        padding: 0.65rem 0.85rem;
+        min-width: 280px;
+        max-width: 360px;
+        user-select: none;
+    }
+    .voice-message-time {
+        font-weight: 700;
+        min-width: 42px;
+    }
+    .voice-wave {
+        flex: 1;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+    }
+    .voice-wave span {
+        display: block;
+        width: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.8);
+        height: 5px;
+    }
+    .voice-wave span:nth-child(6) { height: 28px; background: #fff; }
+    .voice-wave span:nth-child(5),
+    .voice-wave span:nth-child(7) { height: 20px; }
+    .voice-wave span:nth-child(4),
+    .voice-wave span:nth-child(8) { height: 14px; }
+    .voice-wave span:nth-child(3),
+    .voice-wave span:nth-child(9) { height: 9px; }
+    .voice-play-btn {
+        width: 30px;
+        height: 30px;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .vocal-recording-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        background: #1f73e0;
+        color: #fff;
+        border-radius: 999px;
+        padding: 0.45rem 0.65rem;
+    }
+    .vocal-recording-timer {
+        background: #fff;
+        color: #1f73e0;
+        border-radius: 999px;
+        font-weight: 700;
+        padding: 0.15rem 0.55rem;
+        min-width: 54px;
+        text-align: center;
+    }
+    .vocal-recording-wave {
+        flex: 1;
+        height: 10px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.8), rgba(255,255,255,0.3));
+        background-size: 200% 100%;
+        animation: vocalWave 1.2s linear infinite;
+    }
+    @keyframes vocalWave {
+        from { background-position: 0% 0; }
+        to { background-position: 200% 0; }
+    }
+    .vocal-recording-stop,
+    .vocal-recording-cancel {
+        width: 30px;
+        height: 30px;
+        border: 0;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .vocal-recording-stop {
+        background: #fff;
+        color: #1f73e0;
+    }
+    .vocal-recording-cancel {
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
+    }
+    .message-checkmarks {
+        display: inline-flex;
+        gap: 1px;
+        margin-left: 6px;
+        font-size: 1rem;
+        vertical-align: middle;
+    }
+    .checkmark {
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: bold;
+    }
+    .checkmark.read {
+        color: #1976d2;
+        font-weight: bold;
+    }
+    .read-time {
+        font-size: 0.7rem;
+        margin-left: 4px;
+        opacity: 0.8;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row chat-container g-0 shadow-lg">
+
+        {# --- COLONNE GAUCHE (CONVERSATIONS) --- #}
+        <div class="col-md-4 d-flex flex-column conversation-list">
+            <div class="p-3 border-bottom bg-white d-flex justify-content-between align-items-center">
+                <h5 class="m-0 fw-bold text-success"><i class="bi bi-chat-dots-fill me-2"></i>Conversation</h5>
+                <button class="btn btn-sm btn-light rounded-circle border shadow-sm" data-bs-toggle="modal" data-bs-target="#newListModal">
+                    <i class="bi bi-pencil-square text-success"></i>
+                </button>
+            </div>
+            <div class="p-3 border-bottom bg-white">
+                <div class="d-flex flex-column conversation-filter-bar">
+                    <div class="input-group input-group-sm conversation-search-input">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                        <input id="conversationSearch" type="text" class="form-control border-start-0" placeholder="Rechercher une conversation..." aria-label="Rechercher une conversation">
+                    </div>
+                    <div class="d-flex align-items-center conversation-sort-btns">
+                        <button type="button" class="btn btn-outline-success btn-sm" data-filter="all">Tous</button>
+                        <button type="button" class="btn btn-outline-success btn-sm active" data-sort="name">Nom</button>
+                        <button type="button" class="btn btn-outline-success btn-sm" data-sort="date">Date</button>
+                        <button type="button" class="btn btn-outline-success btn-sm" data-filter="groupe">Groupes</button>
+                        <button type="button" class="btn btn-outline-success btn-sm" data-filter="prive">Privés</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-grow-1 p-2" style="overflow-y:auto">
+                {% for conversation in conversations %}
+                    {% if conversation is not null %}
+                        {% set conversationAvatar = '' %}
+                        {% set conversationOtherId = null %}
+                        {% set conversationOtherPresence = null %}
+                        {% set conversationDisplayTitle = conversation.titre %}
+                        {% if not conversation.est_groupe %}
+                            {% for participant in conversation.participants %}
+                                {% if participant.id_user != mon_id and participant.image_url %}
+                                    {% set conversationAvatar = participant.image_url %}
+                                {% endif %}
+                                {% if participant.id_user != mon_id %}
+                                    {% set conversationOtherId = participant.id_user %}
+                                    {% set conversationDisplayTitle = participant.nom ~ ' ' ~ participant.prenom %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if conversationOtherId and presence_by_user_id[conversationOtherId] is defined %}
+                                {% set conversationOtherPresence = presence_by_user_id[conversationOtherId] %}
+                            {% endif %}
+                        {% endif %}
+                        {% set conversationAvatarUrl = conversationAvatar
+                            ? (conversationAvatar starts with 'http'
+                                ? conversationAvatar
+                                : (conversationAvatar starts with '/'
+                                    ? conversationAvatar
+                                    : asset(conversationAvatar)))
+                            : '' %}
+                        <a href="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
+                           class="card conversation-item mb-1 {% if current_conv is defined and current_conv and current_conv.id_conversation == conversation.id_conversation %}active{% endif %}"
+                           data-open-url="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
+                           data-title="{{ conversationDisplayTitle|lower }}"
+                           data-date="{{ conversation.date_creation ? conversation.date_creation|date('YmdHis') : '' }}"
+                           data-type="{{ conversation.est_groupe ? 'groupe' : 'prive' }}">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="rounded-circle bg-eco d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 45px; height: 45px;">
+                                            {% if conversationAvatarUrl %}
+                                                <img src="{{ conversationAvatarUrl }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                                            {% else %}
+                                                <i class="bi {{ conversation.est_groupe ? 'bi-people-fill' : 'bi-person-fill' }}"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3 text-dark">
+                                        <div class="d-flex justify-content-between">
+                                            <h6 class="mb-0 fw-bold text-truncate" style="max-width: 140px;">{{ conversationDisplayTitle }}</h6>
+                                            <div class="d-flex align-items-center gap-2">
+                                                {% set unreadCount = unread_by_conversation_id[conversation.id_conversation]|default(0) %}
+                                                {% if unreadCount > 0 %}
+                                                    <span class="unread-badge">{{ unreadCount }}</span>
+                                                {% endif %}
+                                                <small class="text-muted">{{ conversation.date_creation|date('d/m') }}</small>
+                                            </div>
+                                        </div>
+                                        {% if conversation.est_groupe %}
+                                            <small class="text-muted">Groupe</small>
+                                        {% else %}
+                                            <small class="text-muted">
+                                                <span class="online-dot {{ conversationOtherPresence and conversationOtherPresence.online ? '' : 'offline' }}"></span>
+                                                {{ conversationOtherPresence and conversationOtherPresence.online ? 'En ligne' : 'Hors ligne' }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            </a>
+                        {% endif %}
+                {% else %}
+                        <div class="text-center mt-5 text-muted">
+                            <i class="bi bi-chat-square-dots fs-1 opacity-25"></i>
+                            <p>Aucune discussion</p>
+                        </div>
+                {% endfor %}
+            </div>
+            </div>
+
+        {# --- COLONNE DROITE (CHAT) --- #}
+        <div class="col-md-8 d-flex flex-column chat-window">
+
+            <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white shadow-sm">
+                <div class="d-flex align-items-center">
+                    {% set headerAvatar = '' %}
+                    {% set headerOtherId = null %}
+                    {% set headerPresence = null %}
+                    {% set headerDisplayTitle = current_conv ? current_conv.titre : (nom_utilisateur ~ ' ' ~ prenom_utilisateur) %}
+                    {% if current_conv and not current_conv.est_groupe %}
+                        {% for participant in current_conv.participants %}
+                            {% if participant.id_user != mon_id and participant.image_url %}
+                                {% set headerAvatar = participant.image_url %}
+                            {% endif %}
+                            {% if participant.id_user != mon_id %}
+                                {% set headerOtherId = participant.id_user %}
+                                {% set headerDisplayTitle = participant.nom ~ ' ' ~ participant.prenom %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if headerOtherId and presence_by_user_id[headerOtherId] is defined %}
+                            {% set headerPresence = presence_by_user_id[headerOtherId] %}
+                        {% endif %}
+                    {% endif %}
+                    {% set headerAvatarUrl = headerAvatar
+                        ? (headerAvatar starts with 'http'
+                            ? headerAvatar
+                            : (headerAvatar starts with '/'
+                                ? headerAvatar
+                                : asset(headerAvatar)))
+                        : '' %}
+                    <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px;">
+                        {% if headerAvatarUrl %}
+                            <img src="{{ headerAvatarUrl }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                        {% else %}
+                            <i class="bi bi-chat-dots-fill text-success fs-4"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h5 class="m-0 fw-bold text-dark">
+                            {{ headerDisplayTitle }}
+                            {% if current_conv %}
+                                <span class="badge bg-light text-success border ms-2" style="font-size: 0.7rem;">{{ current_conv.est_groupe ? 'Groupe' : 'Privé' }}</span>
+                            {% endif %}
+                        </h5>
+                        {% if current_conv and not current_conv.est_groupe and current_conv.privateBlocked %}
+                            <small class="text-danger fw-semibold">
+                                <i class="bi bi-slash-circle me-1"></i>Conversation privee bloquee
+                            </small>
+                        {% elseif current_conv and not current_conv.est_groupe and headerPresence %}
+                            <small class="{{ headerPresence.online ? 'text-success' : 'text-muted' }} fw-semibold">
+                                <span class="online-dot {{ headerPresence.online ? '' : 'offline' }}"></span>
+                                {{ headerPresence.online ? 'En ligne' : 'Hors ligne' }}
+                            </small>
+                        {% else %}
+                            <small class="text-success fw-semibold"><span class="online-dot"></span>{{ current_conv ? 'Discussion active' : 'Aucune discussion sélectionnée' }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="text-muted fs-5">
+                    <i class="bi bi-telephone-fill me-3" style="cursor:pointer"></i>
+                    <i class="bi bi-camera-video-fill me-3" style="cursor:pointer"></i>
+                    <i class="bi bi-info-circle-fill text-info" style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#infoModal"></i>
+                </div>
+            </div>
+
+            <div class="flex-grow-1 p-4 messages-area d-flex flex-column" id="messagesContainer" style="overflow-y:auto"
+                 data-my-user-id="{{ mon_id }}"
+                 data-current-conversation-id="{{ current_conv ? current_conv.id_conversation : '' }}"
+                 data-last-message-id="{{ messages|length > 0 ? messages|last.id_message : 0 }}"
+                 data-current-title="{{ current_conv ? current_conv.titre : '' }}">
+                {% if current_conv %}
+                    {% set is_group_admin = current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
+                {% endif %}
+                {% if current_conv %}
+                {% for message in messages %}
+                    {% set is_mine = (message.userApp is defined and message.userApp.id_user == mon_id) %}
+                    {% set msgType = message.type_message and message.type_message.value is defined ? message.type_message.value : (message.type_message ?? '') %}
+                    {% set rawContent = message.contenu ?? '' %}
+                    {% set hasUrlInText = rawContent matches '/(https?:\\/\\/|www\\.)\\S+/i' %}
+                    {% set isTextStyled = msgType == 'TEXTE' and not hasUrlInText %}
+                    <div class="d-flex {{ is_mine ? 'justify-content-end' : 'justify-content-start' }} mb-3 message-item">
+                        <div class="message-bubble {{ (is_mine and isTextStyled) ? 'message-sent shadow' : 'message-received shadow-sm' }}" style="position: relative;">
+                            <div class="mb-2 fw-bold small text-muted">{{ message.userApp ? (message.userApp.nom ~ ' ' ~ message.userApp.prenom) : 'Utilisateur' }}</div>
+                            {% set attachments = message.attachments|default([]) %}
+                            {% set contentParts = rawContent ? rawContent|split('|', 2) : [''] %}
+                            {% set mediaPath = attachments is empty ? (contentParts[0] ?? '') : '' %}
+                            {% set mediaComment = attachments is empty ? (contentParts[1] ?? '') : rawContent %}
+                            {% set mediaRelative = mediaPath starts with '/uploads/' ? mediaPath|slice(9) : '' %}
+                            {% set mediaUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative}) : '' %}
+                            {% set mediaDownloadUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative, 'download': 1}) : '' %}
+                            {% set mediaFileName = mediaPath ? (mediaPath|split('/')|last) : 'fichier' %}
+                            {% set mediaExt = mediaPath ? (mediaPath|split('.')|last|lower) : '' %}
+                            {% set mediaParts = mediaPath ? mediaPath|split('/') : [] %}
+                            {% set mediaFolder = mediaParts|length > 2 ? mediaParts[2]|lower : '' %}
+                            {% set isVideoFile = (mediaFolder == 'video' and mediaFolder != 'vocale') or (mediaExt in ['mp4', 'mov', 'avi', 'mkv', 'webm'] and mediaFolder != 'vocale') %}
+                            {% set isAudioFile = mediaFolder in ['audio', 'call', 'vocale'] or mediaExt in ['mp3', 'wav', 'm4a', 'ogg', 'aac', 'webm'] %}
+                            {% set isImageFile = mediaFolder == 'images' or mediaExt in ['jpg', 'jpeg', 'png', 'webp', 'gif'] %}
+                            {% set isPdfFile = (mediaFolder == 'files' and mediaExt == 'pdf') or mediaExt == 'pdf' %}
+                            {% set reactions = message.reactions ?? {} %}
+                            {% set reactionOptions = ['❤️'] %}
+                            {% set userReaction = '' %}
+                            {% for reactionEmoji in reactionOptions %}
+                                {% if mon_id in (reactions[reactionEmoji]|default([])) %}
+                                    {% set userReaction = reactionEmoji %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if attachments is not empty %}
+                                {% for attachment in attachments %}
+                                    {% set attachmentPath = attachment.path|default('') %}
+                                    {% set attachmentRelative = attachmentPath starts with '/uploads/' ? attachmentPath|slice(9) : '' %}
+                                    {% set attachmentUrl = attachmentRelative ? path('app_media_file', {'file': attachmentRelative}) : '' %}
+                                    {% set attachmentDownloadUrl = attachmentRelative ? path('app_media_file', {'file': attachmentRelative, 'download': 1}) : '' %}
+                                    {% set attachmentName = attachment.name|default(attachmentPath ? (attachmentPath|split('/')|last) : 'fichier') %}
+                                    {% set attachmentMime = attachment.mime|default('') %}
+                                    {% set attachmentType = attachment.type|default('') %}
+                                    <div class="mb-2">
+                                        {% if attachmentType in ['AUDIO', 'VOCALE', 'APPEL_AUDIO'] or attachmentMime starts with 'audio/' %}
+                                            <div class="voice-message-card js-open-media" data-media-url="{{ attachmentUrl }}" data-media-kind="audio" title="Double-clic pour ouvrir">
+                                                <span class="voice-message-time" data-voice-time>0:00</span>
+                                                <div class="voice-wave" aria-hidden="true">
+                                                    <span></span><span></span><span></span><span></span><span></span>
+                                                    <span></span>
+                                                    <span></span><span></span><span></span><span></span><span></span>
+                                                </div>
+                                                <button type="button" class="voice-play-btn" data-voice-play>
+                                                    <i class="bi bi-play-fill"></i>
+                                                </button>
+                                                <audio class="d-none" preload="metadata">
+                                                    <source src="{{ attachmentUrl }}">
+                                                </audio>
+                                            </div>
+                                        {% elseif attachmentType in ['VIDEO', 'APPEL_VIDEO'] or attachmentMime starts with 'video/' %}
+                                            <video controls class="rounded chat-video-inline js-open-media" data-media-url="{{ attachmentUrl }}" data-media-kind="video" title="Double-clic pour ouvrir">
+                                                <source src="{{ attachmentUrl }}">
+                                            </video>
+                                        {% elseif attachmentType in ['IMAGE', 'GIF'] or attachmentMime starts with 'image/' %}
+                                            <img src="{{ attachmentUrl }}" alt="media" class="img-fluid rounded js-open-media" data-media-url="{{ attachmentUrl }}" data-media-kind="image" style="max-height: 220px; cursor: zoom-in;" title="Double-clic pour ouvrir">
+                                        {% elseif attachmentType == 'PDF' or attachmentMime == 'application/pdf' %}
+                                            <a href="{{ attachmentDownloadUrl }}" class="btn btn-sm btn-light border" download="{{ attachmentName }}" target="_blank" rel="noopener">
+                                                <i class="bi bi-file-earmark-pdf me-1"></i> {{ attachmentName }}
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ attachmentDownloadUrl }}" class="text-decoration-underline" download="{{ attachmentName }}" target="_blank" rel="noopener">{{ attachmentName }}</a>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                                {% if mediaComment is not empty %}
+                                    <div class="mt-2 js-linkify">{{ mediaComment }}</div>
+                                {% endif %}
+                            {% elseif mediaUrl %}
+                                {% if isAudioFile or msgType in ['AUDIO', 'APPEL_AUDIO', 'VOCALE'] %}
+                                    <div class="voice-message-card js-open-media" data-media-url="{{ mediaUrl }}" data-media-kind="audio" title="Double-clic pour ouvrir">
+                                        <span class="voice-message-time" data-voice-time>0:00</span>
+                                        <div class="voice-wave" aria-hidden="true">
+                                            <span></span><span></span><span></span><span></span><span></span>
+                                            <span></span>
+                                            <span></span><span></span><span></span><span></span><span></span>
+                                        </div>
+                                        <button type="button" class="voice-play-btn" data-voice-play>
+                                            <i class="bi bi-play-fill"></i>
+                                        </button>
+                                        <audio class="d-none" preload="metadata">
+                                            <source src="{{ mediaUrl }}">
+                                        </audio>
+                                    </div>
+                                {% elseif isVideoFile or msgType in ['VIDEO', 'APPEL_VIDEO'] %}
+                                    <video controls class="rounded chat-video-inline js-open-media" data-media-url="{{ mediaUrl }}" data-media-kind="video" title="Double-clic pour ouvrir">
+                                        <source src="{{ mediaUrl }}">
+                                    </video>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-light border video-open-btn" data-video-src="{{ mediaUrl }}">
+                                            <i class="bi bi-arrows-fullscreen me-1"></i> Ouvrir video
+                                        </button>
+                                    </div>
+                                {% elseif isImageFile or msgType in ['IMAGE', 'GIF'] %}
+                                    <img src="{{ mediaUrl }}" alt="media" class="img-fluid rounded js-open-media" data-media-url="{{ mediaUrl }}" data-media-kind="image" style="max-height: 220px; cursor: zoom-in;" title="Double-clic pour ouvrir">
+                                {% elseif isPdfFile or msgType == 'PDF' %}
+                                    <a href="{{ mediaDownloadUrl }}" class="btn btn-sm btn-light border" download="{{ mediaFileName }}" target="_blank" rel="noopener">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i> {{ mediaFileName }}
+                                    </a>
+                                {% else %}
+                                    <a href="{{ mediaDownloadUrl }}" class="text-decoration-underline" download="{{ mediaFileName }}" target="_blank" rel="noopener">{{ mediaFileName }}</a>
+                                {% endif %}
+
+                                {% if mediaComment is not empty %}
+                                    <div class="mt-2 js-linkify">{{ mediaComment }}</div>
+                                {% endif %}
+                            {% else %}
+                                <div class="js-linkify">{{ rawContent }}</div>
+                            {% endif %}
+                            <div class="message-reactions" data-message-id="{{ message.id_message }}" data-react-url="{{ path('app_message_react', {'id_message': message.id_message, 'id_user': mon_id}) }}">
+                                {% for reactionEmoji in reactionOptions %}
+                                    {% set reactionCount = (reactions[reactionEmoji]|default([]))|length %}
+                                    <button type="button"
+                                            class="reaction-btn {{ userReaction == reactionEmoji ? 'active' : '' }}"
+                                            data-emoji="{{ reactionEmoji }}">
+                                        {{ reactionEmoji }} <span class="reaction-label">J'adore</span> <span data-count>{{ reactionCount }}</span>
+                                    </button>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap">
+                                <div>
+                                    <span class="time-stamp {{ is_mine ? 'text-white-50' : 'text-muted' }}">
+                                    <span class="time-stamp {{ (is_mine and isTextStyled) ? 'text-white-50' : 'text-muted' }}">
+                                        {{ message.date_envoi ? message.date_envoi|date('H:i') : '' }}
+                                        {% if is_mine %}
+                                            <span class="message-checkmarks">
+                                                {% if message.date_lecture %}
+                                                    <span class="checkmark read">✓✓</span>
+                                                    <span class="read-time {{ is_mine ? 'text-white-50' : 'text-muted' }}">{{ message.date_lecture|date('H:i') }}</span>
+                                                {% else %}
+                                                    <span class="checkmark">✓✓</span>
+                                                {% endif %}
+                                            </span>
+                                        {% endif %}
+                                    </span>
+                                    {% if message.date_modifier %}
+                                        <div class="small {{ (is_mine and isTextStyled) ? 'text-white-50' : 'text-muted' }}" style="font-size: 0.75rem; margin-top: 2px;">
+                                            <span class="badge {{ (is_mine and isTextStyled) ? 'bg-secondary' : 'bg-light text-dark' }}">Modifié</span>
+                                            {{ message.date_modifier|date('H:i') }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if is_mine or is_group_admin %}
+                                <div class="message-actions-hover">
+                                    {% if is_mine %}
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-success me-2" onclick="toggleEditForm({{ message.id_message }});">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    {% endif %}
+                                    <a href="{{ path('app_delete_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation, 'id_message': message.id_message}) }}" class="btn btn-link btn-sm p-0 text-danger" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if is_mine %}
+                        <form id="edit-form-{{ message.id_message }}" action="{{ path('app_edit_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation, 'id_message': message.id_message}) }}" method="post" class="mb-3 d-none">
+                            <div class="input-group">
+                                <input type="text" name="edited_message" class="form-control" value="{{ message.contenu }}" required>
+                                <button type="submit" class="btn btn-success btn-sm">Enregistrer</button>
+                            </div>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <div class="my-auto text-center text-muted">
+                        <i class="bi bi-chat-quote fs-1 d-block mb-2 text-success opacity-25"></i>
+                        <p>Dites bonjour à Ahmed !</p>
+                    </div>
+                {% endfor %}
+                {% else %}
+                    <div class="my-auto text-center text-muted">
+                        <i class="bi bi-chat-square-text fs-1 d-block mb-2 text-success opacity-25"></i>
+                        <p>Selectionnez une conversation a gauche pour afficher les messages.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+          <div class="p-3 message-footer">
+    <form id="messageComposerForm" method="post" enctype="multipart/form-data" action="{{ current_conv ? path('app_send_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '#' }}" class="d-flex flex-column gap-2">
+        
+        {# Media preview area #}
+        <div id="composerError" class="composer-error d-none"></div>
+        {% for flashError in app.flashes('error') %}
+            <div class="composer-error">{{ flashError }}</div>
+        {% endfor %}
+        <div id="vocalRecordingBar" class="d-none">
+            <div class="vocal-recording-bar">
+                <span id="vocalRecordingTimer" class="vocal-recording-timer">0:00</span>
+                <div class="vocal-recording-wave"></div>
+                <button type="button" id="vocalStopBtn" class="vocal-recording-stop" title="Stop">
+                    <i class="bi bi-stop-fill"></i>
+                </button>
+                <button type="button" id="vocalCancelBtn" class="vocal-recording-cancel" title="Annuler">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+        <div id="mediaPreview" class="d-none mb-2 p-2 bg-light rounded">
+            <div class="preview-header">
+                <small class="text-muted mb-0">Fichier selectionne</small>
+                <button type="button" id="clearMediaBtn" class="btn btn-sm btn-outline-danger py-0 px-2">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div id="mediaPreviewContent"></div>
+        </div>
+        
+        {# Input row: file + text + send #}
+        <div class="composer-row">
+            <div class="composer-input-wrap">
+                <div class="composer-emoji-wrap">
+                    <button type="button" class="composer-emoji-btn" id="composerEmojiBtn" title="Emoji">
+                        <i class="bi bi-emoji-smile"></i>
+                    </button>
+                    <div id="emojiPickerPanel" class="emoji-picker-panel d-none" aria-label="Emoji list"></div>
+                </div>
+                <input type="text" name="message" id="textMessage" class="form-control composer-text-input text-dark" placeholder="{{ current_conv and current_conv.privateBlocked ? 'Conversation privee bloquee' : 'Type Message...' }}" autocomplete="off" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
+            </div>
+            
+            <input type="file" id="mediaFile" name="mediaFiles[]" accept="image/*,video/*,audio/*,application/pdf,.gif" class="d-none" multiple>
+            <input type="hidden" id="isRecordedVocale" name="is_recorded_vocale" value="0">
+
+            <button type="submit" class="composer-send-btn shadow-sm" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }} title="Envoyer">
+                <i class="bi bi-send"></i>
+            </button>
+            <button type="button" class="media-action-btn" id="attachVocaleBtn" title="Message vocale" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
+                <i class="bi bi-mic"></i>
+            </button>
+            <button type="button" class="media-action-btn" id="attachImageBtn" title="Joindre un fichier" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
+                <i class="bi bi-paperclip"></i>
+            </button>
+        </div>
+    </form>
+</div>
+        </div>
+    </div>
+</div>
+
+{# --- MODAL INFO / GESTION --- #}
+<div class="modal fade" id="infoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Paramètres</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% if current_conv is defined and current_conv %}
+                    {% set is_group_admin = current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
+                    {% set private_other_user = null %}
+                    {% if not current_conv.est_groupe %}
+                        {% for participant in current_conv.participants %}
+                            {% if participant.id_user != mon_id %}
+                                {% set private_other_user = participant %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    
+                    {# --- Rename group (only for groups) --- #}
+                    {% if current_conv.est_groupe %}
+                        {% if is_group_admin %}
+                            <form action="{{ path('app_edit_group', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) }}" method="POST" class="mb-4">
+                                <label class="form-label small fw-bold">Nom du groupe</label>
+                                <div class="input-group">
+                                    <input type="text" name="titre" class="form-control border-success" value="{{ current_conv.titre }}">
+                                    <button class="btn btn-success" type="submit">Renommer</button>
+                                </div>
+                            </form>
+                        {% endif %}
+                        
+                        {# --- Member list with KICK button (only for group admins) --- #}
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">MEMBRES</label>
+                            <ul class="list-group list-group-flush border rounded mb-3">
+                                {% for participant in current_conv.participants %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>
+                                            {{ participant.nom }} {{ participant.prenom }}
+                                            {% if participant.id_user == current_conv.createur.id_user %}
+                                                <span class="badge bg-success ms-2">Admin</span>
+                                            {% endif %}
+                                        </span>
+                                        {% if is_group_admin and participant.id_user != current_conv.createur.id_user %}
+                                            <a href="{{ path('app_kick_member', {'id_conversation': current_conv.id_conversation, 'id_user_to_kick': participant.id_user, 'id_user': mon_id}) }}"
+                                               class="btn btn-sm btn-outline-danger"
+                                               data-confirm-link
+                                               data-confirm-title="Retirer un membre"
+                                               data-confirm-message="Retirer {{ participant.nom }} {{ participant.prenom }} du groupe ?"
+                                               data-confirm-note="Cette action retire ce membre du groupe.">
+                                                <i class="bi bi-person-x-fill"></i> Kick
+                                            </a>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            
+                            {# --- Add member button (admin only) --- #}
+                            {% if is_group_admin %}
+                                <button class="btn btn-outline-success btn-sm w-100" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                                    <i class="bi bi-person-plus-fill me-1"></i> Ajouter un membre
+                                </button>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if not current_conv.est_groupe %}
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">MEMBRES</label>
+                            <ul class="list-group list-group-flush border rounded mb-3">
+                                {% for participant in current_conv.participants %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>{{ participant.nom }} {{ participant.prenom }}</span>
+                                        <span class="badge bg-light text-dark">{{ participant.id_user == mon_id ? 'Vous' : 'Contact' }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        {% if private_other_user %}
+                            {% set privateAvatar = private_other_user.image_url
+                                ? (private_other_user.image_url starts with 'http'
+                                    ? private_other_user.image_url
+                                    : (private_other_user.image_url starts with '/'
+                                        ? private_other_user.image_url
+                                        : asset(private_other_user.image_url)))
+                                : '' %}
+                            <div class="border rounded p-3 mb-3">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center me-3" style="width: 52px; height: 52px;">
+                                        {% if privateAvatar %}
+                                            <img src="{{ privateAvatar }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                                        {% else %}
+                                            <i class="bi bi-person-fill text-success fs-4"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ private_other_user.nom }} {{ private_other_user.prenom }}</div>
+                                        <small class="text-muted">{{ private_other_user.email ?? 'Email non renseigné' }}</small>
+                                    </div>
+                                </div>
+                                <div class="small text-muted">
+                                    <div><strong>Téléphone:</strong> {{ private_other_user.telephone ?? 'Non renseigné' }}</div>
+                                    <div><strong>Rôle:</strong> {{ private_other_user.role ? private_other_user.role.value : 'N/A' }}</div>
+                                    <div><strong>Création du compte:</strong> {{ private_other_user.date_creation ? private_other_user.date_creation|date('d/m/Y H:i') : 'N/A' }}</div>
+                                    <div><strong>Création conversation:</strong> {{ current_conv.date_creation ? current_conv.date_creation|date('d/m/Y H:i') : 'N/A' }}</div>
+                                    <div><strong>Dernier contact:</strong> {{ current_conv_last_contact ? current_conv_last_contact|date('d/m/Y H:i') : 'Aucun message' }}</div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    {# --- Delete conversation (only if admin or private chat) --- #}
+                    <div class="d-grid shadow-sm">
+                        {% if not current_conv.est_groupe or current_conv.createur.id_user == mon_id %}
+                            <a href="{{ path('app_delete_conversation', {'id_conversation': current_conv.id_conversation, 'id_user': mon_id}) }}"
+                               class="btn btn-danger py-2"
+                               data-confirm-link
+                               data-confirm-title="Supprimer la conversation"
+                               data-confirm-message="Supprimer cette conversation ?"
+                               data-confirm-note="Cette action est irreversible.">
+                                <i class="bi bi-trash3-fill me-2"></i> Supprimer la conversation
+                            </a>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="text-muted">Aucune conversation sélectionnée.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- MODAL NOUVELLE DISCUSSION --- #}
+<div class="modal fade" id="newListModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h6 class="modal-title">Choisir un utilisateur</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" style="max-height: 400px; overflow-y: auto;">
+                <div class="list-group list-group-flush">
+                    {% for user in tous_les_users %}
+                        {% if user.id_user != mon_id %}
+                        <div class="list-group-item d-flex align-items-center justify-content-between p-3">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-light border me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-person text-success"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ user.nom }} {{ user.prenom }}</div>
+                                    <small class="text-muted">ID #{{ user.id_user }}</small>
+                                </div>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ path('app_new_conversation', {'id_createur': mon_id, 'id_destinataire': user.id_user, 'type': 'prive'}) }}" class="btn btn-outline-success">Privé</a>
+                                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createGroupModal" onclick="selectUserForGroup({{ user.id_user }}, '{{ user.nom }} {{ user.prenom }}')">Groupe</button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- MODAL AJOUT MEMBRE --- #}
+<div class="modal fade" id="addMemberModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h6 class="modal-title">Ajouter un membre au groupe</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" style="max-height: 400px; overflow-y: auto;">
+                <div class="list-group list-group-flush">
+                    {% if conversations|length > 0 and current_conv is defined and current_conv and current_conv.est_groupe and is_group_admin %}
+                        {% for user in tous_les_users %}
+                            {% if user.id_user != mon_id and user not in current_conv.participants %}
+                                <div class="list-group-item d-flex align-items-center justify-content-between p-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-light border me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-person text-success"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ user.nom }} {{ user.prenom }}</div>
+                                            <small class="text-muted">ID #{{ user.id_user }}</small>
+                                        </div>
+                                    </div>
+                                    <a href="{{ path('app_add_group_member', {'id_conversation': current_conv.id_conversation, 'id_user_to_add': user.id_user, 'id_user': mon_id}) }}" class="btn btn-success btn-sm">Ajouter</a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <p>Aucun groupe sélectionné ou vous n'êtes pas admin.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- MODAL CONFIRMATION PERSONNALISE --- #}
+<div class="modal fade" id="actionConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h6 class="modal-title" id="actionConfirmTitle">Confirmation</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0" id="actionConfirmMessage">Voulez-vous continuer ?</p>
+            </div>
+            <div class="modal-footer d-block border-0 pt-0">
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <a href="#" id="actionConfirmBtn" class="btn btn-danger">Confirmer</a>
+                </div>
+                <small class="text-muted d-block mt-2" id="actionConfirmNote">Verifiez bien avant de confirmer.</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- MODAL VIDEO (TAILLE MOYENNE) --- #}
+<div class="modal fade" id="videoPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h6 class="modal-title">Lecture video</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2 bg-black">
+                <video id="videoPreviewPlayer" controls class="w-100 rounded" style="max-height: 65vh;">
+                    <source id="videoPreviewSource" src="">
+                </video>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="genericMediaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h6 class="modal-title">Apercu media</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bg-black p-2" id="genericMediaModalBody"></div>
+        </div>
+    </div>
+</div>
+
+{# --- MODAL CREATION GROUPE --- #}
+<div class="modal fade" id="createGroupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h6 class="modal-title">
+                    <i class="bi bi-people-fill me-2"></i>
+                    Créer un nouveau groupe
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ path('app_create_group', {'id_createur': mon_id}) }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="group_name" class="form-label fw-bold">Nom du groupe (optionnel)</label>
+                        <input type="text" class="form-control" id="group_name" name="group_name" placeholder="Laissez vide pour un nom automatique">
+                        <small class="text-muted">Si vide, le nom sera généré automatiquement avec les noms des participants</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Sélectionner les membres</label>
+                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                            {% for user in tous_les_users %}
+                                {% if user.id_user != mon_id %}
+                                <div class="form-check d-flex align-items-center mb-2">
+                                    <input class="form-check-input me-3 participant-checkbox" type="checkbox"
+                                           value="{{ user.id_user }}" id="user_{{ user.id_user }}" name="participants[]">
+                                    <label class="form-check-label d-flex align-items-center flex-grow-1" for="user_{{ user.id_user }}">
+                                        <div class="rounded-circle bg-light border me-3 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                            <i class="bi bi-person text-success"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ user.nom }} {{ user.prenom }}</div>
+                                            <small class="text-muted">ID #{{ user.id_user }}</small>
+                                        </div>
+                                    </label>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Avec 2 personnes sélectionnées, ce sera une conversation privée. Avec 3+ personnes, ce sera un groupe.
+                        </small>
+                    </div>
+                    <div class="selected-count text-muted">
+                        <small><span id="selected-count">0</span> membre(s) sélectionné(s)</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success" id="create-group-btn" disabled>
+                        <i class="bi bi-check-circle me-1"></i>
+                        Créer <span id="group-type-text">le groupe</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+
+const fileInput = document.getElementById('mediaFile');
+const textInput = document.getElementById('textMessage');
+const previewDiv = document.getElementById('mediaPreview');
+const previewContentDiv = document.getElementById('mediaPreviewContent');
+const clearMediaBtn = document.getElementById('clearMediaBtn');
+const composerEmojiBtn = document.getElementById('composerEmojiBtn');
+const emojiPickerPanel = document.getElementById('emojiPickerPanel');
+const attachVocaleBtn = document.getElementById('attachVocaleBtn');
+const isRecordedVocaleInput = document.getElementById('isRecordedVocale');
+const vocalRecordingBar = document.getElementById('vocalRecordingBar');
+const vocalRecordingTimer = document.getElementById('vocalRecordingTimer');
+const vocalStopBtn = document.getElementById('vocalStopBtn');
+const vocalCancelBtn = document.getElementById('vocalCancelBtn');
+
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingStream = null;
+let isRecording = false;
+let recordingInterval = null;
+let recordingSeconds = 0;
+
+function formatRecordingTime(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function startRecordingTimer() {
+    recordingSeconds = 0;
+    if (vocalRecordingTimer) {
+        vocalRecordingTimer.textContent = formatRecordingTime(0);
+    }
+    clearInterval(recordingInterval);
+    recordingInterval = setInterval(() => {
+        recordingSeconds += 1;
+        if (vocalRecordingTimer) {
+            vocalRecordingTimer.textContent = formatRecordingTime(recordingSeconds);
+        }
+    }, 1000);
+}
+
+function stopRecordingTimer() {
+    clearInterval(recordingInterval);
+    recordingInterval = null;
+}
+
+function stopRecordingTracks() {
+    if (recordingStream) {
+        recordingStream.getTracks().forEach(track => track.stop());
+        recordingStream = null;
+    }
+}
+
+function updateVocalButtonState(recording) {
+    if (!attachVocaleBtn) return;
+    attachVocaleBtn.classList.toggle('recording', recording);
+    attachVocaleBtn.innerHTML = recording ? '<i class="bi bi-stop-fill"></i>' : '<i class="bi bi-mic"></i>';
+    attachVocaleBtn.setAttribute('title', recording ? 'Arreter enregistrement' : 'Message vocale');
+    if (vocalRecordingBar) {
+        vocalRecordingBar.classList.toggle('d-none', !recording);
+    }
+}
+
+function clearSelectedMedia() {
+    if (isRecording && mediaRecorder) {
+        mediaRecorder.stop();
+    }
+    stopRecordingTracks();
+    stopRecordingTimer();
+    isRecording = false;
+    updateVocalButtonState(false);
+    fileInput.value = '';
+    if (isRecordedVocaleInput) isRecordedVocaleInput.value = '0';
+    if (previewContentDiv) previewContentDiv.innerHTML = '';
+    previewDiv.classList.add('d-none');
+    textInput.placeholder = 'Type Message...';
+}
+
+function getSelectedFiles() {
+    return Array.from(fileInput?.files || []);
+}
+
+function showComposerError(message) {
+    const errorBox = document.getElementById('composerError');
+    if (!errorBox) return;
+    errorBox.textContent = message;
+    errorBox.classList.remove('d-none');
+}
+
+function hideComposerError() {
+    const errorBox = document.getElementById('composerError');
+    if (!errorBox) return;
+    errorBox.classList.add('d-none');
+    errorBox.textContent = '';
+}
+
+function appendEmojiToMessage(emojiValue) {
+    if (!textInput) return;
+    const current = textInput.value || '';
+    textInput.value = current + emojiValue;
+    textInput.focus();
+}
+
+function buildLargeEmojiList(limit = 500) {
+    const ranges = [
+        [0x1F600, 0x1F64F], // emoticons
+        [0x1F300, 0x1F5FF], // symbols & pictographs
+        [0x1F680, 0x1F6FF], // transport & map
+        [0x1F700, 0x1F77F], // alchemical
+        [0x1F780, 0x1F7FF], // geometric extended
+        [0x1F800, 0x1F8FF], // arrows-c
+        [0x1F900, 0x1F9FF], // supplemental symbols
+        [0x1FA70, 0x1FAFF], // symbols & pictographs extended-a
+        [0x2600, 0x26FF],   // misc symbols
+        [0x2700, 0x27BF],   // dingbats
+    ];
+
+    const emojis = [];
+    const seen = new Set();
+    for (const [start, end] of ranges) {
+        for (let cp = start; cp <= end && emojis.length < limit; cp++) {
+            const char = String.fromCodePoint(cp);
+            // Keep only likely emoji pictographs to avoid too many plain symbols
+            if (!/\p{Extended_Pictographic}/u.test(char)) continue;
+            if (seen.has(char)) continue;
+            seen.add(char);
+            emojis.push(char);
+        }
+        if (emojis.length >= limit) break;
+    }
+    return emojis;
+}
+
+function linkifyElementContent(element) {
+    if (!element) return;
+    const sourceText = element.textContent || '';
+    const urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    let match;
+
+    while ((match = urlRegex.exec(sourceText)) !== null) {
+        const urlText = match[0];
+        const start = match.index;
+        if (start > lastIndex) {
+            fragment.appendChild(document.createTextNode(sourceText.slice(lastIndex, start)));
+        }
+
+        const href = urlText.startsWith('http://') || urlText.startsWith('https://')
+            ? urlText
+            : `https://${urlText}`;
+        const anchor = document.createElement('a');
+        anchor.href = href;
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        anchor.className = 'text-decoration-underline';
+        anchor.textContent = urlText;
+        fragment.appendChild(anchor);
+        lastIndex = start + urlText.length;
+    }
+
+    if (lastIndex < sourceText.length) {
+        fragment.appendChild(document.createTextNode(sourceText.slice(lastIndex)));
+    }
+
+    if (sourceText.match(urlRegex)) {
+        element.innerHTML = '';
+        element.appendChild(fragment);
+    }
+}
+
+function playIncomingNotificationSound() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.type = 'triangle';
+        osc2.type = 'triangle';
+        osc1.frequency.setValueAtTime(660, ctx.currentTime);
+        osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+        osc1.start(ctx.currentTime);
+        osc2.start(ctx.currentTime + 0.08);
+        osc1.stop(ctx.currentTime + 0.25);
+        osc2.stop(ctx.currentTime + 0.35);
+    } catch (error) {
+        // no-op on audio restrictions
+    }
+}
+
+function openFilePicker(acceptValue, placeholderText) {
+    if (isRecordedVocaleInput) isRecordedVocaleInput.value = '0';
+    fileInput.setAttribute('accept', acceptValue);
+    fileInput.value = '';
+    fileInput.click();
+    if (placeholderText) {
+        textInput.placeholder = placeholderText;
+    }
+}
+
+document.getElementById('attachImageBtn')?.addEventListener('click', () => {
+    openFilePicker('image/*,video/*,audio/*,application/pdf,.gif', 'Ajouter un commentaire (optionnel)');
+});
+attachVocaleBtn?.addEventListener('click', async () => {
+    hideComposerError();
+
+    if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia) {
+        showComposerError('Votre navigateur ne supporte pas lenregistrement vocal.');
+        return;
+    }
+
+    if (isRecording && mediaRecorder) {
+        isRecording = false;
+        updateVocalButtonState(false);
+        stopRecordingTimer();
+        mediaRecorder.stop();
+        return;
+    }
+
+    try {
+        recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(recordingStream);
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+        mediaRecorder.onstop = () => {
+            isRecording = false;
+            updateVocalButtonState(false);
+            stopRecordingTimer();
+            const mimeType = mediaRecorder?.mimeType || 'audio/webm';
+            const blob = new Blob(recordedChunks, { type: mimeType });
+            if (!blob.size) {
+                showComposerError('Aucun son detecte. Reessayez.');
+                stopRecordingTracks();
+                return;
+            }
+
+            const extension = mimeType.includes('ogg') ? 'ogg' : 'webm';
+            const file = new File([blob], `vocale-${Date.now()}.${extension}`, { type: mimeType });
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            if (isRecordedVocaleInput) isRecordedVocaleInput.value = '1';
+            showPreviewFiles(file);
+            stopRecordingTracks();
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        updateVocalButtonState(true);
+        startRecordingTimer();
+        textInput.placeholder = 'Enregistrement en cours... cliquez encore pour stopper';
+    } catch (error) {
+        showComposerError('Acces micro refuse. Autorisez le microphone.');
+        stopRecordingTracks();
+        stopRecordingTimer();
+        isRecording = false;
+        updateVocalButtonState(false);
+    }
+});
+vocalStopBtn?.addEventListener('click', function () {
+    if (isRecording && mediaRecorder) {
+        isRecording = false;
+        updateVocalButtonState(false);
+        stopRecordingTimer();
+        mediaRecorder.stop();
+    }
+});
+vocalCancelBtn?.addEventListener('click', function () {
+    clearSelectedMedia();
+});
+
+fileInput.addEventListener('change', function(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    if (files.length > 3) {
+        showComposerError('Vous pouvez joindre au maximum 3 fichiers.');
+        clearSelectedMedia();
+        return;
+    }
+
+    const videoFiles = files.filter(file => file.type.startsWith('video/'));
+    if (!videoFiles.length) {
+        showPreviewFiles(files);
+        return;
+    }
+
+    let checkedVideos = 0;
+    let hasError = false;
+    videoFiles.forEach((file) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = function() {
+            if (video.duration > 300 && !hasError) {
+                hasError = true;
+                showComposerError('Chaque video ne doit pas depasser 5 minutes.');
+                clearSelectedMedia();
+                return;
+            }
+            checkedVideos += 1;
+            if (checkedVideos === videoFiles.length && !hasError) {
+                showPreviewFiles(files);
+            }
+        };
+        video.src = URL.createObjectURL(file);
+    });
+});
+
+function renderPreviewItem(file) {
+    const fileURL = URL.createObjectURL(file);
+    if (file.type.startsWith('image/')) {
+        return `<div class="mb-2"><img src="${fileURL}" class="img-fluid rounded" style="max-height: 150px;"><div class="small text-muted mt-1">${file.name}</div></div>`;
+    } else if (file.type.startsWith('video/')) {
+        return `<div class="mb-2"><video controls class="rounded" style="max-height: 150px;"><source src="${fileURL}"></video><div class="small text-muted mt-1">${file.name}</div></div>`;
+    } else if (file.type.startsWith('audio/')) {
+        return `<div class="mb-2"><div class="small text-success mb-1">Ecouter le fichier audio avant envoi</div><audio controls src="${fileURL}" class="w-100"></audio><div class="small text-muted mt-1">${file.name}</div></div>`;
+    } else if (file.type === 'application/pdf') {
+        return `<div class="mb-2"><embed src="${fileURL}" type="application/pdf" style="height: 150px; width: 100%;"><div class="small text-muted mt-1">${file.name}</div></div>`;
+    }
+
+    return `<div class="alert alert-info mb-2">Fichier: ${file.name}</div>`;
+}
+
+function showPreviewFiles(files) {
+    const selectedFiles = Array.isArray(files) ? files : [files];
+    let html = '';
+    selectedFiles.forEach(file => {
+        html += renderPreviewItem(file);
+    });
+    hideComposerError();
+    previewContentDiv.innerHTML = html;
+    previewDiv.classList.remove('d-none');
+    isRecording = false;
+    updateVocalButtonState(false);
+    textInput.placeholder = selectedFiles.length ? 'Ajouter un commentaire (optionnel)' : 'Ecrivez votre message...';
+}
+
+function showPreview(file) {
+    const fileURL = URL.createObjectURL(file);
+    let html = '';
+    if (file.type.startsWith('image/')) {
+        html = `<img src="${fileURL}" class="img-fluid rounded" style="max-height: 150px;">`;
+    } else if (file.type.startsWith('video/')) {
+        html = `<video controls class="rounded" style="max-height: 150px;"><source src="${fileURL}"></video>`;
+    } else if (file.type.startsWith('audio/')) {
+        html = `<div class="small text-success mb-1">Ecouter la vocale avant envoi</div><audio controls src="${fileURL}" class="w-100"></audio>`;
+    } else if (file.type === 'application/pdf') {
+        html = `<embed src="${fileURL}" type="application/pdf" style="height: 150px; width: 100%;">`;
+    } else {
+        html = `<div class="alert alert-info">Fichier: ${file.name}</div>`;
+    }
+    hideComposerError();
+    previewContentDiv.innerHTML = html + `<div class="small text-muted mt-1">${file.name}</div>`;
+    previewDiv.classList.remove('d-none');
+    isRecording = false;
+    updateVocalButtonState(false);
+    
+    // Optional: disable text input if file is attached (or allow both)
+    textInput.placeholder = file ? "Ajouter un commentaire (optionnel)" : "Écrivez votre message...";
+}
+
+clearMediaBtn?.addEventListener('click', clearSelectedMedia);
+composerEmojiBtn?.addEventListener('click', function (event) {
+    event.stopPropagation();
+    emojiPickerPanel?.classList.toggle('d-none');
+});
+
+if (emojiPickerPanel) {
+    const largeEmojiList = buildLargeEmojiList(500);
+    emojiPickerPanel.innerHTML = largeEmojiList
+        .map(emojiChar => `<button type="button" class="emoji-item-btn" data-emoji-item="${emojiChar}">${emojiChar}</button>`)
+        .join('');
+
+    emojiPickerPanel.addEventListener('click', function (event) {
+        const target = event.target.closest('[data-emoji-item]');
+        if (!target) return;
+        const emojiValue = target.getAttribute('data-emoji-item');
+        if (!emojiValue) return;
+        appendEmojiToMessage(emojiValue);
+        emojiPickerPanel.classList.add('d-none');
+    });
+}
+
+document.addEventListener('click', function (event) {
+    if (!emojiPickerPanel || emojiPickerPanel.classList.contains('d-none')) return;
+    if (emojiPickerPanel.contains(event.target) || composerEmojiBtn?.contains(event.target)) return;
+    emojiPickerPanel.classList.add('d-none');
+});
+
+// On form submit, ensure we send the file
+document.getElementById('messageComposerForm')?.addEventListener('submit', function(e) {
+    if (!getSelectedFiles().length && !textInput.value.trim()) {
+        e.preventDefault();
+        showComposerError('Veuillez ecrire un message ou joindre un fichier.');
+        return;
+    }
+    if (getSelectedFiles().length > 3) {
+        e.preventDefault();
+        showComposerError('Vous pouvez envoyer au maximum 3 fichiers.');
+    }
+});
+// ✅ Helper scroll
+function scrollToBottom() {
+    const container = document.getElementById('messagesContainer');
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+// ✅ Scroll avec délai pour s'assurer que le DOM est rendu
+function delayedScrollToBottom() {
+    setTimeout(() => {
+        scrollToBottom();
+    }, 100);
+}
+
+// ✅ Toggle edit form
+function toggleEditForm(id) {
+    const form = document.getElementById('edit-form-' + id);
+    if (form) form.classList.toggle('d-none');
+}
+
+// ✅ Sélectionner un user pour le groupe
+function selectUserForGroup(userId, userName) {
+    document.querySelectorAll('.participant-checkbox').forEach(cb => cb.checked = false);
+    const checkbox = document.getElementById('user_' + userId);
+    if (checkbox) checkbox.checked = true;
+    updateParticipantCount();
+}
+
+// ✅ Compteur participants
+function updateParticipantCount() {
+    const checkboxes = document.querySelectorAll('.participant-checkbox:checked');
+    const count = checkboxes.length;
+    const countElement = document.getElementById('selected-count');
+    const createBtn = document.getElementById('create-group-btn');
+    const groupTypeText = document.getElementById('group-type-text');
+    if (countElement) countElement.textContent = count;
+    if (createBtn) {
+        createBtn.disabled = count === 0;
+        if (count <= 1) groupTypeText.textContent = 'la conversation';
+        else if (count === 2) groupTypeText.textContent = 'la conversation privée';
+        else groupTypeText.textContent = 'le groupe';
+    }
+}
+
+// ✅ Filter conversations
+function filterConversations() {
+    const query = document.getElementById('conversationSearch').value.toLowerCase();
+    const items = Array.from(document.querySelectorAll('.conversation-item'));
+    const currentFilter = document.querySelector('[data-filter].active')?.getAttribute('data-filter') || 'all';
+    items.forEach(item => {
+        const title = item.dataset.title || '';
+        const type = item.dataset.type || '';
+        const matchesSearch = title.includes(query);
+        const matchesFilter = currentFilter === 'all' || type === currentFilter;
+        item.style.display = matchesSearch && matchesFilter ? '' : 'none';
+    });
+}
+
+function handleSortClick(event) {
+    const selectedSort = event.currentTarget.getAttribute('data-sort');
+    document.querySelectorAll('[data-sort]').forEach(btn => btn.classList.toggle('active', btn === event.currentTarget));
+    sortConversations(selectedSort);
+}
+
+function handleFilterClick(event) {
+    document.querySelectorAll('[data-filter]').forEach(btn => btn.classList.toggle('active', btn === event.currentTarget));
+    filterConversations();
+}
+
+function sortConversations(method) {
+    const list = document.querySelector('.conversation-list .flex-grow-1');
+    if (!list) return;
+    const items = Array.from(list.querySelectorAll('.conversation-item'));
+    const sorted = items.sort((a, b) => {
+        if (method === 'date') return (b.dataset.date || '').localeCompare(a.dataset.date || '');
+        return (a.dataset.title || '').trim().localeCompare((b.dataset.title || '').trim(), 'fr', { sensitivity: 'base' });
+    });
+    sorted.forEach(item => list.appendChild(item));
+    filterConversations();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.getElementById('messagesContainer');
+
+    // Checkboxes groupe
+    document.querySelectorAll('.participant-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateParticipantCount);
+    });
+
+    document.getElementById('createGroupModal')?.addEventListener('hidden.bs.modal', function () {
+        document.querySelectorAll('.participant-checkbox').forEach(cb => cb.checked = false);
+        document.getElementById('group_name').value = '';
+        updateParticipantCount();
+    });
+
+    // Search & sort conversations
+    const searchInput = document.getElementById('conversationSearch');
+    if (searchInput) searchInput.addEventListener('input', filterConversations);
+    document.querySelectorAll('[data-sort]').forEach(btn => btn.addEventListener('click', handleSortClick));
+    document.querySelectorAll('[data-filter]').forEach(btn => btn.addEventListener('click', handleFilterClick));
+
+    if (!document.querySelector('[data-sort].active')) {
+        document.querySelector('[data-sort="name"]')?.classList.add('active');
+    }
+    if (!document.querySelector('[data-filter].active')) {
+        document.querySelector('[data-filter="all"]')?.classList.add('active');
+    }
+
+    document.querySelectorAll('.js-linkify').forEach(linkifyElementContent);
+    let currentTotalUnreadCount = {{ total_unread_count|default(0) }};
+    if (currentTotalUnreadCount > 0) {
+        document.title = `(${currentTotalUnreadCount}) Messagerie - EcoAdventure`;
+    }
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+    }
+
+    // Confirmation popup personnalisee (remplace confirm natif)
+    const confirmModalEl = document.getElementById('actionConfirmModal');
+    const confirmTitleEl = document.getElementById('actionConfirmTitle');
+    const confirmMessageEl = document.getElementById('actionConfirmMessage');
+    const confirmNoteEl = document.getElementById('actionConfirmNote');
+    const confirmBtnEl = document.getElementById('actionConfirmBtn');
+    const confirmModal = confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
+    const videoModalEl = document.getElementById('videoPreviewModal');
+    const videoModal = videoModalEl ? new bootstrap.Modal(videoModalEl) : null;
+    const videoPlayer = document.getElementById('videoPreviewPlayer');
+    const videoSource = document.getElementById('videoPreviewSource');
+    const genericMediaModalEl = document.getElementById('genericMediaModal');
+    const genericMediaModal = genericMediaModalEl ? new bootstrap.Modal(genericMediaModalEl) : null;
+    const genericMediaBody = document.getElementById('genericMediaModalBody');
+
+    document.querySelectorAll('[data-confirm-link]').forEach(link => {
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+            if (!confirmModal) return;
+
+            const title = this.getAttribute('data-confirm-title') || 'Confirmation';
+            const message = this.getAttribute('data-confirm-message') || 'Voulez-vous continuer ?';
+            const note = this.getAttribute('data-confirm-note') || 'Verifiez bien avant de confirmer.';
+            const targetHref = this.getAttribute('href') || '#';
+
+            confirmTitleEl.textContent = title;
+            confirmMessageEl.textContent = message;
+            confirmNoteEl.textContent = note;
+            confirmBtnEl.setAttribute('href', targetHref);
+
+            confirmModal.show();
+        });
+    });
+
+    document.querySelectorAll('[data-video-src]').forEach(btn => {
+        btn.addEventListener('click', function () {
+            if (!videoModal || !videoPlayer || !videoSource) return;
+            const src = this.getAttribute('data-video-src');
+            if (!src) return;
+            videoSource.setAttribute('src', src);
+            videoPlayer.load();
+            videoModal.show();
+        });
+    });
+
+    videoModalEl?.addEventListener('hidden.bs.modal', function () {
+        if (!videoPlayer || !videoSource) return;
+        videoPlayer.pause();
+        videoSource.setAttribute('src', '');
+        videoPlayer.load();
+    });
+
+    document.querySelectorAll('.js-open-media').forEach(el => {
+        el.addEventListener('dblclick', function (event) {
+            event.preventDefault();
+            const src = this.getAttribute('data-media-url');
+            const kind = this.getAttribute('data-media-kind');
+            if (!src || !genericMediaModal || !genericMediaBody) return;
+
+            if (kind === 'image') {
+                genericMediaBody.innerHTML = `<img src="${src}" class="img-fluid rounded mx-auto d-block" style="max-height:70vh;">`;
+            } else if (kind === 'video') {
+                genericMediaBody.innerHTML = `<video controls autoplay class="w-100 rounded" style="max-height:70vh;"><source src="${src}"></video>`;
+            } else if (kind === 'audio') {
+                genericMediaBody.innerHTML = `<audio controls autoplay class="w-100"><source src="${src}"></audio>`;
+            } else if (kind === 'pdf') {
+                genericMediaBody.innerHTML = `<iframe src="${src}" class="w-100 rounded" style="height:70vh; border:0;"></iframe>`;
+            } else {
+                genericMediaBody.innerHTML = `<a class="btn btn-light" href="${src}" target="_blank">Ouvrir le fichier</a>`;
+            }
+
+            genericMediaModal.show();
+        });
+    });
+
+    genericMediaModalEl?.addEventListener('hidden.bs.modal', function () {
+        if (genericMediaBody) {
+            genericMediaBody.innerHTML = '';
+        }
+    });
+
+    document.querySelectorAll('.voice-message-card').forEach(card => {
+        const audio = card.querySelector('audio');
+        const playBtn = card.querySelector('[data-voice-play]');
+        const timeEl = card.querySelector('[data-voice-time]');
+        if (!audio || !playBtn || !timeEl) return;
+
+        const setTime = (seconds) => {
+            const safe = Number.isFinite(seconds) ? Math.floor(seconds) : 0;
+            const m = Math.floor(safe / 60);
+            const s = safe % 60;
+            timeEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+        };
+
+        audio.addEventListener('loadedmetadata', () => setTime(audio.duration));
+        audio.addEventListener('timeupdate', () => setTime(audio.currentTime));
+        audio.addEventListener('ended', () => {
+            playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+            setTime(audio.duration);
+        });
+
+        playBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (audio.paused) {
+                audio.play();
+                playBtn.innerHTML = '<i class="bi bi-pause-fill"></i>';
+            } else {
+                audio.pause();
+                playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+            }
+        });
+    });
+
+    document.querySelectorAll('.message-reactions').forEach(box => {
+        const reactUrl = box.getAttribute('data-react-url');
+        if (!reactUrl) return;
+
+        box.querySelectorAll('.reaction-btn').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const emoji = this.getAttribute('data-emoji');
+                if (!emoji) return;
+                const payload = new URLSearchParams({ emoji });
+
+                try {
+                    const response = await fetch(reactUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: payload.toString()
+                    });
+                    const data = await response.json();
+                    if (!data.success) return;
+
+                    box.querySelectorAll('.reaction-btn').forEach(button => {
+                        const e = button.getAttribute('data-emoji');
+                        const countEl = button.querySelector('[data-count]');
+                        if (countEl && data.counts && Object.prototype.hasOwnProperty.call(data.counts, e)) {
+                            countEl.textContent = data.counts[e];
+                        }
+                        button.classList.toggle('active', data.selected === e);
+                    });
+                } catch (error) {
+                    // keep UI stable on request failure
+                }
+            });
+        });
+    });
+
+    function updateUnreadUI(conversationId, conversationUnread, totalUnread) {
+        currentTotalUnreadCount = Math.max(0, Number(totalUnread || 0));
+        const activeConversation = document.querySelector(`.conversation-item[data-open-url*='/${conversationId}']`);
+        if (activeConversation) {
+            let badge = activeConversation.querySelector('.unread-badge');
+            if (conversationUnread > 0) {
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'unread-badge';
+                    const metaBox = activeConversation.querySelector('.d-flex.align-items-center.gap-2');
+                    metaBox?.insertBefore(badge, metaBox.firstChild);
+                }
+                badge.textContent = String(conversationUnread);
+            } else if (badge) {
+                badge.remove();
+            }
+        }
+
+        document.title = currentTotalUnreadCount > 0
+            ? `(${currentTotalUnreadCount}) Messagerie - EcoAdventure`
+            : 'Messagerie - EcoAdventure';
+    }
+
+    document.querySelectorAll('.conversation-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const openUrl = item.getAttribute('data-open-url');
+            if (openUrl) {
+                window.location.href = openUrl;
+            }
+        });
+    });
+
+    const messagesContainer = document.getElementById('messagesContainer');
+    let pollingActive = true;
+    let readSyncInProgress = false;
+
+    function isNearBottom(container) {
+        if (!container) return false;
+        const threshold = 48;
+        return container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
+    }
+
+    async function syncConversationReadState() {
+        if (!messagesContainer || readSyncInProgress || !isNearBottom(messagesContainer)) return;
+
+        const userId = messagesContainer.getAttribute('data-my-user-id');
+        const conversationId = messagesContainer.getAttribute('data-current-conversation-id');
+        if (!userId || !conversationId) return;
+
+        readSyncInProgress = true;
+        try {
+            const response = await fetch(`/messagerie/read/${userId}/${conversationId}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            if (data.success) {
+                updateUnreadUI(conversationId, Number(data.conversation_unread || 0), Number(data.total_unread || 0));
+            }
+        } catch (error) {
+            // keep silent
+        } finally {
+            readSyncInProgress = false;
+        }
+    }
+
+    async function pollIncomingMessages() {
+        if (!pollingActive || !messagesContainer) return;
+        const userId = messagesContainer.getAttribute('data-my-user-id');
+        const conversationId = messagesContainer.getAttribute('data-current-conversation-id');
+        let lastSeenId = Number(messagesContainer.getAttribute('data-last-message-id') || '0');
+        if (!userId || !conversationId) return;
+
+        try {
+            const url = `/messagerie/poll/${userId}/${conversationId}?last_seen_id=${lastSeenId}`;
+            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!response.ok) return;
+            const data = await response.json();
+            const incomingCount = Number(data.incoming_count || 0);
+            const latestId = Number(data.latest_id || lastSeenId);
+
+            if (incomingCount > 0 && latestId > lastSeenId) {
+                messagesContainer.setAttribute('data-last-message-id', String(latestId));
+                playIncomingNotificationSound();
+
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    const convTitle = messagesContainer.getAttribute('data-current-title') || 'Messagerie';
+                    new Notification(`Nouveau message - ${convTitle}`, {
+                        body: `Vous avez ${incomingCount} nouveau(x) message(s).`,
+                    });
+                }
+
+                if (isNearBottom(messagesContainer)) {
+                    setTimeout(() => window.location.reload(), 350);
+                } else {
+                    updateUnreadUI(conversationId, incomingCount, currentTotalUnreadCount + incomingCount);
+                }
+            } else if (latestId > lastSeenId) {
+                messagesContainer.setAttribute('data-last-message-id', String(latestId));
+            }
+        } catch (error) {
+            // keep silent; polling continues
+        }
+    }
+
+    const pollInterval = setInterval(pollIncomingMessages, 4000);
+    messagesContainer?.addEventListener('scroll', syncConversationReadState, { passive: true });
+    window.addEventListener('beforeunload', () => {
+        pollingActive = false;
+        clearInterval(pollInterval);
+    });
+
+    filterConversations();
+});
+
+// ✅ Scroll quand l'utilisateur revient sur l'onglet
+document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) {
+        const messagesContainer = document.getElementById('messagesContainer');
+        const userId = messagesContainer?.getAttribute('data-my-user-id');
+        const conversationId = messagesContainer?.getAttribute('data-current-conversation-id');
+        if (messagesContainer && userId && conversationId && (messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight <= 48)) {
+            fetch(`/messagerie/read/${userId}/${conversationId}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).catch(() => {});
+        }
+    }
+});
+</script>
+{% endblock %}

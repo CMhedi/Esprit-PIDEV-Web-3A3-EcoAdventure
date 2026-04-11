@@ -1,0 +1,255 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Séances{% endblock %}
+
+{% block page_title %}
+    Séances - {{ planning.titre }}
+{% endblock %}
+
+{% block body %}
+
+<div class="admin-card p-4 shadow-sm rounded">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h5 class="fw-bold mb-0">📅 Gestion des séances</h5>
+            <small class="text-muted">
+                Planning : {{ planning.titre }}
+            </small>
+        </div>
+
+<a href="{{ path('app_admin_seance_new', {'id': planning.idPlanning}) }}"
+   class="btn btn-success btn-sm">
+    <i class="bi bi-plus-circle"></i> Ajouter séance
+</a>
+
+    </div>
+    <form method="get">
+
+<!-- FILTER BAR -->
+<div class="admin-card p-3 mb-4">
+
+    <div class="row g-3 align-items-center">
+
+        <!-- SEARCH -->
+        <div class="col-md-3">
+            <input type="text" name="search" class="form-control"
+                   placeholder="🔍 Rechercher une séance..."
+                   value="{{ app.request.get('search') }}">
+        </div>
+
+        <!-- DATE -->
+        <div class="col-md-2">
+            <input type="date" name="date" class="form-control"
+                   value="{{ app.request.get('date') }}">
+        </div>
+
+        <!-- STATUT -->
+        <div class="col-md-2">
+            <select name="statut" class="form-select">
+                <option value="">Statut</option>
+                <option value="PLANIFIEE">Planifiée</option>
+                <option value="TERMINEE">Terminée</option>
+                <option value="ANNULEE">Annulée</option>
+            </select>
+        </div>
+
+        <!-- COACH -->
+        <div class="col-md-2">
+            <select name="coach" class="form-select">
+                <option value="">Coach</option>
+                {% for c in coaches %}
+                    <option value="{{ c.id_user }}">
+                        {{ c.nom }} {{ c.prenom }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- TRI -->
+        <div class="col-md-2">
+            <select name="sort" class="form-select">
+                <option value="">Trier par</option>
+                <option value="date">Date</option>
+                <option value="capacite">Capacité</option>
+            </select>
+        </div>
+
+        <!-- BUTTON -->
+        <div class="col-md-1 d-grid">
+            <button class="btn btn-success">
+                <i class="bi bi-funnel"></i>
+            </button>
+        </div>
+
+    </div>
+
+</div>
+</form>
+<!-- TABLE -->
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+
+        <thead class="table-light">
+            <tr>
+                <th>Nom</th>
+                <th>Date</th>
+                <th>Heure</th>
+                <th>Capacité</th>
+                <th>Coach</th>
+                <th>Statut</th>
+                <th class="text-center">Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for s in seances %}
+
+                <tr>
+
+                    <!-- NOM -->
+                    <td class="fw-semibold">{{ s.nom }}</td>
+
+                    <!-- DATE -->
+                    <td>{{ s.dateSeance|date('d/m/Y') }}</td>
+
+                    <!-- HEURE -->
+                    <td>
+                        {{ s.heureDebut|date('H:i') }} -
+                        {{ s.heureFin|date('H:i') }}
+                    </td>
+
+                    <!-- CAPACITE -->
+                    <td>
+                        <span class="badge bg-info text-dark">
+                            {{ s.capacite }}
+                        </span>
+                    </td>
+
+                    <!-- COACH -->
+                    <td>
+                        {% if s.coach %}
+                            <span class="badge bg-light text-dark">
+                                <i class="bi bi-person"></i>
+                                {{ s.coach.nom }} {{ s.coach.prenom }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- STATUT -->
+                    <td>
+                        {% if s.statutSeance.value == 'PLANIFIEE' %}
+                            <span class="badge bg-primary">Planifiée</span>
+                        {% elseif s.statutSeance.value == 'TERMINEE' %}
+                            <span class="badge bg-success">Terminée</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Annulée</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- ACTIONS -->
+                    <td class="text-center">
+
+                        <!-- EDIT -->
+                        <a href="{{ path('app_admin_seance_edit', {'id': s.idSeance}) }}"
+                           class="btn btn-sm btn-outline-primary"
+                           title="Modifier">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        <!-- DELETE -->
+                        <button class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteSeanceModal{{ s.idSeance }}"
+                                title="Supprimer">
+                            <i class="bi bi-trash"></i>
+                        </button>
+
+                    </td>
+
+                </tr>
+
+                <!-- MODAL DELETE -->
+                <div class="modal fade" id="deleteSeanceModal{{ s.idSeance }}" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+
+                        <div class="modal-content">
+
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    Confirmation
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+
+                            <div class="modal-body text-center">
+                                <p>Supprimer cette séance ?</p>
+                                <strong class="text-danger">{{ s.nom }}</strong>
+                            </div>
+
+                            <div class="modal-footer justify-content-center">
+
+                                <button class="btn btn-secondary"
+                                        data-bs-dismiss="modal">
+                                    Annuler
+                                </button>
+
+<form method="post"
+      action="{{ path('app_admin_seance_delete', {'id': s.idSeance}) }}">
+
+    <input type="hidden" name="_token"
+           value="{{ csrf_token('delete' ~ s.idSeance) }}">
+
+    <button class="btn btn-danger">
+        <i class="bi bi-trash"></i> Supprimer
+    </button>
+
+</form>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        Aucune séance pour ce planning
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+</div>
+
+</div>
+<script>
+        document.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('change', () => {
+                el.closest('form').submit();
+            });
+        });
+
+        let timeout;
+
+        const searchInput = document.querySelector('input[name="search"]');
+
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                clearTimeout(timeout);
+
+                timeout = setTimeout(() => {
+                    this.closest('form').submit();
+                }, 500);
+            });
+        }
+    </script>
+
+{% endblock %}

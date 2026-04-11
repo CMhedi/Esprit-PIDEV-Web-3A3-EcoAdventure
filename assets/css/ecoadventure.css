@@ -1,0 +1,302 @@
+/* ================= GLOBAL ================= */
+
+:root {
+    --admin-sidebar-width: 280px;
+    --admin-bg: #f8f9fa;
+    --admin-primary: #198754;
+    --admin-sidebar-bg: #1e3a24;
+    --admin-sidebar-active: #2c4f34;
+    --admin-text: #333;
+    --admin-secondary: #6c757d;
+}
+
+body {
+    background-color: var(--admin-bg);
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: var(--admin-text);
+}
+
+/* ================= ADMIN LAYOUT ================= */
+
+.admin-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+.admin-sidebar {
+    width: var(--admin-sidebar-width);
+    background-color: var(--admin-sidebar-bg);
+    color: white;
+    padding: 1.5rem;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.admin-content {
+    flex: 1;
+    margin-left: var(--admin-sidebar-width);
+    padding: 2rem;
+    min-height: 100vh;
+    background-color: var(--admin-bg);
+}
+
+.sidebar-brand {
+    padding-bottom: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-brand h4 {
+    color: white;
+    font-weight: 700;
+}
+
+.sidebar-brand h4 span {
+    color: #f7941d; /* Orange/Yellow from capture */
+}
+
+.sidebar-menu li {
+    margin-bottom: 0.2rem;
+}
+
+.sidebar-menu a {
+    color: rgba(255, 255, 255, 0.75);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 0.7rem 1.2rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.sidebar-menu a i {
+    margin-right: 1rem;
+    font-size: 1.1rem;
+}
+
+.sidebar-menu a:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.sidebar-menu a.active {
+    background-color: var(--admin-sidebar-active);
+    color: white;
+    font-weight: 500;
+}
+
+.admin-topbar {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    margin-bottom: 2rem;
+}
+
+/* ================= STAT CARDS ================= */
+
+.stat-card {
+    background: white;
+    padding: 2rem 1.5rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    text-align: center;
+    transition: transform 0.3s ease;
+    border: 1px solid #f0f0f0;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    background: #f8fdf9;
+    color: var(--admin-primary);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 1.5rem;
+}
+
+.stat-card h3 {
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: #1a1a1a;
+}
+
+.stat-card p {
+    color: #888;
+    font-weight: 500;
+    margin-bottom: 0;
+}
+
+/* ================= ADMIN CARDS & TABLES ================= */
+
+.admin-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    border: 1px solid #f0f0f0;
+}
+
+.table thead th {
+    background: transparent;
+    border-bottom: 1px solid #eee;
+    color: #888;
+    font-weight: 600;
+    text-transform: none;
+    padding: 1.2rem 1rem;
+}
+
+.table tbody td {
+    padding: 1.2rem 1rem;
+    border-bottom: 1px solid #fafafa;
+    color: #333;
+}
+
+.btn-eco {
+    background-color: var(--admin-primary);
+    color: white;
+    border-radius: 10px;
+    padding: 0.6rem 1.5rem;
+    font-weight: 600;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-eco:hover {
+    background-color: #146c43;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.2);
+}
+
+.btn-eco-outline {
+    border: 1.5px solid var(--admin-primary);
+    color: var(--admin-primary);
+    background: transparent;
+    border-radius: 10px;
+    padding: 0.5rem 1.2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-eco-outline:hover {
+    background-color: var(--admin-primary);
+    color: white;
+}
+
+.badge {
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+.badge.bg-info-subtle {
+    background-color: #e3f2fd !important;
+    color: #0d6efd !important;
+}
+
+.badge.bg-success {
+    background-color: #e8f5e9 !important;
+    color: #2e7d32 !important;
+}
+
+.badge.bg-warning {
+    background-color: #fff8e1 !important;
+    color: #f57f17 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #f5f5f5 !important;
+    color: #616161 !important;
+}
+
+/* ================= INPUTS ================= */
+
+.form-control,
+.form-select {
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    border: 1px solid #ced4da;
+}
+
+/* focus eco theme */
+.form-control:focus,
+.form-select:focus {
+    border-color: #198754 !important;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.2) !important;
+}
+
+/* hover */
+.form-control:hover,
+.form-select:hover {
+    border-color: #198754;
+}
+
+/* ================= SELECT CUSTOM ================= */
+
+select.form-select.custom-select {
+    border-radius: 10px !important;
+    background-color: #fff;
+}
+
+/* focus */
+select.form-select.custom-select:focus {
+    border-color: #198754 !important;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.2) !important;
+}
+
+/* ================= INPUT GROUP ================= */
+
+.input-group-text {
+    border-radius: 10px 0 0 10px;
+    background-color: #198754;
+    color: #fff;
+    border: none;
+}
+
+/* ================= ERROR ================= */
+
+.text-danger.small {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* ================= BUTTONS ================= */
+
+.btn-success {
+    background-color: #198754;
+    border: none;
+    border-radius: 8px;
+    transition: 0.2s;
+}
+
+.btn-success:hover {
+    background-color: #157347;
+}
+
+.btn-outline-secondary {
+    border-radius: 8px;
+}
+
+/* ================= LABEL ================= */
+
+.form-label {
+    margin-bottom: 5px;
+    color: #333;
+}
+
+/* ================= OPTION (LIMITED) ================= */
+
+select option {
+    padding: 10px;
+}

@@ -1,0 +1,245 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détail séance - Coach | Plateforme Eco{% endblock %}
+
+{% block body %}
+
+<div class="container-fluid py-5" style="background: linear-gradient(135deg, #ffffff 0%, #f8faf9 100%); min-height: 100vh;">
+
+    <div class="container">
+
+        <!-- ===== HEADER ===== -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="fw-bold" style="color: #27ae60; margin-bottom: 0.5rem;">
+                            <i class="bi bi-info-circle"></i>
+                            {{ seance.nom }}
+                        </h1>
+                        <p class="text-muted mb-0">Gestion des participants et de la présence</p>
+                    </div>
+
+                    <a href="{{ path('app_coach_seances') }}" class="btn btn-outline-success">
+                        <i class="bi bi-arrow-left"></i>
+                        Retour aux séances
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== STATS SÉANCE ===== -->
+        <div class="row mb-5 g-3">
+            
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #27ae60;">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2">Total Places</h6>
+                        <h5 class="fw-bold" style="color: #27ae60;">{{ seanceStats.total_places }}</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #27ae60;">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2">Réservées</h6>
+                        <h5 class="fw-bold" style="color: #27ae60;">{{ seanceStats.places_reservees }}</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #27ae60;">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2">Taux d'Occupation</h6>
+                        <h5 class="fw-bold" style="color: #27ae60;">{{ seanceStats.taux_occupation }}%</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #27ae60;">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2">Présents</h6>
+                        <h5 class="fw-bold" style="color: #27ae60;">{{ seanceStats.presents }}/{{ seanceStats.places_reservees }}</h5>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ===== INFOS SÉANCE ===== -->
+        <div class="row mb-5">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm" style="border-left: 5px solid #27ae60;">
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-4" style="color: #27ae60;">Informations de la séance</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted">Date</small>
+                                <p class="fw-bold">{{ seance.dateSeance|date('d/m/Y') }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted">Horaire</small>
+                                <p class="fw-bold">{{ seance.heureDebut|date('H:i') }} - {{ seance.heureFin|date('H:i') }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted">Statut</small>
+                                <p>
+                                    <span class="badge" style="background-color: #27ae60; color: white;">
+                                        {{ seance.statutSeance.value }}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted">Capacité</small>
+                                <p class="fw-bold">{{ seance.capacite }} places</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm" style="border-left: 5px solid #f39c12;">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3" style="color: #f39c12;">Actions</h6>
+                        <button class="btn btn-outline-success w-100 mb-2">
+                            <i class="bi bi-pencil me-2"></i>
+                            Éditer
+                        </button>
+                        <button class="btn btn-outline-danger w-100 mb-2">
+                            <i class="bi bi-trash me-2"></i>
+                            Supprimer
+                        </button>
+                        <button class="btn btn-outline-info w-100">
+                            <i class="bi bi-download me-2"></i>
+                            Télécharger PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PARTICIPANTS ===== -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" style="border-left: 5px solid #27ae60;">
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-4" style="color: #27ae60;">Participants ({{ participants|length }})</h5>
+
+                        {% if participants|length > 0 %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead style="background-color: #f8faf9; border-bottom: 2px solid #27ae60;">
+                                        <tr>
+                                            <th style="color: #27ae60;">Nom</th>
+                                            <th style="color: #27ae60;">Prénom</th>
+                                            <th style="color: #27ae60;">Réservation</th>
+                                            <th style="color: #27ae60;">Présence</th>
+                                            <th style="color: #27ae60;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for participant in participants %}
+                                            <tr>
+                                                <td class="fw-bold">{{ participant.userApp.nom }}</td>
+                                                <td>{{ participant.userApp.prenom }}</td>
+                                                <td>
+                                                    <span class="badge bg-success">{{ participant.statut.value }}</span>
+                                                </td>
+                                                <td>
+                                                    {% if seance.statutSeance.value == 'TERMINEE' %}
+                                                        <span class="badge {% if participant.statut_presence.value == 'PRESENT' %}bg-success{% else %}bg-danger{% endif %}">
+                                                            {{ participant.statut_presence.value }}
+                                                        </span>
+                                                    {% else %}
+                                                        <button type="button" class="btn btn-sm btn-outline-success presence-btn"
+                                                                data-id="{{ participant.id_reservation }}"
+                                                                data-status="{{ participant.statut_presence.value }}">
+                                                            {% if participant.statut_presence.value == 'PRESENT' %}
+                                                                <i class="bi bi-check-circle-fill"></i> Présent
+                                                            {% else %}
+                                                                <i class="bi bi-x-circle"></i> Absent
+                                                            {% endif %}
+                                                        </button>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-danger"
+                                                            title="Supprimer cette réservation">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info" role="alert">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Aucun participant pour cette séance
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+{% block js %}
+<script>
+   document.querySelectorAll('.presence-btn').forEach(btn => {
+
+    btn.addEventListener('click', function (e) {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 🔥 BLOQUER DOUBLE CLIC
+        if (this.disabled) return;
+        this.disabled = true;
+
+        const id = this.dataset.id;
+        const button = this;
+
+        fetch(`/coach/seance/participant/${id}/presence`, {
+            method: 'POST'
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            if (data.success) {
+
+                if (data.status === 'PRESENT') {
+                    button.classList.remove('btn-outline-danger');
+                    button.classList.add('btn-outline-success');
+                    button.innerHTML = 'Présent';
+                } else {
+                    button.classList.remove('btn-outline-success');
+                    button.classList.add('btn-outline-danger');
+                    button.innerHTML = 'Absent';
+                }
+
+            }
+
+            // 🔥 réactiver après
+            setTimeout(() => {
+                button.disabled = false;
+            }, 500);
+
+        });
+
+    });
+
+});
+</script>
+{% endblock %}
+
+{% endblock %}
