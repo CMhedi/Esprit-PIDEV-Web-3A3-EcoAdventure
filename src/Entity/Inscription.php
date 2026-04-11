@@ -34,12 +34,14 @@ class Inscription
     #[ORM\Column(name: 'nom_pack', type: 'string', length: 255, nullable: true)]
     private ?string $nom_pack = null;
 
+    #[Assert\NotNull(message: 'Le pack est obligatoire.')]
     #[ORM\ManyToOne(targetEntity: Pack::class)]
-    #[ORM\JoinColumn(name: 'id_pack', referencedColumnName: 'id_pack', nullable: true)]
+    #[ORM\JoinColumn(name: 'id_pack', referencedColumnName: 'id_pack', nullable: false)]
     private ?Pack $pack = null;
 
+    #[Assert\NotNull(message: 'L utilisateur est obligatoire.')]
     #[ORM\ManyToOne(targetEntity: UserApp::class, inversedBy: 'inscriptions')]
-    #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user', nullable: true)]
+    #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user', nullable: false)]
     private ?UserApp $userApp = null;
 
     public function getIdInscription(): ?int
