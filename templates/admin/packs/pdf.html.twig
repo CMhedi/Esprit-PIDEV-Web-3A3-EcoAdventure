@@ -22,7 +22,7 @@
             font-family: 'DejaVu Sans', sans-serif;
             margin: 0;
             color: #1f2937;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            background: #f8fafc;
             font-size: 11px;
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
@@ -36,29 +36,14 @@
 
         /* Header Hero Section */
         .hero {
-            background: linear-gradient(135deg, #059669 0%, #0d9488 25%, #0891b2 50%, #3b82f6 75%, #6366f1 100%);
+            background: #0f766e;
             color: #ffffff;
             border-radius: 24px;
             padding: 32px 36px;
             margin-bottom: 24px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.02)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.04)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-            opacity: 0.6;
         }
 
         .hero-top {
-            position: relative;
-            z-index: 2;
             width: 100%;
             margin-bottom: 20px;
         }
@@ -97,8 +82,6 @@
         }
 
         .hero-meta {
-            position: relative;
-            z-index: 2;
             margin-top: 24px;
             display: flex;
             flex-wrap: wrap;
@@ -108,15 +91,13 @@
         .hero-chip {
             display: inline-flex;
             align-items: center;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.18);
+            border: 1px solid rgba(255,255,255,0.25);
             color: #fff;
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 10px;
             font-weight: 600;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .hero-chip::before {
@@ -160,10 +141,10 @@
             margin-bottom: 12px;
         }
 
-        .stat-icon.primary { background: linear-gradient(135deg, #059669, #0d9488); color: white; }
-        .stat-icon.secondary { background: linear-gradient(135deg, #0891b2, #3b82f6); color: white; }
-        .stat-icon.accent { background: linear-gradient(135deg, #f59e0b, #f97316); color: white; }
-        .stat-icon.info { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+        .stat-icon.primary { background: #059669; color: white; }
+        .stat-icon.secondary { background: #0891b2; color: white; }
+        .stat-icon.accent { background: #f59e0b; color: white; }
+        .stat-icon.info { background: #6366f1; color: white; }
 
         .stat-label {
             font-size: 10px;
@@ -226,7 +207,7 @@
 
         .bar {
             flex: 1;
-            background: linear-gradient(135deg, #059669, #0d9488);
+            background: #059669;
             border-radius: 4px 4px 0 0;
             position: relative;
             min-height: 20px;
@@ -299,7 +280,7 @@
             width: 32px;
             height: 32px;
             border-radius: 10px;
-            background: linear-gradient(135deg, #059669, #0d9488);
+            background: #059669;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -324,7 +305,7 @@
         .section-line {
             width: 80px;
             height: 4px;
-            background: linear-gradient(135deg, #059669, #0d9488, #0891b2, #3b82f6);
+            background: #0f766e;
             border-radius: 2px;
             margin-bottom: 16px;
         }
@@ -351,7 +332,7 @@
         }
 
         .pack-table thead th {
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            background: #eef2f7;
             color: #374151;
             font-size: 10px;
             font-weight: 700;
@@ -469,14 +450,14 @@
 
         .score-fill {
             height: 100%;
-            background: linear-gradient(135deg, #059669, #0d9488);
+            background: #059669;
             border-radius: 2px;
         }
 
         /* Summary Box */
         .summary-box {
             margin-top: 20px;
-            background: linear-gradient(135deg, rgba(5,150,105,0.05), rgba(8,145,178,0.05));
+            background: #f0fdf4;
             border: 1px solid rgba(5,150,105,0.1);
             border-radius: 16px;
             padding: 20px;
@@ -509,7 +490,7 @@
             padding-top: 16px;
             border-top: 2px solid #e2e8f0;
             text-align: center;
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            background: #f8fafc;
             border-radius: 16px;
             padding: 20px;
         }
@@ -551,7 +532,7 @@
         .empty-box {
             text-align: center;
             padding: 60px 20px;
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            background: #f8fafc;
             border: 2px dashed #d1d5db;
             border-radius: 20px;
             color: #6b7280;
@@ -660,7 +641,7 @@
 
                 {% for type, count in stats.packTypes %}
                     {% set height = maxCount > 0 ? (count / maxCount) * 100 : 0 %}
-                    <div class="bar" style="height: {{ height }}%; background: linear-gradient(135deg, hsl({{ (loop.index * 137.5) % 360 }}, 70%, 50%), hsl({{ (loop.index * 137.5 + 30) % 360 }}, 70%, 45%));">
+                    <div class="bar" style="height: {{ height }}%; background-color: #0f766e;">
                         <div class="bar-label">{{ type }}</div>
                         <div class="bar-value">{{ count }}</div>
                     </div>
@@ -670,7 +651,7 @@
             <div class="chart-legend">
                 {% for type, count in stats.packTypes %}
                 <div class="legend-item">
-                    <div class="legend-color" style="background: linear-gradient(135deg, hsl({{ (loop.index * 137.5) % 360 }}, 70%, 50%), hsl({{ (loop.index * 137.5 + 30) % 360 }}, 70%, 45%));"></div>
+                    <div class="legend-color" style="background-color: #0f766e;"></div>
                     {{ type }} ({{ count }})
                 </div>
                 {% endfor %}

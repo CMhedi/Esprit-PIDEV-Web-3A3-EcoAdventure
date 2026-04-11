@@ -317,7 +317,7 @@ public function editPack(
         $dompdf->addInfo('Subject', 'Rapport professionnel des packs disponibles');
         $dompdf->addInfo('Author', 'EcoAdventure Platform');
         $dompdf->addInfo('Creator', 'Système d\'administration EcoAdventure');
-        $dompdf->addInfo('Producer', 'Dompdf ' . \Dompdf\Version::VERSION);
+        $dompdf->addInfo('Producer', (string) $dompdf->version);
         $dompdf->addInfo('CreationDate', date('Y-m-d\TH:i:sP'));
         $dompdf->addInfo('ModDate', date('Y-m-d\TH:i:sP'));
 
