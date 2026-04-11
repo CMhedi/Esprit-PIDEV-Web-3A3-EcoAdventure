@@ -11,6 +11,8 @@ use App\Enum\TypeMessage;
 use App\Repository\ConversationRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserAppRepository;
+use App\Service\ContentModerationService;
+use App\Service\GeminiGifChatService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
@@ -152,7 +154,8 @@ class MessagerieController extends AbstractController
             'total_unread_count' => $totalUnreadCount,
             'mon_id' => $user->getId_user(),
             'nom_utilisateur' => $user->getNom(),
-            'prenom_utilisateur' => $user->getPrenom()
+            'prenom_utilisateur' => $user->getPrenom(),
+            'gemini_assistant_email' => (string) ($_ENV['GEMINI_ASSISTANT_EMAIL'] ?? 'gemini.bot@ecoadventure.local'),
         ]);
     }
 
@@ -291,7 +294,10 @@ class MessagerieController extends AbstractController
         SluggerInterface $slugger,
         ValidatorInterface $validator,
         ConversationRepository $conversationRepo,
-        UserAppRepository $userRepo
+        UserAppRepository $userRepo,
+        MessageRepository $messageRepo,
+        ContentModerationService $moderationService,
+        GeminiGifChatService $geminiGifChatService
     ): Response {
         $user = $userRepo->find($id_user);
         $conversation = $conversationRepo->find($id_conversation);
@@ -347,8 +353,17 @@ class MessagerieController extends AbstractController
 
         $uploadedFiles = $request->files->all('mediaFiles');
         $textContent = trim($request->request->get('message', ''));
+        $gifUrl = trim((string) $request->request->get('gif_url', ''));
         $isRecordedVocale = $request->request->getBoolean('is_recorded_vocale', false);
         $uploadedFiles = array_values(array_filter(is_array($uploadedFiles) ? $uploadedFiles : ($uploadedFiles ? [$uploadedFiles] : [])));
+
+        if ($textContent !== '' && $moderationService->containsProhibitedContent($textContent)) {
+            $this->addFlash('error', 'Message bloque: contenu inapproprie detecte.');
+            return $this->redirectToRoute('app_messagerie_selected', [
+                'id_user' => $id_user,
+                'id_conversation' => $id_conversation
+            ]);
+        }
 
         if (count($uploadedFiles) > 3) {
             $this->addFlash('error', 'Vous pouvez envoyer au maximum 3 fichiers par message.');
@@ -356,6 +371,29 @@ class MessagerieController extends AbstractController
                 'id_user' => $id_user,
                 'id_conversation' => $id_conversation
             ]);
+        }
+
+        // Gestion du GIF choisi depuis le picker (telechargement local vers /uploads/Gifs)
+        if ($gifUrl !== '' && filter_var($gifUrl, FILTER_VALIDATE_URL)) {
+            $storedGif = $geminiGifChatService->downloadGifToLocal(
+                $gifUrl,
+                (string) $this->getParameter('messages_upload_directory')
+            );
+            if ($storedGif) {
+                $message->setType_message(TypeMessage::GIF);
+                $message->setAttachments([[
+                    'path' => $storedGif['path'],
+                    'name' => $storedGif['name'],
+                    'mime' => $storedGif['mime'],
+                    'type' => TypeMessage::GIF->value,
+                ]]);
+            } else {
+                $this->addFlash('error', 'Impossible de telecharger ce GIF pour le moment.');
+                return $this->redirectToRoute('app_messagerie_selected', [
+                    'id_user' => $id_user,
+                    'id_conversation' => $id_conversation
+                ]);
+            }
         }
 
         // Gestion du fichier
@@ -400,7 +438,8 @@ class MessagerieController extends AbstractController
                     }
 
                     $targetFolder = match ($attachmentType) {
-                        TypeMessage::IMAGE, TypeMessage::GIF => 'images',
+                        TypeMessage::IMAGE => 'images',
+                        TypeMessage::GIF => 'Gifs',
                         TypeMessage::VIDEO, TypeMessage::APPEL_VIDEO => 'video',
                         TypeMessage::AUDIO => 'Audio',
                         TypeMessage::VOCALE, TypeMessage::APPEL_AUDIO => 'Vocale',
@@ -436,7 +475,7 @@ class MessagerieController extends AbstractController
 
         // Gestion du texte (commentaire éventuel)
         if (!empty($textContent)) {
-            if (!empty($uploadedFiles)) {
+            if (!empty($uploadedFiles) || $gifUrl !== '') {
                 $message->setContenu($textContent);
             } else {
                 $message->setContenu($textContent);
@@ -444,7 +483,7 @@ class MessagerieController extends AbstractController
                     $message->setType_message(TypeMessage::EMOJI);
                 }
             }
-        } elseif (empty($uploadedFiles)) {
+        } elseif (empty($uploadedFiles) && $gifUrl === '') {
             $this->addFlash('error', 'Vous ne pouvez pas envoyer un message vide.');
             return $this->redirectToRoute('app_messagerie_selected', [
                 'id_user' => $id_user,
@@ -465,6 +504,16 @@ class MessagerieController extends AbstractController
 
         $em->persist($message);
         $em->flush();
+
+        $this->sendAutomatedGeminiReplyIfNeeded(
+            $textContent,
+            $user,
+            $conversation,
+            $em,
+            $userRepo,
+            $messageRepo,
+            $geminiGifChatService
+        );
 
         return $this->redirectToRoute('app_messagerie_selected', [
             'id_user' => $id_user,
@@ -517,12 +566,21 @@ class MessagerieController extends AbstractController
         UserAppRepository $userRepo,
         ConversationRepository $conversationRepo,
         MessageRepository $messageRepo,
+        ContentModerationService $moderationService,
         EntityManagerInterface $em
     ): Response {
         $user = $userRepo->find($id_user);
         $conversation = $conversationRepo->find($id_conversation);
         $message = $messageRepo->find($id_message);
         $edited = trim($request->request->get('edited_message', ''));
+
+        if ($edited !== '' && $moderationService->containsProhibitedContent($edited)) {
+            $this->addFlash('error', 'Modification bloquee: contenu inapproprie detecte.');
+            return $this->redirectToRoute('app_messagerie_selected', [
+                'id_user' => $id_user,
+                'id_conversation' => $id_conversation
+            ]);
+        }
 
         if ($user && $conversation && $message && $edited !== ''
             && $message->getConversation()?->getId_conversation() === $conversation->getId_conversation()
@@ -843,5 +901,266 @@ public function callLog(
             'conversation_unread' => (int) ($unreadByConversationId[$id_conversation] ?? 0),
             'total_unread' => array_sum($unreadByConversationId),
         ]);
+    }
+
+    #[Route('/messagerie/ai/{id_user}/{id_conversation}', name: 'app_messagerie_ai_reply', methods: ['POST'])]
+    public function askGemini(
+        int $id_user,
+        int $id_conversation,
+        Request $request,
+        UserAppRepository $userRepo,
+        ConversationRepository $conversationRepo,
+        EntityManagerInterface $em,
+        GeminiGifChatService $geminiGifChatService
+    ): Response {
+        $user = $userRepo->find($id_user);
+        $conversation = $conversationRepo->find($id_conversation);
+        if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
+            return $this->json(['error' => 'Conversation introuvable'], 404);
+        }
+
+        $prompt = trim((string) $request->request->get('prompt', ''));
+        if ($prompt === '') {
+            return $this->json(['error' => 'Prompt vide'], 422);
+        }
+
+        $assistant = $this->getOrCreateGeminiAssistant($userRepo, $em);
+        if (!$conversation->getParticipants()->contains($assistant)) {
+            $conversation->addParticipant($assistant);
+            $em->persist($conversation);
+        }
+
+        $replyText = $geminiGifChatService->generateReply($prompt);
+        $aiMessage = new Message();
+        $aiMessage->setUserApp($assistant);
+        $aiMessage->setConversation($conversation);
+        $aiMessage->setDate_envoi(new \DateTime());
+        $aiMessage->setStatut_message(StatutMessage::ENVOYE);
+        $aiMessage->setType_message(TypeMessage::TEXTE);
+        $aiMessage->setContenu($replyText);
+        $em->persist($aiMessage);
+
+        $gifUrl = $geminiGifChatService->searchGifUrl($prompt);
+        if ($gifUrl) {
+            $gifMessage = new Message();
+            $gifMessage->setUserApp($assistant);
+            $gifMessage->setConversation($conversation);
+            $gifMessage->setDate_envoi(new \DateTime());
+            $gifMessage->setStatut_message(StatutMessage::ENVOYE);
+            $gifMessage->setType_message(TypeMessage::GIF);
+            $gifMessage->setAttachments([[
+                'path' => $gifUrl,
+                'name' => 'giphy.gif',
+                'mime' => 'image/gif',
+                'type' => TypeMessage::GIF->value,
+            ]]);
+            $em->persist($gifMessage);
+        }
+
+        $em->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route('/messagerie/ai/open/{id_user}', name: 'app_messagerie_ai_open', requirements: ['id_user' => '\d+'])]
+    public function openGeminiConversation(
+        int $id_user,
+        UserAppRepository $userRepo,
+        ConversationRepository $conversationRepo,
+        EntityManagerInterface $em
+    ): Response {
+        $authenticatedUser = $this->getUser();
+        if ($authenticatedUser instanceof UserApp) {
+            $id_user = $authenticatedUser->getId_user();
+        }
+
+        $user = $userRepo->find($id_user);
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        $assistant = $this->getOrCreateGeminiAssistant($userRepo, $em);
+        $conversation = $conversationRepo->findOneByParticipants($user, $assistant);
+
+        if (!$conversation) {
+            $conversation = new Conversation();
+            $conversation->setCreateur($user);
+            $conversation->addParticipant($user);
+            $conversation->addParticipant($assistant);
+            $conversation->setTitre('Assistant IA Groq');
+            $conversation->setEst_groupe(false);
+            $conversation->setDate_creation(new \DateTime());
+            $em->persist($conversation);
+            $em->flush();
+        }
+
+        return $this->redirectToRoute('app_messagerie_selected', [
+            'id_user' => $id_user,
+            'id_conversation' => $conversation->getId_conversation(),
+        ]);
+    }
+
+    #[Route('/messagerie/gif/search', name: 'app_messagerie_gif_search', methods: ['GET'])]
+    public function searchGif(
+        Request $request,
+        GeminiGifChatService $geminiGifChatService
+    ): Response {
+        $query = trim((string) $request->query->get('q', ''));
+        $gifs = $geminiGifChatService->searchGifUrls($query, 12);
+
+        return $this->json([
+            'success' => true,
+            'items' => $gifs,
+        ]);
+    }
+
+    private function sendAutomatedGeminiReplyIfNeeded(
+        string $textContent,
+        UserApp $sender,
+        Conversation $conversation,
+        EntityManagerInterface $em,
+        UserAppRepository $userRepo,
+        MessageRepository $messageRepo,
+        GeminiGifChatService $geminiGifChatService
+    ): void {
+        if ($textContent === '') {
+            return;
+        }
+
+        $trimmed = trim($textContent);
+        $assistantEmail = (string) ($_ENV['GEMINI_ASSISTANT_EMAIL'] ?? 'gemini.bot@ecoadventure.local');
+        $isAssistantConversation = false;
+        foreach ($conversation->getParticipants() as $participant) {
+            if ($participant->getEmail() === $assistantEmail) {
+                $isAssistantConversation = true;
+                break;
+            }
+        }
+
+        $needsSummary = str_starts_with($trimmed, '/resume') || str_starts_with($trimmed, '/summary');
+        $needsLongMessage = str_starts_with($trimmed, '/long');
+        $needsReply = $isAssistantConversation || str_starts_with($trimmed, '/ai ') || str_starts_with($trimmed, '@gemini ');
+        $needsGif = str_starts_with($trimmed, '/gif ');
+        if (!$needsReply && !$needsGif && !$needsSummary && !$needsLongMessage) {
+            return;
+        }
+
+        $assistant = $this->getOrCreateGeminiAssistant($userRepo, $em);
+        if ($assistant->getId_user() === $sender->getId_user()) {
+            return;
+        }
+        if (!$conversation->getParticipants()->contains($assistant)) {
+            $conversation->addParticipant($assistant);
+            $em->persist($conversation);
+        }
+
+        if ($needsSummary) {
+            $conversationMessages = $messageRepo->findMessagesForConversation($conversation);
+            $lines = [];
+            foreach ($conversationMessages as $msg) {
+                $author = $msg->getUserApp()?->getPrenom() ?: 'User';
+                $content = trim((string) ($msg->getContenu() ?? ''));
+                if ($content !== '') {
+                    $lines[] = $author . ': ' . $content;
+                }
+            }
+            $summaryText = $geminiGifChatService->generateConversationSummary(implode("\n", $lines));
+
+            $summaryMessage = new Message();
+            $summaryMessage->setUserApp($assistant);
+            $summaryMessage->setConversation($conversation);
+            $summaryMessage->setDate_envoi(new \DateTime());
+            $summaryMessage->setStatut_message(StatutMessage::ENVOYE);
+            $summaryMessage->setType_message(TypeMessage::TEXTE);
+            $summaryMessage->setContenu($summaryText);
+            $em->persist($summaryMessage);
+        }
+
+        if ($needsLongMessage) {
+            $subject = trim(preg_replace('/^\/long\\s*/i', '', $trimmed) ?? '');
+            $longText = $geminiGifChatService->generateLongMessage($subject);
+
+            $longMessage = new Message();
+            $longMessage->setUserApp($assistant);
+            $longMessage->setConversation($conversation);
+            $longMessage->setDate_envoi(new \DateTime());
+            $longMessage->setStatut_message(StatutMessage::ENVOYE);
+            $longMessage->setType_message(TypeMessage::TEXTE);
+            $longMessage->setContenu($longText);
+            $em->persist($longMessage);
+        }
+
+        if ($needsReply && !$needsGif && !$needsSummary && !$needsLongMessage) {
+            $prompt = $trimmed;
+            if (preg_match('/^(\/ai|@gemini)\s+/i', $trimmed)) {
+                $prompt = trim(preg_replace('/^(\/ai|@gemini)\s+/i', '', $trimmed) ?? '');
+            }
+            $replyText = $prompt !== ''
+                ? $geminiGifChatService->generateReply($prompt)
+                : 'Ecris votre question apres /ai ou @gemini.';
+
+            $aiMessage = new Message();
+            $aiMessage->setUserApp($assistant);
+            $aiMessage->setConversation($conversation);
+            $aiMessage->setDate_envoi(new \DateTime());
+            $aiMessage->setStatut_message(StatutMessage::ENVOYE);
+            $aiMessage->setType_message(TypeMessage::TEXTE);
+            $aiMessage->setContenu($replyText);
+            $em->persist($aiMessage);
+        }
+
+        if ($needsGif) {
+            $query = trim(preg_replace('/^\/gif\s+/i', '', $trimmed) ?? '');
+            $gifUrl = $geminiGifChatService->searchGifUrl($query);
+            if ($gifUrl) {
+                $gifMessage = new Message();
+                $gifMessage->setUserApp($assistant);
+                $gifMessage->setConversation($conversation);
+                $gifMessage->setDate_envoi(new \DateTime());
+                $gifMessage->setStatut_message(StatutMessage::ENVOYE);
+                $gifMessage->setType_message(TypeMessage::GIF);
+                $gifMessage->setAttachments([[
+                    'path' => $gifUrl,
+                    'name' => 'gif-' . uniqid() . '.gif',
+                    'mime' => 'image/gif',
+                    'type' => TypeMessage::GIF->value,
+                ]]);
+                $em->persist($gifMessage);
+            } else {
+                $fallback = new Message();
+                $fallback->setUserApp($assistant);
+                $fallback->setConversation($conversation);
+                $fallback->setDate_envoi(new \DateTime());
+                $fallback->setStatut_message(StatutMessage::ENVOYE);
+                $fallback->setType_message(TypeMessage::TEXTE);
+                $fallback->setContenu('Aucun GIF trouve. Verifiez GIPHY_API_KEY ou essayez un autre mot-cle.');
+                $em->persist($fallback);
+            }
+        }
+
+        $em->flush();
+    }
+
+    private function getOrCreateGeminiAssistant(UserAppRepository $userRepo, EntityManagerInterface $em): UserApp
+    {
+        $assistantEmail = (string) ($_ENV['GEMINI_ASSISTANT_EMAIL'] ?? 'gemini.bot@ecoadventure.local');
+        $assistant = $userRepo->findOneBy(['email' => $assistantEmail]);
+        if ($assistant instanceof UserApp) {
+            return $assistant;
+        }
+
+        $assistant = new UserApp();
+        $assistant->setNom('Assistant');
+        $assistant->setPrenom('Groq');
+        $assistant->setEmail($assistantEmail);
+        $assistant->setRole(RoleUser::USER_SIMPLE);
+        $assistant->setMot_de_passe(password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT));
+        $assistant->setDate_creation(new \DateTime());
+        $assistant->setLast_seen(new \DateTime());
+
+        $em->persist($assistant);
+        $em->flush();
+
+        return $assistant;
     }
 }

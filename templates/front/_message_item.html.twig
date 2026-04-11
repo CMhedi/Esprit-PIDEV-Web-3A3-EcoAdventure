@@ -1,0 +1,183 @@
+{% set is_group_admin = current_conv is defined and current_conv and current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
+{% set is_mine = (message.userApp is defined and message.userApp and message.userApp.id_user == mon_id) %}
+{% set is_ai_author = message.userApp is defined and message.userApp and gemini_assistant_email is defined and message.userApp.email == gemini_assistant_email %}
+{% set msgType = message.type_message and message.type_message.value is defined ? message.type_message.value : (message.type_message ?? '') %}
+{% set rawContent = message.contenu ?? '' %}
+{% set hasUrlInText = rawContent matches '/(https?:\\/\\/|www\\.)\\S+/i' %}
+{% set isTextStyled = msgType in ['TEXTE', 'TEXT'] and not hasUrlInText %}
+
+<div class="d-flex {{ is_mine ? 'justify-content-end' : 'justify-content-start' }} mb-3 message-item" data-message-id="{{ message.id_message }}">
+    <div class="message-bubble {{ (is_mine and isTextStyled) ? 'message-sent shadow' : 'message-received shadow-sm' }}" style="position: relative;">
+        <div class="mb-2 fw-bold small text-muted">
+            {% if is_ai_author %}
+                <i class="bi bi-robot me-1 text-success"></i>Assistant IA Gemini
+            {% else %}
+                {{ message.userApp ? (message.userApp.nom ~ ' ' ~ message.userApp.prenom) : 'Utilisateur' }}
+            {% endif %}
+        </div>
+        {% set attachments = message.attachments|default([]) %}
+        {% set contentParts = rawContent ? rawContent|split('|', 2) : [''] %}
+        {% set mediaPath = attachments is empty ? (contentParts[0] ?? '') : '' %}
+        {% set mediaComment = attachments is empty ? (contentParts[1] ?? '') : rawContent %}
+        {% set mediaRelative = mediaPath starts with '/uploads/' ? mediaPath|slice(9) : '' %}
+        {% set mediaUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative}) : '' %}
+        {% set mediaDownloadUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative, 'download': 1}) : '' %}
+        {% set mediaFileName = mediaPath ? (mediaPath|split('/')|last) : 'fichier' %}
+        {% set mediaExt = mediaPath ? (mediaPath|split('.')|last|lower) : '' %}
+        {% set mediaParts = mediaPath ? mediaPath|split('/') : [] %}
+        {% set mediaFolder = mediaParts|length > 2 ? mediaParts[2]|lower : '' %}
+        {% set isVideoFile = (mediaFolder == 'video' and mediaFolder != 'vocale') or (mediaExt in ['mp4', 'mov', 'avi', 'mkv', 'webm'] and mediaFolder != 'vocale') %}
+        {% set isAudioFile = mediaFolder in ['audio', 'call', 'vocale'] or mediaExt in ['mp3', 'wav', 'm4a', 'ogg', 'aac', 'webm'] %}
+        {% set isImageFile = mediaFolder == 'images' or mediaExt in ['jpg', 'jpeg', 'png', 'webp', 'gif'] %}
+        {% set isPdfFile = (mediaFolder == 'files' and mediaExt == 'pdf') or mediaExt == 'pdf' %}
+        {% set reactions = message.reactions ?? {} %}
+        {% set reactionOptions = ['❤️'] %}
+        {% set userReaction = '' %}
+        {% for reactionEmoji in reactionOptions %}
+            {% if mon_id in (reactions[reactionEmoji]|default([])) %}
+                {% set userReaction = reactionEmoji %}
+            {% endif %}
+        {% endfor %}
+
+        {% if attachments is not empty %}
+            {% for attachment in attachments %}
+                {% set attachmentPath = attachment.path|default('') %}
+                {% set attachmentRelative = attachmentPath starts with '/uploads/' ? attachmentPath|slice(9) : '' %}
+                {% set attachmentRemoteUrl = attachmentPath starts with 'http' ? attachmentPath : '' %}
+                {% set attachmentUrl = attachmentRemoteUrl ?: (attachmentRelative ? path('app_media_file', {'file': attachmentRelative}) : '') %}
+                {% set attachmentDownloadUrl = attachmentRemoteUrl ?: (attachmentRelative ? path('app_media_file', {'file': attachmentRelative, 'download': 1}) : '') %}
+                {% set attachmentName = attachment.name|default(attachmentPath ? (attachmentPath|split('/')|last) : 'fichier') %}
+                {% set attachmentMime = attachment.mime|default('') %}
+                {% set attachmentType = attachment.type|default('') %}
+                <div class="mb-2">
+                    {% if attachmentType in ['AUDIO', 'VOCALE', 'APPEL_AUDIO'] or attachmentMime starts with 'audio/' %}
+                        <div class="voice-message-card js-open-media" data-media-url="{{ attachmentUrl }}" data-media-kind="audio" title="Double-clic pour ouvrir">
+                            <span class="voice-message-time" data-voice-time>0:00</span>
+                            <div class="voice-wave" aria-hidden="true">
+                                <span></span><span></span><span></span><span></span><span></span>
+                                <span></span><span></span><span></span><span></span><span></span><span></span>
+                            </div>
+                            <button type="button" class="voice-play-btn" data-voice-play>
+                                <i class="bi bi-play-fill"></i>
+                            </button>
+                            <audio class="d-none" preload="metadata">
+                                <source src="{{ attachmentUrl }}">
+                            </audio>
+                        </div>
+                    {% elseif attachmentType in ['VIDEO', 'APPEL_VIDEO'] or attachmentMime starts with 'video/' %}
+                        <video controls class="rounded chat-video-inline js-open-media" data-media-url="{{ attachmentUrl }}" data-media-kind="video" title="Double-clic pour ouvrir">
+                            <source src="{{ attachmentUrl }}">
+                        </video>
+                    {% elseif attachmentType in ['IMAGE', 'GIF'] or attachmentMime starts with 'image/' %}
+                        <img src="{{ attachmentUrl }}" alt="media" class="img-fluid rounded js-open-media" data-media-url="{{ attachmentUrl }}" data-media-kind="image" style="max-height: 220px; cursor: zoom-in;" title="Double-clic pour ouvrir">
+                    {% elseif attachmentType == 'PDF' or attachmentMime == 'application/pdf' %}
+                        <a href="{{ attachmentDownloadUrl }}" class="btn btn-sm btn-light border" download="{{ attachmentName }}" target="_blank" rel="noopener">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> {{ attachmentName }}
+                        </a>
+                    {% else %}
+                        <a href="{{ attachmentDownloadUrl }}" class="text-decoration-underline" download="{{ attachmentName }}" target="_blank" rel="noopener">{{ attachmentName }}</a>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            {% if mediaComment is not empty %}
+                <div class="mt-2 js-linkify">{{ mediaComment }}</div>
+            {% endif %}
+        {% elseif mediaUrl %}
+            {% if isAudioFile or msgType in ['AUDIO', 'APPEL_AUDIO', 'VOCALE'] %}
+                <div class="voice-message-card js-open-media" data-media-url="{{ mediaUrl }}" data-media-kind="audio" title="Double-clic pour ouvrir">
+                    <span class="voice-message-time" data-voice-time>0:00</span>
+                    <div class="voice-wave" aria-hidden="true">
+                        <span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <button type="button" class="voice-play-btn" data-voice-play>
+                        <i class="bi bi-play-fill"></i>
+                    </button>
+                    <audio class="d-none" preload="metadata">
+                        <source src="{{ mediaUrl }}">
+                    </audio>
+                </div>
+            {% elseif isVideoFile or msgType in ['VIDEO', 'APPEL_VIDEO'] %}
+                <video controls class="rounded chat-video-inline js-open-media" data-media-url="{{ mediaUrl }}" data-media-kind="video" title="Double-clic pour ouvrir">
+                    <source src="{{ mediaUrl }}">
+                </video>
+                <div>
+                    <button type="button" class="btn btn-sm btn-light border video-open-btn" data-video-src="{{ mediaUrl }}">
+                        <i class="bi bi-arrows-fullscreen me-1"></i> Ouvrir video
+                    </button>
+                </div>
+            {% elseif isImageFile or msgType in ['IMAGE', 'GIF'] %}
+                <img src="{{ mediaUrl }}" alt="media" class="img-fluid rounded js-open-media" data-media-url="{{ mediaUrl }}" data-media-kind="image" style="max-height: 220px; cursor: zoom-in;" title="Double-clic pour ouvrir">
+            {% elseif isPdfFile or msgType == 'PDF' %}
+                <a href="{{ mediaDownloadUrl }}" class="btn btn-sm btn-light border" download="{{ mediaFileName }}" target="_blank" rel="noopener">
+                    <i class="bi bi-file-earmark-pdf me-1"></i> {{ mediaFileName }}
+                </a>
+            {% else %}
+                <a href="{{ mediaDownloadUrl }}" class="text-decoration-underline" download="{{ mediaFileName }}" target="_blank" rel="noopener">{{ mediaFileName }}</a>
+            {% endif %}
+
+            {% if mediaComment is not empty %}
+                <div class="mt-2 js-linkify">{{ mediaComment }}</div>
+            {% endif %}
+        {% else %}
+            <div class="js-linkify">{{ rawContent }}</div>
+        {% endif %}
+
+        <div class="message-reactions" data-message-id="{{ message.id_message }}" data-react-url="{{ path('app_message_react', {'id_message': message.id_message, 'id_user': mon_id}) }}">
+            {% for reactionEmoji in reactionOptions %}
+                {% set reactionCount = (reactions[reactionEmoji]|default([]))|length %}
+                <button type="button"
+                        class="reaction-btn {{ userReaction == reactionEmoji ? 'active' : '' }}"
+                        data-emoji="{{ reactionEmoji }}">
+                    {{ reactionEmoji }} <span class="reaction-label">J'adore</span> <span data-count>{{ reactionCount }}</span>
+                </button>
+            {% endfor %}
+        </div>
+
+        <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <span class="time-stamp {{ (is_mine and isTextStyled) ? 'text-white-50' : 'text-muted' }}">
+                    {{ message.date_envoi ? message.date_envoi|date('H:i') : '' }}
+                    {% if is_mine %}
+                        <span class="message-checkmarks">
+                            {% if message.date_lecture %}
+                                <span class="checkmark read">✓✓</span>
+                                <span class="read-time {{ is_mine ? 'text-white-50' : 'text-muted' }}">{{ message.date_lecture|date('H:i') }}</span>
+                            {% else %}
+                                <span class="checkmark">✓✓</span>
+                            {% endif %}
+                        </span>
+                    {% endif %}
+                </span>
+                {% if message.date_modifier %}
+                    <div class="small {{ (is_mine and isTextStyled) ? 'text-white-50' : 'text-muted' }}" style="font-size: 0.75rem; margin-top: 2px;">
+                        <span class="badge {{ (is_mine and isTextStyled) ? 'bg-secondary' : 'bg-light text-dark' }}">Modifié</span>
+                        {{ message.date_modifier|date('H:i') }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if is_mine or is_group_admin %}
+            <div class="message-actions-hover">
+                {% if is_mine %}
+                    <button type="button" class="btn btn-link btn-sm p-0 text-success me-2" onclick="toggleEditForm({{ message.id_message }});">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                {% endif %}
+                <a href="{{ path('app_delete_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation, 'id_message': message.id_message}) }}" class="btn btn-link btn-sm p-0 text-danger" title="Supprimer">
+                    <i class="bi bi-trash"></i>
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if is_mine %}
+    <form id="edit-form-{{ message.id_message }}" action="{{ path('app_edit_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation, 'id_message': message.id_message}) }}" method="post" class="mb-3 d-none">
+        <div class="input-group">
+            <input type="text" name="edited_message" class="form-control" value="{{ message.contenu }}" required>
+            <button type="submit" class="btn btn-success btn-sm">Enregistrer</button>
+        </div>
+    </form>
+{% endif %}

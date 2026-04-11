@@ -21,7 +21,7 @@ class Message
     #[Assert\NotNull(message: "Le type de message est obligatoire.")]
     private ?TypeMessage $type_message = null;
 
-    #[ORM\Column(type: 'string', length: 2000, nullable: true)]
+    #[ORM\Column(type: 'string', length: 10000, nullable: true)]
     #[Assert\Length(
         max: 2000,
         maxMessage: "Le contenu ne peut pas dépasser {{ limit }} caractères."
