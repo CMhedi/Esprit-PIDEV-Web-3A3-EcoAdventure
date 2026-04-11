@@ -5,6 +5,12 @@ parameters:
     messages_upload_directory: '%env(default:default_messages_upload_directory:MESSAGES_UPLOAD_DIRECTORY)%'
     activite_resv_image_directory: '%kernel.project_dir%/public/ActivieResvImage'
     activite_resv_image_public_path: 'ActivieResvImage'
+    default_pack_holiday_country: 'TN'
+    pack_holiday_country: '%env(default:default_pack_holiday_country:PACK_HOLIDAY_COUNTRY)%'
+    default_openai_api_key: ''
+    openai_api_key: '%env(default:default_openai_api_key:OPENAI_API_KEY)%'
+    default_openai_model: 'gpt-4o-mini'
+    openai_model: '%env(default:default_openai_model:OPENAI_MODEL)%'
 
 services:
     _defaults:
@@ -17,3 +23,17 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+
+    App\Service\Context\HolidayContextProvider:
+        arguments:
+            $countryCode: '%pack_holiday_country%'
+
+    App\Service\AI\AiPackExplainer:
+        arguments:
+            $apiKey: '%openai_api_key%'
+            $model: '%openai_model%'
+
+    App\Service\AI\AiAdminSynthesizer:
+        arguments:
+            $apiKey: '%openai_api_key%'
+            $model: '%openai_model%'

@@ -6,6 +6,7 @@ use App\Entity\Inscription;
 use App\Entity\Pack;
 use App\Form\PackType;
 use App\Repository\PackRepository;
+use App\Service\Pack\PackInsightAssembler;
 use Doctrine\ORM\EntityManagerInterface;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -22,13 +23,19 @@ final class PackAdminController extends AbstractController
     public function packs(
         Request $request,
         PackRepository $packRepository,
-        SessionInterface $session
+        SessionInterface $session,
+        PackInsightAssembler $packInsightAssembler
     ): Response {
         $search = $request->query->get('search');
         $sort = $request->query->get('sort');
 
         $packs = $packRepository->findForAdmin($search, $sort);
         $totalPacks = $packRepository->countAllPacks();
+        $packInsights = $packInsightAssembler->buildInsights($packs);
+        $topPromising = array_slice(array_values($packInsights), 0, 3);
+        $averagePackScore = $packInsights === []
+            ? 0.0
+            : array_sum(array_map(static fn ($insight): float => $insight->getScore(), array_values($packInsights))) / count($packInsights);
 
         $deleteCaptcha = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
         $deleteAllCaptcha = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
@@ -38,6 +45,9 @@ final class PackAdminController extends AbstractController
 
         return $this->render('admin/packs/index.html.twig', [
             'packs' => $packs,
+            'packInsights' => $packInsights,
+            'topPromising' => $topPromising,
+            'averagePackScore' => round($averagePackScore, 1),
             'search' => $search,
             'sort' => $sort,
             'totalPacks' => $totalPacks,
@@ -215,12 +225,14 @@ public function editPack(
     }
 
     #[Route('/admin/packs/export/pdf', name: 'app_admin_packs_export_pdf', methods: ['GET'])]
-    public function exportPdf(PackRepository $packRepository): Response
+    public function exportPdf(PackRepository $packRepository, PackInsightAssembler $packInsightAssembler): Response
     {
         $packs = $packRepository->findAllForPdf();
+        $packInsights = $packInsightAssembler->buildInsights($packs);
 
         $html = $this->renderView('admin/packs/pdf.html.twig', [
             'packs' => $packs,
+            'packInsights' => $packInsights,
             'dateExport' => new \DateTime()
         ]);
 

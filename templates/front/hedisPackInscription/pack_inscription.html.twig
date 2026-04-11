@@ -21,6 +21,17 @@
                     <span class="pack-type-chip">{{ pack.typePack }}</span>
                     <h1 class="pack-title mt-3">{{ pack.nom }}</h1>
 
+                    {% if packInsight %}
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <span class="badge rounded-pill text-bg-dark">
+                                Score {{ packInsight.score|number_format(1, '.', ' ') }}/100
+                            </span>
+                            {% for badge in packInsight.badges %}
+                                <span class="badge rounded-pill text-bg-light border">{{ badge }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
                     <div class="pack-price-zone mt-4">
                         <div class="pack-price-main">
                             {{ pack.prixBase|number_format(2, '.', ' ') }} DT
@@ -51,6 +62,17 @@
                             <span><i class="bi bi-check-circle me-2"></i>Statut</span>
                             <strong>{{ pack.statutPack }}</strong>
                         </div>
+
+                        {% if packInsight %}
+                            <div class="mt-3 pt-3 border-top">
+                                <div class="small text-uppercase text-muted mb-2">Pourquoi ce pack ressort</div>
+                                <ul class="small text-muted mb-0 ps-3">
+                                    {% for reason in packInsight.reasons %}
+                                        <li>{{ reason|capitalize }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -61,6 +83,41 @@
                     <p class="form-subtitle">
                         Votre compte connecte sera utilise automatiquement pour cette inscription.
                     </p>
+
+                    {% if packExplanation %}
+                        <div class="alert alert-info rounded-4 shadow-sm">
+                            <strong>Analyse intelligente :</strong> {{ packExplanation }}
+                        </div>
+                    {% endif %}
+
+                    {% if holidayContext.available %}
+                        <div class="alert alert-warning rounded-4 shadow-sm">
+                            <strong>Contexte calendrier :</strong>
+                            {{ holidayContext.name }} dans {{ holidayContext.daysUntil }} jour{{ holidayContext.daysUntil > 1 ? 's' : '' }}.
+                            {{ holidayContext.message }}
+                        </div>
+                    {% endif %}
+
+                    {% if alternativePack %}
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body">
+                                <div class="small text-uppercase text-muted mb-2">Alternative recommandée</div>
+                                <h3 class="h5 mb-2">{{ alternativePack.pack.nom }}</h3>
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <span class="badge rounded-pill text-bg-dark">
+                                        {{ alternativePack.recommendationScore|number_format(1, '.', ' ') }}/100
+                                    </span>
+                                    {% for badge in alternativePack.badges %}
+                                        <span class="badge rounded-pill text-bg-light border">{{ badge }}</span>
+                                    {% endfor %}
+                                </div>
+                                <p class="text-muted small mb-3">{{ alternativePack.reasons|join(', ')|capitalize }}.</p>
+                                <a href="{{ path('app_pack_inscription', {'id': alternativePack.pack.idPack}) }}" class="btn btn-sm btn-dark rounded-pill">
+                                    Consulter cette alternative
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
 
                     {{ form_start(form) }}
                         <div class="row g-3 mb-3">
@@ -102,6 +159,12 @@
                             <a href="{{ path('app_packs') }}" class="btn btn-eco-outline rounded-pill px-4 py-2">
                                 Retour aux packs
                             </a>
+
+                            {% if latestInscription %}
+                                <a href="{{ path('app_pack_inscription_receipt', {'id': latestInscription.idInscription}) }}" class="btn btn-dark rounded-pill px-4 py-2">
+                                    Télécharger le reçu PDF
+                                </a>
+                            {% endif %}
                         </div>
                     {{ form_end(form) }}
                 </div>

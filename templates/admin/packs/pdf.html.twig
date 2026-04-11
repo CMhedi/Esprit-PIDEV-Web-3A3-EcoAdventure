@@ -332,11 +332,13 @@
                         <th>Réduction</th>
                         <th>Prix final</th>
                         <th>Nb activités</th>
+                        <th>Score</th>
                         <th>Statut</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for pack in packs %}
+                        {% set insight = packInsights[pack.idPack] ?? null %}
                         <tr>
                             <td>
                                 <div class="pack-name">{{ pack.nom }}</div>
@@ -346,6 +348,7 @@
                             <td>{{ pack.reduction }} DT</td>
                             <td><span class="price-main">{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</span></td>
                             <td>{{ pack.nbActivitesMax }}</td>
+                            <td>{{ insight ? insight.score|number_format(1, '.', ' ') ~ '/100' : '-' }}</td>
                             <td>
                                 {% if pack.statutPack|lower in ['actif', 'active', 'disponible'] %}
                                     <span class="badge badge-active">{{ pack.statutPack }}</span>
@@ -364,7 +367,8 @@
             <p class="summary-text">
                 Les packs présentés dans ce rapport constituent l’offre actuellement enregistrée sur la plateforme EcoAdventure.
                 Ce document peut être utilisé comme support de pilotage pour le suivi commercial, la vérification administrative
-                et la préparation des décisions liées à la mise à jour de l’offre.
+                et la préparation des décisions liées à la mise à jour de l’offre. Les scores ajoutés dans ce rapport sont calculés
+                dynamiquement à partir des activités liées, de l’historique d’inscriptions et des signaux d’intérêt existants.
             </p>
         </div>
     {% else %}

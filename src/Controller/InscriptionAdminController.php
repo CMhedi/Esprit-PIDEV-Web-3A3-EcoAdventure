@@ -3,6 +3,11 @@
 namespace App\Controller;
 
 use App\Repository\InscriptionRepository;
+use App\Repository\PackRepository;
+use App\Service\AI\AiAdminSynthesizer;
+use App\Service\Context\HolidayContextProvider;
+use App\Service\Inscription\InscriptionAnalyticsBuilder;
+use App\Service\Pack\PackInsightAssembler;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,15 +17,35 @@ use Symfony\Component\Routing\Attribute\Route;
 final class InscriptionAdminController extends AbstractController
 {
     #[Route('/admin/inscriptions', name: 'app_admin_inscriptions', methods: ['GET'])]
-    public function inscriptions(Request $request, InscriptionRepository $inscriptionRepository): Response
+    public function inscriptions(
+        Request $request,
+        InscriptionRepository $inscriptionRepository,
+        PackRepository $packRepository,
+        PackInsightAssembler $packInsightAssembler,
+        InscriptionAnalyticsBuilder $inscriptionAnalyticsBuilder,
+        AiAdminSynthesizer $aiAdminSynthesizer,
+        HolidayContextProvider $holidayContextProvider
+    ): Response
     {
         $search = $request->query->get('search');
 
         $inscriptions = $inscriptionRepository->findForAdmin($search);
         $totalInscriptions = $inscriptionRepository->countAllInscriptions();
+        $packInsights = $packInsightAssembler->buildInsights($packRepository->findAll());
+        $analytics = $inscriptionAnalyticsBuilder->build($inscriptions, $packInsights);
+        $priorityMap = [];
+
+        foreach ($analytics['priority_views'] as $priorityView) {
+            $priorityMap[$priorityView->getInscription()->getIdInscription()] = $priorityView;
+        }
 
         return $this->render('admin/inscriptions/InscriptionPacks.html.twig', [
             'inscriptions' => $inscriptions,
+            'priorityMap' => $priorityMap,
+            'analyticsSummary' => $analytics['summary'],
+            'analyticsSegments' => $analytics['segments'],
+            'summaryNarrative' => $aiAdminSynthesizer->summarizeInscriptions($analytics['summary']),
+            'holidayContext' => $holidayContextProvider->getContext(),
             'search' => $search,
             'totalInscriptions' => $totalInscriptions
         ]);

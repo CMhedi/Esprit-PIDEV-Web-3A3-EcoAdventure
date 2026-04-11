@@ -48,4 +48,19 @@ class InscriptionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    public function findLatestForUserAndPack(int $userId, int $packId): ?Inscription
+    {
+        return $this->createQueryBuilder('i')
+            ->leftJoin('i.userApp', 'u')
+            ->leftJoin('i.pack', 'p')
+            ->andWhere('u.id_user = :userId')
+            ->andWhere('p.id_pack = :packId')
+            ->setParameter('userId', $userId)
+            ->setParameter('packId', $packId)
+            ->orderBy('i.date_inscription', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }
