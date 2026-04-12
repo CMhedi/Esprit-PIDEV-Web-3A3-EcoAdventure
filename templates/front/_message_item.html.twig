@@ -20,8 +20,9 @@
         {% set mediaPath = attachments is empty ? (contentParts[0] ?? '') : '' %}
         {% set mediaComment = attachments is empty ? (contentParts[1] ?? '') : rawContent %}
         {% set mediaRelative = mediaPath starts with '/uploads/' ? mediaPath|slice(9) : '' %}
-        {% set mediaUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative}) : '' %}
-        {% set mediaDownloadUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative, 'download': 1}) : '' %}
+        {% set mediaRemoteUrl = mediaPath starts with 'http' ? mediaPath : '' %}
+        {% set mediaUrl = mediaRemoteUrl ?: (mediaRelative ? path('app_media_by_path', {'path': mediaPath}) : '') %}
+        {% set mediaDownloadUrl = mediaRemoteUrl ?: (mediaRelative ? path('app_media_by_path', {'path': mediaPath, 'download': 1}) : '') %}
         {% set mediaFileName = mediaPath ? (mediaPath|split('/')|last) : 'fichier' %}
         {% set mediaExt = mediaPath ? (mediaPath|split('.')|last|lower) : '' %}
         {% set mediaParts = mediaPath ? mediaPath|split('/') : [] %}
@@ -44,8 +45,8 @@
                 {% set attachmentPath = attachment.path|default('') %}
                 {% set attachmentRelative = attachmentPath starts with '/uploads/' ? attachmentPath|slice(9) : '' %}
                 {% set attachmentRemoteUrl = attachmentPath starts with 'http' ? attachmentPath : '' %}
-                {% set attachmentUrl = attachmentRemoteUrl ?: (attachmentRelative ? path('app_media_file', {'file': attachmentRelative}) : '') %}
-                {% set attachmentDownloadUrl = attachmentRemoteUrl ?: (attachmentRelative ? path('app_media_file', {'file': attachmentRelative, 'download': 1}) : '') %}
+                {% set attachmentUrl = attachmentRemoteUrl ?: (attachmentRelative ? path('app_media_by_path', {'path': attachmentPath}) : '') %}
+                {% set attachmentDownloadUrl = attachmentRemoteUrl ?: (attachmentRelative ? path('app_media_by_path', {'path': attachmentPath, 'download': 1}) : '') %}
                 {% set attachmentName = attachment.name|default(attachmentPath ? (attachmentPath|split('/')|last) : 'fichier') %}
                 {% set attachmentMime = attachment.mime|default('') %}
                 {% set attachmentType = attachment.type|default('') %}

@@ -32,7 +32,9 @@ class MessagerieController extends AbstractController
     ): Response {
         $sessionUser = $this->getUser();
         if ($sessionUser instanceof UserApp) {
-            return $this->redirectToRoute('app_messagerie_auto', ['id_user' => $sessionUser->getId_user()]);
+            // Always open the user-style messenger from the navbar icon,
+            // even for admins (admin keeps back-office messenger via admin routes/menu).
+            return $this->redirectToRoute('app_messagerie', ['id_user' => $sessionUser->getId_user()]);
         }
 
         $this->addFlash('error', 'Connectez-vous d\'abord pour ouvrir la messagerie.');
@@ -354,6 +356,9 @@ class MessagerieController extends AbstractController
         $uploadedFiles = $request->files->all('mediaFiles');
         $textContent = trim($request->request->get('message', ''));
         $gifUrl = trim((string) $request->request->get('gif_url', ''));
+        $vocalBlobBase64 = trim((string) $request->request->get('vocal_blob_base64', ''));
+        $vocalBlobMime = trim((string) $request->request->get('vocal_blob_mime', 'audio/webm'));
+        $vocalBlobName = trim((string) $request->request->get('vocal_blob_name', 'vocale-' . time() . '.webm'));
         $isRecordedVocale = $request->request->getBoolean('is_recorded_vocale', false);
         $uploadedFiles = array_values(array_filter(is_array($uploadedFiles) ? $uploadedFiles : ($uploadedFiles ? [$uploadedFiles] : [])));
 
@@ -473,6 +478,47 @@ class MessagerieController extends AbstractController
             }
         }
 
+        // Fallback mobile: vocal en base64 quand l'input file n'est pas supporte
+        if ($vocalBlobBase64 !== '' && empty($uploadedFiles)) {
+            $baseUploadDir = rtrim((string) $this->getParameter('messages_upload_directory'), '/\\');
+            $targetFolder = 'Vocale';
+            $targetUploadDir = $baseUploadDir . DIRECTORY_SEPARATOR . $targetFolder;
+
+            if (!is_dir($targetUploadDir)) {
+                mkdir($targetUploadDir, 0775, true);
+            }
+
+            $decoded = base64_decode($vocalBlobBase64, true);
+            if ($decoded === false || $decoded === '') {
+                $this->addFlash('error', 'Enregistrement vocal invalide.');
+                return $this->redirectToRoute('app_messagerie_selected', [
+                    'id_user' => $id_user,
+                    'id_conversation' => $id_conversation
+                ]);
+            }
+
+            $safeBase = preg_replace('/[^a-zA-Z0-9_-]+/', '-', pathinfo($vocalBlobName, PATHINFO_FILENAME) ?: 'vocale');
+            $extension = str_contains(strtolower($vocalBlobMime), 'ogg') ? 'ogg' : 'webm';
+            $newFilename = $safeBase . '-' . uniqid() . '.' . $extension;
+            $targetPath = $targetUploadDir . DIRECTORY_SEPARATOR . $newFilename;
+
+            if (@file_put_contents($targetPath, $decoded) === false) {
+                $this->addFlash('error', 'Impossible d\'enregistrer le message vocal.');
+                return $this->redirectToRoute('app_messagerie_selected', [
+                    'id_user' => $id_user,
+                    'id_conversation' => $id_conversation
+                ]);
+            }
+
+            $message->setType_message(TypeMessage::VOCALE);
+            $message->setAttachments([[
+                'path' => '/uploads/' . $targetFolder . '/' . $newFilename,
+                'name' => $vocalBlobName,
+                'mime' => $vocalBlobMime,
+                'type' => TypeMessage::VOCALE->value,
+            ]]);
+        }
+
         // Gestion du texte (commentaire éventuel)
         if (!empty($textContent)) {
             if (!empty($uploadedFiles) || $gifUrl !== '') {
@@ -483,7 +529,7 @@ class MessagerieController extends AbstractController
                     $message->setType_message(TypeMessage::EMOJI);
                 }
             }
-        } elseif (empty($uploadedFiles) && $gifUrl === '') {
+        } elseif (empty($uploadedFiles) && $gifUrl === '' && $vocalBlobBase64 === '') {
             $this->addFlash('error', 'Vous ne pouvez pas envoyer un message vide.');
             return $this->redirectToRoute('app_messagerie_selected', [
                 'id_user' => $id_user,
@@ -756,6 +802,34 @@ public function callLog(
     #[Route('/media-file/{file}', name: 'app_media_file', requirements: ['file' => '.+'])]
     public function mediaFile(string $file, Request $request): Response
     {
+        $response = $this->buildMediaResponse($file, $request);
+        $disposition = $request->query->getBoolean('download', false)
+            ? ResponseHeaderBag::DISPOSITION_ATTACHMENT
+            : ResponseHeaderBag::DISPOSITION_INLINE;
+        $response->setContentDisposition($disposition, basename($response->getFile()->getPathname()));
+        return $response;
+    }
+
+    #[Route('/media', name: 'app_media_by_path', methods: ['GET'])]
+    public function mediaByPath(Request $request): Response
+    {
+        $path = (string) $request->query->get('path', '');
+        if ($path === '') {
+            throw $this->createNotFoundException('Fichier introuvable.');
+        }
+
+        $relative = str_starts_with($path, '/uploads/') ? substr($path, 9) : ltrim($path, '/');
+        $response = $this->buildMediaResponse($relative, $request);
+        $disposition = $request->query->getBoolean('download', false)
+            ? ResponseHeaderBag::DISPOSITION_ATTACHMENT
+            : ResponseHeaderBag::DISPOSITION_INLINE;
+        $response->setContentDisposition($disposition, basename($response->getFile()->getPathname()));
+
+        return $response;
+    }
+
+    private function buildMediaResponse(string $file, Request $request): BinaryFileResponse
+    {
         $baseDir = rtrim((string) $this->getParameter('messages_upload_directory'), '/\\');
         $relative = ltrim(str_replace('\\', '/', $file), '/');
 
@@ -774,12 +848,7 @@ public function callLog(
             throw $this->createNotFoundException('Fichier introuvable.');
         }
 
-        $response = new BinaryFileResponse($resolvedPath);
-        $disposition = $request->query->getBoolean('download', false)
-            ? ResponseHeaderBag::DISPOSITION_ATTACHMENT
-            : ResponseHeaderBag::DISPOSITION_INLINE;
-        $response->setContentDisposition($disposition, basename($resolvedPath));
-        return $response;
+        return new BinaryFileResponse($resolvedPath);
     }
 
     private function isEmojiOnlyMessage(string $text): bool

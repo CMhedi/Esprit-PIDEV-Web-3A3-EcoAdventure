@@ -5,6 +5,8 @@ namespace App\Enum;
 enum TypeMessage: string
 {
     case TEXTE = 'TEXTE';
+    // Backward compatibility for legacy DB rows using TEXT
+    case TEXT = 'TEXT';
     case EMOJI = 'EMOJI';
        case VOCALE = 'VOCALE';
     case IMAGE = 'IMAGE';
