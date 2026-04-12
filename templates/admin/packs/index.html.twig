@@ -1,0 +1,1257 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Gestion des Packs{% endblock %}
+{% block page_title %}Gestion des Packs{% endblock %}
+
+{% block body %}
+{% set packCount = packs|length %}
+{% set chartPalette = ['#2D5A27', '#3B82F6', '#F28C28', '#0F766E', '#7C3AED', '#EC4899', '#DC2626'] %}
+{% set activeStatuses = ['actif', 'active', 'disponible'] %}
+{% set typeStats = {} %}
+{% set activeCount = 0 %}
+{% set totalActivitiesCapacity = 0 %}
+{% set maxActivities = 0 %}
+{% set topCapacityPack = null %}
+
+{% for pack in packs %}
+    {% set typeKey = pack.typePack ? pack.typePack : 'Non défini' %}
+    {% set typeStats = typeStats|merge({ (typeKey): (typeStats[typeKey]|default(0)) + 1 }) %}
+    {% set totalActivitiesCapacity = totalActivitiesCapacity + pack.nbActivitesMax %}
+
+    {% if pack.statutPack|lower in activeStatuses %}
+        {% set activeCount = activeCount + 1 %}
+    {% endif %}
+
+    {% if pack.nbActivitesMax > maxActivities %}
+        {% set maxActivities = pack.nbActivitesMax %}
+        {% set topCapacityPack = pack.nom %}
+    {% endif %}
+{% endfor %}
+
+{% set inactiveCount = packCount - activeCount %}
+{% set averageActivities = packCount ? (totalActivitiesCapacity / packCount) : 0 %}
+{% set typeChartItems = [] %}
+
+{% for label, count in typeStats %}
+    {% set typeChartItems = typeChartItems|merge([{
+        label: label,
+        count: count,
+        ratio: packCount ? ((count / packCount) * 100) : 0,
+        color: chartPalette[loop.index0 % (chartPalette|length)]
+    }]) %}
+{% endfor %}
+
+<style>
+    .packs-page {
+        --eco-primary: #2D5A27;
+        --eco-secondary: #F28C28;
+        --eco-accent: #3B82F6;
+        --eco-dark: #374151;
+        --eco-light: #F9FAFB;
+        --eco-border: #d9e3d7;
+        --eco-success: #2D5A27;
+        --eco-danger: #dc2626;
+        --eco-warning: #F28C28;
+        --eco-muted: #6b7280;
+        position: relative;
+    }
+
+    .packs-page::before,
+    .packs-page::after {
+        content: "";
+        position: fixed;
+        z-index: 0;
+        border-radius: 50%;
+        filter: blur(70px);
+        opacity: 0.14;
+        pointer-events: none;
+    }
+.btn-chart-pack {
+    background: linear-gradient(135deg, #6c5ce7, #8e44ad);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-weight: 600;
+    box-shadow: 0 10px 20px rgba(108, 92, 231, 0.20);
+    transition: 0.25s ease;
+}
+
+.btn-chart-pack:hover {
+    transform: translateY(-2px);
+    color: #fff;
+}
+    .packs-page::before {
+        width: 240px;
+        height: 240px;
+        top: 120px;
+        right: 30px;
+        background: linear-gradient(135deg, var(--eco-primary), var(--eco-accent));
+    }
+
+    .packs-page::after {
+        width: 220px;
+        height: 220px;
+        bottom: 40px;
+        left: 20px;
+        background: linear-gradient(135deg, var(--eco-secondary), var(--eco-accent));
+    }
+
+    .packs-page > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .packs-page .hero-box,
+    .packs-page .toolbar-box,
+    .packs-page .table-box,
+    .packs-page .chart-box {
+        background: linear-gradient(145deg, rgba(249,250,251,0.98), rgba(255,255,255,0.98));
+        border: 1px solid var(--eco-border);
+        border-radius: 24px;
+        box-shadow:
+            0 18px 38px rgba(45, 90, 39, 0.08),
+            0 4px 10px rgba(55, 65, 81, 0.04);
+        overflow: hidden;
+    }
+
+    .packs-page .hero-box {
+        padding: 32px;
+        margin-bottom: 26px;
+        position: relative;
+    }
+
+    .packs-page .hero-box::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at top right, rgba(59,130,246,0.10), transparent 30%),
+            radial-gradient(circle at bottom left, rgba(242,140,40,0.10), transparent 28%);
+        pointer-events: none;
+    }
+
+    .packs-page .hero-title {
+        font-size: 1.9rem;
+        font-weight: 900;
+        color: var(--eco-dark);
+        margin-bottom: 10px;
+        line-height: 1.2;
+    }
+
+    .packs-page .hero-text {
+        color: var(--eco-muted);
+        font-size: 1rem;
+        margin-bottom: 0;
+        max-width: 760px;
+    }
+
+    .packs-page .mini-stat {
+        min-width: 185px;
+        background: linear-gradient(135deg, rgba(45,90,39,0.10), rgba(59,130,246,0.08));
+        border: 1px solid rgba(45,90,39,0.12);
+        border-radius: 18px;
+        padding: 18px 20px;
+    }
+
+    .packs-page .mini-stat span {
+        display: block;
+        font-size: 0.92rem;
+        color: var(--eco-muted);
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+
+    .packs-page .mini-stat strong {
+        font-size: 1.55rem;
+        color: var(--eco-primary);
+        font-weight: 900;
+    }
+
+    .packs-page .flash-wrap {
+        margin-bottom: 18px;
+    }
+
+    .packs-page .alert {
+        border: none;
+        border-radius: 16px;
+    }
+
+    .packs-page .toolbar-box {
+        padding: 24px;
+        margin-bottom: 26px;
+    }
+
+    .packs-page .section-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--eco-dark);
+        margin-bottom: 4px;
+    }
+
+    .packs-page .section-subtitle {
+        color: var(--eco-muted);
+        margin-bottom: 0;
+    }
+
+    .packs-page .form-label {
+        color: var(--eco-dark);
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .packs-page .form-control,
+    .packs-page .form-select {
+        min-height: 52px;
+        border-radius: 15px;
+        border: 1px solid #d7dfdc;
+        background: #fff;
+        color: var(--eco-dark);
+        padding-left: 16px;
+        box-shadow: none;
+        transition: all 0.25s ease;
+    }
+
+    .packs-page .form-control::placeholder {
+        color: #9aa3af;
+    }
+
+    .packs-page .form-control:focus,
+    .packs-page .form-select:focus {
+        border-color: var(--eco-accent);
+        box-shadow: 0 0 0 0.22rem rgba(59, 130, 246, 0.14);
+        transform: translateY(-1px);
+    }
+
+    .packs-page .btn {
+        border-radius: 15px;
+        font-weight: 800;
+        padding: 11px 18px;
+        transition: all 0.25s ease;
+    }
+
+    .packs-page .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .packs-page .btn-eco-main {
+        background: linear-gradient(135deg, var(--eco-primary), #3f7a38);
+        color: #fff;
+        border: none;
+        box-shadow: 0 12px 24px rgba(45, 90, 39, 0.20);
+    }
+
+    .packs-page .btn-eco-main:hover {
+        color: #fff;
+    }
+
+    .packs-page .btn-eco-outline {
+        background: #fff;
+        color: var(--eco-primary);
+        border: 1px solid #bfd0bc;
+    }
+
+    .packs-page .btn-eco-outline:hover {
+        background: #f3f7f2;
+        color: var(--eco-primary);
+    }
+
+    .packs-page .btn-eco-pdf {
+        background: linear-gradient(135deg, var(--eco-accent), #2563eb);
+        color: #fff;
+        border: none;
+        box-shadow: 0 12px 24px rgba(59, 130, 246, 0.18);
+    }
+
+    .packs-page .btn-eco-pdf:hover {
+        color: #fff;
+    }
+
+    .packs-page .btn-eco-delete-all {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #fff;
+        border: none;
+    }
+
+    .packs-page .btn-eco-delete-all:hover {
+        color: #fff;
+    }
+
+    .packs-page .table-box {
+        padding: 18px;
+    }
+
+    .packs-page .packs-content-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(340px, 0.95fr);
+        gap: 24px;
+        align-items: start;
+    }
+
+    .packs-page .packs-list-column,
+    .packs-page .packs-chart-column {
+        min-width: 0;
+    }
+
+    .packs-page.js-animated [data-reveal-panel] {
+        opacity: 0;
+        transform: translateY(22px);
+        transition:
+            opacity 0.65s ease,
+            transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .packs-page.js-animated [data-reveal-panel].is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .packs-page .chart-box {
+        position: sticky;
+        top: 100px;
+        padding: 24px;
+        overflow: hidden;
+    }
+
+    .packs-page .chart-box::before,
+    .packs-page .chart-box::after {
+        content: "";
+        position: absolute;
+        pointer-events: none;
+        border-radius: 50%;
+    }
+
+    .packs-page .chart-box::before {
+        width: 240px;
+        height: 240px;
+        top: -120px;
+        right: -80px;
+        background: radial-gradient(circle, rgba(59,130,246,0.16), transparent 68%);
+    }
+
+    .packs-page .chart-box::after {
+        width: 220px;
+        height: 220px;
+        bottom: -120px;
+        left: -60px;
+        background: radial-gradient(circle, rgba(242,140,40,0.16), transparent 68%);
+    }
+
+    .packs-page .chart-box > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .packs-page .chart-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(45,90,39,0.10);
+        color: var(--eco-primary);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .packs-page .chart-title {
+        font-size: 1.35rem;
+        font-weight: 900;
+        color: var(--eco-dark);
+        margin: 14px 0 8px;
+        line-height: 1.25;
+    }
+
+    .packs-page .chart-subtitle {
+        color: var(--eco-muted);
+        margin-bottom: 0;
+        line-height: 1.7;
+    }
+
+    .packs-page .chart-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(59,130,246,0.10);
+        color: var(--eco-accent);
+        font-size: 0.84rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .packs-page .chart-visual-shell {
+        display: grid;
+        gap: 22px;
+        margin-top: 24px;
+    }
+
+    .packs-page .chart-ring-panel {
+        padding: 22px;
+        border-radius: 22px;
+        border: 1px solid rgba(217, 227, 215, 0.92);
+        background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(249,250,251,0.98));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.86);
+    }
+
+    .packs-page .chart-ring-wrap {
+        position: relative;
+        width: 250px;
+        height: 250px;
+        margin: 0 auto 20px;
+        display: grid;
+        place-items: center;
+    }
+
+    .packs-page .chart-ring-wrap::before,
+    .packs-page .chart-ring-wrap::after {
+        content: "";
+        position: absolute;
+        inset: 14px;
+        border-radius: 50%;
+        border: 1px dashed rgba(59,130,246,0.16);
+        pointer-events: none;
+    }
+
+    .packs-page .chart-ring-wrap::after {
+        inset: 34px;
+        border-color: rgba(45,90,39,0.12);
+    }
+
+    .packs-page .chart-ring {
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        position: relative;
+        display: grid;
+        place-items: center;
+        background: conic-gradient(rgba(226,232,240,0.88) 0deg 360deg);
+        box-shadow:
+            0 18px 34px rgba(45,90,39,0.10),
+            inset 0 0 0 1px rgba(255,255,255,0.75);
+        transition: transform 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .packs-page .chart-box:hover .chart-ring {
+        transform: translateY(-4px) scale(1.01);
+        box-shadow:
+            0 22px 40px rgba(45,90,39,0.14),
+            inset 0 0 0 1px rgba(255,255,255,0.82);
+    }
+
+    .packs-page .chart-ring::before {
+        content: "";
+        position: absolute;
+        inset: 22px;
+        border-radius: 50%;
+        background:
+            radial-gradient(circle at top, rgba(255,255,255,0.98), rgba(249,250,251,0.94)),
+            linear-gradient(180deg, #ffffff, #f8fafc);
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.95),
+            0 10px 22px rgba(59,130,246,0.08);
+    }
+
+    .packs-page .chart-ring-core {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+        text-align: center;
+    }
+
+    .packs-page .chart-ring-core span {
+        display: block;
+        color: var(--eco-muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .packs-page .chart-ring-core strong {
+        display: block;
+        font-size: 2.3rem;
+        line-height: 1;
+        color: var(--eco-dark);
+        font-weight: 900;
+    }
+
+    .packs-page .chart-ring-core small {
+        display: block;
+        margin-top: 10px;
+        color: var(--eco-primary);
+        font-size: 0.9rem;
+        font-weight: 800;
+    }
+
+    .packs-page .chart-focus-card {
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(45,90,39,0.10), rgba(59,130,246,0.08));
+        border: 1px solid rgba(45,90,39,0.12);
+    }
+
+    .packs-page .chart-focus-card span {
+        display: block;
+        color: var(--eco-muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .packs-page .chart-focus-card strong {
+        display: block;
+        color: var(--eco-dark);
+        font-size: 1.05rem;
+        font-weight: 900;
+    }
+
+    .packs-page .chart-focus-card small {
+        display: block;
+        margin-top: 6px;
+        color: var(--eco-primary);
+        font-weight: 700;
+    }
+
+    .packs-page .chart-legend-stack {
+        display: grid;
+        gap: 12px;
+    }
+
+    .packs-page .chart-legend-item {
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(217, 227, 215, 0.92);
+        background: rgba(255,255,255,0.84);
+        box-shadow: 0 10px 20px rgba(55, 65, 81, 0.04);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .packs-page .chart-legend-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 24px rgba(55, 65, 81, 0.07);
+    }
+
+    .packs-page .chart-legend-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .packs-page .chart-legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--legend-color, var(--eco-accent));
+        box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.10);
+        flex: 0 0 auto;
+    }
+
+    .packs-page .chart-legend-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .packs-page .chart-legend-copy strong {
+        display: block;
+        color: var(--eco-dark);
+        font-size: 0.98rem;
+        font-weight: 800;
+        line-height: 1.3;
+    }
+
+    .packs-page .chart-legend-copy small {
+        display: block;
+        margin-top: 4px;
+        color: var(--eco-muted);
+        font-weight: 600;
+    }
+
+    .packs-page .chart-legend-percent {
+        color: var(--eco-dark);
+        font-size: 0.92rem;
+        font-weight: 900;
+    }
+
+    .packs-page .chart-track {
+        margin-top: 12px;
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(226,232,240,0.95);
+        overflow: hidden;
+    }
+
+    .packs-page .chart-fill {
+        display: block;
+        width: var(--legend-ratio, 0%);
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--legend-color, var(--eco-accent)), rgba(255,255,255,0.92));
+        transform: scaleX(1);
+        transform-origin: left center;
+    }
+
+    .packs-page.js-animated .chart-fill {
+        transform: scaleX(0);
+        transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .packs-page .chart-box.is-visible .chart-fill {
+        transform: scaleX(1);
+    }
+
+    .packs-page .chart-metric-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .packs-page .chart-metric-card {
+        padding: 16px 16px 14px;
+        border-radius: 18px;
+        border: 1px solid rgba(217, 227, 215, 0.92);
+        background: rgba(255,255,255,0.86);
+        box-shadow: 0 10px 18px rgba(55, 65, 81, 0.04);
+    }
+
+    .packs-page .chart-metric-card span {
+        display: block;
+        color: var(--eco-muted);
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .packs-page .chart-metric-card strong {
+        display: block;
+        color: var(--eco-dark);
+        font-size: 1.45rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .packs-page .chart-metric-card small {
+        display: block;
+        margin-top: 8px;
+        color: var(--eco-muted);
+        font-weight: 600;
+    }
+
+    .packs-page .accent-green {
+        background: linear-gradient(135deg, rgba(45,90,39,0.10), rgba(255,255,255,0.92));
+    }
+
+    .packs-page .accent-blue {
+        background: linear-gradient(135deg, rgba(59,130,246,0.10), rgba(255,255,255,0.92));
+    }
+
+    .packs-page .accent-orange {
+        background: linear-gradient(135deg, rgba(242,140,40,0.12), rgba(255,255,255,0.92));
+    }
+
+    .packs-page .chart-empty-state {
+        margin-top: 24px;
+        padding: 26px;
+        border-radius: 20px;
+        text-align: center;
+        background: linear-gradient(145deg, #ffffff, #f9fafb);
+        border: 1px dashed #cdd8cb;
+    }
+
+    .packs-page .chart-empty-state i {
+        font-size: 2.8rem;
+        color: var(--eco-accent);
+        display: inline-flex;
+        width: 78px;
+        height: 78px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin-bottom: 16px;
+        background: linear-gradient(135deg, rgba(59,130,246,0.10), rgba(242,140,40,0.10));
+    }
+
+    .packs-page .chart-empty-state h6 {
+        color: var(--eco-dark);
+        font-size: 1.05rem;
+        font-weight: 900;
+        margin-bottom: 8px;
+    }
+
+    .packs-page .chart-empty-state p {
+        color: var(--eco-muted);
+        margin-bottom: 0;
+        line-height: 1.7;
+    }
+
+    .packs-page .table-wrap {
+        border-radius: 22px;
+        overflow: hidden;
+        border: 1px solid #e4ece3;
+        background: #fff;
+    }
+
+    .packs-page .table {
+        margin-bottom: 0;
+    }
+
+    .packs-page .table thead th {
+        border: none;
+        background: linear-gradient(135deg, #eef6ee, #f9fafb);
+        color: var(--eco-dark);
+        font-weight: 800;
+        font-size: 0.95rem;
+        padding: 18px 16px;
+        white-space: nowrap;
+    }
+
+    .packs-page .table tbody td {
+        padding: 18px 16px;
+        vertical-align: middle;
+        border-color: #edf2ef;
+        color: #46505e;
+    }
+
+    .packs-page .table tbody tr {
+        transition: all 0.25s ease;
+    }
+
+    .packs-page .table tbody tr:hover {
+        background: linear-gradient(135deg, rgba(45,90,39,0.03), rgba(59,130,246,0.03));
+    }
+
+    .packs-page .pack-name {
+        font-weight: 900;
+        color: var(--eco-dark);
+        font-size: 1rem;
+    }
+
+    .packs-page .price-main {
+        color: var(--eco-secondary);
+        font-weight: 900;
+        font-size: 1rem;
+    }
+
+    .packs-page .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        border-radius: 999px;
+        font-size: 0.84rem;
+        font-weight: 800;
+    }
+
+    .packs-page .status-badge::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .packs-page .status-active {
+        background: rgba(45, 90, 39, 0.12);
+        color: var(--eco-success);
+    }
+
+    .packs-page .status-active::before {
+        background: var(--eco-success);
+    }
+
+    .packs-page .status-inactive {
+        background: rgba(55, 65, 81, 0.12);
+        color: var(--eco-dark);
+    }
+
+    .packs-page .status-inactive::before {
+        background: var(--eco-dark);
+    }
+
+    .packs-page .action-zone {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .packs-page .action-btn {
+        border-radius: 14px;
+        font-weight: 800;
+        padding: 9px 15px;
+        min-width: 120px;
+    }
+
+    .packs-page .btn-warning.action-btn {
+        background: linear-gradient(135deg, #f7b34d, var(--eco-secondary));
+        border: none;
+        color: #fff !important;
+    }
+
+    .packs-page .btn-danger.action-btn {
+        border: none;
+    }
+
+    .packs-page .delete-pack-form,
+    .packs-page .delete-all-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .packs-page .delete-inline-captcha {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid #d7dfdc;
+        border-radius: 14px;
+        padding: 8px 10px;
+    }
+
+    .packs-page .captcha-mini-label {
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: var(--eco-dark);
+    }
+
+    .packs-page .captcha-mini-code {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 82px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--eco-dark), #4b5563);
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 900;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+
+    .packs-page .captcha-mini-input {
+        min-height: 40px;
+        min-width: 120px;
+        max-width: 140px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        padding-left: 10px;
+    }
+
+    .packs-page .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: linear-gradient(145deg, #ffffff, var(--eco-light));
+        border-radius: 24px;
+    }
+
+    .packs-page .empty-state i {
+        font-size: 3.2rem;
+        color: var(--eco-primary);
+        display: inline-flex;
+        width: 88px;
+        height: 88px;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(45,90,39,0.10), rgba(59,130,246,0.08));
+        border-radius: 50%;
+        margin-bottom: 18px;
+    }
+
+    .packs-page .empty-state h4 {
+        color: var(--eco-dark);
+        font-weight: 900;
+    }
+
+    @media (max-width: 991px) {
+        .packs-page .packs-content-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .packs-page .chart-box {
+            position: relative;
+            top: 0;
+        }
+
+        .packs-page .chart-metric-row {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .packs-page .hero-title {
+            font-size: 1.55rem;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .packs-page .hero-box,
+        .packs-page .toolbar-box {
+            padding: 20px;
+        }
+
+        .packs-page .table thead th,
+        .packs-page .table tbody td {
+            padding: 14px 12px;
+        }
+
+        .packs-page .chart-box {
+            padding: 20px;
+        }
+
+        .packs-page .chart-ring-panel {
+            padding: 18px;
+        }
+
+        .packs-page .chart-ring-wrap {
+            width: 220px;
+            height: 220px;
+        }
+
+        .packs-page .chart-ring {
+            width: 190px;
+            height: 190px;
+        }
+
+        .packs-page .chart-ring::before {
+            inset: 18px;
+        }
+
+        .packs-page .chart-metric-row {
+            grid-template-columns: 1fr;
+        }
+
+        .packs-page .action-zone,
+        .packs-page .delete-pack-form,
+        .packs-page .delete-all-form,
+        .packs-page .delete-inline-captcha {
+            width: 100%;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .packs-page .action-btn,
+        .packs-page .captcha-mini-input {
+            width: 100%;
+            max-width: 100%;
+            min-width: unset;
+        }
+    }
+</style>
+
+<div class="packs-page">
+
+    <div class="hero-box">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-4">
+            <div>
+                <h3 class="hero-title">Administration des Packs EcoAdventure</h3>
+                <p class="hero-text">
+                    Gérez les packs enregistrés dans la base de données, recherchez rapidement,
+                    triez les résultats, modifiez, supprimez ou exportez la liste complète en PDF.
+                </p>
+            </div>
+
+            <div class="d-flex flex-wrap gap-3">
+                <div class="mini-stat">
+                    <span>Total des packs</span>
+                    <strong>{{ totalPacks }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flash-wrap">
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+
+        {% for message in app.flashes('danger') %}
+            <div class="alert alert-danger">{{ message }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="toolbar-box">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+            <div>
+                <h5 class="section-title">Liste des packs</h5>
+                <p class="section-subtitle">Recherche, tri, modification, suppression et export PDF.</p>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ path('app_admin_dashboard') }}" class="btn btn-eco-outline">
+                    <i class="bi bi-arrow-left me-1"></i> Retour
+                </a>
+
+                <a href="{{ path('app_admin_pack_new') }}" class="btn btn-eco-main">
+                <i class="bi bi-plus-circle me-1"></i> Ajouter un pack</a>
+
+                <a href="{{ path('app_admin_packs_export_pdf') }}" class="btn btn-eco-pdf">
+                    <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+                </a>
+
+                <form method="post"
+                      action="{{ path('app_admin_pack_delete_all') }}"
+                      onsubmit="return confirm('Voulez-vous vraiment supprimer tous les packs ? Cette action est irréversible.');"
+                      class="delete-all-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete_all_packs') }}">
+
+                    <div class="delete-inline-captcha">
+                        <span class="captcha-mini-label">Captcha</span>
+                        <span class="captcha-mini-code">{{ deleteAllCaptcha }}</span>
+                        <input type="text"
+                               name="delete_all_captcha"
+                               class="form-control captcha-mini-input"
+                               placeholder="Recopier"
+                               required>
+                    </div>
+
+                    <button type="submit" class="btn btn-eco-delete-all">
+                        <i class="bi bi-trash3 me-1"></i> Supprimer tout
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <form method="get" action="{{ path('app_admin_packs') }}">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-6">
+                    <label class="form-label">Recherche</label>
+                    <input
+                        type="text"
+                        name="search"
+                        class="form-control"
+                        placeholder="Rechercher par nom, type ou statut..."
+                        value="{{ search|default('') }}"
+                    >
+                </div>
+
+                <div class="col-lg-3">
+                    <label class="form-label">Tri</label>
+                    <select name="sort" class="form-select">
+                        <option value="">Tri par défaut</option>
+                        <option value="nom_desc" {{ sort == 'nom_desc' ? 'selected' : '' }}>Nom Z-A</option>
+                        <option value="prix_asc" {{ sort == 'prix_asc' ? 'selected' : '' }}>Prix croissant</option>
+                        <option value="prix_desc" {{ sort == 'prix_desc' ? 'selected' : '' }}>Prix décroissant</option>
+                        <option value="reduction_desc" {{ sort == 'reduction_desc' ? 'selected' : '' }}>Réduction max</option>
+                        <option value="activites_desc" {{ sort == 'activites_desc' ? 'selected' : '' }}>Plus d'activités</option>
+                        <option value="statut_asc" {{ sort == 'statut_asc' ? 'selected' : '' }}>Statut</option>
+                        <option value="popular_desc" {{ sort == 'popular_desc' ? 'selected' : '' }}>Populaire</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-eco-main w-100">
+                        <i class="bi bi-search me-1"></i> Rechercher
+                    </button>
+
+                    <a href="{{ path('app_admin_packs') }}" class="btn btn-eco-outline w-100">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="packs-content-grid">
+        <div class="packs-list-column">
+            <div class="table-box" data-reveal-panel="list">
+        {% if packs|length > 0 %}
+            <div class="table-wrap">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Pack</th>
+                                <th>Type</th>
+                                <th>Prix</th>
+                                <th>Réduction</th>
+                                <th>Prix final</th>
+                                <th>Nb activités</th>
+                                <th>Statut</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pack in packs %}
+                                <tr>
+                                    <td>
+                                        <div class="pack-name">{{ pack.nom }}</div>
+                                    </td>
+
+                                    <td>{{ pack.typePack }}</td>
+                                    <td>{{ pack.prixBase }} DT</td>
+                                    <td>{{ pack.reduction }} DT</td>
+                                    <td><span class="price-main">{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</span></td>
+                                    <td>{{ pack.nbActivitesMax }}</td>
+
+                                    <td>
+                                        {% if pack.statutPack|lower in ['actif', 'active', 'disponible'] %}
+                                            <span class="status-badge status-active">{{ pack.statutPack }}</span>
+                                        {% else %}
+                                            <span class="status-badge status-inactive">{{ pack.statutPack }}</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <div class="action-zone">
+                                            <a href="{{ path('app_admin_pack_edit', {id: pack.idPack}) }}"
+                                            class="btn action-btn btn-warning"> <i class="bi bi-pencil-square me-1"></i> Modifier
+                                            </a>
+                                            
+
+                                            <form method="post"
+                                                  action="{{ path('app_admin_pack_delete', {id: pack.idPack}) }}"
+                                                  onsubmit="return confirm('Voulez-vous vraiment supprimer le pack : {{ pack.nom|e('js') }} ?');"
+                                                  class="delete-pack-form">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete_pack_' ~ pack.idPack) }}">
+
+                                                <div class="delete-inline-captcha">
+                                                    <span class="captcha-mini-label">Captcha</span>
+                                                    <span class="captcha-mini-code">{{ deleteCaptcha }}</span>
+                                                    <input type="text"
+                                                           name="delete_captcha"
+                                                           class="form-control captcha-mini-input"
+                                                           placeholder="Recopier"
+                                                           required>
+                                                </div>
+
+                                                <button type="submit" class="btn btn-danger action-btn">
+                                                    <i class="bi bi-trash me-1"></i> Supprimer
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-box-seam"></i>
+                <h4 class="fw-bold">Aucun pack trouvé</h4>
+                <p class="text-muted mb-4">
+                    Aucun résultat ne correspond à votre recherche ou aucun pack n'existe dans la base.
+                </p>
+                <a href="{{ path('app_admin_pack_new') }}" class="btn btn-eco-main">
+                    <i class="bi bi-plus-circle me-1"></i> Ajouter un premier pack
+                </a>
+            </div>
+        {% endif %}
+            </div>
+        </div>
+
+        <aside class="packs-chart-column">
+            <div class="chart-box"
+                 data-reveal-panel="chart"
+                 data-pack-chart='{{ typeChartItems|json_encode|e('html_attr') }}'
+                 data-pack-total="{{ packCount }}">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                    <div>
+                        <span class="chart-kicker">
+                            <i class="bi bi-stars"></i>
+                            Lecture visuelle
+                        </span>
+                        <h5 class="chart-title">Répartition des packs par type</h5>
+                        <p class="chart-subtitle">
+                            Cette carte complète la liste actuelle avec une lecture visuelle rapide,
+                            élégante et directement liée aux packs affichés.
+                        </p>
+                    </div>
+
+                    <span class="chart-chip">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        {{ packCount }} pack{{ packCount > 1 ? 's' : '' }}
+                    </span>
+                </div>
+
+                {% if packCount > 0 %}
+                    <div class="chart-visual-shell">
+                        <div class="chart-ring-panel">
+                            <div class="chart-ring-wrap">
+                                <div class="chart-ring" data-chart-ring></div>
+                                <div class="chart-ring-core">
+                                    <span>Total affiché</span>
+                                    <strong>{{ packCount }}</strong>
+                                    <small>{{ typeChartItems|length }} type{{ typeChartItems|length > 1 ? 's' : '' }}</small>
+                                </div>
+                            </div>
+
+                            <div class="chart-focus-card">
+                                <span>Capacité maximale repérée</span>
+                                <strong>{{ topCapacityPack ? topCapacityPack : 'Aucun pack' }}</strong>
+                                <small>{{ maxActivities }} activité{{ maxActivities > 1 ? 's' : '' }} max</small>
+                            </div>
+                        </div>
+
+                        <div class="chart-legend-stack">
+                            {% for item in typeChartItems %}
+                                <div class="chart-legend-item"
+                                     style="--legend-color: {{ item.color }}; --legend-ratio: {{ item.ratio|round(2) }}%;">
+                                    <div class="chart-legend-head">
+                                        <span class="chart-legend-dot"></span>
+
+                                        <div class="chart-legend-copy">
+                                            <strong>{{ item.label }}</strong>
+                                            <small>{{ item.count }} pack{{ item.count > 1 ? 's' : '' }}</small>
+                                        </div>
+
+                                        <span class="chart-legend-percent">{{ item.ratio|round }}%</span>
+                                    </div>
+
+                                    <div class="chart-track">
+                                        <span class="chart-fill"></span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="chart-metric-row">
+                        <div class="chart-metric-card accent-green">
+                            <span>Statuts actifs</span>
+                            <strong>{{ activeCount }}</strong>
+                            <small>Packs disponibles ou actifs</small>
+                        </div>
+
+                        <div class="chart-metric-card accent-blue">
+                            <span>Autres statuts</span>
+                            <strong>{{ inactiveCount }}</strong>
+                            <small>Résultats hors statut actif</small>
+                        </div>
+
+                        <div class="chart-metric-card accent-orange">
+                            <span>Moyenne activités</span>
+                            <strong>{{ averageActivities|number_format(1, '.', ' ') }}</strong>
+                            <small>Capacité moyenne par pack</small>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="chart-empty-state">
+                        <i class="bi bi-pie-chart"></i>
+                        <h6>Chart indisponible pour le moment</h6>
+                        <p>
+                            Ajoutez ou recherchez des packs pour voir apparaître une lecture
+                            visuelle professionnelle de leur répartition.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+
+</div>
+<script src="{{ asset('assets/js/admin-packs-index.js') }}"></script>
+{% endblock %}

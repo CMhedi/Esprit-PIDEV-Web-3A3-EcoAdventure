@@ -1,22 +1,27 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{% block html_lang %}fr{% endblock %}">
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}EcoAdventure{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('assets/css/ecoadventure.css') }}">
+    <link href="https://unpkg.com/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/ecoadventure.css') }}?v=20260412">
 
     {% block css %}{% endblock %}
+    {% block stylesheets %}{% endblock %}
+    {% block head_extra %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
 
+{% block navbar %}
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top custom-navbar">
     <div class="container">
         <a class="navbar-brand fw-bold brand-text" href="{{ path('app_home') }}">
-            <i class="bi bi-tree-fill me-2 text-success"></i>Eco<span>Adventure</span>
+            <i class="bi bi-tree-fill me-2"></i>Eco<span>Adventure</span>
         </a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
@@ -26,93 +31,116 @@
         <div class="collapse navbar-collapse" id="mainNav">
             <ul class="navbar-nav mx-auto">
                 <li class="nav-item"><a class="nav-link" href="{{ path('app_home') }}">Accueil</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ path('app_events') }}">Événements</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ path('app_event_front_index') }}">Événements</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ path('app_activitefront') }}">Activités</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ path('app_mes_reservations') }}">Mes Réservations</a></li>
+                <li class="nav-item">
+<a class="nav-link"  href="{{ path('app_reclamation_index') }}">
+        Réclamations
+    </a>
+</li>
                 <li class="nav-item"><a class="nav-link" href="{{ path('app_packs') }}">Packs</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ path('app_user_seances') }}">Séances</a></li>
+{% if app.user and app.user.role.value == 'COACH' %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_coach_seances') }}">
+            Mes Séances
+        </a>
+    </li>
+{% endif %}
                 <li class="nav-item"><a class="nav-link" href="#">Coachs</a></li>
                 <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
             </ul>
 
-            <div class="d-flex align-items-center gap-3">
-                {% set currentSessionUserId = app.session.get('current_user_id') %}
-                {% set currentSessionUserName = app.session.get('current_user_name') %}
-                {# --- L'ICÔNE DE MESSAGERIE --- #}
-                <div class="position-relative me-2">
-    <a href="{{ path('app_messagerie_open') }}" class="btn btn-link text-success fs-4 p-0 border-0 text-decoration-none" title="Ouvrir la messagerie">
-        <i class="bi bi-chat-text-fill"></i>
-        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-    </a>
-</div>
+<div class="d-flex align-items-center gap-3">
+    {% if app.user and app.user.role.value == 'ADMIN' %}
+        <a href="{{ path('app_admin_dashboard') }}" class="btn btn-outline-dark rounded-pill px-3 py-1">
+            <i class="bi bi-speedometer2 me-1"></i> Back to Admin
+        </a>
+    {% endif %}
+    <div class="position-relative me-2">
+        <a href="{{ app.user ? path('app_messagerie_open') : path('app_login') }}" class="btn btn-link text-success fs-4 p-0 border-0 text-decoration-none" title="Ouvrir la messagerie">
+            <i class="bi bi-chat-text-fill"></i>
+            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+        </a>
+    </div>
 
-                {% if currentSessionUserId %}
-                    <span class="text-muted small">{{ currentSessionUserName ?: 'Compte connecté' }}</span>
-                    <a href="{{ path('app_logout') }}" class="btn btn-outline-success rounded-pill px-4">Déconnexion</a>
-                {% else %}
-                    <a href="{{ path('app_login') }}" class="btn btn-outline-success rounded-pill px-4">Connexion</a>
-                    <a href="#" class="btn btn-eco rounded-pill px-4 text-white">S'inscrire</a>
-                {% endif %}
-            </div>
+<div class="d-flex align-items-center gap-3">
+    {% if app.user %}
+        <div class="dropdown">
+            {# 1. El Button: Thabbet f'el data-bs-toggle #}
+            <a class="btn btn-light rounded-pill dropdown-toggle d-flex align-items-center gap-2 border shadow-sm" 
+               href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle fs-5 text-success"></i>
+                <span class="fw-semibold">{{ app.user.prenom }}</span>
+            </a>
+
+            {# 2. El Menu: El class dropdown-menu lezim tkoun maktouba s7i7a #}
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="dropdownMenuLink">
+                <li>
+                    <a class="dropdown-item py-2" href="{{ path('app_profile_index') }}">
+                        <i class="bi bi-person me-2"></i>Mon Profil
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item py-2 text-danger" href="{{ path('app_logout') }}">
+                        <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+                    </a>
+                </li>
+            </ul>
+        </div>
+    {% else %}
+        <a href="{{ path('app_login') }}" class="btn btn-outline-success rounded-pill px-4">Connexion</a>
+        <a href="{{ path('app_register') }}" class="btn btn-success rounded-pill px-4 text-white">S'inscrire</a>
+    {% endif %}
+</div>
         </div>
     </div>
 </nav>
-
-{% for message in app.flashes('error') %}
-    <div class="container mt-3">
-        <div class="alert alert-danger mb-0">{{ message }}</div>
-    </div>
-{% endfor %}
+{% endblock %}
 
 {% block body %}{% endblock %}
 
-{# Supprime l'ancien modal et garde celui-ci #}
-<div class="modal fade" id="userSelectModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title"><i class="bi bi-person-badge me-2"></i>Connexion au Chat</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                {# Affichage des erreurs flash si l'ID n'existe pas #}
-                {% for message in app.flashes('error') %}
-                    <div class="alert alert-danger small p-2">{{ message }}</div>
-                {% endfor %}
-
-                <label class="form-label text-muted small fw-bold">ID UTILISATEUR (XAMPP) :</label>
-                <div class="input-group mb-3">
-                    <span class="input-group-text bg-light text-success fw-bold">#</span>
-                    <input type="number" id="userInputId" class="form-control" placeholder="Ex: 1, 2, 5..." value="1">
+{% block footer %}
+<footer class="footer-eco text-white mt-5">
+    <div class="footer-overlay py-5">
+        <div class="container">
+            <div class="row g-4 align-items-start">
+                <div class="col-lg-4">
+                    <h4 class="fw-bold">EcoAdventure</h4>
+                    <p>
+                        Votre agence d'activites et d'evenements sportifs en pleine nature.
+                    </p>
                 </div>
-
-                <div class="mt-3">
-                    <div class="form-text small">
-                        <i class="bi bi-info-circle me-1"></i>
-                        <span>Connexion automatique : L'interface sera choisie selon votre rôle (Admin ou Utilisateur)</span>
+                <div class="col-lg-4">
+                    <h5>Liens utiles</h5>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="{{ path('app_home') }}">Accueil</a></li>
+                        <li><a href="{{ path('app_event_front_index') }}">Événements</a></li>
+                        <li><a href="{{ path('app_activitefront') }}">Activités</a></li>
+                        <li><a href="{{ path('app_mes_reservations') }}">Mes Réservations</a></li>
+                        
+                        <li><a href="{{ path('app_packs') }}">Packs</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4">
+                    <h5>Suivez-nous</h5>
+                    <div class="d-flex gap-3 fs-4">
+                        <a href="#"><i class="bi bi-facebook"></i></a>
+                        <a href="#"><i class="bi bi-instagram"></i></a>
+                        <a href="#"><i class="bi bi-twitter-x"></i></a>
+                        <a href="#"><i class="bi bi-youtube"></i></a>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Fermer</button>
-                <button type="button" class="btn btn-success rounded-pill px-4 shadow-sm" onclick="goToMessenger()">Se connecter</button>
-            </div>
         </div>
     </div>
-</div>
+</footer>
+{% endblock %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-function goToMessenger() {
-    const userId = document.getElementById('userInputId').value;
-    
-    if (userId.trim() !== "") {
-        // Redirige vers la route automatique qui vérifiera le rôle
-        window.location.href = "/messagerie/auto/" + userId;
-    } else {
-        alert("Veuillez entrer un ID valide !");
-    }
-}
-</script>
-
 {% block js %}{% endblock %}
+{% block javascripts %}{% endblock %}
 </body>
 </html>

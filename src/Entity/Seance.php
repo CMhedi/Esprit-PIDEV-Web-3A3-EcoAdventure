@@ -5,11 +5,13 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-
 use App\Repository\SeanceRepository;
 use App\Enum\StatutSeance;
 use App\Entity\Planning;
 use App\Entity\UserApp;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
+
 #[ORM\Entity(repositoryClass: SeanceRepository::class)]
 #[ORM\Table(name: 'seance')]
 class Seance
@@ -17,161 +19,146 @@ class Seance
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    private ?int $id_seance = null;
+    private ?int $idSeance = null;
 
-    public function getId_seance(): ?int
-    {
-        return $this->id_seance;
-    }
+    #[ORM\Column(type: 'string', length: 100)]
+    #[Assert\NotBlank(message: "Nom obligatoire")]
+    #[Assert\Length(min: 3, minMessage: "Minimum 3 caractères")]
+    private ?string $nom = null;
 
-    public function setId_seance(int $id_seance): self
-    {
-        $this->id_seance = $id_seance;
-        return $this;
-    }
+    #[ORM\Column(name: 'date_seance', type: 'date')]
+    #[Assert\NotBlank(message: "Date obligatoire")]
+    #[Assert\Type(\DateTimeInterface::class)]
+    private ?\DateTimeInterface $dateSeance = null;
 
-    #[ORM\Column(type: 'date', nullable: false)]
-    private ?\DateTimeInterface $date_seance = null;
+    #[ORM\Column(name: 'heure_debut', type: 'time')]
+    #[Assert\NotBlank(message: "Heure début obligatoire")]
+    private ?\DateTimeInterface $heureDebut = null;
 
-    public function getDate_seance(): ?\DateTimeInterface
-    {
-        return $this->date_seance;
-    }
+    #[ORM\Column(name: 'heure_fin', type: 'time')]
+    #[Assert\NotBlank(message: "Heure fin obligatoire")]
+    private ?\DateTimeInterface $heureFin = null;
 
-    public function setDate_seance(\DateTimeInterface $date_seance): self
-    {
-        $this->date_seance = $date_seance;
-        return $this;
-    }
-
-    #[ORM\Column(type: 'time', nullable: false)]
-    private ?string $heure_debut = null;
-
-    public function getHeure_debut(): ?string
-    {
-        return $this->heure_debut;
-    }
-
-    public function setHeure_debut(string $heure_debut): self
-    {
-        $this->heure_debut = $heure_debut;
-        return $this;
-    }
-
-    #[ORM\Column(type: 'time', nullable: false)]
-    private ?string $heure_fin = null;
-
-    public function getHeure_fin(): ?string
-    {
-        return $this->heure_fin;
-    }
-
-    public function setHeure_fin(string $heure_fin): self
-    {
-        $this->heure_fin = $heure_fin;
-        return $this;
-    }
-
-    #[ORM\Column(type: 'integer', nullable: false)]
+    #[ORM\Column(type: 'integer')]
+    #[Assert\NotBlank(message: "Capacité obligatoire")]
+    #[Assert\Positive(message: "Capacité doit être positive")]
     private ?int $capacite = null;
 
-    public function getCapacite(): ?int
-    {
-        return $this->capacite;
-    }
-
-    public function setCapacite(int $capacite): self
-    {
-        $this->capacite = $capacite;
-        return $this;
-    }
-
-
-
-#[ORM\Column(enumType: StatutSeance::class)]
-private ?StatutSeance $statut_seance = null;
-
-    public function getStatut_seance(): ?StatutSeance
-    {
-        return $this->statut_seance;
-    }
-
-    public function setStatut_seance(StatutSeance $statut_seance): self
-    {
-        $this->statut_seance = $statut_seance;
-        return $this;
-    }
+    #[ORM\Column(enumType: StatutSeance::class)]
+    #[Assert\NotNull(message: "Statut obligatoire")]
+    private ?StatutSeance $statutSeance = null;
 
     #[ORM\ManyToOne(targetEntity: Planning::class, inversedBy: 'seances')]
-    #[ORM\JoinColumn(name: 'id_planning', referencedColumnName: 'id_planning')]
+    #[ORM\JoinColumn(name: 'id_planning', referencedColumnName: 'id_planning', nullable: false)]
     private ?Planning $planning = null;
 
-    public function getPlanning(): ?Planning
-    {
-        return $this->planning;
-    }
-
-    public function setPlanning(?Planning $planning): self
-    {
-        $this->planning = $planning;
-        return $this;
-    }
-
     #[ORM\ManyToOne(targetEntity: UserApp::class, inversedBy: 'seances')]
-    #[ORM\JoinColumn(name: 'id_coach', referencedColumnName: 'id_user')]
-    private ?UserApp $userApp = null;
-
-    public function getUserApp(): ?UserApp
-    {
-        return $this->userApp;
-    }
-
-    public function setUserApp(?UserApp $userApp): self
-    {
-        $this->userApp = $userApp;
-        return $this;
-    }
-
-#[ORM\Column(type: 'string', length: 100)]
-private ?string $nom = null;
-
-    public function getNom(): ?string
-    {
-        return $this->nom;
-    }
-
-    public function setNom(string $nom): self
-    {
-        $this->nom = $nom;
-        return $this;
-    }
+    #[ORM\JoinColumn(name: 'id_coach', referencedColumnName: 'id_user', nullable: false)]
+    private ?UserApp $coach = null;
 
     #[ORM\OneToMany(targetEntity: ReservationSeance::class, mappedBy: 'seance')]
     private Collection $reservationSeances;
 
-    /**
-     * @return Collection<int, ReservationSeance>
-     */
-    public function getReservationSeances(): Collection
+    public function __construct()
     {
-        if (!$this->reservationSeances instanceof Collection) {
-            $this->reservationSeances = new ArrayCollection();
+        $this->reservationSeances = new ArrayCollection();
+    }
+
+    // =========================
+    // GETTERS / SETTERS
+    // =========================
+
+    public function getIdSeance(): ?int { return $this->idSeance; }
+
+    public function getNom(): ?string { return $this->nom; }
+    public function setNom(string $nom): self { $this->nom = $nom; return $this; }
+
+    public function getDateSeance(): ?\DateTimeInterface { return $this->dateSeance; }
+public function setDateSeance(?\DateTimeInterface $date): self
+{
+    $this->dateSeance = $date;
+    return $this;
+}
+
+    public function getHeureDebut(): ?\DateTimeInterface { return $this->heureDebut; }
+public function setHeureDebut(?\DateTimeInterface $heure): self
+{
+    $this->heureDebut = $heure;
+    return $this;
+}
+
+    public function getHeureFin(): ?\DateTimeInterface { return $this->heureFin; }
+public function setHeureFin(?\DateTimeInterface $heure): self
+{
+    $this->heureFin = $heure;
+    return $this;
+}
+
+    public function getCapacite(): ?int { return $this->capacite; }
+    public function setCapacite(int $capacite): self { $this->capacite = $capacite; return $this; }
+
+    public function getStatutSeance(): ?StatutSeance { return $this->statutSeance; }
+    public function setStatutSeance(StatutSeance $statut): self { $this->statutSeance = $statut; return $this; }
+
+    public function getPlanning(): ?Planning { return $this->planning; }
+    public function setPlanning(?Planning $planning): self { $this->planning = $planning; return $this; }
+
+    public function getCoach(): ?UserApp { return $this->coach; }
+    public function setCoach(?UserApp $coach): self { $this->coach = $coach; return $this; }
+
+    public function getReservationSeances(): Collection { return $this->reservationSeances; }
+
+    // =========================
+    // VALIDATION MÉTIER 🔥
+    // =========================
+
+    #[Assert\Callback]
+    public function validateSeance(ExecutionContextInterface $context): void
+    {
+        if (!$this->planning) return;
+
+        $today = new \DateTime('today');
+
+        // ❌ date passée
+        if ($this->dateSeance && $this->dateSeance < $today) {
+            $context->buildViolation("Séance dans le passé interdite")
+                ->atPath('dateSeance')
+                ->addViolation();
         }
-        return $this->reservationSeances;
-    }
 
-    public function addReservationSeance(ReservationSeance $reservationSeance): self
-    {
-        if (!$this->getReservationSeances()->contains($reservationSeance)) {
-            $this->getReservationSeances()->add($reservationSeance);
+        // ❌ planning archivé
+        if ($this->planning->getStatut()?->value === 'ARCHIVE') {
+            $context->buildViolation("Planning archivé")
+                ->addViolation();
         }
-        return $this;
-    }
 
-    public function removeReservationSeance(ReservationSeance $reservationSeance): self
-    {
-        $this->getReservationSeances()->removeElement($reservationSeance);
-        return $this;
-    }
+        // ❌ planning expiré
+        if ($this->planning->getDateFin() < $today) {
+            $context->buildViolation("Planning expiré")
+                ->addViolation();
+        }
 
+       // ❌ hors interval (VERSION CORRIGÉE)
+if ($this->dateSeance && $this->planning->getDateDebut() && $this->planning->getDateFin()) {
+
+    $dateSeance = (clone $this->dateSeance)->setTime(0, 0);
+    $dateDebut = (clone $this->planning->getDateDebut())->setTime(0, 0);
+    $dateFin = (clone $this->planning->getDateFin())->setTime(23, 59, 59);
+
+    if ($dateSeance < $dateDebut || $dateSeance > $dateFin) {
+        $context->buildViolation("La date doit être comprise entre le début et la fin du planning")
+            ->atPath('dateSeance')
+            ->addViolation();
+    }
+}
+
+        // ❌ heure fin < début
+        if ($this->heureDebut && $this->heureFin) {
+            if ($this->heureFin <= $this->heureDebut) {
+                $context->buildViolation("Heure fin doit être après début")
+                    ->atPath('heureFin')
+                    ->addViolation();
+            }
+        }
+    }
 }

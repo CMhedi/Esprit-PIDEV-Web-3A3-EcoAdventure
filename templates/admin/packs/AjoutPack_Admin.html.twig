@@ -1,0 +1,102 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Ajout Pack Admin{% endblock %}
+{% block page_title %}Ajout d’un Pack{% endblock %}
+
+{% block body %}
+<link rel="stylesheet" href="{{ asset('assets/css/ajout-pack-admin.css') }}">
+
+<div class="pack-add-page">
+    <div class="pack-add-hero">
+        <div class="pack-add-hero-content">
+            <span class="pack-add-badge">EcoAdventure • Administration</span>
+            <h2>Créer un nouveau pack</h2>
+            <p>
+                Ajoutez une nouvelle offre à votre plateforme avec une présentation moderne,
+                une saisie claire et des contrôles basés directement sur l’entité Pack.
+            </p>
+        </div>
+
+        <div class="pack-add-hero-card">
+            <div class="mini-label">Gestion</div>
+            <div class="mini-title">Ajout rapide</div>
+            <div class="mini-text">Créez des packs cohérents et prêts à être publiés.</div>
+        </div>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success custom-alert">{{ message }}</div>
+    {% endfor %}
+
+    {% for message in app.flashes('danger') %}
+        <div class="alert alert-danger custom-alert">{{ message }}</div>
+    {% endfor %}
+
+    <div class="pack-form-wrapper">
+        <div class="pack-form-header">
+            <div>
+                <h3>Formulaire d’ajout</h3>
+                <p>Complétez les informations du pack puis enregistrez-le dans la base.</p>
+            </div>
+
+            <a href="{{ path('app_admin_packs') }}" class="btn btn-pack-back">
+                <i class="bi bi-arrow-left me-1"></i> Retour à la liste
+            </a>
+        </div>
+
+        {{ form_start(form, {'attr': {'class': 'pack-form-grid'}}) }}
+
+            <div class="form-block">
+                {{ form_label(form.nom) }}
+                {{ form_widget(form.nom) }}
+                <div class="form-error">{{ form_errors(form.nom) }}</div>
+            </div>
+
+            <div class="form-block">
+                {{ form_label(form.typePack) }}
+                {{ form_widget(form.typePack) }}
+                <div class="form-error">{{ form_errors(form.typePack) }}</div>
+            </div>
+
+            <div class="form-block">
+                {{ form_label(form.prixBase) }}
+                <div class="input-with-unit">
+                    {{ form_widget(form.prixBase) }}
+                    <span>DT</span>
+                </div>
+                <div class="form-error">{{ form_errors(form.prixBase) }}</div>
+            </div>
+
+            <div class="form-block">
+                {{ form_label(form.reduction) }}
+                <div class="input-with-unit">
+                    {{ form_widget(form.reduction) }}
+                    <span>DT</span>
+                </div>
+                <div class="form-error">{{ form_errors(form.reduction) }}</div>
+            </div>
+
+            <div class="form-block">
+                {{ form_label(form.nbActivitesMax) }}
+                {{ form_widget(form.nbActivitesMax) }}
+                <div class="form-error">{{ form_errors(form.nbActivitesMax) }}</div>
+            </div>
+
+            <div class="form-block">
+                {{ form_label(form.statutPack) }}
+                {{ form_widget(form.statutPack) }}
+                <div class="form-error">{{ form_errors(form.statutPack) }}</div>
+            </div>
+
+            <div class="form-actions-full">
+                <a href="{{ path('app_admin_packs') }}" class="btn btn-pack-cancel">
+                    Annuler
+                </a>
+
+                {{ form_widget(form.save) }}
+            </div>
+
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

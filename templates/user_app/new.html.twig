@@ -1,0 +1,179 @@
+{# templates/user_app/new.html.twig #}
+
+{% extends is_granted('ROLE_ADMIN') ? 'admin/base_admin.html.twig' : 'base.html.twig' %}
+
+{% block title %}Nouveau Membre - EcoAdventure{% endblock %}
+{% block page_title %}Ajouter un utilisateur{% endblock %}
+
+{% block body %}
+<style>
+    .admin-new-wrapper {
+        padding: 40px 20px;
+        background: #f4f7f6; 
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+    }
+
+    .admin-glass-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 650px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .form-header-title {
+        color: #1e3a8a;
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 15px;
+    }
+
+    .btn-submit-custom {
+        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 30px;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+
+    .btn-submit-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 210, 255, 0.4);
+        color: white;
+    }
+
+    .form-label-bold {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #475569;
+        margin-bottom: 5px;
+    }
+
+    #coach_fields_container {
+        background: rgba(241, 245, 249, 0.7);
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 20px;
+        border: 1px dashed #3a7bd5;
+    }
+</style>
+
+<div class="admin-new-wrapper">
+    <div class="admin-glass-card">
+        <div class="form-header-title">
+            <i class="bi bi-person-plus-fill me-2"></i>Créer un nouveau membre
+        </div>
+
+        {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label-bold">Nom</label>
+                    {{ form_widget(form.nom, {'attr': {'class': 'form-control rounded-pill'}}) }}
+                    <div class="text-danger small">{{ form_errors(form.nom) }}</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label-bold">Prénom</label>
+                    {{ form_widget(form.prenom, {'attr': {'class': 'form-control rounded-pill'}}) }}
+                    <div class="text-danger small">{{ form_errors(form.prenom) }}</div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label-bold">Email</label>
+                {{ form_widget(form.email, {'attr': {'class': 'form-control rounded-pill', 'placeholder': 'exemple@mail.com'}}) }}
+                <div class="text-danger small">{{ form_errors(form.email) }}</div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label-bold">Téléphone</label>
+                    {{ form_widget(form.telephone, {'attr': {'class': 'form-control rounded-pill'}}) }}
+                    <div class="text-danger small">{{ form_errors(form.telephone) }}</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label-bold">Rôle</label>
+                    {# id: role_selector bech nekhdmou bih f'el JS louta #}
+                    {{ form_widget(form.role, {'attr': {'class': 'form-select rounded-pill', 'id': 'role_selector'}}) }}
+                </div>
+            </div>
+
+            {# Section Coach: Fields mrigla m3a el UserAppType #}
+            <div id="coach_fields_container" style="display: none;">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-star-fill me-2"></i>Détails Professionnels</h6>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="small fw-bold">Âge</label>
+                        {{ form_widget(form.age, {'attr': {'class': 'form-control rounded-pill'}}) }}
+                        <div class="text-danger small">{{ form_errors(form.age) }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="small fw-bold">Disponibilité</label>
+                        {{ form_widget(form.disponibilite, {'attr': {'class': 'form-select rounded-pill'}}) }}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="small fw-bold">Spécialité</label>
+                    {{ form_widget(form.specialite, {'attr': {'class': 'form-select rounded-pill'}}) }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="small fw-bold">Bio & Certificats</label>
+                    {# TASLI7: bioCertifs (CamelCase) kima f'el FormType #}
+                    {{ form_widget(form.bioCertifs, {'attr': {'class': 'form-control', 'rows': 3, 'style': 'border-radius:15px'}}) }}
+                    <div class="text-danger small">{{ form_errors(form.bioCertifs) }}</div>
+                </div>
+            </div>
+
+            <div class="mb-3 mt-3">
+                <label class="form-label-bold">Mot de passe</label>
+                {# plainPassword kima m3arraf f'el FormType #}
+                {{ form_widget(form.plainPassword, {'attr': {'class': 'form-control rounded-pill'}}) }}
+                <div class="text-danger small">{{ form_errors(form.plainPassword) }}</div>
+            </div>
+
+            <div class="d-flex gap-3 mt-4">
+                <button type="submit" class="btn btn-submit-custom w-100">
+                    <i class="bi bi-check-circle me-2"></i>Enregistrer
+                </button>
+                <a href="{{ path('app_user_app_index') }}" class="btn btn-outline-secondary rounded-pill px-4 d-flex align-items-center">
+                    Annuler
+                </a>
+            </div>
+
+        {{ form_end(form) }}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const roleSelect = document.getElementById('role_selector');
+        const coachSection = document.getElementById('coach_fields_container');
+
+        if (roleSelect) {
+            function toggleCoachFields() {
+                // Thabbet f'el value exact mta3 el Enum (COACH)
+                if (roleSelect.value === 'COACH') {
+                    coachSection.style.display = 'block';
+                } else {
+                    coachSection.style.display = 'none';
+                }
+            }
+            roleSelect.addEventListener('change', toggleCoachFields);
+            toggleCoachFields(); // Initialisation
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Gestion des Événements{% endblock %}
+{% block page_title %}Gestion des Événements{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Liste des Événements</h2>
+        <a href="{{ path('app_event_admin_new') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Nouvel Événement</a>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success">{{ message }}</div>
+    {% endfor %}
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Titre</th>
+                        <th>Catégorie</th>
+                        <th>Date</th>
+                        <th>Lieu</th>
+                        <th>Prix</th>
+                        <th>Places</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for evenement in evenements %}
+                    <tr>
+                        <td>
+                            {% if evenement.image_url %}
+                                <img src="{{ asset(evenement.image_url) }}" width="60" class="rounded shadow-sm">
+                            {% else %}
+                                <span class="text-muted">Aucune</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold">{{ evenement.titre }}</td>
+                        <td><span class="badge bg-secondary">{{ evenement.categorie_evt.value }}</span></td>
+                        <td>{{ evenement.date_event ? evenement.date_event|date('d/m/Y') : '' }}</td>
+                        <td>{{ evenement.lieu }}</td>
+                        <td class="fw-bold">{{ evenement.prix|number_format(2, ',', ' ') }} DT</td>
+                        <td>{{ evenement.nb_places }}</td>
+                        <td>
+                            <span class="badge {% if evenement.statut == 'Active' %}bg-success{% else %}bg-warning{% endif %}">
+                                {{ evenement.statut }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <a href="{{ path('app_event_admin_edit', {'id_evenement': evenement.id_evenement}) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                <form method="post" action="{{ path('app_event_admin_delete', {'id_evenement': evenement.id_evenement}) }}" onsubmit="return confirm('Êtes-vous sûr ?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ evenement.id_evenement) }}">
+                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">Aucun événement n'a été trouvé.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

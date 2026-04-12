@@ -198,6 +198,51 @@
         align-items: center;
         gap: 0.55rem;
     }
+    .gif-picker-panel {
+        position: absolute;
+        right: 0;
+        bottom: 56px;
+        width: 320px;
+        background: #fff;
+        border: 1px solid #dfe5f0;
+        border-radius: 14px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+        padding: 0.55rem;
+        z-index: 1500;
+    }
+    .gif-picker-header {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin-bottom: 0.45rem;
+    }
+    .gif-picker-search {
+        border-radius: 999px;
+        border: 1px solid #d9deea;
+        padding: 0.3rem 0.65rem;
+        width: 100%;
+        font-size: 0.88rem;
+    }
+    .gif-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.35rem;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .gif-picker-item {
+        border: 0;
+        background: #f4f6fb;
+        border-radius: 8px;
+        padding: 0;
+        overflow: hidden;
+    }
+    .gif-picker-item img {
+        width: 100%;
+        height: 108px;
+        object-fit: cover;
+        display: block;
+    }
     .composer-input-wrap {
         display: flex;
         align-items: center;
@@ -628,7 +673,8 @@
                         {% endif %}
                     </div>
                 </div>
-                <div class="text-muted fs-5">
+                <div class="text-muted fs-5 d-flex align-items-center">
+                    <i class="bi bi-robot me-3" id="headerGeminiBtn" data-ai-open-url="{{ path('app_messagerie_ai_open', {'id_user': mon_id}) }}" style="cursor:pointer" title="Assistant IA"></i>
                     <i class="bi bi-telephone-fill me-3" style="cursor:pointer"></i>
                     <i class="bi bi-camera-video-fill me-3" style="cursor:pointer"></i>
                     <i class="bi bi-info-circle-fill text-info" style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#infoModal"></i>
@@ -658,8 +704,9 @@
                             {% set mediaPath = attachments is empty ? (contentParts[0] ?? '') : '' %}
                             {% set mediaComment = attachments is empty ? (contentParts[1] ?? '') : rawContent %}
                             {% set mediaRelative = mediaPath starts with '/uploads/' ? mediaPath|slice(9) : '' %}
-                            {% set mediaUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative}) : '' %}
-                            {% set mediaDownloadUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative, 'download': 1}) : '' %}
+                            {% set mediaRemoteUrl = mediaPath starts with 'http' ? mediaPath : '' %}
+                            {% set mediaUrl = mediaRemoteUrl ?: (mediaRelative ? path('app_media_by_path', {'path': mediaPath}) : '') %}
+                            {% set mediaDownloadUrl = mediaRemoteUrl ?: (mediaRelative ? path('app_media_by_path', {'path': mediaPath, 'download': 1}) : '') %}
                             {% set mediaFileName = mediaPath ? (mediaPath|split('/')|last) : 'fichier' %}
                             {% set mediaExt = mediaPath ? (mediaPath|split('.')|last|lower) : '' %}
                             {% set mediaParts = mediaPath ? mediaPath|split('/') : [] %}
@@ -681,8 +728,9 @@
                                 {% for attachment in attachments %}
                                     {% set attachmentPath = attachment.path|default('') %}
                                     {% set attachmentRelative = attachmentPath starts with '/uploads/' ? attachmentPath|slice(9) : '' %}
-                                    {% set attachmentUrl = attachmentRelative ? path('app_media_file', {'file': attachmentRelative}) : '' %}
-                                    {% set attachmentDownloadUrl = attachmentRelative ? path('app_media_file', {'file': attachmentRelative, 'download': 1}) : '' %}
+                                    {% set attachmentRemoteUrl = attachmentPath starts with 'http' ? attachmentPath : '' %}
+                                    {% set attachmentUrl = attachmentRemoteUrl ?: (attachmentRelative ? path('app_media_by_path', {'path': attachmentPath}) : '') %}
+                                    {% set attachmentDownloadUrl = attachmentRemoteUrl ?: (attachmentRelative ? path('app_media_by_path', {'path': attachmentPath, 'download': 1}) : '') %}
                                     {% set attachmentName = attachment.name|default(attachmentPath ? (attachmentPath|split('/')|last) : 'fichier') %}
                                     {% set attachmentMime = attachment.mime|default('') %}
                                     {% set attachmentType = attachment.type|default('') %}
@@ -875,6 +923,10 @@
             
             <input type="file" id="mediaFile" name="mediaFiles[]" accept="image/*,video/*,audio/*,application/pdf,.gif" class="d-none" multiple>
             <input type="hidden" id="isRecordedVocale" name="is_recorded_vocale" value="0">
+            <input type="hidden" id="vocalBlobBase64" name="vocal_blob_base64" value="">
+            <input type="hidden" id="vocalBlobMime" name="vocal_blob_mime" value="">
+            <input type="hidden" id="vocalBlobName" name="vocal_blob_name" value="">
+            <input type="hidden" id="gifUrlInput" name="gif_url" value="">
 
             <button type="submit" class="composer-send-btn shadow-sm" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }} title="Envoyer">
                 <i class="bi bi-send"></i>
@@ -885,12 +937,32 @@
             <button type="button" class="media-action-btn" id="attachImageBtn" title="Joindre un fichier" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
                 <i class="bi bi-paperclip"></i>
             </button>
+           
+            <button type="button" class="media-action-btn" id="resumeBtn" title="Resumer la conversation" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
+                <i class="bi bi-card-text"></i>
+            </button>
+      
+            <button type="button" class="media-action-btn" id="gifQuickBtn" title="Chercher un GIF" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
+                <i class="bi bi-filetype-gif"></i>
+            </button>
+            <div id="gifPickerPanel" class="gif-picker-panel d-none">
+                <div class="gif-picker-header">
+                    <input type="text" id="gifSearchInput" class="gif-picker-search" placeholder="Rechercher un GIF...">
+                </div>
+                <div id="gifPickerGrid" class="gif-picker-grid"></div>
+            </div>
         </div>
     </form>
 </div>
         </div>
     </div>
 </div>
+
+<div id="mobileIncomingToast" class="position-fixed bottom-0 start-50 translate-middle-x mb-4 px-3 py-2 rounded-pill shadow d-none"
+     style="z-index: 2050; background: #198754; color: #fff; font-weight: 600; max-width: 90vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+    Nouveau message
+</div>
+<div id="messageNotifierStack" class="position-fixed top-0 end-0 mt-4 me-3" style="z-index: 2060; width: min(340px, 92vw);"></div>
 
 {# --- MODAL INFO / GESTION --- #}
 <div class="modal fade" id="infoModal" tabindex="-1" aria-hidden="true">
@@ -1222,6 +1294,18 @@ const clearMediaBtn = document.getElementById('clearMediaBtn');
 const composerEmojiBtn = document.getElementById('composerEmojiBtn');
 const emojiPickerPanel = document.getElementById('emojiPickerPanel');
 const attachVocaleBtn = document.getElementById('attachVocaleBtn');
+const geminiAskBtn = document.getElementById('geminiAskBtn');
+const resumeBtn = document.getElementById('resumeBtn');
+const longMsgBtn = document.getElementById('longMsgBtn');
+const gifQuickBtn = document.getElementById('gifQuickBtn');
+const headerGeminiBtn = document.getElementById('headerGeminiBtn');
+const gifPickerPanel = document.getElementById('gifPickerPanel');
+const gifSearchInput = document.getElementById('gifSearchInput');
+const gifPickerGrid = document.getElementById('gifPickerGrid');
+const gifUrlInput = document.getElementById('gifUrlInput');
+const vocalBlobBase64Input = document.getElementById('vocalBlobBase64');
+const vocalBlobMimeInput = document.getElementById('vocalBlobMime');
+const vocalBlobNameInput = document.getElementById('vocalBlobName');
 const isRecordedVocaleInput = document.getElementById('isRecordedVocale');
 const vocalRecordingBar = document.getElementById('vocalRecordingBar');
 const vocalRecordingTimer = document.getElementById('vocalRecordingTimer');
@@ -1287,6 +1371,10 @@ function clearSelectedMedia() {
     updateVocalButtonState(false);
     fileInput.value = '';
     if (isRecordedVocaleInput) isRecordedVocaleInput.value = '0';
+    if (vocalBlobBase64Input) vocalBlobBase64Input.value = '';
+    if (vocalBlobMimeInput) vocalBlobMimeInput.value = '';
+    if (vocalBlobNameInput) vocalBlobNameInput.value = '';
+    if (gifUrlInput) gifUrlInput.value = '';
     if (previewContentDiv) previewContentDiv.innerHTML = '';
     previewDiv.classList.add('d-none');
     textInput.placeholder = 'Type Message...';
@@ -1414,6 +1502,79 @@ function playIncomingNotificationSound() {
     }
 }
 
+let lastAttentionAt = 0;
+let toastTimerId = null;
+let notifierId = 0;
+function triggerIncomingAttention(conversationTitle, incomingCount) {
+    const now = Date.now();
+    if (now - lastAttentionAt < 1800) return;
+    lastAttentionAt = now;
+
+    playIncomingNotificationSound();
+    setTimeout(() => playIncomingNotificationSound(), 220);
+
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        navigator.vibrate([120, 80, 120]);
+    }
+
+    const toast = document.getElementById('mobileIncomingToast');
+    if (toast) {
+        const safeTitle = conversationTitle || 'Messagerie';
+        toast.textContent = `${incomingCount} nouveau(x) message(s) - ${safeTitle}`;
+        toast.classList.remove('d-none');
+        if (toastTimerId) clearTimeout(toastTimerId);
+        toastTimerId = setTimeout(() => toast.classList.add('d-none'), 3200);
+    }
+}
+
+function showMessengerStyleNotification(conversationTitle, incomingCount) {
+    const stack = document.getElementById('messageNotifierStack');
+    if (!stack) return;
+
+    const safeTitle = conversationTitle || 'Messagerie';
+    const cardId = `msg-notifier-${++notifierId}`;
+    const card = document.createElement('div');
+    card.id = cardId;
+    card.className = 'shadow-lg rounded-4 p-3 mb-2';
+    card.style.background = '#ffffff';
+    card.style.border = '1px solid #e7ebf3';
+    card.style.transform = 'translateY(-12px)';
+    card.style.opacity = '0';
+    card.style.transition = 'all .22s ease';
+    card.innerHTML = `
+        <div class="d-flex align-items-start gap-2">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px;background:#198754;color:#fff;">
+                <i class="bi bi-chat-left-dots-fill"></i>
+            </div>
+            <div class="flex-grow-1" style="min-width:0;">
+                <div class="fw-bold text-dark text-truncate" style="font-size:.95rem;">${safeTitle}</div>
+                <div class="text-muted text-truncate" style="font-size:.84rem;">${incomingCount} nouveau(x) message(s)</div>
+            </div>
+            <button type="button" class="btn btn-sm btn-light border-0 p-1" data-close="${cardId}">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    `;
+    stack.appendChild(card);
+
+    requestAnimationFrame(() => {
+        card.style.transform = 'translateY(0)';
+        card.style.opacity = '1';
+    });
+
+    card.addEventListener('click', (event) => {
+        const closeBtn = event.target.closest('[data-close]');
+        if (closeBtn) return;
+        window.focus();
+    });
+    card.querySelector('[data-close]')?.addEventListener('click', () => card.remove());
+    setTimeout(() => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(-8px)';
+        setTimeout(() => card.remove(), 220);
+    }, 4600);
+}
+
 function openFilePicker(acceptValue, placeholderText) {
     if (isRecordedVocaleInput) isRecordedVocaleInput.value = '0';
     fileInput.setAttribute('accept', acceptValue);
@@ -1465,10 +1626,37 @@ attachVocaleBtn?.addEventListener('click', async () => {
             }
 
             const extension = mimeType.includes('ogg') ? 'ogg' : 'webm';
-            const file = new File([blob], `vocale-${Date.now()}.${extension}`, { type: mimeType });
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            fileInput.files = dt.files;
+            const fileName = `vocale-${Date.now()}.${extension}`;
+            const file = new File([blob], fileName, { type: mimeType });
+
+            let attachedViaInput = false;
+            try {
+                if (typeof DataTransfer !== 'undefined') {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    fileInput.files = dt.files;
+                    attachedViaInput = fileInput.files && fileInput.files.length > 0;
+                }
+            } catch (error) {
+                attachedViaInput = false;
+            }
+
+            if (!attachedViaInput) {
+                const reader = new FileReader();
+                reader.onload = function() {
+                    const result = String(reader.result || '');
+                    const base64 = result.includes(',') ? result.split(',')[1] : result;
+                    if (vocalBlobBase64Input) vocalBlobBase64Input.value = base64;
+                    if (vocalBlobMimeInput) vocalBlobMimeInput.value = mimeType;
+                    if (vocalBlobNameInput) vocalBlobNameInput.value = fileName;
+                };
+                reader.readAsDataURL(blob);
+            } else {
+                if (vocalBlobBase64Input) vocalBlobBase64Input.value = '';
+                if (vocalBlobMimeInput) vocalBlobMimeInput.value = '';
+                if (vocalBlobNameInput) vocalBlobNameInput.value = '';
+            }
+
             if (isRecordedVocaleInput) isRecordedVocaleInput.value = '1';
             showPreviewFiles(file);
             stopRecordingTracks();
@@ -1501,6 +1689,11 @@ vocalCancelBtn?.addEventListener('click', function () {
 fileInput.addEventListener('change', function(e) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
+    if (vocalBlobBase64Input) vocalBlobBase64Input.value = '';
+    if (vocalBlobMimeInput) vocalBlobMimeInput.value = '';
+    if (vocalBlobNameInput) vocalBlobNameInput.value = '';
+    if (isRecordedVocaleInput) isRecordedVocaleInput.value = '0';
+    if (gifUrlInput) gifUrlInput.value = '';
 
     if (files.length > 3) {
         showComposerError('Vous pouvez joindre au maximum 3 fichiers.');
@@ -1589,6 +1782,36 @@ function showPreview(file) {
 }
 
 clearMediaBtn?.addEventListener('click', clearSelectedMedia);
+geminiAskBtn?.addEventListener('click', function () {
+    const value = (textInput?.value || '').trim();
+    textInput.value = value ? `/ai ${value}` : '/ai ';
+    textInput.focus();
+});
+resumeBtn?.addEventListener('click', function () {
+    textInput.value = '/resume';
+    textInput.focus();
+});
+longMsgBtn?.addEventListener('click', function () {
+    textInput.value = '/long ';
+    textInput.focus();
+});
+headerGeminiBtn?.addEventListener('click', function () {
+    const openUrl = this.getAttribute('data-ai-open-url');
+    if (openUrl) {
+        window.location.href = openUrl;
+        return;
+    }
+    const value = (textInput?.value || '').trim();
+    textInput.value = value ? `/ai ${value}` : '/ai ';
+    textInput.focus();
+});
+gifQuickBtn?.addEventListener('click', function () {
+    gifPickerPanel?.classList.toggle('d-none');
+    if (gifPickerPanel && !gifPickerPanel.classList.contains('d-none')) {
+        gifSearchInput?.focus();
+        loadGifResults(gifSearchInput?.value || '');
+    }
+});
 composerEmojiBtn?.addEventListener('click', function (event) {
     event.stopPropagation();
     emojiPickerPanel?.classList.toggle('d-none');
@@ -1616,9 +1839,61 @@ document.addEventListener('click', function (event) {
     emojiPickerPanel.classList.add('d-none');
 });
 
+document.addEventListener('click', function (event) {
+    if (!gifPickerPanel || gifPickerPanel.classList.contains('d-none')) return;
+    if (gifPickerPanel.contains(event.target) || gifQuickBtn?.contains(event.target)) return;
+    gifPickerPanel.classList.add('d-none');
+});
+
+let gifSearchTimeout = null;
+gifSearchInput?.addEventListener('input', function () {
+    clearTimeout(gifSearchTimeout);
+    gifSearchTimeout = setTimeout(() => loadGifResults(gifSearchInput.value || ''), 220);
+});
+
+async function loadGifResults(query) {
+    if (!gifPickerGrid) return;
+    gifPickerGrid.innerHTML = '<div class="text-muted small p-2">Chargement...</div>';
+    try {
+        const response = await fetch(`/messagerie/gif/search?q=${encodeURIComponent(query || '')}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!response.ok) {
+            gifPickerGrid.innerHTML = '<div class="text-danger small p-2">Erreur GIF.</div>';
+            return;
+        }
+        const data = await response.json();
+        const items = Array.isArray(data.items) ? data.items : [];
+        if (!items.length) {
+            gifPickerGrid.innerHTML = '<div class="text-muted small p-2">Aucun GIF.</div>';
+            return;
+        }
+        gifPickerGrid.innerHTML = items.map(url => `
+            <button type="button" class="gif-picker-item" data-gif-url="${url}">
+                <img src="${url}" alt="gif">
+            </button>
+        `).join('');
+    } catch (e) {
+        gifPickerGrid.innerHTML = '<div class="text-danger small p-2">Erreur reseau.</div>';
+    }
+}
+
+gifPickerGrid?.addEventListener('click', function (event) {
+    const button = event.target.closest('[data-gif-url]');
+    if (!button || !gifUrlInput) return;
+    const gifUrl = button.getAttribute('data-gif-url');
+    if (!gifUrl) return;
+    gifUrlInput.value = gifUrl;
+    previewContentDiv.innerHTML = `<img src="${gifUrl}" class="img-fluid rounded" style="max-height: 180px;">`;
+    previewDiv.classList.remove('d-none');
+    gifPickerPanel?.classList.add('d-none');
+    textInput.placeholder = 'Ajouter un commentaire (optionnel)';
+});
+
 // On form submit, ensure we send the file
 document.getElementById('messageComposerForm')?.addEventListener('submit', function(e) {
-    if (!getSelectedFiles().length && !textInput.value.trim()) {
+    const hasVocalBlob = !!((vocalBlobBase64Input?.value || '').trim());
+    if (!getSelectedFiles().length && !hasVocalBlob && !textInput.value.trim() && !(gifUrlInput?.value || '').trim()) {
         e.preventDefault();
         showComposerError('Veuillez ecrire un message ou joindre un fichier.');
         return;
@@ -1977,10 +2252,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (incomingCount > 0 && latestId > lastSeenId) {
                 messagesContainer.setAttribute('data-last-message-id', String(latestId));
-                playIncomingNotificationSound();
+                const convTitle = messagesContainer.getAttribute('data-current-title') || 'Messagerie';
+                triggerIncomingAttention(convTitle, incomingCount);
+                showMessengerStyleNotification(convTitle, incomingCount);
 
                 if ('Notification' in window && Notification.permission === 'granted') {
-                    const convTitle = messagesContainer.getAttribute('data-current-title') || 'Messagerie';
                     new Notification(`Nouveau message - ${convTitle}`, {
                         body: `Vous avez ${incomingCount} nouveau(x) message(s).`,
                     });

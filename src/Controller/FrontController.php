@@ -81,40 +81,7 @@ final class FrontController extends AbstractController
         ]);
     }
 
-    #[Route('/events', name: 'app_events')]
-    public function events(): Response
-    {
-        $events = [
-            [
-                'title' => 'Randonnée en Montagne',
-                'location' => 'Ain Draham',
-                'price' => '50 DT',
-                'date' => '12 Avril 2026',
-                'image' => 'assets/img/event1.png',
-                'category' => 'Nature'
-            ],
-            [
-                'title' => 'Kayak Adventure',
-                'location' => 'Bizerte',
-                'price' => '70 DT',
-                'date' => '20 Avril 2026',
-                'image' => 'assets/img/event2.png',
-                'category' => 'Nautique'
-            ],
-            [
-                'title' => 'Escalade en Pleine Nature',
-                'location' => 'Zaghouan',
-                'price' => '65 DT',
-                'date' => '28 Avril 2026',
-                'image' => 'assets/img/event3.png',
-                'category' => 'Aventure'
-            ],
-        ];
-
-        return $this->render('front/events.html.twig', [
-            'events' => $events
-        ]);
-    }
+    // The route /events is now handled by EventFrontController (app_event_front_index)
 
     #[Route('/packs', name: 'app_packs')]
     public function packs(): Response

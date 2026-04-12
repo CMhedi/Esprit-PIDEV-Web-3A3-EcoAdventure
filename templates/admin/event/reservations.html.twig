@@ -1,0 +1,70 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Gestion des Réservations{% endblock %}
+{% block page_title %}Gestion des Réservations{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Toutes les Réservations</h2>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Client</th>
+                            <th>Événement</th>
+                            <th>Date Réservation</th>
+                            <th>Billets</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for res in reservations %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-2 bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-person text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ res.userApp.nom }} {{ res.userApp.prenom }}</div>
+                                        <small class="text-muted d-block">{{ res.userApp.email }}</small>
+                                        {% if res.userApp.telephone %}
+                                            <small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ res.userApp.telephone }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ res.evenement.titre }}</div>
+                                <small class="text-muted"><i class="bi bi-calendar-event me-1"></i>{{ res.evenement.date_event|date('d/m/Y H:i') }}</small>
+                            </td>
+                            <td>{{ res.date_reservation|date('d/m/Y H:i') }}</td>
+                            <td>
+                                <span class="badge bg-info-subtle text-info px-3 py-2 rounded-pill fw-bold" style="background-color: #e0f7fa; color: #00838f !important;">
+                                    {{ res.nb_billets }} billet(s)
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill px-3 py-2 bg-{{ res.statut_res.value == 'CONFIRMEE' ? 'success' : (res.statut_res.value == 'ANNULEE' ? 'danger' : 'warning') }}">
+                                    {{ res.statut_res.value }}
+                                </span>
+                            </td>
+                        </tr>
+{% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <i class="bi bi-inbox fs-1 text-muted d-block mb-3"></i>
+                                <span class="text-muted">Aucune réservation n'a été effectuée pour le moment.</span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

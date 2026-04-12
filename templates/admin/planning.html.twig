@@ -1,0 +1,384 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Gestion Planning{% endblock %}
+{% block page_title %}Gestion des Plannings{% endblock %}
+
+{% block body %}
+{% for label, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="alert alert-{{ label }} alert-dismissible fade show mt-3" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endfor %}
+
+<!-- ================= STATS ================= -->
+<div class="row g-4 mb-4">
+
+    <div class="col-md-3">
+        <div class="stat-card text-center p-3 shadow-sm rounded">
+            <i class="bi bi-calendar-check fs-3 text-success"></i>
+            <h6 class="mt-2 text-muted">Total</h6>
+            <h3 class="fw-bold">{{ total }}</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card text-center p-3 shadow-sm rounded">
+            <i class="bi bi-check-circle fs-3 text-success"></i>
+            <h6 class="mt-2 text-muted">Actifs</h6>
+            <h3 class="fw-bold text-success">{{ actifs }}</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card text-center p-3 shadow-sm rounded">
+            <i class="bi bi-pencil-square fs-3 text-warning"></i>
+            <h6 class="mt-2 text-muted">Brouillons</h6>
+            <h3 class="fw-bold text-warning">{{ brouillons }}</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card text-center p-3 shadow-sm rounded">
+            <i class="bi bi-archive fs-3 text-secondary"></i>
+            <h6 class="mt-2 text-muted">Archives</h6>
+            <h3 class="fw-bold text-secondary">{{ archives }}</h3>
+        </div>
+    </div>
+
+</div>
+
+<!-- ================= RECOMMANDATIONS ================= -->
+<div class="admin-card p-4 mb-4 shadow-sm rounded">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">📊 Recommandations intelligentes</h5>
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-8">
+
+            <div class="mb-2">
+                <span class="fw-bold text-success">🔥 Créneau :</span>
+                <span class="text-muted">{{ bestDay }}</span>
+            </div>
+
+            <div class="mb-2">
+                <span class="fw-bold text-success">👨‍🏫 Coach :</span>
+                <span class="text-muted">{{ bestCoach }}</span>
+            </div>
+
+            <div>
+                <span class="fw-bold text-success">📈 Mois :</span>
+                <span class="text-muted">{{ bestMonth }}</span>
+            </div>
+
+        </div>
+
+        <div class="col-md-4">
+            <div class="bg-light p-3 rounded">
+                <h6 class="fw-bold">🏆 Top 3 Coachs</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item bg-transparent">{{ topCoaches[0] ?? '—' }}</li>
+                    <li class="list-group-item bg-transparent">{{ topCoaches[1] ?? '—' }}</li>
+                    <li class="list-group-item bg-transparent">{{ topCoaches[2] ?? '—' }}</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ================= TABLE ================= -->
+<div class="admin-card p-4 shadow-sm rounded">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">📋 Liste des plannings</h5>
+
+        <a href="{{ path('app_admin_planning_new') }}" class="btn btn-success btn-sm">
+            <i class="bi bi-plus-circle"></i> Ajouter
+        </a>
+    </div>
+
+  <form method="get">
+
+<div class="row g-2 mb-3">
+
+    <!-- 🔍 SEARCH -->
+    <div class="col-md-4">
+        <input type="text"
+               name="search"
+               class="form-control"
+               placeholder="🔍 Rechercher..."
+               value="{{ app.request.get('search') }}">
+    </div>
+
+    <!-- 📅 ANNEE -->
+    <div class="col-md-4">
+        <select name="annee" class="form-select">
+
+            <option value="">📅 Filtrer par année</option>
+
+            {% for y in 2024..2030 %}
+                <option value="{{ y }}"
+                    {{ app.request.get('annee') == y ? 'selected' : '' }}>
+                    {{ y }}
+                </option>
+            {% endfor %}
+
+        </select>
+    </div>
+
+    <!-- ⚙️ STATUT -->
+    <div class="col-md-4">
+        <select name="statut" class="form-select">
+
+            <option value="">⚙️ Statut</option>
+
+            <option value="ACTIF"
+                {{ app.request.get('statut') == 'ACTIF' ? 'selected' : '' }}>
+                Actif
+            </option>
+
+            <option value="BROUILLON"
+                {{ app.request.get('statut') == 'BROUILLON' ? 'selected' : '' }}>
+                Brouillon
+            </option>
+
+            <option value="ARCHIVE"
+                {{ app.request.get('statut') == 'ARCHIVE' ? 'selected' : '' }}>
+                Archivé
+            </option>
+
+        </select>
+    </div>
+
+</div>
+
+</form>
+
+  <!-- TABLE -->
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+
+        <thead class="table-light">
+            <tr>
+                <th>Planning</th>
+                <th>Début</th>
+                <th>Fin</th>
+                <th>Durée</th>
+                <th>Description</th>
+                <th>Statut</th>
+                <th class="text-center">Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for planning in plannings %}
+                <tr>
+                    <td class="fw-semibold">{{ planning.titre }}</td>
+                    <td>{{ planning.dateDebut|date('d/m/Y') }}</td>
+                    <td>{{ planning.dateFin|date('d/m/Y') }}</td>
+
+                    <td>
+                        <span class="badge bg-info text-dark">
+                            {{ planning.duree }} j
+                        </span>
+                    </td>
+
+                    <td class="text-muted small">
+                        {{ planning.description|slice(0, 50) }}...
+                    </td>
+
+                    <td>
+                        {% if planning.statut.value == 'ACTIF' %}
+                            <span class="badge bg-success">Actif</span>
+                        {% elseif planning.statut.value == 'BROUILLON' %}
+                            <span class="badge bg-warning text-dark">Brouillon</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Archivé</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-center">
+                        <a href="{{ path('app_admin_planning_edit', {'id': planning.idPlanning}) }}"
+                           class="btn btn-sm btn-outline-primary"
+                           title="Modifier">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteModal{{ planning.idPlanning }}"
+                                title="Supprimer">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                        <a href="{{ path('app_admin_seances', {'id': planning.idPlanning}) }}"
+                           class="btn btn-sm btn-outline-secondary"
+                           title="Voir séances">
+                            <i class="bi bi-calendar-event"></i>
+                        </a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox me-2" style="font-size: 1.5rem; color: #bdc3c7;"></i>
+                        <p class="mb-0">Aucun planning trouvé</p>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+</div>
+
+<!-- ===== MODALS - À L'EXTÉRIEUR DE LA TABLE ===== -->
+{% for planning in plannings %}
+    <div class="modal fade" 
+         id="deleteModal{{ planning.idPlanning }}" 
+         tabindex="-1" 
+         role="dialog"
+         aria-labelledby="deleteModalLabel{{ planning.idPlanning }}"
+         aria-hidden="true"
+         data-bs-backdrop="static"
+         data-bs-keyboard="false">
+        
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+
+                <!-- HEADER -->
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" 
+                        id="deleteModalLabel{{ planning.idPlanning }}"
+                        style="color: #e74c3c;">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Confirmer la suppression
+                    </h5>
+                    <button type="button" 
+                            class="btn-close" 
+                            data-bs-dismiss="modal" 
+                            aria-label="Fermer"></button>
+                </div>
+
+                <!-- BODY -->
+                <div class="modal-body text-center">
+                    <div style="font-size: 3rem; color: #e74c3c; margin-bottom: 1rem;">
+                        <i class="bi bi-trash"></i>
+                    </div>
+                    
+                    <p class="mb-3" style="color: #2c3e50; font-size: 1rem;">
+                        Êtes-vous sûr de vouloir supprimer ce planning ?
+                    </p>
+                    
+                    <div class="alert alert-warning mb-3" role="alert">
+                        <strong style="color: #e74c3c;">{{ planning.titre }}</strong>
+                    </div>
+
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Cette action est <strong>irréversible</strong>.
+                    </p>
+                </div>
+
+                <!-- FOOTER -->
+                <div class="modal-footer">
+                    <button type="button" 
+                            class="btn btn-secondary" 
+                            data-bs-dismiss="modal">
+                        <i class="bi bi-x me-2"></i>
+                        Annuler
+                    </button>
+
+                    <form method="POST" 
+                          action="{{ path('app_admin_planning_delete', {'id': planning.idPlanning}) }}"
+                          style="display: inline;">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash-fill me-2"></i>
+                            Supprimer
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endfor %}
+<script>
+document.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('change', () => {
+        el.closest('form').submit();
+    });
+});
+document.querySelectorAll('.delete-confirm-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const url = this.getAttribute('data-url');
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        document.body.appendChild(form);
+        form.submit();
+    });
+});
+document.addEventListener('DOMContentLoaded', function() {
+    // Créer un observer pour chaque modal
+    const modals = document.querySelectorAll('.modal');
+    
+    modals.forEach(modal => {
+        // Écouter l'affichage du modal
+        modal.addEventListener('show.bs.modal', function(e) {
+            // Forcer l'affichage du backdrop
+            setTimeout(() => {
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.classList.add('show');
+                    backdrop.style.display = 'block';
+                    backdrop.style.zIndex = '9998';
+                }
+                
+                // Forcer l'affichage du modal
+                modal.style.display = 'block';
+                modal.style.zIndex = '9999';
+                modal.classList.add('show');
+                
+                // Forcer le dialog
+                const dialog = modal.querySelector('.modal-dialog');
+                if (dialog) {
+                    dialog.style.display = 'block';
+                    dialog.style.zIndex = '10000';
+                }
+            }, 50);
+        });
+
+        // Écouter la fermeture du modal
+        modal.addEventListener('hidden.bs.modal', function(e) {
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.classList.remove('show');
+                backdrop.style.display = 'none';
+            }
+        });
+    });
+
+    // Forcer les clics
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-close')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const modal = e.target.closest('.modal');
+            if (modal) {
+                const bsModal = bootstrap.Modal.getInstance(modal);
+                if (bsModal) bsModal.hide();
+            }
+        }
+    }, true);
+});
+</script>
+
+
+
+{% endblock %}

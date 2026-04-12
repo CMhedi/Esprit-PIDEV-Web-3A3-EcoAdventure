@@ -8,4 +8,7 @@ enum CategorieEvenement: string
     case MARATHON = 'MARATHON';
     case COMPETITION = 'COMPETITION';
     case STAGE = 'STAGE';
+    case NATURE = 'NATURE';
+    case NAUTIQUE = 'NAUTIQUE';
+    case AVENTURE = 'AVENTURE';
 }
