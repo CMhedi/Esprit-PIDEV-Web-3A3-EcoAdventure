@@ -317,6 +317,10 @@
         background: #d8ecff;
         color: #368ed2;
     }
+    .media-action-btn.correcting {
+        background: #fff4d6;
+        color: #8d6a00;
+    }
     .media-action-btn.recording {
         background: #ffebee;
         color: #c62828;
@@ -880,7 +884,7 @@
             </div>
 
           <div class="p-3 message-footer">
-    <form id="messageComposerForm" method="post" enctype="multipart/form-data" action="{{ current_conv ? path('app_send_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '#' }}" class="d-flex flex-column gap-2">
+    <form id="messageComposerForm" method="post" enctype="multipart/form-data" action="{{ current_conv ? path('app_send_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '#' }}" data-correct-url="{{ current_conv ? path('app_messagerie_correct_text', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '' }}" class="d-flex flex-column gap-2">
         
         {# Media preview area #}
         <div id="composerError" class="composer-error d-none"></div>
@@ -936,6 +940,9 @@
             </button>
             <button type="button" class="media-action-btn" id="attachImageBtn" title="Joindre un fichier" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
                 <i class="bi bi-paperclip"></i>
+            </button>
+            <button type="button" class="media-action-btn" id="correctTextBtn" title="Correction orthographique" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
+                <i class="bi bi-spellcheck"></i>
             </button>
            
             <button type="button" class="media-action-btn" id="resumeBtn" title="Resumer la conversation" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
@@ -1294,6 +1301,7 @@ const clearMediaBtn = document.getElementById('clearMediaBtn');
 const composerEmojiBtn = document.getElementById('composerEmojiBtn');
 const emojiPickerPanel = document.getElementById('emojiPickerPanel');
 const attachVocaleBtn = document.getElementById('attachVocaleBtn');
+const correctTextBtn = document.getElementById('correctTextBtn');
 const geminiAskBtn = document.getElementById('geminiAskBtn');
 const resumeBtn = document.getElementById('resumeBtn');
 const longMsgBtn = document.getElementById('longMsgBtn');
@@ -1311,6 +1319,8 @@ const vocalRecordingBar = document.getElementById('vocalRecordingBar');
 const vocalRecordingTimer = document.getElementById('vocalRecordingTimer');
 const vocalStopBtn = document.getElementById('vocalStopBtn');
 const vocalCancelBtn = document.getElementById('vocalCancelBtn');
+const messageComposerForm = document.getElementById('messageComposerForm');
+const isCorrectTextBtnInitiallyDisabled = !!correctTextBtn?.disabled;
 
 let mediaRecorder = null;
 let recordedChunks = [];
@@ -1388,6 +1398,9 @@ function showComposerError(message) {
     const errorBox = document.getElementById('composerError');
     if (!errorBox) return;
     errorBox.textContent = message;
+    errorBox.style.borderColor = '';
+    errorBox.style.background = '';
+    errorBox.style.color = '';
     errorBox.classList.remove('d-none');
 }
 
@@ -1396,6 +1409,77 @@ function hideComposerError() {
     if (!errorBox) return;
     errorBox.classList.add('d-none');
     errorBox.textContent = '';
+    errorBox.style.borderColor = '';
+    errorBox.style.background = '';
+    errorBox.style.color = '';
+}
+
+async function correctCurrentMessage() {
+    const correctUrl = messageComposerForm?.getAttribute('data-correct-url') || '';
+    const currentText = (textInput?.value || '').trim();
+
+    if (!correctUrl) {
+        showComposerError('Aucune conversation selectionnee pour la correction.');
+        return;
+    }
+    if (!currentText) {
+        showComposerError('Veuillez saisir un texte a corriger.');
+        textInput?.focus();
+        return;
+    }
+
+    hideComposerError();
+    correctTextBtn?.classList.add('correcting');
+    if (correctTextBtn) correctTextBtn.disabled = true;
+
+    try {
+        const payload = new URLSearchParams({ text: currentText });
+        const response = await fetch(correctUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            showComposerError(data.message || 'Correction impossible pour le moment.');
+            return;
+        }
+
+        if (textInput) {
+            textInput.value = data.corrected_text || currentText;
+            textInput.focus();
+        }
+
+        if (data.changed) {
+            showComposerError('Texte corrige avec succes.');
+            const errorBox = document.getElementById('composerError');
+            errorBox?.classList.remove('d-none');
+            if (errorBox) {
+                errorBox.style.borderColor = '#badbcc';
+                errorBox.style.background = '#d1e7dd';
+                errorBox.style.color = '#0f5132';
+            }
+            setTimeout(() => {
+                hideComposerError();
+                if (errorBox) {
+                    errorBox.style.borderColor = '';
+                    errorBox.style.background = '';
+                    errorBox.style.color = '';
+                }
+            }, 2200);
+            return;
+        }
+
+        showComposerError('Aucune correction necessaire.');
+    } catch (error) {
+        showComposerError('Erreur reseau pendant la correction.');
+    } finally {
+        correctTextBtn?.classList.remove('correcting');
+        if (correctTextBtn) {
+            correctTextBtn.disabled = isCorrectTextBtnInitiallyDisabled;
+        }
+    }
 }
 
 function appendEmojiToMessage(emojiValue) {
@@ -1782,6 +1866,9 @@ function showPreview(file) {
 }
 
 clearMediaBtn?.addEventListener('click', clearSelectedMedia);
+correctTextBtn?.addEventListener('click', function () {
+    correctCurrentMessage();
+});
 geminiAskBtn?.addEventListener('click', function () {
     const value = (textInput?.value || '').trim();
     textInput.value = value ? `/ai ${value}` : '/ai ';

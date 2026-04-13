@@ -13,6 +13,7 @@ use App\Repository\MessageRepository;
 use App\Repository\UserAppRepository;
 use App\Service\ContentModerationService;
 use App\Service\GeminiGifChatService;
+use App\Service\TextCorrectionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
@@ -1029,6 +1030,37 @@ public function callLog(
         $em->flush();
 
         return $this->json(['success' => true]);
+    }
+
+    #[Route('/messagerie/correct/{id_user}/{id_conversation}', name: 'app_messagerie_correct_text', methods: ['POST'])]
+    public function correctMessageText(
+        int $id_user,
+        int $id_conversation,
+        Request $request,
+        UserAppRepository $userRepo,
+        ConversationRepository $conversationRepo,
+        TextCorrectionService $textCorrectionService
+    ): Response {
+        $authenticatedUser = $this->getUser();
+        if ($authenticatedUser instanceof UserApp) {
+            $id_user = $authenticatedUser->getId_user();
+        }
+
+        $user = $userRepo->find($id_user);
+        $conversation = $conversationRepo->find($id_conversation);
+        if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
+            return $this->json(['success' => false, 'message' => 'Conversation introuvable.'], 404);
+        }
+
+        $text = trim((string) $request->request->get('text', ''));
+        if ($text === '') {
+            return $this->json(['success' => false, 'message' => 'Veuillez saisir un texte a corriger.'], 422);
+        }
+
+        $result = $textCorrectionService->correctFrenchText($text);
+        $status = $result['success'] ? 200 : 503;
+
+        return $this->json($result, $status);
     }
 
     #[Route('/messagerie/ai/open/{id_user}', name: 'app_messagerie_ai_open', requirements: ['id_user' => '\d+'])]
