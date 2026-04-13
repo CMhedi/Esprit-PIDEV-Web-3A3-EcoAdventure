@@ -8,12 +8,12 @@ use Doctrine\Common\Collections\Collection;
 use App\Enum\Disponibilite;
 use App\Enum\RoleUser;
 use App\Enum\Specialite;
-
+use Symfony\Component\Security\Core\User\UserInterface;
 use App\Repository\UserAppRepository;
 
 #[ORM\Entity(repositoryClass: UserAppRepository::class)]
 #[ORM\Table(name: 'user_app')]
-class UserApp
+class UserApp implements UserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -409,5 +409,19 @@ private ?Disponibilite $disponibilite = null;
         $this->getSeances()->removeElement($seance);
         return $this;
     }
+    public function getUserIdentifier(): string
+{
+    return $this->email;
+}
+
+public function getRoles(): array
+{
+    return [$this->role?->value ?? 'ROLE_USER'];
+}
+
+public function eraseCredentials(): void
+{
+    // rien à faire
+}
 
 }

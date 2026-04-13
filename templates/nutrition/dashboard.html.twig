@@ -1,0 +1,375 @@
+
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard Nutrition - EcoTrack{% endblock %}
+
+{% block content %}
+<div class="admin-body">
+    <div class="admin-wrapper">
+        {% include 'components/sidebar.html.twig' %}
+
+        <div class="admin-content">
+            <!-- HEADER -->
+            <div class="admin-topbar mb-4">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h2 class="mb-0">
+                            <i class="bi bi-graph-up me-2" style="color: var(--energy-orange);"></i>
+                            Dashboard Nutrition
+                        </h2>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-eco" data-bs-toggle="modal" data-bs-target="#addLogModal">
+                            <i class="bi bi-plus-circle me-2"></i> Ajouter Log
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== STATS CARDS ===== -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="admin-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon" style="background: rgba(242, 140, 40, 0.2); color: var(--energy-orange);">
+                                <i class="bi bi-fire"></i>
+                            </div>
+                            <div class="ms-3">
+                                <p class="mb-0 text-muted small">Calories Aujourd'hui</p>
+                                <h3 class="mb-0" id="todayCalories">0</h3>
+                                <small class="text-muted">/ 2000 kcal</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="admin-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon" style="background: rgba(46, 204, 113, 0.2); color: #2ecc71;">
+                                <i class="bi bi-egg"></i>
+                            </div>
+                            <div class="ms-3">
+                                <p class="mb-0 text-muted small">Protéines</p>
+                                <h3 class="mb-0" id="todayProtein">0g</h3>
+                                <small class="text-muted">Objectif: 150g</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="admin-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon" style="background: rgba(52, 152, 219, 0.2); color: #3498db;">
+                                <i class="bi bi-heart"></i>
+                            </div>
+                            <div class="ms-3">
+                                <p class="mb-0 text-muted small">Graisses</p>
+                                <h3 class="mb-0" id="todayFat">0g</h3>
+                                <small class="text-muted">Objectif: 78g</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="admin-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon" style="background: rgba(155, 89, 182, 0.2); color: #9b59b6;">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
+                            <div class="ms-3">
+                                <p class="mb-0 text-muted small">Glucides</p>
+                                <h3 class="mb-0" id="todayCarbs">0g</h3>
+                                <small class="text-muted">Objectif: 275g</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== CHARTS ===== -->
+            <div class="row mb-4">
+                <div class="col-lg-8">
+                    <div class="admin-card">
+                        <h5 class="mb-3">Évolution des Calories (Semaine)</h5>
+                        <canvas id="caloriesChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="admin-card">
+                        <h5 class="mb-3">Répartition Macros</h5>
+                        <canvas id="macrosChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== HISTORIQUE LOGS ===== -->
+            <div class="admin-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-check me-2"></i>
+                        Historique Nutrition
+                    </h5>
+                    <a href="{{ path('nutrition_export') }}" class="btn btn-sm btn-outline-eco">
+                        <i class="bi bi-download me-1"></i> Exporter CSV
+                    </a>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Aliment</th>
+                                <th>Calories</th>
+                                <th>Protéines</th>
+                                <th>Graisses</th>
+                                <th>Glucides</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTable">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox me-2"></i>
+                                    Chargement...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: ADD LOG ===== -->
+<div class="modal fade" id="addLogModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Ajouter un Log Nutrition
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form id="addLogForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Aliment</label>
+                        <input type="text" class="form-control" name="food_name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" name="log_date" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Calories</label>
+                            <input type="number" class="form-control" name="calories" step="0.1" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Protéines (g)</label>
+                            <input type="number" class="form-control" name="protein" step="0.1" value="0">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Graisses (g)</label>
+                            <input type="number" class="form-control" name="fat" step="0.1" value="0">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Glucides (g)</label>
+                            <input type="number" class="form-control" name="carbs" step="0.1" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-eco">
+                        <i class="bi bi-check-circle me-2"></i> Ajouter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SCRIPTS ===== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboard();
+    document.getElementById('addLogForm').addEventListener('submit', addLog);
+});
+
+// ===== LOAD DASHBOARD =====
+function loadDashboard() {
+    // Today stats
+    fetch('{{ path("nutrition_today") }}')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('todayCalories').textContent = Math.round(data.total_calories);
+            document.getElementById('todayProtein').textContent = Math.round(data.macros.protein) + 'g';
+            document.getElementById('todayFat').textContent = Math.round(data.macros.fat) + 'g';
+            document.getElementById('todayCarbs').textContent = Math.round(data.macros.carbs) + 'g';
+
+            createMacrosChart(data.macros);
+        });
+
+    // Week stats
+    fetch('{{ path("nutrition_week") }}')
+        .then(r => r.json())
+        .then(data => {
+            createCaloriesChart(data.by_day);
+        });
+
+    // Logs
+    fetch('{{ path("nutrition_logs") }}')
+        .then(r => r.json())
+        .then(data => {
+            renderLogs(data.logs || []);
+        });
+}
+
+// ===== RENDER LOGS =====
+function renderLogs(logs) {
+    const tbody = document.getElementById('logsTable');
+    tbody.innerHTML = '';
+
+    if (logs.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox me-2"></i>
+                    Aucun log trouvé
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    logs.forEach(log => {
+        tbody.innerHTML += `
+            <tr>
+                <td><small>${log.log_date}</small></td>
+                <td><strong>${log.food_name}</strong></td>
+                <td><span class="badge bg-warning">${log.calories.toFixed(1)} kcal</span></td>
+                <td>${log.protein.toFixed(1)}g</td>
+                <td>${log.fat.toFixed(1)}g</td>
+                <td>${log.carbs.toFixed(1)}g</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteLog(${log.id})" title="Supprimer">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+// ===== ADD LOG =====
+function addLog(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+
+    fetch('{{ path("nutrition_add") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(formData))
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ Log ajouté !');
+            form.reset();
+            bootstrap.Modal.getInstance(document.getElementById('addLogModal')).hide();
+            loadDashboard();
+        }
+    })
+    .catch(e => alert('Erreur: ' + e.message));
+}
+
+// ===== DELETE LOG =====
+function deleteLog(id) {
+    if (confirm('Êtes-vous sûr ?')) {
+        fetch(`{{ path("nutrition_delete", {"id": 0}) }}`.replace('0', id), {
+            method: 'DELETE'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Supprimé !');
+                loadDashboard();
+            }
+        })
+        .catch(e => alert('Erreur: ' + e.message));
+    }
+}
+
+// ===== CHARTS =====
+function createMacrosChart(macros) {
+    const ctx = document.getElementById('macrosChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Protéines', 'Graisses', 'Glucides'],
+            datasets: [{
+                data: [macros.protein, macros.fat, macros.carbs],
+                backgroundColor: ['#2ecc71', '#e74c3c', '#f39c12'],
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+
+function createCaloriesChart(byDay) {
+    const labels = Object.keys(byDay);
+    const calories = Object.values(byDay).map(day => day.calories);
+
+    const ctx = document.getElementById('caloriesChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Calories',
+                data: calories,
+                borderColor: '#f39c12',
+                backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointRadius: 5,
+                pointBackgroundColor: '#f39c12'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+</script>
+
+{% endblock %}

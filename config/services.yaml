@@ -1,3 +1,5 @@
+# config/services.yaml
+
 # This file is the entry point to configure your own services.
 # Files in the packages/ subdirectory configure your dependencies.
 
@@ -19,6 +21,14 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+
+    # ===== NUTRITION API SERVICE =====
+    App\Service\NutritionApiService:
+        arguments:
+            $httpClient: '@http_client'
+            $logger: '@logger'
+        tags:
+            - { name: 'monolog.logger', channel: 'nutrition' }
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
