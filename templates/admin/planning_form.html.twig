@@ -1,6 +1,7 @@
 {% extends 'admin/base_admin.html.twig' %}
 
 {% block title %}Ajouter Planning{% endblock %}
+
 {% block page_title %}
     {{ editMode ? 'Modifier Planning' : 'Ajouter Planning' }}
 {% endblock %}
@@ -15,57 +16,61 @@
             <!-- HEADER -->
             <div class="d-flex align-items-center mb-4">
                 <i class="bi bi-calendar-plus fs-3 text-success me-2"></i>
-<h4 class="fw-bold mb-0">
-    {{ editMode ? 'Modifier le Planning' : 'Créer un Planning' }}
-</h4>            </div>
+                <h4 class="fw-bold mb-0">
+                    {{ editMode ? 'Modifier le Planning' : 'Créer un Planning' }}
+                </h4>
+            </div>
 
-           {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+            {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
 
-{% if form.vars.submitted and not form.vars.valid %}
-    <div class="alert alert-danger">
-        <i class="bi bi-exclamation-triangle"></i>
-        Veuillez corriger les erreurs ci-dessous.
-    </div>
-{% endif %}
+            {% if form.vars.submitted and not form.vars.valid %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Veuillez corriger les erreurs ci-dessous.
+                </div>
+            {% endif %}
 
             <!-- TITRE -->
-<div class="mb-3">
-    {{ form_label(form.titre, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+            <div class="mb-3">
+                {{ form_label(form.titre, null, {'label_attr': {'class': 'form-label fw-semibold'}}) }}
 
-    {{ form_widget(form.titre, {
-        'attr': {
-            'class': 'form-control ' ~ (form.titre.vars.errors|length ? 'is-invalid' : ''),
-            'placeholder': 'Ex : Planning Mars 2026'
-        }
-    }) }}
+                {{ form_widget(form.titre, {
+                    'attr': {
+                        'class': 'form-control ' ~ (form.titre.vars.errors|length ? 'is-invalid' : ''),
+                        'placeholder': 'Ex : Planning Mars 2026'
+                    }
+                }) }}
 
-    <div class="text-danger small">
-        {{ form_errors(form.titre) }}
-    </div>
-</div>
+                <div class="text-danger small">
+                    {{ form_errors(form.titre) }}
+                </div>
+            </div>
 
             <!-- DATES -->
-           <div class="col-md-6">
-    {{ form_label(form.date_debut) }}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form_label(form.date_debut) }}
 
-    {{ form_widget(form.date_debut, {
-        'attr': {
-            'class': 'form-control ' ~ (form.date_debut.vars.errors|length ? 'is-invalid' : '')
-        }
-    }) }}
+                    {{ form_widget(form.date_debut, {
+                        'attr': {
+                            'class': 'form-control ' ~ (form.date_debut.vars.errors|length ? 'is-invalid' : '')
+                        }
+                    }) }}
 
-    <div class="text-danger small">
-        {{ form_errors(form.date_debut) }}
-    </div>
-</div>
+                    <div class="text-danger small">
+                        {{ form_errors(form.date_debut) }}
+                    </div>
+                </div>
 
                 <div class="col-md-6 mb-3">
                     {{ form_label(form.date_fin, 'Date de fin', {'label_attr': {'class': 'form-label fw-semibold'}}) }}
+
                     {{ form_widget(form.date_fin, {
                         'attr': {
                             'class': 'form-control ' ~ (form.date_fin.vars.errors|length ? 'is-invalid' : '')
                         }
                     }) }}
+
                     <div class="text-danger small">
                         {{ form_errors(form.date_fin) }}
                     </div>
@@ -73,45 +78,40 @@
             </div>
 
             <!-- STATUT -->
-           <div class="mb-3">
-    {{ form_label(form.statut) }}
+            <div class="mb-3">
+                {{ form_label(form.statut) }}
 
-    {{ form_widget(form.statut, {
-        'attr': form.statut.vars.attr|merge({
-            'class': 'form-select ' ~ (form.statut.vars.errors|length ? 'is-invalid' : '')
-        })
-    }) }}
+                {{ form_widget(form.statut, {
+                    'attr': form.statut.vars.attr|merge({
+                        'class': 'form-select ' ~ (form.statut.vars.errors|length ? 'is-invalid' : '')
+                    })
+                }) }}
 
-    <div class="text-danger small">
-        {{ form_errors(form.statut) }}
-    </div>
-</div>
+                <div class="text-danger small">
+                    {{ form_errors(form.statut) }}
+                </div>
+            </div>
 
             <!-- DESCRIPTION -->
-<div class="mb-3">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    Description
+                    <small class="text-muted">(optionnel)</small>
+                </label>
 
-    <!-- LABEL -->
-    <label class="form-label fw-semibold">
-        Description
-        <small class="text-muted">(optionnel)</small>
-    </label>
+                {{ form_widget(form.description, {
+                    'attr': {
+                        'class': 'form-control',
+                        'placeholder': 'Décrivez le planning...'
+                    }
+                }) }}
 
-    <!-- INPUT -->
-    {{ form_widget(form.description, {
-        'attr': {
-            'class': 'form-control',
-            'placeholder': 'Décrivez le planning...'
-        }
-    }) }}
-
-    <!-- ERREURS (rare mais safe) -->
-    {% if form.description.vars.errors|length > 0 %}
-        <div class="text-danger small">
-            {{ form_errors(form.description) }}
-        </div>
-    {% endif %}
-
-</div>
+                {% if form.description.vars.errors|length > 0 %}
+                    <div class="text-danger small">
+                        {{ form_errors(form.description) }}
+                    </div>
+                {% endif %}
+            </div>
 
             <!-- BUTTONS -->
             <div class="d-flex justify-content-between align-items-center mt-4">
@@ -120,10 +120,10 @@
                     <i class="bi bi-arrow-left"></i> Retour
                 </a>
 
-<button class="btn btn-success px-4">
-    <i class="bi bi-check-circle"></i>
-    {{ editMode ? 'Mettre à jour' : 'Enregistrer' }}
-</button>
+                <button class="btn btn-success px-4">
+                    <i class="bi bi-check-circle"></i>
+                    {{ editMode ? 'Mettre à jour' : 'Enregistrer' }}
+                </button>
 
             </div>
 

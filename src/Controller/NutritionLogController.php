@@ -14,7 +14,10 @@ use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use App\Service\NutritionApiService;
 #[Route('/nutrition', name: 'nutrition_')]
 #[IsGranted('ROLE_USER')]
 class NutritionLogController extends AbstractController
@@ -894,7 +897,7 @@ public function searchIngredients(
     }
 }
 
-#[Route('/api/nutrition/get', name: 'nutrition_get', methods: ['GET'])]
+#[Route('/api/get', name: 'get')]
 public function getNutrition(
     Request $request,
     NutritionApiService $apiService
@@ -919,7 +922,7 @@ public function getNutrition(
     }
 }
 
-#[Route('/api/nutrition/compare', name: 'nutrition_compare', methods: ['GET'])]
+#[Route('/api/compare', name: 'compare')]
 public function compareIngredients(
     Request $request,
     NutritionApiService $apiService
@@ -929,8 +932,12 @@ public function compareIngredients(
         $ingredient2 = $request->query->get('ingredient2');
 
         if (!$ingredient1 || !$ingredient2) {
-            return $this->json(['error' => 'Ingrédients manquants'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['error' => 'Ingrédients manquants'], 400);
         }
+
+        // 🔥 NORMALISATION (IMPORTANT)
+        $ingredient1 = $this->normalize($ingredient1);
+        $ingredient2 = $this->normalize($ingredient2);
 
         $comparison = $apiService->compareIngredients($ingredient1, $ingredient2);
 
@@ -940,8 +947,20 @@ public function compareIngredients(
         ]);
 
     } catch (\Exception $e) {
-        return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        return $this->json(['error' => $e->getMessage()], 500);
     }
+}
+private function normalize(string $ingredient): string
+{
+    $ingredient = strtolower(trim($ingredient));
+
+    // Si déjà avec quantité → garder
+    if (preg_match('/\d/', $ingredient)) {
+        return $ingredient;
+    }
+
+    // Sinon ajouter 200g
+    return '200g ' . $ingredient;
 }
 
 #[Route('/api/nutrition/daily-recommendations', name: 'daily_recommendations', methods: ['GET'])]
@@ -965,15 +984,46 @@ public function getDailyRecommendations(
         return $this->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }
-#[Route('/nutrition/imc-api', name: 'nutrition_imc_api')]
+#[Route('/imc-api', name: 'imc_api')]
 public function imcApi(): Response
 {
     return $this->render('nutrition/imc-api.html.twig');
 }
 
-#[Route('/nutrition/dashboard', name: 'nutrition_dashboard')]
+#[Route('/dashboard', name: 'dashboard')]
 public function dashboard(): Response
 {
     return $this->render('nutrition/dashboard.html.twig');
 }
+
+#[Route('/api/get-recipe', name: 'get_recipe', methods: ['GET'])]
+public function getRecipeNutritionApi(
+    Request $request,
+    NutritionApiService $apiService
+): JsonResponse {
+    try {
+        $id = (int)$request->query->get('id');
+
+        if (!$id) {
+            return $this->json([
+                'error' => 'ID recette manquant'
+            ], 400);
+        }
+
+        $nutrition = $apiService->getRecipeNutrition($id);
+
+        return $this->json([
+            'success' => true,
+            'recipe_id' => $id,
+            'nutrition' => $nutrition
+        ]);
+
+    } catch (\Exception $e) {
+        return $this->json([
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
 }

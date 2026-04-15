@@ -1,0 +1,65 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Activité Ajoutée{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-success text-white py-3">
+            <h3 class="mb-0">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                Activité ajoutée avec succès
+            </h3>
+        </div>
+
+        <div class="card-body p-4">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Type</th>
+                        <th>Catégorie</th>
+                        <th>Niveau</th>
+                        <th>Prix</th>
+                        <th>Statut</th>
+                        <th>Image</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ activite.nom }}</td>
+
+                        {# typeActivite est un enum #}
+                        <td>{{ activite.typeActivite.value }}</td>
+
+                        {# categorieAct et niveauAct sont des enums #}
+                        <td>{{ activite.categorieAct.value }}</td>
+                        <td>{{ activite.niveauAct.value }}</td>
+
+                        <td>{{ activite.prix }} DT</td>
+
+                        {# statut est un enum #}
+                        <td>{{ activite.statut.value }}</td>
+
+                        <td>
+                            {% if activite.imageUrl %}
+                                <img src="{{ asset(activite.imageUrl) }}" alt="image" style="width:100px;">
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="mt-4">
+                <a href="{{ path('app_activitefront') }}" class="btn btn-primary rounded-pill px-4">
+                    Ajouter une autre activité
+                </a>
+                <a href="{{ path('app_reservation_front', {'id': activite.idActivite}) }}" 
+                   class="btn btn-success rounded-pill px-4 ms-2">
+                    Réservation
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

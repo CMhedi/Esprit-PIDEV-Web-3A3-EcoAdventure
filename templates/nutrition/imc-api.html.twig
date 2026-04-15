@@ -1,194 +1,191 @@
- url=https://github.com/Sabrix33/ecotrack
+
 {% extends 'base.html.twig' %}
 
 {% block title %}Calcul IMC & Nutrition API - EcoTrack{% endblock %}
 
-{% block content %}
-<div class="admin-body">
-    <div class="admin-wrapper">
-        {% include 'components/sidebar.html.twig' %}
+{% block body %}
+<div class="container py-5">
+    <!-- HEADER -->
+    <div class="mb-5">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="mb-0">
+                    <i class="bi bi-calculator me-2" style="color: var(--energy-orange);"></i>
+                    Calcul IMC & Nutrition API
+                </h1>
+            </div>
+        </div>
+    </div>
 
-        <div class="admin-content">
-            <!-- HEADER -->
-            <div class="admin-topbar mb-4">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h2 class="mb-0">
-                            <i class="bi bi-calculator me-2" style="color: var(--energy-orange);"></i>
-                            Calcul IMC & Nutrition API
-                        </h2>
+    <div class="row g-4">
+        <!-- ===== COLONNE 1: CALCUL IMC ===== -->
+        <div class="col-lg-6">
+            <div class="card rounded-4 shadow-sm border-0 p-4">
+                <h5 class="mb-4">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    Calculer votre IMC
+                </h5>
+
+                <form id="imcForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Poids (kg)</label>
+                        <input type="number" class="form-control rounded-3" id="weightInput" placeholder="75" step="0.1" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Taille (cm)</label>
+                        <input type="number" class="form-control rounded-3" id="heightInput" placeholder="175" step="0.1" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Âge</label>
+                            <input type="number" class="form-control rounded-3" id="ageInput" placeholder="30" required>
+                        </div>
+
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Genre</label>
+                            <select class="form-select rounded-3" id="genderInput" required>
+                                <option value="M">Homme</option>
+                                <option value="F">Femme</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Niveau Activité</label>
+                        <select class="form-select rounded-3" id="activityInput" required>
+                            <option value="1.2">Sédentaire</option>
+                            <option value="1.375">Peu actif</option>
+                            <option value="1.55" selected>Modérément actif</option>
+                            <option value="1.725">Très actif</option>
+                            <option value="1.9">Extrêmement actif</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-eco w-100 py-3 fw-bold rounded-3">
+                        <i class="bi bi-calculator me-2"></i> Calculer IMC
+                    </button>
+                </form>
+
+                <!-- RÉSULTATS IMC -->
+                <div id="imcResult" class="d-none mt-5">
+                    <div class="alert rounded-3" id="imcAlert" role="alert">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <h3 id="imcValue" class="mb-1">--</h3>
+                                <p id="imcCategory" class="mb-0 fw-bold fs-5"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-light rounded-3">
+                        <div class="card-body">
+                            <p id="imcRemark" class="text-muted small mb-3"></p>
+
+                            <hr>
+
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Poids Idéal</small>
+                                    <strong id="idealWeightMin">--</strong> - <strong id="idealWeightMax">--</strong> <span class="small">kg</span>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block">BMR</small>
+                                    <strong id="bmrValue">--</strong> <span class="small">kcal/jour</span>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div>
+                                <small class="text-muted d-block mb-2">TDEE (Dépense Énergétique)</small>
+                                <strong id="tdeeValue" class="d-block fs-5">--</strong> <span class="small text-muted">kcal/jour</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row">
-                <!-- ===== COLONNE 1: CALCUL IMC ===== -->
-                <div class="col-lg-6">
-                    <div class="admin-card">
-                        <h5 class="mb-4">
-                            <i class="bi bi-speedometer2 me-2"></i>
-                            Calculer votre IMC
-                        </h5>
+            <!-- RECOMMANDATIONS IMC -->
+            <div id="imcRecommendations" class="d-none mt-4">
+                <div class="card rounded-4 shadow-sm border-0 p-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-lightbulb me-2"></i>
+                        Recommandations Personnalisées
+                    </h5>
 
-                        <form id="imcForm">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Poids (kg)</label>
-                                <input type="number" class="form-control" id="weightInput" placeholder="75" step="0.1" required>
-                            </div>
+                    <div id="recommendationsContent"></div>
+                </div>
+            </div>
+        </div>
 
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Taille (cm)</label>
-                                <input type="number" class="form-control" id="heightInput" placeholder="175" step="0.1" required>
-                            </div>
+        <!-- ===== COLONNE 2: RECHERCHE ALIMENTS API ===== -->
+        <div class="col-lg-6">
+            <div class="card rounded-4 shadow-sm border-0 p-4">
+                <h5 class="mb-4">
+                    <i class="bi bi-search me-2"></i>
+                    Rechercher Nutrition Aliment
+                </h5>
 
-                            <div class="row">
-                                <div class="col-6 mb-3">
-                                    <label class="form-label fw-bold">Âge</label>
-                                    <input type="number" class="form-control" id="ageInput" placeholder="30" required>
-                                </div>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control rounded-start-3" id="ingredientSearch" placeholder="Entrez un aliment (ex: pomme, poulet...)">
+                    <button class="btn btn-eco rounded-end-3" type="button" id="searchBtn">
+                        <i class="bi bi-search"></i> Chercher
+                    </button>
+                </div>
 
-                                <div class="col-6 mb-3">
-                                    <label class="form-label fw-bold">Genre</label>
-                                    <select class="form-select" id="genderInput" required>
-                                        <option value="M">Homme</option>
-                                        <option value="F">Femme</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Niveau Activité</label>
-                                <select class="form-select" id="activityInput" required>
-                                    <option value="1.2">Sédentaire</option>
-                                    <option value="1.375">Peu actif</option>
-                                    <option value="1.55" selected>Modérément actif</option>
-                                    <option value="1.725">Très actif</option>
-                                    <option value="1.9">Extrêmement actif</option>
-                                </select>
-                            </div>
-
-                            <button type="submit" class="btn btn-eco w-100 py-2">
-                                <i class="bi bi-calculator me-2"></i> Calculer IMC
-                            </button>
-                        </form>
-
-                        <!-- RÉSULTATS IMC -->
-                        <div id="imcResult" class="d-none mt-4">
-                            <div class="alert" id="imcAlert" role="alert">
-                                <div class="d-flex align-items-center">
-                                    <div>
-                                        <h4 id="imcValue" class="mb-1">--</h4>
-                                        <p id="imcCategory" class="mb-0 fw-bold"></p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="card border-light">
-                                <div class="card-body">
-                                    <p id="imcRemark" class="text-muted small mb-3"></p>
-
-                                    <hr>
-
-                                    <div class="row text-center">
-                                        <div class="col-6">
-                                            <small class="text-muted d-block">Poids Idéal</small>
-                                            <strong id="idealWeightMin">--</strong> - <strong id="idealWeightMax">--</strong> <span class="small">kg</span>
-                                        </div>
-                                        <div class="col-6">
-                                            <small class="text-muted d-block">BMR</small>
-                                            <strong id="bmrValue">--</strong> <span class="small">kcal/jour</span>
-                                        </div>
-                                    </div>
-
-                                    <hr>
-
-                                    <div>
-                                        <small class="text-muted d-block mb-2">TDEE (Dépense Énergétique)</small>
-                                        <strong id="tdeeValue" class="d-block">--</strong> <span class="small text-muted">kcal/jour</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- RECOMMANDATIONS IMC -->
-                    <div id="imcRecommendations" class="d-none mt-4">
-                        <div class="admin-card">
-                            <h5 class="mb-3">
-                                <i class="bi bi-lightbulb me-2"></i>
-                                Recommandations Personnalisées
-                            </h5>
-
-                            <div id="recommendationsContent"></div>
-                        </div>
+                <!-- RÉSULTATS RECHERCHE -->
+                <div id="searchLoading" class="d-none text-center">
+                    <div class="spinner-border spinner-border-sm" role="status" style="color: var(--energy-orange);">
+                        <span class="visually-hidden">Chargement...</span>
                     </div>
                 </div>
 
-                <!-- ===== COLONNE 2: RECHERCHE ALIMENTS API ===== -->
-                <div class="col-lg-6">
-                    <div class="admin-card">
-                        <h5 class="mb-4">
-                            <i class="bi bi-search me-2"></i>
-                            Rechercher Nutrition Aliment
-                        </h5>
-
-                        <div class="input-group mb-3">
-                            <input type="text" class="form-control" id="ingredientSearch" placeholder="Entrez un aliment (ex: pomme, poulet...)">
-                            <button class="btn btn-eco" type="button" id="searchBtn">
-                                <i class="bi bi-search"></i> Chercher
-                            </button>
-                        </div>
-
-                        <!-- RÉSULTATS RECHERCHE -->
-                        <div id="searchLoading" class="d-none text-center">
-                            <div class="spinner-border spinner-border-sm text-eco" role="status">
-                                <span class="visually-hidden">Chargement...</span>
-                            </div>
-                        </div>
-
-                        <div id="searchResults" class="d-none">
-                            <!-- Résultats ici -->
-                        </div>
-
-                        <!-- COMPARAISON ALIMENTS -->
-                        <div class="mt-4 pt-4 border-top">
-                            <h6 class="mb-3">
-                                <i class="bi bi-shuffle me-2"></i>
-                                Comparer 2 Aliments
-                            </h6>
-
-                            <div class="mb-2">
-                                <input type="text" class="form-control form-control-sm mb-2" id="ingredient1" placeholder="Aliment 1 (ex: poulet)">
-                                <input type="text" class="form-control form-control-sm" id="ingredient2" placeholder="Aliment 2 (ex: tofu)">
-                            </div>
-
-                            <button class="btn btn-outline-eco w-100 btn-sm" id="compareBtn">
-                                <i class="bi bi-shuffle me-1"></i> Comparer
-                            </button>
-
-                            <div id="comparisonResult" class="d-none mt-3"></div>
-                        </div>
-                    </div>
-
-                    <!-- RECOMMANDATIONS JOURNALIÈRES -->
-                    <div id="dailyRecommendations" class="d-none admin-card mt-4">
-                        <h5 class="mb-3">
-                            <i class="bi bi-calendar-check me-2"></i>
-                            Recommandations Journalières
-                        </h5>
-
-                        <div id="dailyRecContent"></div>
-                    </div>
+                <div id="searchResults" class="d-none">
+                    <!-- Résultats ici -->
                 </div>
+
+                <!-- COMPARAISON ALIMENTS -->
+                <div class="mt-5 pt-4 border-top">
+                    <h6 class="mb-3">
+                        <i class="bi bi-shuffle me-2"></i>
+                        Comparer 2 Aliments
+                    </h6>
+
+                    <div class="mb-3">
+                        <input type="text" class="form-control rounded-3 mb-2" id="ingredient1" placeholder="Aliment 1 (ex: poulet)">
+                        <input type="text" class="form-control rounded-3" id="ingredient2" placeholder="Aliment 2 (ex: tofu)">
+                    </div>
+
+                    <button class="btn btn-outline-eco w-100" id="compareBtn">
+                        <i class="bi bi-shuffle me-1"></i> Comparer
+                    </button>
+
+                    <div id="comparisonResult" class="d-none mt-3"></div>
+                </div>
+            </div>
+
+            <!-- RECOMMANDATIONS JOURNALIÈRES -->
+            <div id="dailyRecommendations" class="d-none card rounded-4 shadow-sm border-0 p-4 mt-4">
+                <h5 class="mb-3">
+                    <i class="bi bi-calendar-check me-2"></i>
+                    Recommandations Journalières
+                </h5>
+
+                <div id="dailyRecContent"></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ===== SCRIPTS ===== -->
+{% endblock %}
+
+{% block js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
 <script>
+console.log("JS LOADED");
 // ===== CALCUL IMC =====
 document.getElementById('imcForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -245,7 +242,7 @@ function displayIMCResults(data) {
     else if (analysis.severity === 'danger') alertClass = 'alert-danger';
     else if (analysis.severity === 'critical') alertClass = 'alert-dark border border-danger';
 
-    alert.className = 'alert ' + alertClass;
+    alert.className = 'alert rounded-3 ' + alertClass;
 
     // Ideal Weight
     document.getElementById('idealWeightMin').textContent = ideal.min;
@@ -263,7 +260,7 @@ function displayRecommendations(recommendations) {
 
     if (recommendations.nutrition && recommendations.nutrition.length > 0) {
         html += '<h6 class="mb-2">🥗 Nutrition</h6>';
-        html += '<ul class="small">';
+        html += '<ul class="small mb-3">';
         recommendations.nutrition.forEach(r => {
             html += `<li>${r}</li>`;
         });
@@ -272,7 +269,7 @@ function displayRecommendations(recommendations) {
 
     if (recommendations.exercise && recommendations.exercise.length > 0) {
         html += '<h6 class="mb-2 mt-3">💪 Exercice</h6>';
-        html += '<ul class="small">';
+        html += '<ul class="small mb-3">';
         recommendations.exercise.forEach(r => {
             html += `<li>${r}</li>`;
         });
@@ -281,8 +278,17 @@ function displayRecommendations(recommendations) {
 
     if (recommendations.lifestyle && recommendations.lifestyle.length > 0) {
         html += '<h6 class="mb-2 mt-3">😴 Style de Vie</h6>';
-        html += '<ul class="small">';
+        html += '<ul class="small mb-3">';
         recommendations.lifestyle.forEach(r => {
+            html += `<li>${r}</li>`;
+        });
+        html += '</ul>';
+    }
+
+    if (recommendations.medical && recommendations.medical.length > 0) {
+        html += '<h6 class="mb-2 mt-3">👨‍⚕️ Médical</h6>';
+        html += '<ul class="small">';
+        recommendations.medical.forEach(r => {
             html += `<li>${r}</li>`;
         });
         html += '</ul>';
@@ -296,32 +302,32 @@ function displayDailyRecommendations(data) {
     const rec = data.recommendations;
     
     let html = `
-        <div class="row text-center">
-            <div class="col-6 mb-3">
-                <div class="p-2 bg-light rounded">
-                    <small class="text-muted d-block">Calories</small>
-                    <strong class="d-block" style="font-size: 1.3rem;">${data.tdee}</strong>
+        <div class="row g-3 text-center">
+            <div class="col-6">
+                <div class="p-3 bg-light rounded-3" style="border-left: 5px solid var(--energy-orange);">
+                    <small class="text-muted d-block mb-1">Calories</small>
+                    <strong class="d-block" style="font-size: 1.5rem; color: var(--energy-orange);">${data.tdee}</strong>
                     <span class="small text-muted">kcal/jour</span>
                 </div>
             </div>
-            <div class="col-6 mb-3">
-                <div class="p-2 bg-light rounded">
-                    <small class="text-muted d-block">Protéines</small>
-                    <strong class="d-block" style="font-size: 1.3rem;">${rec.protein || 0}</strong>
+            <div class="col-6">
+                <div class="p-3 bg-light rounded-3" style="border-left: 5px solid #2ecc71;">
+                    <small class="text-muted d-block mb-1">Protéines</small>
+                    <strong class="d-block" style="font-size: 1.5rem; color: #2ecc71;">${rec.protein || 0}</strong>
                     <span class="small text-muted">g/jour</span>
                 </div>
             </div>
-            <div class="col-6 mb-3">
-                <div class="p-2 bg-light rounded">
-                    <small class="text-muted d-block">Glucides</small>
-                    <strong class="d-block" style="font-size: 1.3rem;">${rec.carbs || 0}</strong>
+            <div class="col-6">
+                <div class="p-3 bg-light rounded-3" style="border-left: 5px solid #f39c12;">
+                    <small class="text-muted d-block mb-1">Glucides</small>
+                    <strong class="d-block" style="font-size: 1.5rem; color: #f39c12;">${rec.carbs || 0}</strong>
                     <span class="small text-muted">g/jour</span>
                 </div>
             </div>
-            <div class="col-6 mb-3">
-                <div class="p-2 bg-light rounded">
-                    <small class="text-muted d-block">Graisses</small>
-                    <strong class="d-block" style="font-size: 1.3rem;">${rec.fat || 0}</strong>
+            <div class="col-6">
+                <div class="p-3 bg-light rounded-3" style="border-left: 5px solid #e74c3c;">
+                    <small class="text-muted d-block mb-1">Graisses</small>
+                    <strong class="d-block" style="font-size: 1.5rem; color: #e74c3c;">${rec.fat || 0}</strong>
                     <span class="small text-muted">g/jour</span>
                 </div>
             </div>
@@ -333,72 +339,511 @@ function displayDailyRecommendations(data) {
 }
 
 // ===== RECHERCHE ALIMENTS =====
-document.getElementById('searchBtn').addEventListener('click', searchIngredient);
+document.addEventListener("DOMContentLoaded", function () {
+
+    console.log("DOM READY");
+
+    const btn = document.getElementById('searchBtn');
+
+    if (!btn) {
+        console.error("❌ Bouton searchBtn introuvable");
+        return;
+    }
+
+    btn.addEventListener('click', searchIngredient);
+
+});
 
 function searchIngredient() {
-    const query = document.getElementById('ingredientSearch').value;
+    let query = document.getElementById('ingredientSearch').value;
 
     if (!query || query.length < 2) {
         alert('Entrez au moins 2 caractères');
         return;
     }
 
+    // Nettoyage
+    query = query.trim().toLowerCase();
+
+    // Ajout "1" si pas présent
+    if (!/^\d/.test(query)) {
+        query = '1 ' + query;
+    }
+
     document.getElementById('searchLoading').classList.remove('d-none');
     document.getElementById('searchResults').classList.add('d-none');
 
-    fetch(`{{ path("nutrition_search") }}?q=${encodeURIComponent(query)}`)
+    fetch(`/nutrition/api/get?ingredient=${encodeURIComponent(query)}`)
         .then(r => r.json())
         .then(data => {
-            displaySearchResults(data.results || []);
+            if (data.success) {
+                displayNutritionResult(data);
+            } else {
+                alert("❌ " + data.error);
+            }
         })
-        .catch(e => {
-            alert('Erreur: ' + e.message);
-        })
+        .catch(e => alert('Erreur: ' + e.message))
         .finally(() => {
             document.getElementById('searchLoading').classList.add('d-none');
         });
 }
 
-function displaySearchResults(results) {
-    let html = '';
 
-    if (results.length === 0) {
-        html = '<p class="text-muted text-center">Aucun résultat trouvé</p>';
-    } else {
-        results.forEach(result => {
-            html += `
-                <div class="card mb-2 border-light">
-                    <div class="card-body p-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-0">${result.name || result.original}</h6>
-                                <small class="text-muted">${result.aisle || 'Aliment'}</small>
+ 
+function displayNutritionResult(data) {
+    const nut = data.nutrition;
+    
+    // Déterminer la qualité nutritionnelle
+    const quality = determineNutritionQuality(nut);
+    const macroChart = generateMacroPercentages(nut);
+
+    let html = `
+        <!-- ===== RÉSULTAT NUTRITION ===== -->
+        <div class="card border-0 rounded-3 shadow-sm mt-3 overflow-hidden" 
+             style="background: linear-gradient(135deg, #f8faf9 0%, #ffffff 100%); 
+                    border-left: 5px solid ${quality.color};">
+
+            <!-- HEADER avec gradient -->
+            <div style="background: linear-gradient(135deg, ${quality.color} 0%, ${quality.colorLight} 100%); 
+                       color: white; padding: 1.5rem;">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="mb-1 fw-bold" style="font-size: 1.3rem;">
+                            <i class="bi bi-apple me-2"></i>
+                            ${data.ingredient.charAt(0).toUpperCase() + data.ingredient.slice(1)}
+                        </h5>
+                        <small style="opacity: 0.9;">
+                            <i class="bi bi-info-circle me-1"></i>
+                            ${quality.label}
+                        </small>
+                    </div>
+                    <div class="badge bg-white shadow-sm p-2" style="color: ${quality.color}; font-weight: 700;">
+                        <i class="bi bi-star-fill me-1"></i>
+                        ${quality.rating}/10
+                    </div>
+                </div>
+            </div>
+
+            <!-- BODY -->
+            <div class="card-body">
+                <!-- ===== MACROS PRINCIPAUX ===== -->
+                <div class="row g-3 mb-4">
+                    <!-- Calories -->
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-3 rounded-3" style="background: rgba(242, 140, 40, 0.1); border: 2px solid #f39c12;">
+                            <div style="font-size: 1.8rem; color: #f39c12; font-weight: 700;">
+                                ${nut.calories.toFixed(0)}
                             </div>
-                            <button class="btn btn-sm btn-eco" onclick="getNutrition('${result.name || result.original}')">
-                                <i class="bi bi-plus"></i>
-                            </button>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.85rem;">
+                                <i class="bi bi-fire me-1" style="color: #f39c12;"></i>
+                                Calories
+                            </small>
+                            <span class="badge bg-light mt-2" style="color: #f39c12; font-size: 0.75rem;">
+                                ${getCalorieIntensity(nut.calories)}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Protéines -->
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-3 rounded-3" style="background: rgba(46, 204, 113, 0.1); border: 2px solid #2ecc71;">
+                            <div style="font-size: 1.8rem; color: #2ecc71; font-weight: 700;">
+                                ${nut.protein.toFixed(1)}g
+                            </div>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.85rem;">
+                                <i class="bi bi-egg me-1" style="color: #2ecc71;"></i>
+                                Protéines
+                            </small>
+                            <span class="badge bg-light mt-2" style="color: #2ecc71; font-size: 0.75rem;">
+                                ${getProteinQuality(nut.protein)}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Glucides -->
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-3 rounded-3" style="background: rgba(52, 152, 219, 0.1); border: 2px solid #3498db;">
+                            <div style="font-size: 1.8rem; color: #3498db; font-weight: 700;">
+                                ${nut.carbs.toFixed(1)}g
+                            </div>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.85rem;">
+                                <i class="bi bi-diagram-3 me-1" style="color: #3498db;"></i>
+                                Glucides
+                            </small>
+                            <span class="badge bg-light mt-2" style="color: #3498db; font-size: 0.75rem;">
+                                ${getCarbQuality(nut.carbs)}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Graisses -->
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-3 rounded-3" style="background: rgba(231, 76, 60, 0.1); border: 2px solid #e74c3c;">
+                            <div style="font-size: 1.8rem; color: #e74c3c; font-weight: 700;">
+                                ${nut.fat.toFixed(1)}g
+                            </div>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.85rem;">
+                                <i class="bi bi-droplet-half me-1" style="color: #e74c3c;"></i>
+                                Graisses
+                            </small>
+                            <span class="badge bg-light mt-2" style="color: #e74c3c; font-size: 0.75rem;">
+                                ${getFatQuality(nut.fat)}
+                            </span>
                         </div>
                     </div>
                 </div>
-            `;
-        });
-    }
+
+                <!-- ===== RÉPARTITION MACROS ===== -->
+                <div class="mb-4">
+                    <h6 class="mb-3 fw-bold" style="color: #2c3e50;">
+                        <i class="bi bi-pie-chart-fill me-2" style="color: #27ae60;"></i>
+                        Répartition des macronutriments
+                    </h6>
+
+                    <div class="row g-2">
+                        <!-- Protéines % -->
+                        <div class="col-4">
+                            <div class="progress rounded-3" style="height: 30px; background-color: #ecf0f1;">
+                                <div class="progress-bar" 
+                                     role="progressbar" 
+                                     style="width: ${macroChart.proteinPercent}%; background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%); font-weight: 700; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;"
+                                     aria-valuenow="${macroChart.proteinPercent}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    ${macroChart.proteinPercent}%
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.8rem;">
+                                <i class="bi bi-egg me-1" style="color: #2ecc71;"></i>
+                                Protéines
+                            </small>
+                        </div>
+
+                        <!-- Glucides % -->
+                        <div class="col-4">
+                            <div class="progress rounded-3" style="height: 30px; background-color: #ecf0f1;">
+                                <div class="progress-bar" 
+                                     role="progressbar" 
+                                     style="width: ${macroChart.carbPercent}%; background: linear-gradient(90deg, #3498db 0%, #2980b9 100%); font-weight: 700; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;"
+                                     aria-valuenow="${macroChart.carbPercent}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    ${macroChart.carbPercent}%
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.8rem;">
+                                <i class="bi bi-diagram-3 me-1" style="color: #3498db;"></i>
+                                Glucides
+                            </small>
+                        </div>
+
+                        <!-- Graisses % -->
+                        <div class="col-4">
+                            <div class="progress rounded-3" style="height: 30px; background-color: #ecf0f1;">
+                                <div class="progress-bar" 
+                                     role="progressbar" 
+                                     style="width: ${macroChart.fatPercent}%; background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%); font-weight: 700; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;"
+                                     aria-valuenow="${macroChart.fatPercent}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    ${macroChart.fatPercent}%
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.8rem;">
+                                <i class="bi bi-droplet-half me-1" style="color: #e74c3c;"></i>
+                                Graisses
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== MINÉRAUX & AUTRES ===== -->
+                ${generateOptionalNutrients(nut)}
+
+                <!-- ===== CONSEILS SANTÉ ===== -->
+                <div class="alert rounded-3 p-3 mb-0" 
+                     style="background: ${quality.bgColor}; border: 1px solid ${quality.color}; color: ${quality.textColor};">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-lightbulb-fill me-2" style="font-size: 1.2rem; margin-top: 2px;"></i>
+                        <div>
+                            <strong style="font-size: 0.95rem;">💡 Conseil</strong>
+                            <p class="mb-0 mt-1" style="font-size: 0.9rem;">
+                                ${generateHealthTip(nut, data.ingredient)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER avec CTA -->
+            <div class="card-footer bg-white border-0 p-3">
+                <button class="btn w-100 fw-bold rounded-3"
+                        onclick="saveNutrition(
+                            '${data.ingredient}',
+                            ${nut.calories},
+                            ${nut.protein},
+                            ${nut.fat},
+                            ${nut.carbs}
+                        )"
+                        style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); 
+                               color: white; 
+                               border: none; 
+                               padding: 0.75rem;
+                               transition: all 0.3s ease;
+                               box-shadow: 0 2px 8px rgba(39, 174, 96, 0.15);"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 16px rgba(39, 174, 96, 0.25)';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(39, 174, 96, 0.15)';">
+                    <i class="bi bi-bookmark-plus me-2"></i>
+                    Ajouter au journal
+                </button>
+            </div>
+        </div>
+    `;
 
     document.getElementById('searchResults').innerHTML = html;
     document.getElementById('searchResults').classList.remove('d-none');
 }
 
+// ===== HELPER FUNCTIONS =====
+
+function determineNutritionQuality(nut) {
+    const calorieScore = Math.min(nut.calories / 100, 1);
+    const proteinScore = Math.min(nut.protein / 30, 1);
+    const balanceScore = (nut.protein + nut.carbs) > 0 ? 
+        Math.abs(nut.protein / (nut.protein + nut.carbs + nut.fat)) : 0;
+
+    const overallScore = (calorieScore * 0.3 + proteinScore * 0.4 + balanceScore * 0.3);
+
+    if (overallScore >= 0.8) {
+        return {
+            label: '⭐ Excellent nutritionnellement',
+            rating: '9/10',
+            color: '#2ecc71',
+            colorLight: '#27ae60',
+            bgColor: 'rgba(46, 204, 113, 0.1)',
+            textColor: '#27ae60'
+        };
+    } else if (overallScore >= 0.6) {
+        return {
+            label: '👍 Bon choix',
+            rating: '7/10',
+            color: '#f39c12',
+            colorLight: '#e67e22',
+            bgColor: 'rgba(243, 156, 18, 0.1)',
+            textColor: '#e67e22'
+        };
+    } else if (overallScore >= 0.4) {
+        return {
+            label: '⚠️ Modéré',
+            rating: '5/10',
+            color: '#3498db',
+            colorLight: '#2980b9',
+            bgColor: 'rgba(52, 152, 219, 0.1)',
+            textColor: '#2980b9'
+        };
+    } else {
+        return {
+            label: '⚠️ À consommer avec modération',
+            rating: '3/10',
+            color: '#e74c3c',
+            colorLight: '#c0392b',
+            bgColor: 'rgba(231, 76, 60, 0.1)',
+            textColor: '#c0392b'
+        };
+    }
+}
+
+function generateMacroPercentages(nut) {
+    const proteinCal = nut.protein * 4;
+    const carbCal = nut.carbs * 4;
+    const fatCal = nut.fat * 9;
+    const totalCal = proteinCal + carbCal + fatCal;
+
+    if (totalCal === 0) {
+        return { proteinPercent: 0, carbPercent: 0, fatPercent: 0 };
+    }
+
+    return {
+        proteinPercent: Math.round((proteinCal / totalCal) * 100),
+        carbPercent: Math.round((carbCal / totalCal) * 100),
+        fatPercent: Math.round((fatCal / totalCal) * 100)
+    };
+}
+
+function getCalorieIntensity(calories) {
+    if (calories < 50) return '🟢 Très léger';
+    if (calories < 150) return '🟢 Léger';
+    if (calories < 300) return '🟡 Modéré';
+    if (calories < 500) return '🟠 Énergétique';
+    return '🔴 Très énergétique';
+}
+
+function getProteinQuality(protein) {
+    if (protein < 5) return '🔴 Faible';
+    if (protein < 15) return '🟡 Modéré';
+    if (protein < 30) return '🟢 Bon';
+    return '🟢 Excellent';
+}
+
+function getCarbQuality(carbs) {
+    if (carbs < 10) return '🟢 Peu';
+    if (carbs < 30) return '🟡 Modéré';
+    if (carbs < 60) return '🟠 Élevé';
+    return '🔴 Très élevé';
+}
+
+function getFatQuality(fat) {
+    if (fat < 5) return '🟢 Peu';
+    if (fat < 15) return '🟡 Modéré';
+    if (fat < 25) return '🟠 Élevé';
+    return '🔴 Très élevé';
+}
+
+function generateOptionalNutrients(nut) {
+    const hasOptional = nut.fiber || nut.sugar;
+    
+    if (!hasOptional) return '';
+
+    return `
+        <div class="mb-3 p-3 rounded-3" style="background-color: #f8faf9;">
+            <h6 class="mb-2 fw-bold" style="color: #2c3e50; font-size: 0.95rem;">
+                <i class="bi bi-list-check me-2" style="color: #95a5a6;"></i>
+                Informations complémentaires
+            </h6>
+            <div class="row g-2">
+                ${nut.fiber ? `
+                    <div class="col-6">
+                        <small class="d-block text-muted" style="font-size: 0.8rem;">
+                            <i class="bi bi-hexagon-fill me-1" style="color: #16a34a;"></i>
+                            Fibres
+                        </small>
+                        <strong style="color: #2c3e50;">${nut.fiber.toFixed(1)}g</strong>
+                    </div>
+                ` : ''}
+                ${nut.sugar ? `
+                    <div class="col-6">
+                        <small class="d-block text-muted" style="font-size: 0.8rem;">
+                            <i class="bi bi-droplet-fill me-1" style="color: #ea580c;"></i>
+                            Sucres
+                        </small>
+                        <strong style="color: #2c3e50;">${nut.sugar.toFixed(1)}g</strong>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function generateHealthTip(nut, ingredient) {
+    const tips = {
+        high_protein: `${ingredient} est une excellente source de protéines. Parfait pour la récupération musculaire!`,
+        low_cal: `${ingredient} est très peu calorique. Idéal pour une alimentation légère.`,
+        balanced: `${ingredient} offre une bonne balance nutritionnelle pour un repas équilibré.`,
+        high_fat: `${ingredient} est riche en graisses. À consommer avec modération.`,
+        high_carb: `${ingredient} est riche en glucides. À privilégier avant l'entraînement.`,
+    };
+
+    if (nut.protein > 25) return tips.high_protein;
+    if (nut.calories < 100) return tips.low_cal;
+    if (nut.fat > 20) return tips.high_fat;
+    if (nut.carbs > 40) return tips.high_carb;
+    return tips.balanced;
+}
+
+// ===== FONCTION SAUVEGARDE (existante) =====
+function saveNutrition(foodName, calories, protein, fat, carbs) {
+    const today = new Date().toISOString().split('T')[0];
+
+    fetch('{{ path("nutrition_add") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            food_name: foodName,
+            calories: calories,
+            protein: protein,
+            fat: fat,
+            carbs: carbs,
+            log_date: today
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ Aliment ajouté au journal!');
+            location.reload();
+        } else {
+            alert('❌ Erreur: ' + data.error);
+        }
+    })
+    .catch(e => alert('Erreur: ' + e.message));
+}
+function saveNutrition(food, calories, protein, fat, carbs) {
+
+    fetch('/nutrition/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            food_name: food,
+            calories: calories,
+            protein: protein,
+            fat: fat,
+            carbs: carbs
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert("✅ Ajouté au journal !");
+        } else {
+            alert("❌ Erreur: " + (data.error || "inconnue"));
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("❌ Erreur serveur");
+    });
+}
+
+
+
 function getNutrition(ingredient) {
-    fetch(`{{ path("nutrition_api_get") }}?ingredient=${encodeURIComponent(ingredient)}`)
+
+    ingredient = ingredient.toLowerCase().trim();
+
+    // Nettoyage
+    ingredient = ingredient.replace(/fat|oil|mix|dough/g, '').trim();
+
+    if (!/^\d/.test(ingredient)) {
+        ingredient = '1 ' + ingredient;
+    }
+
+    fetch(`/nutrition/api/get?ingredient=${encodeURIComponent(ingredient)}`)
         .then(r => r.json())
         .then(data => {
-            if (data.success) {
+  
+        console.log("DATA:", data); // 🔥 ICI
+
+            if (data.success && data.nutrition) {
                 const nut = data.nutrition;
-                alert(`✅ ${data.ingredient}\n\nCalories: ${nut.calories} kcal\nProtéines: ${nut.protein}g\nGraisses: ${nut.fat}g\nGlucides: ${nut.carbs}g`);
+
+                alert(`✅ ${data.ingredient}
+
+Calories: ${nut.calories ?? 0} kcal
+Protéines: ${nut.protein ?? 0} g
+Graisses: ${nut.fat ?? 0} g
+Glucides: ${nut.carbs ?? 0} g`);
+            } else {
+                alert("❌ " + (data.error || "Erreur inconnue"));
             }
         })
         .catch(e => alert('Erreur: ' + e.message));
 }
+
+
+
+
 
 // ===== COMPARAISON ALIMENTS =====
 document.getElementById('compareBtn').addEventListener('click', compareIngredients);
@@ -412,7 +857,7 @@ function compareIngredients() {
         return;
     }
 
-    fetch(`{{ path("nutrition_compare") }}?ingredient1=${encodeURIComponent(ing1)}&ingredient2=${encodeURIComponent(ing2)}`)
+    fetch(`{{ path('nutrition_compare') }}?ingredient1=${encodeURIComponent(ing1)}&ingredient2=${encodeURIComponent(ing2)}`)
         .then(r => r.json())
         .then(data => {
             if (data.success) {
@@ -429,7 +874,7 @@ function displayComparison(comp) {
 
     let html = `
         <div class="table-responsive">
-            <table class="table table-sm">
+            <table class="table table-sm table-hover">
                 <thead class="table-light">
                     <tr>
                         <th>Nutriment</th>
@@ -466,7 +911,7 @@ function displayComparison(comp) {
                 </tbody>
             </table>
         </div>
-        <div class="alert alert-success mt-2">
+        <div class="alert alert-success mt-3 rounded-3">
             <strong>✅ Plus sain: ${healthier}</strong>
         </div>
     `;

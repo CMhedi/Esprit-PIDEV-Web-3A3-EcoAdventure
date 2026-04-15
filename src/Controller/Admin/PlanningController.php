@@ -19,6 +19,9 @@ public function index(
     PlanningRepository $planningRepository
 ): Response
 {
+    // 🔐 sécurité admin
+    $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
     // 🔍 FILTRES
     $search = $request->query->get('search');
     $annee  = $request->query->get('annee');
@@ -51,17 +54,76 @@ public function index(
     }
 
     // =========================
-    // 🧠 DONNÉES STATIQUES
+    // 🔥 DONNÉES DYNAMIQUES
     // =========================
-    $bestDay = "Lundi matin";
-    $bestCoach = "Coach Ahmed";
-    $bestMonth = "Mars";
 
-    $topCoaches = [
-        "Coach Ahmed",
-        "Coach Ali",
-        "Coach Sara"
-    ];
+    $coachStats = [];
+    $days = [];
+    $months = [];
+
+    foreach ($plannings as $planning) {
+        foreach ($planning->getSeances() as $seance) {
+
+            // 🔹 COACH STATS
+            $coach = $seance->getCoach();
+            if ($coach) {
+                $coachId = $coach->getId_user();
+
+                if (!isset($coachStats[$coachId])) {
+                    $coachStats[$coachId] = [
+                        'coach' => $coach,
+                        'count' => 0
+                    ];
+                }
+
+                $coachStats[$coachId]['count'] += count($seance->getReservationSeances());
+            }
+
+            // 🔹 BEST DAY
+            if ($seance->getDateSeance()) {
+                $day = $seance->getDateSeance()->format('l');
+
+                if (!isset($days[$day])) {
+                    $days[$day] = 0;
+                }
+                $days[$day]++;
+            }
+
+            // 🔹 BEST MONTH
+            if ($seance->getDateSeance()) {
+                $month = $seance->getDateSeance()->format('F');
+
+                if (!isset($months[$month])) {
+                    $months[$month] = 0;
+                }
+                $months[$month]++;
+            }
+        }
+    }
+
+    // =========================
+    // 🏆 BEST COACH + TOP COACHES
+    // =========================
+
+    usort($coachStats, fn($a, $b) => $b['count'] <=> $a['count']);
+
+    $bestCoach = count($coachStats) > 0
+        ? $coachStats[0]['coach']->getNom()
+        : 'N/A';
+
+    $topCoaches = array_map(function ($c) {
+        return $c['coach']->getNom();
+    }, array_slice($coachStats, 0, 3));
+
+    // =========================
+    // 📅 BEST DAY & MONTH
+    // =========================
+
+    arsort($days);
+    $bestDay = array_key_first($days) ?? 'N/A';
+
+    arsort($months);
+    $bestMonth = array_key_first($months) ?? 'N/A';
 
     // =========================
     // 🖥️ RENDER

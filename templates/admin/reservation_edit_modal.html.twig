@@ -1,0 +1,47 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Modifier Réservation{% endblock %}
+{% block page_title %}Modifier Réservation{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+    <h4 class="fw-bold mb-4">Modifier la réservation de {{ reservation.userApp.nom }}</h4>
+
+    <form method="POST" action="{{ path('app_admin_reservation_edit', {'id': reservation.idResAct}) }}">
+        <div class="mb-3">
+            <label class="form-label">Activité</label>
+            <select name="activite" class="form-select" required>
+                {% for act in activites %}
+                    <option value="{{ act.idActivite }}" {% if act.idActivite == reservation.activite.idActivite %}selected{% endif %}>
+                        {{ act.nom }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Date</label>
+            <input type="datetime-local" name="date" class="form-control"
+                   value="{{ reservation.dateRes|date('Y-m-d\TH:i') }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Statut</label>
+            <select name="statut" class="form-select" required>
+                {% for s in ['EN_ATTENTE','CONFIRMEE','ANNULEE'] %}
+                    <option value="{{ s }}" {% if reservation.statutRes.value == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Nombre de personnes</label>
+            <input type="number" name="nbPersonnes" class="form-control"
+                   value="{{ reservation.nbPersonnes }}" min="1" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+        <a href="{{ path('app_admin_reservations') }}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+{% endblock %}

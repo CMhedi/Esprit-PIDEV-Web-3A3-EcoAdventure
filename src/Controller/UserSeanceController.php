@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use App\Service\RecommendationService;
 
 #[Route('/seance')]
 class UserSeanceController extends AbstractController
@@ -24,19 +25,21 @@ class UserSeanceController extends AbstractController
     private SeanceRepository $seanceRepo;
     private EntityManagerInterface $entityManager;
     private UserAppRepository $userRepo;
-
+    private RecommendationService $recommendationService;
     public function __construct(
         LoggerInterface $logger,
         ReservationSeanceRepository $reservationRepo,
         SeanceRepository $seanceRepo,
         EntityManagerInterface $entityManager,
-        UserAppRepository $userRepo
+        UserAppRepository $userRepo,
+        RecommendationService $recommendationService
     ) {
         $this->logger = $logger;
         $this->reservationRepo = $reservationRepo;
         $this->seanceRepo = $seanceRepo;
         $this->entityManager = $entityManager;
         $this->userRepo = $userRepo;
+        $this->recommendationService = $recommendationService;
     }
 
     /**
@@ -75,11 +78,26 @@ public function index(): Response
             'pourcentage' => $pourcentage,
             'disponibles' => $disponibles,
         ]);
+        $user = $this->getUser();
+
+$recommendations = [];
+
+if ($user) {
+    try {
+        $recommendations = $this->recommendationService
+            ->recommendForUser($user->getId_user());
+    } catch (\Exception $e) {
+        $this->logger->error('Erreur recommandation', [
+            'error' => $e->getMessage()
+        ]);
+    }
+}
 
         return $this->render('front/seances.html.twig', [
             'seances' => $seances,
             'pourcentage' => $pourcentage,
             'disponibles' => $disponibles,
+            'recommendations' => $recommendations
         ]);
 
     } catch (\Exception $e) {
@@ -98,7 +116,11 @@ public function index(): Response
 public function reserver(Seance $seance): Response
 {
     try {
-        $user = $this->userRepo->find(1);
+       $user = $this->getUser();
+       if (!$user) {
+    $this->addFlash('error', 'Utilisateur non connecté');
+    return $this->redirectToRoute('app_user_seances');
+}
 
         if (!$user) {
             $this->addFlash('error', 'Utilisateur introuvable');
@@ -219,7 +241,11 @@ public function reserver(Seance $seance): Response
 public function mesSeances(): Response
 {
     // 🔥 utilisateur temporaire
-    $user = $this->userRepo->find(1);
+   $user = $this->getUser();
+   if (!$user) {
+    $this->addFlash('error', 'Utilisateur non connecté');
+    return $this->redirectToRoute('app_user_seances');
+}
 
     if (!$user) {
         $this->addFlash('error', 'Utilisateur introuvable');
@@ -247,7 +273,11 @@ public function cancelReservation(int $id): Response
             return $this->redirectToRoute('app_mes_seances');
         }
 
-        $user = $this->userRepo->find(1);
+       $user = $this->getUser();
+       if (!$user) {
+    $this->addFlash('error', 'Utilisateur non connecté');
+    return $this->redirectToRoute('app_user_seances');
+}
 
         if (!$user) {
             $this->addFlash('error', 'Utilisateur introuvable');

@@ -39,7 +39,7 @@ public function index(
     );
 
     // 🎯 COACHS (pour select)
-    $coaches = $userRepo->findAll();
+    $coaches = $userRepo->findCoaches();
 
     return $this->render('admin/seance.html.twig', [
         'planning' => $planning,

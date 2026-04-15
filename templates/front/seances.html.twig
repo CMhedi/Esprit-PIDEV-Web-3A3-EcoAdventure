@@ -103,7 +103,7 @@
                 {% set prochaine = seances|filter(s => s.statutSeance.value == 'PLANIFIEE')|first %}
                 {% if prochaine %}
                     <h5 class="fw-bold mb-1" style="color: #27ae60;">{{ prochaine.nom }}</h5>
-                    <small class="text-muted">{{ prochaine.dateSeance|date('d MMM') }} à {{ prochaine.heureDebut|date('H:i') }}</small>
+                    <small class="text-muted">{{ prochaine.dateSeance|date('d/m/Y') }} à {{ prochaine.heureDebut|date('H:i') }}</small>
                 {% else %}
                     <p class="text-muted">Aucune séance</p>
                 {% endif %}
@@ -171,11 +171,228 @@
 {% endif %}
 
         <!-- ===== SÉANCES CARDS ===== -->
+<!-- ===== RECOMMANDATIONS ===== -->
+{% if recommendations is not empty %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1" style="color: #27ae60;">
+                        <i class="bi bi-star-fill me-2" style="color: #f39c12;"></i>
+                        Recommandé pour vous
+                    </h3>
+                    <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                        Séances sélectionnées selon votre profil et vos préférences
+                    </p>
+                </div>
+                <div class="badge bg-light" style="color: #f39c12; padding: 0.6rem 1rem; font-size: 0.9rem;">
+                    <i class="bi bi-lightning-fill me-1"></i>
+                    {{ recommendations|length }} recommandation(s)
+                </div>
+            </div>
+
+            <div class="row g-4">
+                {% for r in recommendations %}
+                    <div class="col-lg-4 col-md-6">
+                        <!-- Card avec gradient et animation -->
+                        <div class="card border-0 shadow-sm h-100 overflow-hidden recommendation-card"
+                             style="cursor: pointer; transition: all 0.3s ease; 
+                                    border-top: 4px solid #f39c12;
+                                    background: linear-gradient(135deg, #fffaf3 0%, #fff5e6 100%);">
+
+                            <!-- Header avec badge TOP -->
+                            <div class="position-relative p-3" 
+                                 style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white;">
+                                
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1 fw-bold" style="font-size: 1.1rem;">
+                                            <i class="bi bi-gem me-2"></i>
+                                            Top Recommandation
+                                        </h6>
+                                        <small style="opacity: 0.9;">Nous pensons que ça vous plaira</small>
+                                    </div>
+                                    <span class="badge bg-white shadow-sm" style="color: #f39c12; font-weight: 700; font-size: 0.9rem;">
+                                        #{{ loop.index }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Body avec infos -->
+                            <div class="card-body">
+                                <!-- Titre séance -->
+                                <h5 class="fw-bold mb-3" style="color: #27ae60; font-size: 1.2rem;">
+                                    <i class="bi bi-lightning-fill me-2" style="color: #f39c12;"></i>
+                                    {{ r.seance.nom }}
+                                </h5>
+
+                                <!-- Raison recommandation -->
+                                <div class="alert alert-light mb-3 border-start-4" 
+                                     style="border-color: #f39c12 !important; background-color: rgba(243, 156, 18, 0.05);">
+                                    <small style="color: #e67e22; font-weight: 500;">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        {{ r.reason }}
+                                    </small>
+                                </div>
+
+                                <!-- Infos seance -->
+                                <div class="space-y-2">
+                                    <!-- Date et Heure -->
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="p-2 rounded-3" style="background: rgba(39, 174, 96, 0.1); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="bi bi-calendar3" style="color: #27ae60; font-size: 1rem;"></i>
+                                        </div>
+                                        <div class="ms-3">
+                                            <small class="text-muted d-block" style="font-size: 0.8rem;">Date & Heure</small>
+                                            <strong style="color: #2c3e50; font-size: 0.95rem;">
+                                                {{ r.seance.dateSeance|date('d M') }} à {{ r.seance.heureDebut|date('H:i') }}
+                                            </strong>
+                                        </div>
+                                    </div>
+
+                                    <!-- Coach -->
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="p-2 rounded-3" style="background: rgba(39, 174, 96, 0.1); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="bi bi-person-badge" style="color: #27ae60; font-size: 1rem;"></i>
+                                        </div>
+                                        <div class="ms-3">
+                                            <small class="text-muted d-block" style="font-size: 0.8rem;">Coach</small>
+                                            <strong style="color: #2c3e50; font-size: 0.95rem;">
+                                                {{ r.seance.coach.prenom|default('N/A') }} {{ r.seance.coach.nom|default('') }}
+                                            </strong>
+                                        </div>
+                                    </div>
+
+                                    <!-- Places restantes -->
+                                    <div class="d-flex align-items-center">
+                                        <div class="p-2 rounded-3" style="background: rgba(39, 174, 96, 0.1); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="bi bi-people-fill" style="color: #27ae60; font-size: 1rem;"></i>
+                                        </div>
+                                        <div class="ms-3">
+                                            <small class="text-muted d-block" style="font-size: 0.8rem;">Places disponibles</small>
+                                            {% set placesRestantes = r.seance.capacite - r.seance.reservationSeances|length %}
+                                            <strong style="color: #2c3e50; font-size: 0.95rem;">
+                                                {% if placesRestantes <= 0 %}
+                                                    <span class="badge bg-danger">COMPLÈTE</span>
+                                                {% elseif placesRestantes <= 2 %}
+                                                    <span class="badge bg-warning">{{ placesRestantes }} place(s)</span>
+                                                {% else %}
+                                                    <span class="badge bg-success">{{ placesRestantes }} places</span>
+                                                {% endif %}
+                                            </strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Barre de progression -->
+                                <div class="mt-3">
+                                    {% set pourcentage = (r.seance.reservationSeances|length / r.seance.capacite) * 100 %}
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="text-muted" style="font-size: 0.8rem;">Taux de remplissage</small>
+                                        <small class="fw-bold" style="color: #27ae60;">{{ pourcentage|round(0) }}%</small>
+                                    </div>
+                                    <div class="progress" style="height: 8px; border-radius: 10px; background-color: #ecf0f1;">
+                                        <div class="progress-bar" 
+                                             role="progressbar" 
+                                             style="width: {{ pourcentage }}%; background: linear-gradient(90deg, #27ae60 0%, #f39c12 100%); transition: width 0.3s ease;"
+                                             aria-valuenow="{{ pourcentage }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer avec CTA -->
+                            <div class="card-footer bg-white border-0 p-3">
+                                <a href="{{ path('app_reserver', {'id': r.seance.idSeance}) }}"
+                                   class="btn w-100 fw-bold recommendation-btn"
+                                   style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); 
+                                          color: white; 
+                                          border: none; 
+                                          padding: 0.7rem; 
+                                          transition: all 0.3s ease;
+                                          box-shadow: 0 2px 8px rgba(39, 174, 96, 0.15);">
+                                    <i class="bi bi-rocket-takeoff me-2"></i>
+                                    Réserver maintenant
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .recommendation-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .recommendation-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(39, 174, 96, 0.2) !important;
+            border-top-color: #27ae60 !important;
+        }
+
+        .recommendation-card:hover .recommendation-btn {
+            background: linear-gradient(135deg, #229954 0%, #1e7e34 100%) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(39, 174, 96, 0.25) !important;
+        }
+
+        .recommendation-card .progress {
+            background-color: #ecf0f1;
+        }
+
+        .space-y-2 > div {
+            margin-bottom: 0.75rem;
+        }
+
+        .space-y-2 > div:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+
+{% else %}
+
+    <!-- ===== MESSAGE AUCUNE RECOMMANDATION ===== -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm text-center p-5"
+                 style="background: linear-gradient(135deg, #f8faf9 0%, #ffffff 100%); 
+                        border-left: 4px solid #27ae60;
+                        border-radius: 1rem;">
+
+                <div style="font-size: 3.5rem; color: #bdc3c7; margin-bottom: 1.5rem; opacity: 0.6;">
+                    <i class="bi bi-stars"></i>
+                </div>
+
+                <h4 class="fw-bold mb-2" style="color: #27ae60; font-size: 1.3rem;">
+                    Aucune recommandation pour le moment
+                </h4>
+
+                <p class="text-muted mb-3" style="max-width: 500px; margin: auto; font-size: 0.95rem;">
+                    Réservez quelques séances pour que nous puissions mieux comprendre vos préférences 
+                    et vous proposer des suggestions personnalisées adaptées à votre profil.
+                </p>
+
+                <div class="mt-4">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Plus vous réservez, mieux nous vous connaissons !
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endif %}
         <div class="row g-4" id="seanceContainer">
 
             {% for s in seances %}
 
-                <div class="col-lg-4 col-md-6 seance-card" data-seance="{{ s.nom|lower }} {{ s.coach.nom|lower }} {{ s.coach.prenom|lower }}">
+                <div class="col-lg-4 col-md-6 seance-card" data-seance="{{ s.nom|lower }} {{ s.coach.nom|default('N/A') }} {{ s.coach.prenom|default('N/A') }}">
 
                     <div class="card border-0 shadow-sm h-100 overflow-hidden transition-all"
                          style="cursor: pointer; transition: all 0.3s ease; border-top: 5px solid #27ae60;">
@@ -256,7 +473,7 @@
                                     <i class="bi bi-person-badge me-3" style="color: #27ae60; font-size: 1.1rem;"></i>
                                     <div>
                                         <small class="text-muted d-block" style="font-size: 0.85rem;">Coach</small>
-                                        <strong style="color: #2c3e50;">{{ s.coach.nom }} {{ s.coach.prenom }}</strong>
+                                        <strong style="color: #2c3e50;">{{ s.coach.nom|default('N/A') }} {{ s.coach.prenom|default('N/A')  }}</strong>
                                     </div>
                                 </div>
 

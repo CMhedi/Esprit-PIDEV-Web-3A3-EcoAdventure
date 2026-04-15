@@ -38,7 +38,7 @@ class NutritionLogRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('nl')
             ->andWhere('IDENTITY(nl.user) = :userId')
             ->setParameter('userId', $userId)
-            ->orderBy('nl.logDate', 'DESC')
+            ->orderBy('nl.log_Date', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -52,8 +52,8 @@ class NutritionLogRepository extends ServiceEntityRepository
         $result = $this->createQueryBuilder('nl')
             ->select('SUM(nl.calories) as total')
             ->andWhere('IDENTITY(nl.user) = :userId')
-            ->andWhere('nl.logDate >= :start')
-            ->andWhere('nl.logDate < :end')
+            ->andWhere('nl.log_date >= :start')
+            ->andWhere('nl.log_date < :end')
             ->setParameter('userId', $userId)
             ->setParameter('start', $start)
             ->setParameter('end', $end)
@@ -68,11 +68,11 @@ class NutritionLogRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('nl')
             ->andWhere('IDENTITY(nl.user) = :userId')
-            ->andWhere('nl.logDate BETWEEN :start AND :end')
+            ->andWhere('nl.log_date BETWEEN :start AND :end')
             ->setParameter('userId', $userId)
             ->setParameter('start', $startDate)
             ->setParameter('end', $endDate)
-            ->orderBy('nl.logDate', 'DESC')
+            ->orderBy('nl.log_date', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -103,7 +103,7 @@ class NutritionLogRepository extends ServiceEntityRepository
         $result = $this->createQueryBuilder('nl')
             ->select('AVG(nl.calories) as average')
             ->andWhere('IDENTITY(nl.user) = :userId')
-            ->andWhere('nl.logDate >= :weekAgo')
+            ->andWhere('nl.log_date >= :weekAgo')
             ->setParameter('userId', $userId)
             ->setParameter('weekAgo', $weekAgo)
             ->getQuery()
@@ -129,7 +129,7 @@ class NutritionLogRepository extends ServiceEntityRepository
             $start = (clone $date)->setTime(0,0,0);
             $end = (clone $date)->setTime(23,59,59);
 
-            $qb->andWhere('nl.logDate BETWEEN :start AND :end')
+            $qb->andWhere('nl.log_date BETWEEN :start AND :end')
                ->setParameter('start', $start)
                ->setParameter('end', $end);
         }
@@ -148,9 +148,9 @@ class NutritionLogRepository extends ServiceEntityRepository
     public function findByFoodName(string $foodName): array
     {
         return $this->createQueryBuilder('nl')
-            ->andWhere('LOWER(nl.foodName) LIKE LOWER(:name)')
+            ->andWhere('LOWER(nl.food_name) LIKE LOWER(:name)')
             ->setParameter('name', '%' . $foodName . '%')
-            ->orderBy('nl.logDate', 'DESC')
+            ->orderBy('nl.log_date', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -173,7 +173,7 @@ class NutritionLogRepository extends ServiceEntityRepository
 
         return $this->createQueryBuilder('nl')
             ->delete()
-            ->andWhere('nl.logDate < :date')
+            ->andWhere('nl.log_date < :date')
             ->setParameter('date', $date)
             ->getQuery()
             ->execute();

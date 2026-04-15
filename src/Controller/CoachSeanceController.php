@@ -43,7 +43,11 @@ class CoachSeanceController extends AbstractController
     {
         try {
             // 🔥 COACH STATIQUE (temporaire)
-            $coach = $this->userRepo->find(2); // À adapter
+           $coach = $this->getUser();
+           if (!$coach) {
+    $this->addFlash('error', 'Utilisateur non connecté');
+    return $this->redirectToRoute('app_coach_seances');
+} // À adapter
 
             if (!$coach) {
                 $this->addFlash('error', 'Coach introuvable');
@@ -88,7 +92,11 @@ public function detail(int $id): Response
             return $this->redirectToRoute('app_coach_seances');
         }
 
-        $coach = $this->userRepo->find(2);
+        $coach = $this->getUser();
+        if (!$coach) {
+            $this->addFlash('error', 'Utilisateur non connecté');
+            return $this->redirectToRoute('app_coach_seances');
+        }
 
         if ($seance->getCoach()->getId_user() !== $coach->getId_user()) {
             $this->addFlash('error', 'Accès refusé');
@@ -127,7 +135,13 @@ public function updatePresence(int $id): Response
             return new JsonResponse(['error' => 'Réservation introuvable'], 404);
         }
 
-        $coach = $this->userRepo->find(2);
+       $coach = $this->getUser();
+      
+
+if (!$coach) {
+    $this->addFlash('error', 'Utilisateur non connecté');
+    return $this->redirectToRoute('app_coach_seances');
+}
 
         if ($reservation->getSeance()->getCoach()->getId_user() !== $coach->getId_user()) {
             return new JsonResponse(['error' => 'Non autorisé'], 403);
@@ -167,7 +181,13 @@ public function exportPdf(): Response
 {
     try {
         // 🔥 COACH STATIQUE
-        $coach = $this->userRepo->find(2);
+       $coach = $this->getUser();
+       
+
+if (!$coach) {
+    $this->addFlash('error', 'Utilisateur non connecté');
+    return $this->redirectToRoute('app_coach_seances');
+}
 
         if (!$coach) {
             $this->addFlash('error', 'Coach introuvable');

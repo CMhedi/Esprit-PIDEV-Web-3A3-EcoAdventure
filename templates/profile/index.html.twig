@@ -1,0 +1,97 @@
+{# templates/profile/index.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon Profil - EcoAdventure{% endblock %}
+
+{% block css %}
+    <style>
+        .profile-wrapper {
+            background: url("{{ asset('image/im.jpg') }}") no-repeat center center fixed;
+            background-size: cover;
+            min-height: calc(100vh - 70px); /* n'na9sou el navbar height bech ma i-jich scroll zayed */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .profile-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 650px;
+            text-align: center;
+        }
+        .avatar {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid #00d2ff;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="profile-wrapper">
+    <div class="profile-card">
+        {# Avatar #}
+        <img src="{{ user.imageUrl ? asset('uploads/' ~ user.imageUrl) : asset('image/profil.png') }}" class="avatar" alt="Avatar"> 
+        
+        <h2 class="fw-bold mb-1">{{ user.prenom|capitalize }} {{ user.nom|upper }}</h2>
+        
+        {# Role Badge #}
+        <span class="badge rounded-pill bg-primary mb-4 px-3 py-2">
+            <i class="bi bi-shield-check me-1"></i>{{ user.role.value|upper }}
+        </span>
+
+        <div class="row text-start g-4">
+            <div class="col-md-6">
+                <label class="text-muted small fw-bold">Email</label>
+                <p class="fw-medium text-break mb-0">{{ user.email }}</p>
+            </div>
+            <div class="col-md-6">
+                <label class="text-muted small fw-bold">Téléphone</label>
+                <p class="fw-medium mb-0">{{ user.telephone ?? 'Non renseigné' }}</p>
+            </div>
+
+            {# Affichage conditionnel pour le COACH #}
+            {% if user.role.value == 'COACH' %}
+                <div class="col-md-6">
+                    <label class="text-muted small fw-bold">Âge</label>
+                    <p class="fw-medium mb-0">{{ user.age ? user.age ~ ' ans' : '---' }}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="text-muted small fw-bold">Disponibilité</label>
+                    <p class="mb-0">
+                        <span class="badge {{ user.disponibilite and user.disponibilite.value == 'DISPONIBLE' ? 'bg-success' : 'bg-secondary' }}">
+                            {{ user.disponibilite.value ?? 'Non définie' }}
+                        </span>
+                    </p>
+                </div>
+                <div class="col-12">
+                    <label class="text-muted small fw-bold">Bio et Certificats</label>
+                    <div class="bg-white bg-opacity-50 p-3 rounded border shadow-sm mt-1">
+                        <p class="mb-0 text-muted small" style="font-style: italic;">
+                            {{ user.bioCertifs ?? 'Aucune biographie ajoutée.' }}
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="mt-5 d-flex gap-3 justify-content-center">
+            <a href="{{ path('app_user_app_edit', {'id_user': user.id_user}) }}" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                <i class="bi bi-pencil-square me-2"></i>Modifier Profil
+            </a>
+            <a href="{{ path('app_logout') }}" class="btn btn-outline-danger px-4 rounded-pill shadow-sm">
+                <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

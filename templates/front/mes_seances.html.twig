@@ -63,46 +63,39 @@
 
             {% if prochaine %}
 
-                {% set today = "now"|date("Y-m-d") %}
-                {% set seanceDate = prochaine.seance.dateSeance|date("Y-m-d") %}
+{% set today = "now"|date("Y-m-d") %}
+{% set seanceDate = prochaine.seance.dateSeance|date("Y-m-d") %}
 
-                {% set diffDays = ((prochaine.seance.dateSeance|date('U') - "now"|date('U')) / 86400)|round(0, 'floor') %}
+{# timestamps à minuit pour éviter les erreurs #}
+{% set todayTs = today|date("U") %}
+{% set seanceTs = seanceDate|date("U") %}
+{% set diffDays = (seanceTs - todayTs) / 86400 %}
 
-                <h5 class="fw-bold mb-1" style="color: #27ae60;">
-                    {{ prochaine.seance.nom }}
-                </h5>
+{# mapping mois anglais → français #}
+{% set mois = {
+    "Jan": "janv", "Feb": "févr", "Mar": "mars", "Apr": "avr",
+    "May": "mai", "Jun": "juin", "Jul": "juil", "Aug": "août",
+    "Sep": "sept", "Oct": "oct", "Nov": "nov", "Dec": "déc"
+} %}
 
-                <small class="text-muted">
+{% set m = prochaine.seance.dateSeance|date('M') %}
 
-                    {# 🎯 AUJOURD’HUI / DEMAIN / AUTRE #}
-                    {% if seanceDate == today %}
-                        🔥 <strong>Aujourd’hui</strong>
-                    {% elseif diffDays == 1 %}
-                        ⏳ <strong>Demain</strong>
-                    {% else %}
-                        📅 {{ prochaine.seance.dateSeance|format_date(locale='fr', pattern='d MMM') }}
-                    {% endif %}
+<h5 class="fw-bold mb-1" style="color: #27ae60;">
+    {{ prochaine.seance.nom }}
+</h5>
 
-                    à {{ prochaine.seance.heureDebut|date('H:i') }}
+<small class="text-muted">
 
-                    <br>
+    {% if diffDays == 0 %}
+        🔥 <strong>Aujourd’hui</strong>
+    {% elseif diffDays == 1 %}
+        ⏳ <strong>Demain</strong>
+    {% else %}
+        📅 {{ prochaine.seance.dateSeance|date('d') }} {{ mois[m] }}
+    {% endif %}
 
-                    {# 🎯 COMPTEUR #}
-                    {% if diffDays > 1 %}
-                        <span class="text-success">
-                            dans {{ diffDays }} jours
-                        </span>
-                    {% elseif diffDays == 1 %}
-                        <span class="text-warning">
-                            dans 1 jour
-                        </span>
-                    {% elseif diffDays == 0 %}
-                        <span class="text-danger">
-                            aujourd’hui
-                        </span>
-                    {% endif %}
-
-                </small>
+    à {{ prochaine.seance.heureDebut|date('H:i') }}
+</small>
 
             {% else %}
                 <p class="text-muted mb-0">
@@ -274,7 +267,7 @@
                                     <i class="bi bi-person-badge me-3" style="color: #27ae60; font-size: 1.1rem;"></i>
                                     <div>
                                         <small class="text-muted d-block" style="font-size: 0.85rem;">Coach</small>
-                                        <strong style="color: #2c3e50;">{{ r.seance.coach.nom }} {{ r.seance.coach.prenom }}</strong>
+                                        <strong style="color: #2c3e50;">{{ r.seance.coach.nom|default('N/A') }} {{ r.seance.coach.prenom|default('N/A')  }}</strong>
                                     </div>
                                 </div>
 

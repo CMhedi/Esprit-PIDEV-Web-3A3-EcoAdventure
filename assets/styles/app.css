@@ -1,24 +1,37 @@
 body {
     background-color: skyblue;
 }
-/* ===== FORM STYLE PRO ===== */
-
-.form-control:focus,
-.form-select:focus {
-    border-color: #28a745;
-    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.2);
+.message-user{
+background:#0d6efd;
+color:white;
+padding:10px;
+border-radius:10px;
 }
 
-/* erreurs */
-.text-danger.small {
-    font-size: 0.85rem;
+
+.message-other{
+background:#f1f1f1;
+padding:10px;
+border-radius:10px;
+}
+.btn-link .bi-chat-text-fill {
+        transition: transform 0.2s ease-in-out, color 0.2s;
+    }
+    .btn-link:hover .bi-chat-text-fill {
+        color: #198754 !important; /* Vert plus foncé */
+        transform: scale(1.1);
+    }
+    .messages-area {
+    background-color: #f0f2f5;
+    height: 500px; /* Wala ay hauteur t7eb 3liha */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    scroll-behavior: smooth;
 }
 
-/* hover card */
-.admin-card {
-    transition: 0.3s;
-}
-
-.admin-card:hover {
-    transform: translateY(-3px);
+/* Faza bech t-forsa el messages yab9aw mel louta kiy yebdaw chwaya */
+.messages-area > .message-item:first-child {
+    margin-top: auto !important;
 }

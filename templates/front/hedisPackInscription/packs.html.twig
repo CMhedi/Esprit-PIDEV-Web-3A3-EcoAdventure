@@ -1,0 +1,360 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nos Packs | EcoAdventure{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{{ asset('assets/css/packs.css') }}">
+{% endblock %}
+
+{% block body %}
+{% set sortLabels = {
+    '': 'Nom A-Z',
+    'nom_desc': 'Nom Z-A',
+    'prix_asc': 'Prix croissant',
+    'prix_desc': 'Prix décroissant',
+    'reduction_desc': 'Réduction maximale',
+    'activites_desc': 'Activités maximales',
+    'popular_desc': 'Popularité'
+} %}
+{% set currentSortLabel = sortLabels[currentSort]|default('Nom A-Z') %}
+{% set activeFiltersCount = (currentSearch ? 1 : 0) + (currentType ? 1 : 0) + (currentStatut ? 1 : 0) + (currentSort ? 1 : 0) %}
+{% set hasActiveFilters = activeFiltersCount > 0 %}
+{% set packsCount = packs|length %}
+
+<section class="packs-hero-section py-5">
+    <div class="container">
+        <div class="packs-hero-box" data-reveal="hero">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-7">
+                    <span class="packs-badge">EcoAdventure • Packs</span>
+                    <h1 class="packs-main-title mt-3">
+                        Trouvez le pack idéal avec une expérience de recherche plus claire et plus premium
+                    </h1>
+                    <p class="packs-main-text mt-3">
+                        Recherchez, filtrez et triez les packs selon vos besoins.
+                        L'affichage ci-dessous reflète toujours l'intersection entre votre recherche,
+                        le type, le statut et le tri sélectionné.
+                    </p>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="packs-hero-stats">
+                        <div class="hero-mini-card" data-reveal="hero-stat" data-reveal-delay="80">
+                            <span>Résultats visibles</span>
+                            <strong data-countup="{{ packsCount }}">{{ packsCount }}</strong>
+                        </div>
+                        <div class="hero-mini-card" data-reveal="hero-stat" data-reveal-delay="140">
+                            <span>Types dynamiques</span>
+                            <strong data-countup="{{ typesDisponibles|length }}">{{ typesDisponibles|length }}</strong>
+                        </div>
+                        <div class="hero-mini-card" data-reveal="hero-stat" data-reveal-delay="200">
+                            <span>Filtres actifs</span>
+                            <strong data-countup="{{ activeFiltersCount }}">{{ activeFiltersCount }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="packs-filter-card mt-4" data-reveal="filters" data-reveal-delay="120">
+            <div class="packs-filter-header">
+                <div class="packs-filter-copy">
+                    <span class="packs-filter-kicker">Recherche, tri et filtres combinés</span>
+                    <h2 class="packs-filter-title">Affinez vos packs sans changer la logique existante.</h2>
+                    <p class="packs-filter-text">
+                        Tous les résultats sont recalculés à partir des données réelles en base
+                        et respectent simultanément les critères appliqués.
+                    </p>
+                </div>
+
+                <div class="packs-filter-badges">
+                    <span class="packs-filter-badge">
+                        <i class="bi bi-funnel-fill"></i>
+                        {{ activeFiltersCount }} filtre{{ activeFiltersCount > 1 ? 's' : '' }} actif{{ activeFiltersCount > 1 ? 's' : '' }}
+                    </span>
+                    <span class="packs-filter-badge packs-filter-badge-soft">
+                        <i class="bi bi-arrow-down-up"></i>
+                        Tri actuel : {{ currentSortLabel }}
+                    </span>
+                </div>
+            </div>
+
+            <form method="get" action="{{ path('app_packs') }}" class="pack-toolbar-form" data-filter-form>
+                <div class="row g-3 align-items-end">
+                    <div class="col-xl-4 col-lg-12">
+                        <label class="filter-label">Recherche</label>
+                        <div class="filter-control-shell">
+                            <i class="bi bi-search filter-icon"></i>
+                            <input
+                                type="search"
+                                name="q"
+                                class="form-control form-control-lg pack-input pack-search-input"
+                                placeholder="Nom du pack ou type de pack..."
+                                value="{{ currentSearch }}"
+                                autocomplete="off"
+                                data-auto-submit="search"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-xl-2 col-md-4">
+                        <label class="filter-label">Type</label>
+                        <select name="type" class="form-select form-select-lg pack-input pack-select-input" onchange="this.form.submit()">
+                            <option value="">Tous</option>
+                            {% for typeItem in typesDisponibles %}
+                                <option value="{{ typeItem }}" {{ currentType == typeItem ? 'selected' : '' }}>
+                                    {{ typeItem }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-xl-2 col-md-4">
+                        <label class="filter-label">Statut</label>
+                        <select name="statut" class="form-select form-select-lg pack-input pack-select-input" onchange="this.form.submit()">
+                            <option value="">Tous</option>
+                            {% for statutItem in statutsDisponibles %}
+                                <option value="{{ statutItem }}" {{ currentStatut == statutItem ? 'selected' : '' }}>
+                                    {{ statutItem }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-xl-2 col-md-4">
+                        <label class="filter-label">Tri</label>
+                        <select name="sort" class="form-select form-select-lg pack-input pack-select-input" onchange="this.form.submit()">
+                            <option value="">Nom A-Z</option>
+                            <option value="nom_desc" {{ currentSort == 'nom_desc' ? 'selected' : '' }}>Nom Z-A</option>
+                            <option value="prix_asc" {{ currentSort == 'prix_asc' ? 'selected' : '' }}>Prix croissant</option>
+                            <option value="prix_desc" {{ currentSort == 'prix_desc' ? 'selected' : '' }}>Prix décroissant</option>
+                            <option value="reduction_desc" {{ currentSort == 'reduction_desc' ? 'selected' : '' }}>Réduction maximale</option>
+                            <option value="activites_desc" {{ currentSort == 'activites_desc' ? 'selected' : '' }}>Plus d’activités</option>
+                            <option value="popular_desc" {{ currentSort == 'popular_desc' ? 'selected' : '' }}>Popularité</option>
+                        </select>
+                    </div>
+
+                    <div class="col-xl-2 col-lg-12">
+                        <div class="pack-filter-actions">
+                            <button type="submit" class="btn btn-eco btn-lg rounded-pill flex-grow-1">
+                                <i class="bi bi-search me-2"></i>Appliquer
+                            </button>
+                            <a href="{{ path('app_packs') }}" class="btn btn-eco-outline btn-lg rounded-pill px-4">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Réinitialiser
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="packs-intersection-strip" data-reveal="intersection" data-reveal-delay="180">
+                    <div class="packs-intersection-head">
+                        <div>
+                            <h3 class="packs-intersection-title">Intersection actuelle</h3>
+                            <p class="packs-intersection-note">
+                                Les cartes affichées respectent l'ensemble des critères ci-dessous.
+                            </p>
+                        </div>
+
+                        <span class="packs-filter-badge packs-filter-badge-soft">
+                            <i class="bi bi-collection"></i>
+                            {{ packsCount }} résultat{{ packsCount > 1 ? 's' : '' }}
+                        </span>
+                    </div>
+
+                    <div class="packs-intersection-grid">
+                        <div class="intersection-pill {{ currentSearch ? 'is-active' : 'is-neutral' }}" data-reveal="pill" data-reveal-delay="220">
+                            <span>Recherche</span>
+                            <strong>{{ currentSearch ? currentSearch : 'Toutes les recherches' }}</strong>
+                        </div>
+
+                        <div class="intersection-pill {{ currentType ? 'is-active' : 'is-neutral' }}" data-reveal="pill" data-reveal-delay="260">
+                            <span>Type</span>
+                            <strong>{{ currentType ? currentType : 'Tous les types' }}</strong>
+                        </div>
+
+                        <div class="intersection-pill {{ currentStatut ? 'is-active' : 'is-neutral' }}" data-reveal="pill" data-reveal-delay="300">
+                            <span>Statut</span>
+                            <strong>{{ currentStatut ? currentStatut : 'Tous les statuts' }}</strong>
+                        </div>
+
+                        <div class="intersection-pill is-active" data-reveal="pill" data-reveal-delay="340">
+                            <span>Tri</span>
+                            <strong>{{ currentSortLabel }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<section class="packs-list-section pb-5">
+    <div class="container">
+        <div class="packs-results-meta" data-reveal="results-meta">
+            <div>
+                <span class="packs-results-overline">Sélection disponible</span>
+                <h2 class="packs-results-count">
+                    {{ packsCount }} pack{{ packsCount > 1 ? 's' : '' }} affiché{{ packsCount > 1 ? 's' : '' }}
+                </h2>
+                <p class="packs-results-help">
+                    L'affichage ci-dessous suit l'intersection entre votre recherche,
+                    vos filtres dynamiques et le tri actif.
+                </p>
+            </div>
+
+            <div class="packs-results-tags">
+                {% if currentSearch %}
+                    <span class="results-tag">
+                        <i class="bi bi-search"></i>
+                        {{ currentSearch }}
+                    </span>
+                {% endif %}
+
+                {% if currentType %}
+                    <span class="results-tag">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        {{ currentType }}
+                    </span>
+                {% endif %}
+
+                {% if currentStatut %}
+                    <span class="results-tag">
+                        <i class="bi bi-check-circle"></i>
+                        {{ currentStatut }}
+                    </span>
+                {% endif %}
+
+                <span class="results-tag results-tag-muted">
+                    <i class="bi bi-arrow-down-up"></i>
+                    {{ currentSortLabel }}
+                </span>
+            </div>
+        </div>
+
+        {% if packs is empty %}
+            <div class="packs-empty-state text-center" data-reveal="empty">
+                <div class="empty-icon mb-3">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <h3>Aucun pack ne correspond à votre sélection</h3>
+                <p>
+                    Ajustez vos critères de recherche, de type, de statut ou de tri,
+                    puis relancez la recherche pour retrouver les packs disponibles.
+                </p>
+
+                {% if hasActiveFilters %}
+                    <div class="empty-state-tags">
+                        {% if currentSearch %}
+                            <span class="results-tag">
+                                <i class="bi bi-search"></i>
+                                {{ currentSearch }}
+                            </span>
+                        {% endif %}
+
+                        {% if currentType %}
+                            <span class="results-tag">
+                                <i class="bi bi-grid-1x2-fill"></i>
+                                {{ currentType }}
+                            </span>
+                        {% endif %}
+
+                        {% if currentStatut %}
+                            <span class="results-tag">
+                                <i class="bi bi-check-circle"></i>
+                                {{ currentStatut }}
+                            </span>
+                        {% endif %}
+
+                        <span class="results-tag results-tag-muted">
+                            <i class="bi bi-arrow-down-up"></i>
+                            {{ currentSortLabel }}
+                        </span>
+                    </div>
+                {% endif %}
+
+                <a href="{{ path('app_packs') }}" class="btn btn-eco rounded-pill px-4">
+                    Réinitialiser les filtres
+                </a>
+            </div>
+        {% else %}
+            <div class="row g-4">
+                {% for pack in packs %}
+                    <div class="col-xl-4 col-md-6 pack-card-column" style="--card-delay: {{ loop.index0 * 90 }}ms;">
+                        <div class="pack-advanced-card h-100" data-reveal="card" data-reveal-delay="{{ 120 + (loop.index0 * 70) }}" data-tilt-card>
+                            <div class="pack-card-top">
+                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                    <div>
+                                        <span class="pack-type-chip">{{ pack.typePack }}</span>
+                                        <h3 class="pack-title mt-3 mb-2">{{ pack.nom }}</h3>
+                                        <p class="pack-card-caption mb-0">
+                                            Une formule claire, structurée et prête à être comparée selon vos critères.
+                                        </p>
+                                    </div>
+
+                                    <span class="pack-status-badge {{ pack.statutPack|lower == 'actif' ? 'status-active' : 'status-inactive' }}">
+                                        {{ pack.statutPack }}
+                                    </span>
+                                </div>
+
+                                <div class="pack-price-zone mt-4">
+                                    <div class="pack-price-label">Tarif de base</div>
+                                    <div class="pack-price-main">
+                                        {{ pack.prixBase|number_format(2, '.', ' ') }} DT
+                                    </div>
+                                    <div class="pack-price-sub">
+                                        Prix final :
+                                        <strong>{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</strong>
+                                    </div>
+
+                                    <div class="pack-price-metrics">
+                                        <span class="pack-price-metric">
+                                            <i class="bi bi-percent"></i>
+                                            Économie {{ pack.reduction|number_format(2, '.', ' ') }} DT
+                                        </span>
+                                        <span class="pack-price-metric">
+                                            <i class="bi bi-lightning-charge-fill"></i>
+                                            {{ pack.nbActivitesMax }} activités max
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pack-card-body">
+                                <div class="pack-feature-row">
+                                    <span><i class="bi bi-percent me-2"></i>Réduction</span>
+                                    <strong>{{ pack.reduction|number_format(2, '.', ' ') }} DT</strong>
+                                </div>
+
+                                <div class="pack-feature-row">
+                                    <span><i class="bi bi-grid-1x2-fill me-2"></i>Type</span>
+                                    <strong>{{ pack.typePack }}</strong>
+                                </div>
+
+                                <div class="pack-feature-row">
+                                    <span><i class="bi bi-lightning-charge-fill me-2"></i>Activités max</span>
+                                    <strong>{{ pack.nbActivitesMax }}</strong>
+                                </div>
+
+                                <div class="pack-feature-row">
+                                    <span><i class="bi bi-list-check me-2"></i>Activités liées</span>
+                                    <strong>{{ pack.activites|length }}</strong>
+                                </div>
+                            </div>
+
+                            <div class="pack-card-footer">
+                                <a href="{{ path('app_pack_inscription', {'id': pack.idPack}) }}" class="btn btn-eco rounded-pill w-100">
+                                    <i class="bi bi-eye-fill me-2"></i>S'inscrire à ce pack
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block js %}
+    <script src="{{ asset('assets/js/packs.js') }}"></script>
+{% endblock %}

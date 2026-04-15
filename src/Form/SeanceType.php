@@ -14,7 +14,8 @@ use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-
+use App\Enum\RoleUser;
+use Doctrine\ORM\EntityRepository;
 class SeanceType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options)
@@ -44,10 +45,19 @@ class SeanceType extends AbstractType
                 ]
             ])
 
-            ->add('coach', EntityType::class, [
-                'class' => UserApp::class,
-                'choice_label' => 'nom'
-            ]);
+           ->add('coach', EntityType::class, [
+    'class' => UserApp::class,
+    'choice_label' => function($user) {
+        return $user->getNom() . ' ' . $user->getPrenom();
+    },
+    'placeholder' => 'Choisir un coach',
+    'query_builder' => function (EntityRepository $er) {
+        return $er->createQueryBuilder('u')
+            ->where('u.role = :role')
+            ->setParameter('role', RoleUser::COACH);
+    },
+])
+        ;
     }
 
     public function configureOptions(OptionsResolver $resolver)
