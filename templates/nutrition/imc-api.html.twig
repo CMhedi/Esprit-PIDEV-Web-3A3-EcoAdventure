@@ -6,17 +6,28 @@
 {% block body %}
 <div class="container py-5">
     <!-- HEADER -->
-    <div class="mb-5">
-        <div class="row align-items-center">
-            <div class="col">
-                <h1 class="mb-0">
-                    <i class="bi bi-calculator me-2" style="color: var(--energy-orange);"></i>
-                    Calcul IMC & Nutrition API
-                </h1>
-            </div>
+<div class="mb-5">
+    <div class="row align-items-center">
+        
+        <!-- TITRE -->
+        <div class="col">
+            <h1 class="mb-0">
+                <i class="bi bi-calculator me-2" style="color: var(--energy-orange);"></i>
+                Calcul IMC & Nutrition API
+            </h1>
         </div>
-    </div>
 
+        <!-- BOUTON DASHBOARD -->
+        <div class="col-auto">
+            <a href="{{ path('nutrition_dashboard') }}" 
+               class="btn btn-eco fw-bold px-4 py-2 rounded-3 shadow-sm">
+                <i class="bi bi-speedometer2 me-2"></i>
+                Dashboard
+            </a>
+        </div>
+
+    </div>
+</div>
     <div class="row g-4">
         <!-- ===== COLONNE 1: CALCUL IMC ===== -->
         <div class="col-lg-6">
@@ -857,7 +868,7 @@ function compareIngredients() {
         return;
     }
 
-    fetch(`{{ path('nutrition_compare') }}?ingredient1=${encodeURIComponent(ing1)}&ingredient2=${encodeURIComponent(ing2)}`)
+  fetch(`{{ path('nutrition_api_compare') }}?ingredient1=${encodeURIComponent(ing1)}&ingredient2=${encodeURIComponent(ing2)}`)
         .then(r => r.json())
         .then(data => {
             if (data.success) {

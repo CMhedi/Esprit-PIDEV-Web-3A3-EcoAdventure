@@ -45,16 +45,29 @@ class RecommendationService
             // ===== ÉTAPE 2: CALCULER LES SCORES =====
             $results = [];
 
-            foreach ($seances as $seance) {
-                // Exclure les séances déjà réservées
-                if (in_array($seance->getIdSeance(), $userSeances)) {
-                    continue;
-                }
+foreach ($seances as $seance) {
 
-                // Exclure les séances complètes
-                if ($this->isSeanceFull($seance)) {
-                    continue;
-                }
+    // ✅ AJOUTER ICI
+    $now = new \DateTime();
+
+    $seanceDateTime = new \DateTime(
+        $seance->getDateSeance()->format('Y-m-d') . ' ' .
+        $seance->getHeureDebut()->format('H:i:s')
+    );
+
+    if ($seanceDateTime <= $now) {
+        continue;
+    }
+
+    // Exclure les séances déjà réservées
+    if (in_array($seance->getIdSeance(), $userSeances)) {
+        continue;
+    }
+
+    // Exclure les séances complètes
+    if ($this->isSeanceFull($seance)) {
+        continue;
+    }
 
                 // Calculer les scores
                 $sim = $this->similarityScore($userId, $seance->getIdSeance(), $userMap);

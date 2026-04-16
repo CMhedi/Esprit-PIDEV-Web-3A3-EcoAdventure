@@ -16,7 +16,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use App\Service\RecommendationService;
-
+use Knp\Component\Pager\PaginatorInterface;
 #[Route('/seance')]
 class UserSeanceController extends AbstractController
 {
@@ -46,10 +46,20 @@ class UserSeanceController extends AbstractController
      * Liste des séances
      */
    #[Route('', name: 'app_user_seances', methods: ['GET'])]
-public function index(): Response
+public function index(Request $request, PaginatorInterface $paginator): Response
 {
-    try {
-        $seances = $this->seanceRepo->findAll();
+   try {
+    $query = $this->seanceRepo->createQueryBuilder('s')
+        ->orderBy('s.idSeance', 'DESC')
+        ->getQuery();
+
+    $seances = $paginator->paginate(
+        $query,
+        $request->query->getInt('page', 1),
+        5
+    );
+    // 🔥 IMPORTANT : récupérer toutes les séances pour stats
+$allSeances = $this->seanceRepo->findAll();
 
         // 🔥 STATS GLOBALES
         $totalCapacite = 0;
@@ -77,6 +87,7 @@ public function index(): Response
             'total_seances' => count($seances),
             'pourcentage' => $pourcentage,
             'disponibles' => $disponibles,
+            'allSeances' => $allSeances 
         ]);
         $user = $this->getUser();
 
@@ -97,7 +108,8 @@ if ($user) {
             'seances' => $seances,
             'pourcentage' => $pourcentage,
             'disponibles' => $disponibles,
-            'recommendations' => $recommendations
+            'recommendations' => $recommendations,
+            'allSeances' => $allSeances 
         ]);
 
     } catch (\Exception $e) {
