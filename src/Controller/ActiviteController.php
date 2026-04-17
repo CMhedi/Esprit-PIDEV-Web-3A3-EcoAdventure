@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Controller;
-
 use App\Entity\Activite;
 use App\Entity\Pack;
 use App\Enum\CategorieAct;
@@ -17,12 +16,18 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Repository\ActiviteRepository;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 class ActiviteController extends AbstractController
 {
     #[Route('/activitefront', name: 'app_activitefront')]
-    public function activiteFront(PackRepository $packRepository): Response
+    public function activiteFront(PackRepository $packRepository, SessionInterface $session): Response
     {
+        // Generate fresh CAPTCHA
+        $captcha = $this->generateCaptcha();
+        $session->set('captcha_code', $captcha);
+        
         return $this->renderCreateForm($packRepository);
     }
 
@@ -31,8 +36,10 @@ class ActiviteController extends AbstractController
         Request $request,
         EntityManagerInterface $em,
         ValidatorInterface $validator,
-        PackRepository $packRepository
+        PackRepository $packRepository,
+        SessionInterface $session
     ): Response {
+
         $formData = [
             'nom' => trim((string) $request->request->get('nom', '')),
             'type_activite' => trim((string) $request->request->get('type_activite', '')),
@@ -41,12 +48,14 @@ class ActiviteController extends AbstractController
             'prix' => trim((string) $request->request->get('prix', '')),
             'statut' => trim((string) $request->request->get('statut', '')),
             'id_pack' => trim((string) $request->request->get('id_pack', '')),
+            'latitude' => $request->request->get('latitude'),
+            'longitude' => $request->request->get('longitude'),
         ];
 
         $fieldErrors = [];
         $activite = new Activite();
         $imageFile = $request->files->get('image_url');
-        $normalizedPrix = str_replace(',', '.', $formData['prix']);
+        $normalizedPrix = trim(str_replace(',', '.', $formData['prix']));
 
         $activite->setNom($formData['nom']);
         $activite->setTypeActivite(TypeActivite::tryFrom($formData['type_activite']));
@@ -54,10 +63,12 @@ class ActiviteController extends AbstractController
         $activite->setNiveauAct(NiveauAct::tryFrom($formData['niveau_act']));
         $activite->setStatut(Statut::tryFrom($formData['statut']));
         $activite->setImageUrl($imageFile?->getClientOriginalName());
+        $activite->setLatitude($formData['latitude'] !== null ? (float) $formData['latitude'] : null);
+        $activite->setLongitude($formData['longitude'] !== null ? (float) $formData['longitude'] : null);
 
         if ($formData['prix'] === '') {
             $activite->setPrix(null);
-        } elseif (!is_numeric($normalizedPrix)) {
+        } elseif (!is_numeric($normalizedPrix) || (float)$normalizedPrix > 10000 || (float)$normalizedPrix < 0) {
             $activite->setPrix(null);
             $fieldErrors['prix'][] = 'Le prix doit etre un nombre valide.';
         } else {
@@ -90,10 +101,111 @@ class ActiviteController extends AbstractController
             return $this->renderCreateForm($packRepository, $fieldErrors, $formData);
         }
 
+        // ✅ STORE ACTIVITE DATA IN SESSION - DO NOT STORE FILE OBJECT
+        $session->set('activite_temp_data', [
+            'formData' => $formData,
+            'imageFileName' => $imageFile?->getClientOriginalName(),
+            'imageMimeType' => $imageFile?->getMimeType(),
+            'normalizedPrix' => $normalizedPrix,
+        ]);
+
+        // ✅ ALSO STORE THE FILE IN TEMP LOCATION IF IT EXISTS
         if ($imageFile !== null) {
+            $tempDir = sys_get_temp_dir();
+            $tempFileName = uniqid('activite_temp_', true) . '.' . $imageFile->getClientOriginalExtension();
+            $tempPath = $tempDir . DIRECTORY_SEPARATOR . $tempFileName;
+            
+            try {
+                $imageFile->move($tempDir, $tempFileName);
+                // Add temp file path to session
+                $tempData = $session->get('activite_temp_data');
+                $tempData['imageTempPath'] = $tempPath;
+                $session->set('activite_temp_data', $tempData);
+            } catch (FileException $e) {
+                $fieldErrors['image_url'][] = 'Error uploading image: ' . $e->getMessage();
+                return $this->renderCreateForm($packRepository, $fieldErrors, $formData);
+            }
+        }
+
+        // ✅ REDIRECT TO CAPTCHA VERIFICATION PAGE
+        $captcha = $this->generateCaptcha();
+        $session->set('captcha_code', $captcha);
+        
+        return $this->redirectToRoute('app_captcha_verify_page');
+    }
+
+    #[Route('/activite/captcha', name: 'app_captcha_verify_page')]
+    public function captchaVerifyPage(SessionInterface $session): Response
+    {
+        $captcha = $session->get('captcha_code');
+        
+        if (!$captcha) {
+            $this->addFlash('error', 'Session expired. Please try again.');
+            return $this->redirectToRoute('app_activitefront');
+        }
+
+        return $this->render('front/captcha.html.twig', [
+            'captcha' => $captcha
+        ]);
+    }
+
+    #[Route('/activite/captcha/submit', name: 'app_captcha_submit', methods: ['POST'])]
+    public function submitCaptcha(
+        Request $request,
+        EntityManagerInterface $em,
+        SessionInterface $session
+    ): Response {
+        $userCaptcha = strtoupper(trim((string) $request->request->get('captcha_user', '')));
+        $realCaptcha = $session->get('captcha_code');
+
+        // ✅ CAPTCHA VALIDATION
+        if (!$realCaptcha || $userCaptcha !== $realCaptcha) {
+            $this->addFlash('error', 'Captcha incorrect. Please try again.');
+            $newCaptcha = $this->generateCaptcha();
+            $session->set('captcha_code', $newCaptcha);
+            return $this->redirectToRoute('app_captcha_verify_page');
+        }
+
+        // ✅ CAPTCHA CORRECT - SAVE ACTIVITY TO DATABASE
+        $tempData = $session->get('activite_temp_data');
+
+        if (!$tempData) {
+            $this->addFlash('error', 'Session expired. Please start over.');
+            return $this->redirectToRoute('app_activitefront');
+        }
+
+        $formData = $tempData['formData'];
+        $normalizedPrix = $tempData['normalizedPrix'];
+        $imageTempPath = $tempData['imageTempPath'] ?? null;
+
+        $activite = new Activite();
+
+        $activite->setNom($formData['nom']);
+        $activite->setTypeActivite(TypeActivite::tryFrom($formData['type_activite']));
+        $activite->setCategorieAct(CategorieAct::tryFrom($formData['categorie_act']));
+        $activite->setNiveauAct(NiveauAct::tryFrom($formData['niveau_act']));
+        $activite->setStatut(Statut::tryFrom($formData['statut']));
+        $activite->setLatitude($formData['latitude'] !== null ? (float) $formData['latitude'] : null);
+        $activite->setLongitude($formData['longitude'] !== null ? (float) $formData['longitude'] : null);
+
+        if ($formData['prix'] === '') {
+            $activite->setPrix(null);
+        } else {
+            $activite->setPrix((float) $normalizedPrix);
+        }
+
+        if ($formData['id_pack'] !== '') {
+            $pack = $em->getRepository(Pack::class)->find((int) $formData['id_pack']);
+            $activite->setPack($pack);
+        } else {
+            $activite->setPack(null);
+        }
+
+        // ✅ HANDLE IMAGE UPLOAD FROM TEMP LOCATION
+        if ($imageTempPath && file_exists($imageTempPath)) {
             $uploadPath = rtrim((string) $this->getParameter('activite_resv_image_directory'), '/\\');
             $publicPath = trim((string) $this->getParameter('activite_resv_image_public_path'), '/\\');
-            $extension = $imageFile->guessExtension() ?: $imageFile->getClientOriginalExtension() ?: 'bin';
+            $extension = $tempData['imageFileName'] ? pathinfo($tempData['imageFileName'], PATHINFO_EXTENSION) : 'bin';
             $newFilename = uniqid('activite_', true) . '.' . $extension;
 
             try {
@@ -101,22 +213,36 @@ class ActiviteController extends AbstractController
                     throw new FileException("Impossible de creer le dossier d'upload.");
                 }
 
-                $imageFile->move($uploadPath, $newFilename);
-            } catch (FileException) {
-                return $this->renderCreateForm($packRepository, [
-                    'image_url' => ["Erreur lors du telechargement de l'image."],
-                ], $formData);
+                copy($imageTempPath, $uploadPath . DIRECTORY_SEPARATOR . $newFilename);
+                unlink($imageTempPath); // Delete temp file
+                $activite->setImageUrl($publicPath . '/' . $newFilename);
+            } catch (FileException $e) {
+                $this->addFlash('error', 'Error uploading image: ' . $e->getMessage());
+                $newCaptcha = $this->generateCaptcha();
+                $session->set('captcha_code', $newCaptcha);
+                return $this->redirectToRoute('app_captcha_verify_page');
             }
-
-            $activite->setImageUrl($publicPath . '/' . $newFilename);
         }
 
-        $em->persist($activite);
-        $em->flush();
-
-        return $this->redirectToRoute('app_activite_affichage', [
-            'id' => $activite->getIdActivite(),
-        ]);
+        // ✅ SAVE TO DATABASE
+        try {
+            $em->persist($activite);
+            $em->flush();
+            
+            // Clear session data
+            $session->remove('activite_temp_data');
+            $session->remove('captcha_code');
+            
+            $this->addFlash('success', 'Activity created successfully!');
+            return $this->redirectToRoute('app_activite_affichage', [
+                'id' => $activite->getIdActivite(),
+            ]);
+        } catch (\Exception $e) {
+            $this->addFlash('error', 'Error saving activity: ' . $e->getMessage());
+            $newCaptcha = $this->generateCaptcha();
+            $session->set('captcha_code', $newCaptcha);
+            return $this->redirectToRoute('app_captcha_verify_page');
+        }
     }
 
     #[Route('/activite/affichage/{id}', name: 'app_activite_affichage')]
@@ -133,8 +259,7 @@ class ActiviteController extends AbstractController
         PackRepository $packRepository,
         array $fieldErrors = [],
         array $formData = []
-    ): Response
-    {
+    ): Response {
         $packs = $packRepository->findBy([], ['nom' => 'ASC']);
         $selectedPack = null;
 
@@ -161,4 +286,27 @@ class ActiviteController extends AbstractController
 
         return $fieldErrors;
     }
+
+    private function generateCaptcha(): string
+    {
+        $letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $captcha = '';
+
+        for ($i = 0; $i < 5; $i++) {
+            $captcha .= $letters[random_int(0, strlen($letters) - 1)];
+        }
+
+        return $captcha;
+    }
+
+    #[Route('/activites/map', name: 'app_activite_map')]
+    public function map(ActiviteRepository $repo): Response
+    {
+        $activites = $repo->findAll();
+
+        return $this->render('front/map.html.twig', [
+            'activites' => $activites
+        ]);
+    }
 }
+
