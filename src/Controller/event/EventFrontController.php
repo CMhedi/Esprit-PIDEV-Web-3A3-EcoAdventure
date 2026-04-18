@@ -68,28 +68,33 @@ class EventFrontController extends AbstractController
         $lieu = $request->query->get('lieu');
         $sortBy = $request->query->get('sortBy', 'date_desc');
         $onlyAvailable = $request->query->getBoolean('disponible', false);
+        $page = $request->query->getInt('page', 1);
+        $limit = 6; // N events per page
 
-        // Handling pagination & sorting can go here, but for now we use the repository filters
-        $events = $evenementRepository->findByFilters($search, $categorie, $lieu, $sortBy, $onlyAvailable);
+        $eventsPaginator = $evenementRepository->findByFilters($search, $categorie, $lieu, $sortBy, $onlyAvailable, $page, $limit);
+        $totalEvents = count($eventsPaginator);
+        $totalPages = ceil($totalEvents / $limit);
 
-        // Fetch distinct locations for filter dropdown
         $lieux = $evenementRepository->findDistinctLieux();
 
-        // Check if AJAX request for real-time search
         if ($request->isXmlHttpRequest()) {
             return $this->render('front/event/_list.html.twig', [
-                'events' => $events,
+                'events' => $eventsPaginator,
+                'current_page' => $page,
+                'total_pages' => $totalPages
             ]);
         }
 
         return $this->render('front/event/events.html.twig', [
-            'events' => $events,
+            'events' => $eventsPaginator,
             'lieux'  => $lieux,
             'search' => $search,
             'selected_cat' => $categorie,
             'selected_lieu' => $lieu,
             'selected_sort' => $sortBy,
-            'only_available' => $onlyAvailable
+            'only_available' => $onlyAvailable,
+            'current_page' => $page,
+            'total_pages' => $totalPages
         ]);
     }
 

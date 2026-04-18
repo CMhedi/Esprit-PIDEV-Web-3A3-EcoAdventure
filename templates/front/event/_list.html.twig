@@ -31,3 +31,25 @@
         </div>
     </div>
 {% endfor %}
+
+{% if total_pages > 1 %}
+<div class="col-12 mt-4 d-flex justify-content-center w-100">
+    <nav aria-label="Pagination événements">
+        <ul class="pagination pagination-success">
+            <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                <button class="page-link" data-page="{{ current_page - 1 }}" {% if current_page <= 1 %}tabindex="-1" aria-disabled="true"{% endif %}><i class="bi bi-chevron-left"></i> Précédent</button>
+            </li>
+            
+            {% for i in 1..total_pages %}
+                <li class="page-item {% if current_page == i %}active{% endif %}">
+                    <button class="page-link" data-page="{{ i }}">{{ i }}</button>
+                </li>
+            {% endfor %}
+            
+            <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                <button class="page-link" data-page="{{ current_page + 1 }}" {% if current_page >= total_pages %}tabindex="-1" aria-disabled="true"{% endif %}>Suivant <i class="bi bi-chevron-right"></i></button>
+            </li>
+        </ul>
+    </nav>
+</div>
+{% endif %}

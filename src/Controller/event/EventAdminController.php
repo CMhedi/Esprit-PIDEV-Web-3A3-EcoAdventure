@@ -20,10 +20,24 @@ use App\Enum\StatutReservationEvenement;
 class EventAdminController extends AbstractController
 {
     #[Route('/reservations', name: 'app_event_admin_reservations', methods: ['GET'])]
-    public function reservations(ReservationEvenementRepository $reservationRepository): Response
+    public function reservations(Request $request, ReservationEvenementRepository $reservationRepository): Response
     {
+        $page = $request->query->getInt('page', 1);
+        $limit = 10;
+        
+        $qb = $reservationRepository->createQueryBuilder('r')
+            ->orderBy('r.date_reservation', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+            
+        $paginator = new \Doctrine\ORM\Tools\Pagination\Paginator($qb);
+        $totalItems = count($paginator);
+        $totalPages = ceil($totalItems / $limit);
+
         return $this->render('admin/event/reservations.html.twig', [
-            'reservations' => $reservationRepository->findBy([], ['date_reservation' => 'DESC']),
+            'reservations' => $paginator,
+            'current_page' => $page,
+            'total_pages' => $totalPages
         ]);
     }
 
@@ -43,10 +57,24 @@ class EventAdminController extends AbstractController
     }
 
     #[Route('/', name: 'app_event_admin_index', methods: ['GET'])]
-    public function index(EvenementRepository $evenementRepository): Response
+    public function index(Request $request, EvenementRepository $evenementRepository): Response
     {
+        $page = $request->query->getInt('page', 1);
+        $limit = 10;
+        
+        $qb = $evenementRepository->createQueryBuilder('e')
+            ->orderBy('e.date_event', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+            
+        $paginator = new \Doctrine\ORM\Tools\Pagination\Paginator($qb);
+        $totalItems = count($paginator);
+        $totalPages = ceil($totalItems / $limit);
+
         return $this->render('admin/event/index.html.twig', [
-            'evenements' => $evenementRepository->findAll(),
+            'evenements' => $paginator,
+            'current_page' => $page,
+            'total_pages' => $totalPages
         ]);
     }
 

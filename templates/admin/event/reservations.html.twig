@@ -65,6 +65,27 @@
                     </tbody>
                 </table>
             </div>
-        </div>
     </div>
+
+    {% if total_pages > 1 %}
+    <div class="d-flex justify-content-center mt-4">
+        <nav aria-label="Pagination Navigation">
+            <ul class="pagination pagination-sm shadow-sm">
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ path('app_event_admin_reservations', {page: current_page - 1}) }}" {% if current_page <= 1 %}tabindex="-1" aria-disabled="true"{% endif %}><i class="bi bi-chevron-left"></i> Précedent</a>
+                </li>
+                
+                {% for i in 1..total_pages %}
+                    <li class="page-item {% if current_page == i %}active{% endif %}">
+                        <a class="page-link" href="{{ path('app_event_admin_reservations', {page: i}) }}">{{ i }}</a>
+                    </li>
+                {% endfor %}
+                
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ path('app_event_admin_reservations', {page: current_page + 1}) }}" {% if current_page >= total_pages %}tabindex="-1" aria-disabled="true"{% endif %}>Suivant <i class="bi bi-chevron-right"></i></a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 {% endblock %}

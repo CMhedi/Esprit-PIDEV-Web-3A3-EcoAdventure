@@ -306,12 +306,14 @@ class ReservationController extends AbstractController
         $nbBillets = (int) $request->request->get('nb_billets', 1);
         $placesRestantes = $evenement->getPlacesRestantes();
 
-        if ($placesRestantes <= 0) {
-            $this->addFlash('error', 'Désolé, cet événement est complet.');
+
+
+        if ($placesRestantes > 0 && $nbBillets > $placesRestantes) {
+            $this->addFlash('error', sprintf('Il ne reste que %d place(s). Vous ne pouvez pas réserver plus que ce qui est disponible tant que l\'événement n\'est pas complet.', $placesRestantes));
             return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
         }
 
-        if ($nbBillets > $placesRestantes) {
+        if ($placesRestantes <= 0) {
             $reservationsAttente = $entityManager->getRepository(ReservationEvenement::class)->findBy([
                 'evenement' => $evenement,
                 'statut_res' => StatutReservationEvenement::LISTE_ATTENTE
@@ -322,7 +324,7 @@ class ReservationController extends AbstractController
             }
 
             if ($placesEnAttente + $nbBillets > $evenement->getLimite_attente()) {
-                $this->addFlash('error', sprintf('Désolé, il ne reste que %d place(s) et la liste d\'attente est pleine.', $placesRestantes));
+                $this->addFlash('error', 'Désolé, l\'événement est complet et la liste d\'attente est pleine.');
                 return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
             }
 
@@ -407,6 +409,7 @@ class ReservationController extends AbstractController
         foreach ($reservationsAttente as $resAttente) {
             if ($resAttente->getNb_billets() <= $placesRestantes) {
                 $resAttente->setStatut_res(StatutReservationEvenement::EN_ATTENTE);
+                $resAttente->setIsNotifiedAvailability(true);
                 $placesRestantes -= $resAttente->getNb_billets();
                 
                 // Add an admin notification as well to log that someone was moved from waitlist
@@ -452,6 +455,7 @@ class ReservationController extends AbstractController
 
         foreach ($reservations as $res) {
             $res->setStatut_res(StatutReservationEvenement::CONFIRMEE);
+            $res->setIsNotifiedAvailability(false);
         }
         
         $entityManager->flush();
@@ -461,7 +465,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/mes-reservations', name: 'app_mes_reservations', methods: ['GET'])]
-    public function mesReservations(EntityManagerInterface $entityManager, ReservationPricingService $pricingService): Response
+    public function mesReservations(Request $request, EntityManagerInterface $entityManager, ReservationPricingService $pricingService): Response
     {
         $user = $this->getUser();
         
@@ -476,7 +480,15 @@ class ReservationController extends AbstractController
         );
 
         $groupedReservations = [];
+        $hasUpdates = false;
+
         foreach ($allReservations as $res) {
+            // Mark notifications as read if they were notified
+            if ($res->isNotifiedAvailability()) {
+                $res->setIsNotifiedAvailability(false);
+                $hasUpdates = true;
+            }
+
             // Only process non-cancelled reservations (though we delete them now, safety first)
             if ($res->getStatut_res() === StatutReservationEvenement::ANNULEE) {
                 continue;
@@ -501,8 +513,25 @@ class ReservationController extends AbstractController
             $groupedReservations[$eventId]['pricing'] = $pricingService->calculatePricing($data['evenement'], $data['total_billets']);
         }
 
+        if ($hasUpdates) {
+            $entityManager->flush();
+        }
+
+        $groupedReservations = array_values($groupedReservations); // Reindex array
+        $page = $request->query->getInt('page', 1);
+        $limit = 5; // Nombre d'événements affichés par page
+        $totalItems = count($groupedReservations);
+        $totalPages = max(1, ceil($totalItems / $limit));
+
+        if ($page < 1) $page = 1;
+        if ($page > $totalPages && $totalPages > 0) $page = $totalPages;
+
+        $paginatedReservations = array_slice($groupedReservations, ($page - 1) * $limit, $limit);
+
         return $this->render('front/event/mes_reservations.html.twig', [
-            'reservations' => $groupedReservations,
+            'reservations' => $paginatedReservations,
+            'current_page' => $page,
+            'total_pages' => $totalPages
         ]);
     }
 

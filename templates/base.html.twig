@@ -93,6 +93,33 @@
 </nav>
 {% endblock %}
 
+{% if app.user %}
+    {% set notificationsCount = 0 %}
+    {% for res in app.user.reservationEvenements %}
+        {% if res.statut_res.value == 'EN_ATTENTE' and res.isNotifiedAvailability %}
+            {% set notificationsCount = notificationsCount + 1 %}
+        {% endif %}
+    {% endfor %}
+    
+    {% if notificationsCount > 0 %}
+        <div class="alert alert-success alert-dismissible fade show m-0 text-center rounded-0 shadow-sm border-0 border-bottom border-success border-2" role="alert" style="z-index: 1050; position: relative;">
+            <i class="bi bi-bell-fill me-2 fs-5 text-warning" style="animation: pulse-animation 2s infinite;"></i> 
+            <strong class="fs-5">Bonne nouvelle !</strong> Une place s'est libérée pour {{ notificationsCount }} de vos événements en liste d'attente !
+            <a href="{{ path('app_mes_reservations') }}" class="btn btn-sm btn-success ms-3 text-white fw-bold rounded-pill shadow-sm">
+                Confirmer ma place <i class="bi bi-arrow-right-short"></i>
+            </a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <style>
+            @keyframes pulse-animation {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.2); }
+                100% { transform: scale(1); }
+            }
+        </style>
+    {% endif %}
+{% endif %}
+
 {% block body %}{% endblock %}
 
 {% block footer %}
