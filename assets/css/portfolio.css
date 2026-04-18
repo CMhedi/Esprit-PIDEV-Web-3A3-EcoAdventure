@@ -80,8 +80,9 @@ img {
     position: relative;
     overflow: hidden;
     background:
-        linear-gradient(135deg, rgba(45, 90, 39, 0.93), rgba(55, 65, 81, 0.92)),
-        url("../img/hero-texture.png") center/cover no-repeat;
+        radial-gradient(circle at 18% 18%, rgba(242, 140, 40, 0.28), transparent 28%),
+        radial-gradient(circle at 82% 22%, rgba(59, 130, 246, 0.18), transparent 32%),
+        linear-gradient(135deg, rgba(45, 90, 39, 0.96), rgba(55, 65, 81, 0.94));
 }
 
 .portfolio-hero::before {

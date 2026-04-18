@@ -32,20 +32,27 @@ class MessageRepository extends ServiceEntityRepository
 
     public function getLatestIdAndIncomingCount(Conversation $conversation, UserApp $user, int $lastSeenId): array
     {
-        $qb = $this->createQueryBuilder('m');
-        $result = $qb
-            ->select('COALESCE(MAX(m.id_message), 0) AS latest_id')
-            ->addSelect('SUM(CASE WHEN m.id_message > :lastSeenId AND m.userApp != :user THEN 1 ELSE 0 END) AS incoming_count')
+        $latestId = (int) ($this->createQueryBuilder('m')
+            ->select('COALESCE(MAX(m.id_message), 0)')
             ->where('m.conversation = :conversation')
+            ->setParameter('conversation', $conversation)
+            ->getQuery()
+            ->getSingleScalarResult() ?? 0);
+
+        $incomingCount = (int) ($this->createQueryBuilder('m')
+            ->select('COUNT(m.id_message)')
+            ->where('m.conversation = :conversation')
+            ->andWhere('m.id_message > :lastSeenId')
+            ->andWhere('m.userApp != :user')
             ->setParameter('conversation', $conversation)
             ->setParameter('user', $user)
             ->setParameter('lastSeenId', $lastSeenId)
             ->getQuery()
-            ->getSingleResult();
+            ->getSingleScalarResult() ?? 0);
 
         return [
-            'latest_id' => (int) ($result['latest_id'] ?? 0),
-            'incoming_count' => (int) ($result['incoming_count'] ?? 0),
+            'latest_id' => $latestId,
+            'incoming_count' => $incomingCount,
         ];
     }
 

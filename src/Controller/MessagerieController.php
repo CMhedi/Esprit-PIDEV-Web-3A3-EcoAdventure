@@ -15,6 +15,7 @@ use App\Service\ContentModerationService;
 use App\Service\GeminiGifChatService;
 use App\Service\TextCorrectionService;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -23,7 +24,9 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class MessagerieController extends AbstractController
 {
@@ -134,6 +137,8 @@ class MessagerieController extends AbstractController
         $currentConvLastContact = null;
         if ($currentConv) {
             $messages = $messageRepo->findMessagesForConversation($currentConv);
+            $messages = $this->sanitizeConversationMessagesForDisplay($messages);
+            $messageRepo->markConversationAsRead($currentConv, $user);
             if (!empty($messages)) {
                 $lastMessage = end($messages);
                 $currentConvLastContact = $lastMessage?->getDate_envoi();
@@ -158,8 +163,44 @@ class MessagerieController extends AbstractController
             'mon_id' => $user->getId_user(),
             'nom_utilisateur' => $user->getNom(),
             'prenom_utilisateur' => $user->getPrenom(),
+            'user_email' => $user->getEmail(),
             'gemini_assistant_email' => (string) ($_ENV['GEMINI_ASSISTANT_EMAIL'] ?? 'gemini.bot@ecoadventure.local'),
+            'jitsi_domain' => (string) ($_ENV['JITSI_DOMAIN'] ?? 'meet.jit.si'),
+            'jitsi_room_prefix' => (string) ($_ENV['JITSI_ROOM_PREFIX'] ?? 'ecoadventure'),
+            'jitsi_popup_mode' => (string) ($_ENV['JITSI_POPUP_MODE'] ?? 'auto'),
+            'call_provider' => (string) ($_ENV['CALL_PROVIDER'] ?? 'webrtc'),
+            'webrtc_ice_servers' => $this->buildWebRtcIceServers(),
         ]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildWebRtcIceServers(): array
+    {
+        $servers = [
+            ['urls' => 'stun:stun.l.google.com:19302'],
+            ['urls' => 'stun:stun1.l.google.com:19302'],
+        ];
+
+        $turnUrl = trim((string) ($_ENV['WEBRTC_TURN_URL'] ?? ''));
+        if ($turnUrl !== '') {
+            $turnServer = ['urls' => $turnUrl];
+
+            $turnUsername = trim((string) ($_ENV['WEBRTC_TURN_USERNAME'] ?? ''));
+            if ($turnUsername !== '') {
+                $turnServer['username'] = $turnUsername;
+            }
+
+            $turnPassword = trim((string) ($_ENV['WEBRTC_TURN_PASSWORD'] ?? ''));
+            if ($turnPassword !== '') {
+                $turnServer['credential'] = $turnPassword;
+            }
+
+            $servers[] = $turnServer;
+        }
+
+        return $servers;
     }
 
     /**
@@ -302,14 +343,20 @@ class MessagerieController extends AbstractController
         ContentModerationService $moderationService,
         GeminiGifChatService $geminiGifChatService
     ): Response {
+        $authenticatedUser = $this->getUser();
+        if ($authenticatedUser instanceof UserApp) {
+            $id_user = $authenticatedUser->getId_user();
+        }
+
         $user = $userRepo->find($id_user);
         $conversation = $conversationRepo->find($id_conversation);
+        $isAdminSender = $user instanceof UserApp && $user->getRole() === RoleUser::ADMIN;
 
         if (!$user) {
             throw $this->createNotFoundException();
         }
 
-        if (!$conversation || !$conversation->getParticipants()->contains($user)) {
+        if (!$conversation || !$this->canAccessConversation($user, $conversation)) {
             $idDestinataire = (int) $request->request->get('id_destinataire', 0);
             if ($idDestinataire > 0 && $idDestinataire !== $id_user) {
                 $destinataire = $userRepo->find($idDestinataire);
@@ -335,16 +382,23 @@ class MessagerieController extends AbstractController
             }
         }
 
-        if (!$conversation || !$conversation->getParticipants()->contains($user)) {
+        if (!$conversation || !$this->canAccessConversation($user, $conversation)) {
             throw $this->createNotFoundException();
+        }
+
+        if ($isAdminSender && !$conversation->getParticipants()->contains($user)) {
+            $conversation->addParticipant($user);
+            $em->persist($conversation);
         }
 
         if (!$conversation->isEst_groupe() && $conversation->isPrivateBlocked()) {
             $this->addFlash('error', 'Cette conversation privée est bloquée. Vous pouvez continuer à discuter dans les groupes.');
-            return $this->redirectToRoute('app_messagerie_selected', [
-                'id_user' => $id_user,
-                'id_conversation' => $conversation->getId_conversation()
-            ]);
+            return $isAdminSender
+                ? $this->redirectToRoute('admin_messagerie_view', ['id' => $conversation->getId_conversation()])
+                : $this->redirectToRoute('app_messagerie_selected', [
+                    'id_user' => $id_user,
+                    'id_conversation' => $conversation->getId_conversation()
+                ]);
         }
 
         $message = new Message();
@@ -355,7 +409,7 @@ class MessagerieController extends AbstractController
         $message->setType_message(TypeMessage::TEXTE);
 
         $uploadedFiles = $request->files->all('mediaFiles');
-        $textContent = trim($request->request->get('message', ''));
+        $textContent = $this->normalizeMirroredLatinText(trim($request->request->get('message', '')));
         $gifUrl = trim((string) $request->request->get('gif_url', ''));
         $vocalBlobBase64 = trim((string) $request->request->get('vocal_blob_base64', ''));
         $vocalBlobMime = trim((string) $request->request->get('vocal_blob_mime', 'audio/webm'));
@@ -365,10 +419,12 @@ class MessagerieController extends AbstractController
 
         if ($textContent !== '' && $moderationService->containsProhibitedContent($textContent)) {
             $this->addFlash('error', 'Message bloque: contenu inapproprie detecte.');
-            return $this->redirectToRoute('app_messagerie_selected', [
-                'id_user' => $id_user,
-                'id_conversation' => $id_conversation
-            ]);
+            return $isAdminSender
+                ? $this->redirectToRoute('admin_messagerie_view', ['id' => $id_conversation])
+                : $this->redirectToRoute('app_messagerie_selected', [
+                    'id_user' => $id_user,
+                    'id_conversation' => $id_conversation
+                ]);
         }
 
         if (count($uploadedFiles) > 3) {
@@ -525,6 +581,17 @@ class MessagerieController extends AbstractController
             if (!empty($uploadedFiles) || $gifUrl !== '') {
                 $message->setContenu($textContent);
             } else {
+                // Prevent storing local machine file paths as chat content.
+                if (preg_match('/^[A-Za-z]:[\\\\\/]/', $textContent) === 1) {
+                    $this->addFlash('error', 'Chemin local detecte. Veuillez joindre le fichier via le bouton piece jointe.');
+                    return $isAdminSender
+                        ? $this->redirectToRoute('admin_messagerie_view', ['id' => $id_conversation])
+                        : $this->redirectToRoute('app_messagerie_selected', [
+                            'id_user' => $id_user,
+                            'id_conversation' => $id_conversation
+                        ]);
+                }
+
                 $message->setContenu($textContent);
                 if ($this->isEmojiOnlyMessage($textContent)) {
                     $message->setType_message(TypeMessage::EMOJI);
@@ -532,10 +599,12 @@ class MessagerieController extends AbstractController
             }
         } elseif (empty($uploadedFiles) && $gifUrl === '' && $vocalBlobBase64 === '') {
             $this->addFlash('error', 'Vous ne pouvez pas envoyer un message vide.');
-            return $this->redirectToRoute('app_messagerie_selected', [
-                'id_user' => $id_user,
-                'id_conversation' => $id_conversation
-            ]);
+            return $isAdminSender
+                ? $this->redirectToRoute('admin_messagerie_view', ['id' => $id_conversation])
+                : $this->redirectToRoute('app_messagerie_selected', [
+                    'id_user' => $id_user,
+                    'id_conversation' => $id_conversation
+                ]);
         }
 
         $errors = $validator->validate($message);
@@ -543,10 +612,12 @@ class MessagerieController extends AbstractController
             foreach ($errors as $error) {
                 $this->addFlash('error', $error->getMessage());
             }
-            return $this->redirectToRoute('app_messagerie_selected', [
-                'id_user' => $id_user,
-                'id_conversation' => $id_conversation
-            ]);
+            return $isAdminSender
+                ? $this->redirectToRoute('admin_messagerie_view', ['id' => $id_conversation])
+                : $this->redirectToRoute('app_messagerie_selected', [
+                    'id_user' => $id_user,
+                    'id_conversation' => $id_conversation
+                ]);
         }
 
         $em->persist($message);
@@ -554,6 +625,7 @@ class MessagerieController extends AbstractController
 
         $this->sendAutomatedGeminiReplyIfNeeded(
             $textContent,
+            $message->getAttachments(),
             $user,
             $conversation,
             $em,
@@ -562,10 +634,12 @@ class MessagerieController extends AbstractController
             $geminiGifChatService
         );
 
-        return $this->redirectToRoute('app_messagerie_selected', [
-            'id_user' => $id_user,
-            'id_conversation' => $conversation->getId_conversation()
-        ]);
+        return $isAdminSender
+            ? $this->redirectToRoute('admin_messagerie_view', ['id' => $conversation->getId_conversation()])
+            : $this->redirectToRoute('app_messagerie_selected', [
+                'id_user' => $id_user,
+                'id_conversation' => $conversation->getId_conversation()
+            ]);
     }
 
     /**
@@ -619,7 +693,7 @@ class MessagerieController extends AbstractController
         $user = $userRepo->find($id_user);
         $conversation = $conversationRepo->find($id_conversation);
         $message = $messageRepo->find($id_message);
-        $edited = trim($request->request->get('edited_message', ''));
+        $edited = $this->normalizeMirroredLatinText(trim($request->request->get('edited_message', '')));
 
         if ($edited !== '' && $moderationService->containsProhibitedContent($edited)) {
             $this->addFlash('error', 'Modification bloquee: contenu inapproprie detecte.');
@@ -773,17 +847,23 @@ public function callLog(
     }
 
     // Get call details from the request (sent by front‑end)
-    $type = $request->request->get('type');        // 'audio' or 'video'
-    $duration = $request->request->get('duration'); // in seconds, e.g. "204"
+    $type = $request->request->get('type');
+    $duration = (int) $request->request->get('duration', 0);
+    $roomName = trim((string) $request->request->get('room_name', ''));
+    $meetingUrl = trim((string) $request->request->get('meeting_url', ''));
+    $provider = trim((string) $request->request->get('provider', ''));
+    $startedAt = $this->parseIsoDateTime($request->request->get('started_at'));
+    $endedAt = $this->parseIsoDateTime($request->request->get('ended_at')) ?? new \DateTimeImmutable();
 
-    if (!in_array($type, ['audio', 'video'])) {
+    if (!in_array($type, ['audio', 'video'], true)) {
         return $this->json(['error' => 'Invalid call type'], 400);
     }
 
     // Format duration
-    $minutes = floor($duration / 60);
-    $seconds = $duration % 60;
-    $durationStr = sprintf('%d min %d s', $minutes, $seconds);
+    $durationSeconds = max(1, $duration);
+    $durationStr = $this->formatCallDurationLabel($durationSeconds);
+    $startedAt ??= $endedAt->sub(new \DateInterval(sprintf('PT%dS', $durationSeconds)));
+    $provider = in_array($provider, ['jitsi', 'webrtc'], true) ? $provider : 'webrtc';
 
     // Create the message
     $message = new Message();
@@ -792,13 +872,185 @@ public function callLog(
     $message->setDate_envoi(new \DateTime());
     $message->setStatut_message(StatutMessage::ENVOYE);
     $message->setType_message($type === 'audio' ? TypeMessage::APPEL_AUDIO : TypeMessage::APPEL_VIDEO);
-    $message->setContenu("Appel {$type} de {$durationStr}");
+    $message->setContenu(sprintf('Appel %s termine (%s)', $type, $durationStr));
+    $message->setAttachments([
+        [
+            'type' => 'CALL_META',
+            'call_type' => $type,
+            'status' => 'completed',
+            'duration_seconds' => $durationSeconds,
+            'duration_label' => $durationStr,
+            'provider' => $provider,
+            'room_name' => $roomName,
+            'meeting_url' => $meetingUrl,
+            'started_at' => $startedAt->format(DATE_ATOM),
+            'ended_at' => $endedAt->format(DATE_ATOM),
+            'started_label' => $startedAt->format('H:i'),
+            'ended_label' => $endedAt->format('H:i'),
+        ],
+    ]);
 
     $em->persist($message);
     $em->flush();
 
-    return $this->json(['success' => true]);
+    return $this->json([
+        'success' => true,
+        'message_id' => $message->getId_message(),
+        'duration_label' => $durationStr,
+    ]);
 }
+
+    #[Route('/messagerie/call/signal/{id_user}/{id_conversation}', name: 'app_call_signal_send', methods: ['POST'])]
+    public function sendCallSignal(
+        int $id_user,
+        int $id_conversation,
+        Request $request,
+        EntityManagerInterface $em,
+        CacheItemPoolInterface $cache
+    ): Response {
+        try {
+            $authenticatedUser = $this->getUser();
+            if ($authenticatedUser instanceof UserApp) {
+                $id_user = $authenticatedUser->getId_user();
+            }
+
+            $sender = $em->getRepository(UserApp::class)->find($id_user);
+            $conversation = $em->getRepository(Conversation::class)->find($id_conversation);
+
+            if (!$sender || !$conversation || !$this->canAccessConversation($sender, $conversation)) {
+                return $this->json(['error' => 'Unauthorized'], 403);
+            }
+
+            $payload = json_decode($request->getContent(), true);
+            if (!is_array($payload)) {
+                $payload = $request->request->all();
+            }
+
+            $targetUserId = (int) ($payload['target_user_id'] ?? 0);
+            $signalType = trim((string) ($payload['signal_type'] ?? ''));
+            $callType = trim((string) ($payload['call_type'] ?? 'audio'));
+            $sessionId = trim((string) ($payload['session_id'] ?? ''));
+            $signalPayload = $payload['payload'] ?? [];
+
+            if ($targetUserId <= 0 || $sessionId === '' || !in_array($signalType, ['invite', 'accept', 'offer', 'answer', 'candidate', 'end', 'reject'], true)) {
+                return $this->json(['error' => 'Invalid signaling payload'], 422);
+            }
+
+            $targetUser = $em->getRepository(UserApp::class)->find($targetUserId);
+            if (!$targetUser || !$conversation->getParticipants()->contains($targetUser)) {
+                return $this->json(['error' => 'Target user is not in conversation'], 422);
+            }
+
+            $sessionState = $this->getCallSessionState($cache, $conversation->getId_conversation(), $sessionId);
+            if ($signalType === 'accept' && $sessionState !== 'invited') {
+                return $this->json([
+                    'success' => false,
+                    'closed' => true,
+                    'session_state' => $sessionState,
+                    'error' => 'Call session is already closed',
+                ]);
+            }
+
+            if (in_array($signalType, ['offer', 'answer', 'candidate'], true) && $sessionState === 'closed') {
+                return $this->json([
+                    'success' => false,
+                    'closed' => true,
+                    'session_state' => $sessionState,
+                    'error' => 'Call session is already closed',
+                ]);
+            }
+
+            if (in_array($signalType, ['reject', 'end'], true) && $sessionState === 'closed') {
+                return $this->json([
+                    'success' => true,
+                    'closed' => true,
+                    'session_state' => $sessionState,
+                ]);
+            }
+
+            $event = [
+                // Microsecond precision avoids collisions when multiple signaling events are sent quickly.
+                'id' => (int) floor(microtime(true) * 1000000),
+                'conversation_id' => $conversation->getId_conversation(),
+                'sender_user_id' => $sender->getId_user(),
+                'target_user_id' => $targetUserId,
+                'signal_type' => $signalType,
+                'call_type' => in_array($callType, ['audio', 'video'], true) ? $callType : 'audio',
+                'session_id' => $sessionId,
+                'payload' => is_array($signalPayload) ? $signalPayload : [],
+                'created_at' => (new \DateTimeImmutable())->format(DATE_ATOM),
+            ];
+
+            if ($signalType === 'invite') {
+                $this->setCallSessionState($cache, $conversation->getId_conversation(), $sessionId, 'invited');
+            } elseif ($signalType === 'accept') {
+                $this->setCallSessionState($cache, $conversation->getId_conversation(), $sessionId, 'accepted');
+            } elseif (in_array($signalType, ['reject', 'end'], true)) {
+                $this->setCallSessionState($cache, $conversation->getId_conversation(), $sessionId, 'closed');
+            }
+
+            $this->appendCallSignalEvent($cache, $conversation->getId_conversation(), $targetUserId, $event);
+
+            return $this->json(['success' => true, 'event_id' => $event['id']]);
+        } catch (\Throwable $exception) {
+            return $this->json([
+                'success' => false,
+                'closed' => false,
+                'error' => 'Signalisation indisponible pour le moment.',
+            ]);
+        }
+    }
+
+    #[Route('/messagerie/call/signal/{id_user}/{id_conversation}', name: 'app_call_signal_poll', methods: ['GET'])]
+    public function pollCallSignals(
+        int $id_user,
+        int $id_conversation,
+        Request $request,
+        EntityManagerInterface $em,
+        CacheItemPoolInterface $cache
+    ): Response {
+        try {
+            $authenticatedUser = $this->getUser();
+            if ($authenticatedUser instanceof UserApp) {
+                $id_user = $authenticatedUser->getId_user();
+            }
+
+            $user = $em->getRepository(UserApp::class)->find($id_user);
+            $conversation = $em->getRepository(Conversation::class)->find($id_conversation);
+
+            if (!$user || !$conversation || !$this->canAccessConversation($user, $conversation)) {
+                return $this->json(['error' => 'Unauthorized'], 403);
+            }
+
+            $after = (int) $request->query->get('after', 0);
+            $events = $this->readCallSignalEvents($cache, $conversation->getId_conversation(), $user->getId_user(), $after);
+            $events = array_values(array_filter($events, function (array $event) use ($cache, $conversation): bool {
+                $sessionId = (string) ($event['session_id'] ?? '');
+                $signalType = (string) ($event['signal_type'] ?? '');
+
+                if ($sessionId === '') {
+                    return false;
+                }
+
+                if ($signalType === 'invite') {
+                    return $this->getCallSessionState($cache, $conversation->getId_conversation(), $sessionId) === 'invited';
+                }
+
+                return $this->hasActiveCallSession($cache, $conversation->getId_conversation(), $sessionId);
+            }));
+
+            return $this->json([
+                'success' => true,
+                'events' => $events,
+            ]);
+        } catch (\Throwable $exception) {
+            return $this->json([
+                'success' => false,
+                'events' => [],
+                'error' => 'Poll d appel indisponible pour le moment.',
+            ]);
+        }
+    }
 
     #[Route('/media-file/{file}', name: 'app_media_file', requirements: ['file' => '.+'])]
     public function mediaFile(string $file, Request $request): Response
@@ -814,25 +1066,52 @@ public function callLog(
     #[Route('/media', name: 'app_media_by_path', methods: ['GET'])]
     public function mediaByPath(Request $request): Response
     {
-        $path = (string) $request->query->get('path', '');
-        if ($path === '') {
-            throw $this->createNotFoundException('Fichier introuvable.');
+        try {
+            $path = (string) $request->query->get('path', '');
+            if ($path === '') {
+                throw $this->createNotFoundException('Fichier introuvable.');
+            }
+
+            $relative = str_starts_with($path, '/uploads/') ? substr($path, 9) : ltrim($path, '/');
+            $response = $this->buildMediaResponse($relative, $request);
+            $disposition = $request->query->getBoolean('download', false)
+                ? ResponseHeaderBag::DISPOSITION_ATTACHMENT
+                : ResponseHeaderBag::DISPOSITION_INLINE;
+            $response->setContentDisposition($disposition, basename($response->getFile()->getPathname()));
+            $response->headers->set('Cache-Control', 'no-store, private, max-age=0, must-revalidate');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+
+            return $response;
+        } catch (NotFoundHttpException $exception) {
+            return $this->json([
+                'error' => 'Media not found',
+                'message' => $exception->getMessage(),
+            ], 404);
+        } catch (\Throwable $exception) {
+            return $this->json([
+                'error' => 'Media unavailable',
+                'message' => $exception->getMessage(),
+            ], 500);
         }
-
-        $relative = str_starts_with($path, '/uploads/') ? substr($path, 9) : ltrim($path, '/');
-        $response = $this->buildMediaResponse($relative, $request);
-        $disposition = $request->query->getBoolean('download', false)
-            ? ResponseHeaderBag::DISPOSITION_ATTACHMENT
-            : ResponseHeaderBag::DISPOSITION_INLINE;
-        $response->setContentDisposition($disposition, basename($response->getFile()->getPathname()));
-
-        return $response;
     }
 
     private function buildMediaResponse(string $file, Request $request): BinaryFileResponse
     {
         $baseDir = rtrim((string) $this->getParameter('messages_upload_directory'), '/\\');
-        $relative = ltrim(str_replace('\\', '/', $file), '/');
+        $normalizedInput = str_replace('\\', '/', $file);
+
+        // Legacy support: absolute local paths (Windows/Linux) saved in old rows.
+        if (preg_match('/^[A-Za-z]:\//', $normalizedInput) === 1 || str_starts_with($normalizedInput, '/')) {
+            $uploadsPos = stripos($normalizedInput, '/uploads/');
+            if ($uploadsPos !== false) {
+                $relative = ltrim(substr($normalizedInput, $uploadsPos + 9), '/');
+            } else {
+                $relative = basename($normalizedInput);
+            }
+        } else {
+            $relative = ltrim($normalizedInput, '/');
+        }
 
         $candidate = $baseDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
         $resolvedPath = $candidate;
@@ -845,11 +1124,28 @@ public function callLog(
             }
         }
 
+        // If only a filename is known, try common upload folders.
+        if (!is_file($resolvedPath) && !str_contains($relative, '/')) {
+            foreach (['images', 'Gifs', 'video', 'Audio', 'Vocale', 'files'] as $folder) {
+                $fallback = $baseDir . DIRECTORY_SEPARATOR . $folder . DIRECTORY_SEPARATOR . $relative;
+                if (is_file($fallback)) {
+                    $resolvedPath = $fallback;
+                    break;
+                }
+            }
+        }
+
+        clearstatcache(true, $resolvedPath);
         if (!is_file($resolvedPath) || !is_readable($resolvedPath)) {
             throw $this->createNotFoundException('Fichier introuvable.');
         }
 
-        return new BinaryFileResponse($resolvedPath);
+        $response = new BinaryFileResponse($resolvedPath);
+        $response->headers->set('Cache-Control', 'no-store, private, max-age=0, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+
+        return $response;
     }
 
     private function isEmojiOnlyMessage(string $text): bool
@@ -859,7 +1155,164 @@ public function callLog(
             return false;
         }
 
-        return (bool) preg_match('/^(?:\p{Extended_Pictographic}|\x{FE0F}|\x{200D})+$/u', $normalized);
+        return (bool) preg_match('/^(?:[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]|\x{FE0F}|\x{200D})+$/u', $normalized);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getSupportedReactionEmojis(): array
+    {
+        return ['❤️', '👍', '😂', '😮', '😢', '🔥'];
+    }
+
+    private function normalizeEmojiPickerCategory(string $groupName): string
+    {
+        $group = mb_strtolower(trim($groupName));
+        if ($group === '') {
+            return 'symbols';
+        }
+
+        if (str_contains($group, 'smileys')) {
+            return 'smileys';
+        }
+        if (str_contains($group, 'people') || str_contains($group, 'body') || str_contains($group, 'component')) {
+            return 'people';
+        }
+        if (str_contains($group, 'animal') || str_contains($group, 'nature')) {
+            return 'nature';
+        }
+        if (str_contains($group, 'food') || str_contains($group, 'drink')) {
+            return 'food';
+        }
+        if (str_contains($group, 'travel') || str_contains($group, 'place')) {
+            return 'travel';
+        }
+        if (str_contains($group, 'activit')) {
+            return 'activities';
+        }
+        if (str_contains($group, 'object')) {
+            return 'objects';
+        }
+
+        return 'symbols';
+    }
+
+    /**
+     * @return array<int, array{emoji:string,name:string,group:string,sub_group:string}>
+     */
+    private function getEmojiPickerItems(string $query = '', int $limit = 1000, ?HttpClientInterface $httpClient = null): array
+    {
+        if ($httpClient) {
+            $apiItems = $this->fetchEmojiPickerItemsFromApi($httpClient, $query, $limit);
+            if ($apiItems !== []) {
+                return $apiItems;
+            }
+        }
+
+        static $catalog = null;
+
+        if (!is_array($catalog)) {
+            $catalog = [];
+            $ranges = [
+                [0x1F300, 0x1FAFF],
+                [0x2600, 0x27BF],
+            ];
+
+            foreach ($ranges as [$start, $end]) {
+                for ($cp = $start; $cp <= $end; $cp++) {
+                    $char = mb_chr($cp, 'UTF-8');
+                    if (!is_string($char) || $char === '') {
+                        continue;
+                    }
+
+                    $catalog[] = [
+                        'emoji' => $char,
+                        'name' => sprintf('U+%04X', $cp),
+                        'group' => $cp >= 0x1F600 && $cp <= 0x1F64F ? 'smileys & emotion' : 'symbols',
+                        'sub_group' => '',
+                    ];
+
+                    if (count($catalog) >= 10000) {
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        $items = $catalog;
+        if ($query !== '') {
+            $needle = mb_strtolower($query);
+            $items = array_values(array_filter(
+                $items,
+                static fn (array $item): bool => str_contains(mb_strtolower((string) ($item['name'] ?? '')), $needle)
+                    || str_contains((string) ($item['emoji'] ?? ''), $query)
+            ));
+        }
+
+        return array_slice($items, 0, max(1, min($limit, 10000)));
+    }
+
+    /**
+     * @return array<int, array{emoji:string,name:string,group:string,sub_group:string}>
+     */
+    private function fetchEmojiPickerItemsFromApi(HttpClientInterface $httpClient, string $query, int $limit): array
+    {
+        try {
+            $response = $httpClient->request('GET', 'https://emojihub.yurace.pro/api/all', [
+                'timeout' => 10,
+            ]);
+
+            if ($response->getStatusCode() !== 200) {
+                return [];
+            }
+
+            $rows = $response->toArray(false);
+            if (!is_array($rows)) {
+                return [];
+            }
+
+            $needle = mb_strtolower($query);
+            $items = [];
+            foreach ($rows as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+
+                $htmlCode = $row['htmlCode'] ?? [];
+                $emojiHtml = is_array($htmlCode) ? (string) ($htmlCode[0] ?? '') : (string) $htmlCode;
+                $emoji = $emojiHtml !== '' ? html_entity_decode($emojiHtml, ENT_QUOTES | ENT_HTML5, 'UTF-8') : '';
+                if ($emoji === '') {
+                    continue;
+                }
+
+                $name = trim((string) ($row['name'] ?? ''));
+                $category = trim((string) ($row['category'] ?? ''));
+                $groupRaw = trim((string) ($row['group'] ?? ''));
+                $group = $category !== '' ? $category : $groupRaw;
+                $subGroup = trim((string) ($row['subGroup'] ?? $groupRaw));
+                $label = trim($name . ' ' . $group . ' ' . $subGroup);
+
+                if ($needle !== '' && !str_contains(mb_strtolower($label), $needle) && !str_contains($emoji, $query)) {
+                    continue;
+                }
+
+                $items[] = [
+                    'emoji' => $emoji,
+                    'name' => $label !== '' ? $label : 'emoji',
+                    'group' => $group,
+                    'sub_group' => $subGroup,
+                ];
+
+                if (count($items) >= $limit) {
+                    break;
+                }
+            }
+
+            return $items;
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     #[Route('/message/{id_message}/react/{id_user}', name: 'app_message_react', methods: ['POST'])]
@@ -871,7 +1324,7 @@ public function callLog(
         UserAppRepository $userRepo,
         EntityManagerInterface $em
     ): Response {
-        $allowedEmojis = ['❤️'];
+        $allowedEmojis = $this->getSupportedReactionEmojis();
         $emoji = (string) $request->request->get('emoji', '');
 
         if (!in_array($emoji, $allowedEmojis, true)) {
@@ -933,22 +1386,32 @@ public function callLog(
         MessageRepository $messageRepo,
         Request $request
     ): Response {
-        $user = $userRepo->find($id_user);
-        $conversation = $conversationRepo->find($id_conversation);
-        if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
-            return $this->json(['error' => 'Not found'], 404);
+        try {
+            $user = $userRepo->find($id_user);
+            $conversation = $conversationRepo->find($id_conversation);
+            if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
+                return $this->json(['error' => 'Not found'], 404);
+            }
+
+            $lastSeenId = (int) $request->query->get('last_seen_id', 0);
+            $stats = $messageRepo->getLatestIdAndIncomingCount($conversation, $user, $lastSeenId);
+
+            return $this->json([
+                'latest_id' => $stats['latest_id'],
+                'incoming_count' => $stats['incoming_count'],
+            ]);
+        } catch (\Throwable $exception) {
+            return $this->json([
+                'success' => false,
+                'latest_id' => (int) $request->query->get('last_seen_id', 0),
+                'incoming_count' => 0,
+                'error' => 'Polling failed',
+                'message' => $exception->getMessage(),
+            ]);
         }
-
-        $lastSeenId = (int) $request->query->get('last_seen_id', 0);
-        $stats = $messageRepo->getLatestIdAndIncomingCount($conversation, $user, $lastSeenId);
-
-        return $this->json([
-            'latest_id' => $stats['latest_id'],
-            'incoming_count' => $stats['incoming_count'],
-        ]);
     }
 
-    #[Route('/messagerie/read/{id_user}/{id_conversation}', name: 'app_messagerie_read', methods: ['POST'])]
+    #[Route('/messagerie/read/{id_user}/{id_conversation}', name: 'app_messagerie_read', methods: ['GET', 'POST'])]
     public function markConversationRead(
         int $id_user,
         int $id_conversation,
@@ -983,9 +1446,14 @@ public function callLog(
         EntityManagerInterface $em,
         GeminiGifChatService $geminiGifChatService
     ): Response {
+        $authenticatedUser = $this->getUser();
+        if ($authenticatedUser instanceof UserApp) {
+            $id_user = $authenticatedUser->getId_user();
+        }
+
         $user = $userRepo->find($id_user);
         $conversation = $conversationRepo->find($id_conversation);
-        if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
+        if (!$user || !$conversation || !$this->canAccessConversation($user, $conversation)) {
             return $this->json(['error' => 'Conversation introuvable'], 404);
         }
 
@@ -1048,7 +1516,7 @@ public function callLog(
 
         $user = $userRepo->find($id_user);
         $conversation = $conversationRepo->find($id_conversation);
-        if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
+        if (!$user || !$conversation || !$this->canAccessConversation($user, $conversation)) {
             return $this->json(['success' => false, 'message' => 'Conversation introuvable.'], 404);
         }
 
@@ -1081,7 +1549,7 @@ public function callLog(
         }
 
         $assistant = $this->getOrCreateGeminiAssistant($userRepo, $em);
-        $conversation = $conversationRepo->findOneByParticipants($user, $assistant);
+        $conversation = $conversationRepo->findLatestNonBlockedPrivateByParticipants($user, $assistant);
 
         if (!$conversation) {
             $conversation = new Conversation();
@@ -1115,8 +1583,85 @@ public function callLog(
         ]);
     }
 
+    #[Route('/messagerie/emoji/list', name: 'app_messagerie_emoji_list', methods: ['GET'])]
+    public function emojiList(
+        Request $request,
+        ContentModerationService $moderationService,
+        HttpClientInterface $httpClient
+    ): Response
+    {
+        $query = trim((string) $request->query->get('query', ''));
+        $category = trim((string) $request->query->get('category', 'smileys'));
+        $limit = max(1, min((int) $request->query->get('limit', 1000), 10000));
+        $sourceLimit = $limit;
+
+        // When filtering by category without a query, fetch a larger source set first,
+        // then apply category and final limit to avoid empty lists caused by early slicing.
+        if ($query === '' && $category !== '' && $category !== 'recent') {
+            $sourceLimit = min(10000, max($limit, 2500));
+        }
+
+        if ($query !== '' && $moderationService->containsProhibitedContent($query)) {
+            return $this->json([
+                'success' => true,
+                'blocked' => true,
+                'message' => 'Recherche bloquee: terme inapproprie detecte.',
+                'items' => [],
+                'reaction_items' => $this->getSupportedReactionEmojis(),
+            ]);
+        }
+
+        $blockedMeaningHints = [
+            'middle finger',
+            'obscene',
+            'vulgar',
+            'insult',
+            'profan',
+            'swear',
+            'sexual',
+        ];
+
+        $items = $this->getEmojiPickerItems($query, $sourceLimit, $httpClient);
+        $items = array_values(array_filter($items, function (array $item) use ($moderationService, $blockedMeaningHints): bool {
+            $name = trim((string) ($item['name'] ?? ''));
+            if ($name === '') {
+                return true;
+            }
+
+            if ($moderationService->containsManualProhibitedContent($name)) {
+                return false;
+            }
+
+            $lower = mb_strtolower($name);
+            foreach ($blockedMeaningHints as $hint) {
+                if (str_contains($lower, $hint)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
+
+        if ($query === '' && $category !== '' && $category !== 'recent') {
+            $items = array_values(array_filter($items, function (array $item) use ($category): bool {
+                return $this->normalizeEmojiPickerCategory((string) ($item['group'] ?? '')) === $category;
+            }));
+        }
+
+        $items = array_slice($items, 0, $limit);
+
+        return $this->json([
+            'success' => true,
+            'blocked' => false,
+            'items' => $items,
+            'category' => $category,
+            'reaction_items' => $this->getSupportedReactionEmojis(),
+        ]);
+    }
+
     private function sendAutomatedGeminiReplyIfNeeded(
         string $textContent,
+        array $attachments,
         UserApp $sender,
         Conversation $conversation,
         EntityManagerInterface $em,
@@ -1124,11 +1669,13 @@ public function callLog(
         MessageRepository $messageRepo,
         GeminiGifChatService $geminiGifChatService
     ): void {
-        if ($textContent === '') {
+        $trimmed = trim($textContent);
+        $hasAttachments = $attachments !== [];
+
+        if ($trimmed === '' && !$hasAttachments) {
             return;
         }
 
-        $trimmed = trim($textContent);
         $assistantEmail = (string) ($_ENV['GEMINI_ASSISTANT_EMAIL'] ?? 'gemini.bot@ecoadventure.local');
         $isAssistantConversation = false;
         foreach ($conversation->getParticipants() as $participant) {
@@ -1142,7 +1689,8 @@ public function callLog(
         $needsLongMessage = str_starts_with($trimmed, '/long');
         $needsReply = $isAssistantConversation || str_starts_with($trimmed, '/ai ') || str_starts_with($trimmed, '@gemini ');
         $needsGif = str_starts_with($trimmed, '/gif ');
-        if (!$needsReply && !$needsGif && !$needsSummary && !$needsLongMessage) {
+        $needsAttachmentDescription = $hasAttachments && ($isAssistantConversation || str_starts_with($trimmed, '/describe'));
+        if (!$needsReply && !$needsGif && !$needsSummary && !$needsLongMessage && !$needsAttachmentDescription) {
             return;
         }
 
@@ -1191,14 +1739,25 @@ public function callLog(
             $em->persist($longMessage);
         }
 
-        if ($needsReply && !$needsGif && !$needsSummary && !$needsLongMessage) {
+        if (($needsReply || $needsAttachmentDescription) && !$needsGif && !$needsSummary && !$needsLongMessage) {
             $prompt = $trimmed;
             if (preg_match('/^(\/ai|@gemini)\s+/i', $trimmed)) {
                 $prompt = trim(preg_replace('/^(\/ai|@gemini)\s+/i', '', $trimmed) ?? '');
+            } elseif (preg_match('/^\/describe\s+/i', $trimmed)) {
+                $prompt = trim(preg_replace('/^\/describe\s+/i', '', $trimmed) ?? '');
             }
-            $replyText = $prompt !== ''
-                ? $geminiGifChatService->generateReply($prompt)
-                : 'Ecris votre question apres /ai ou @gemini.';
+
+            if ($needsAttachmentDescription && $hasAttachments) {
+                $replyText = $geminiGifChatService->generateReplyForAttachments(
+                    $prompt,
+                    $attachments,
+                    (string) $this->getParameter('messages_upload_directory')
+                );
+            } else {
+                $replyText = $prompt !== ''
+                    ? $geminiGifChatService->generateReply($prompt)
+                    : 'Ecris votre question apres /ai, @gemini, ou envoie une piece jointe a decrire.';
+            }
 
             $aiMessage = new Message();
             $aiMessage->setUserApp($assistant);
@@ -1263,5 +1822,228 @@ public function callLog(
         $em->flush();
 
         return $assistant;
+    }
+
+    private function canAccessConversation(?UserApp $user, ?Conversation $conversation): bool
+    {
+        if (!$user instanceof UserApp || !$conversation instanceof Conversation) {
+            return false;
+        }
+
+        if ($conversation->getParticipants()->contains($user)) {
+            return true;
+        }
+
+        return $user->getRole() === RoleUser::ADMIN;
+    }
+
+    private function normalizeMirroredLatinText(string $text): string
+    {
+        $trimmed = trim($text);
+        if ($trimmed === '' || preg_match('/\p{Arabic}/u', $trimmed)) {
+            return $text;
+        }
+
+        $isSimpleLatinSentence = (bool) preg_match("/^[\\p{L}' -]+$/u", $trimmed);
+        $hasSeveralWords = count(preg_split('/\s+/u', $trimmed) ?: []) >= 2;
+        $looksMirroredByMobile = (bool) preg_match('/^\p{Ll}/u', $trimmed)
+            && (bool) preg_match('/\p{Lu}$/u', $trimmed);
+
+        if (!$isSimpleLatinSentence || !$hasSeveralWords || !$looksMirroredByMobile) {
+            return $text;
+        }
+
+        $reversed = implode('', array_reverse(preg_split('//u', $trimmed, -1, PREG_SPLIT_NO_EMPTY) ?: []));
+
+        return preg_replace('/' . preg_quote($trimmed, '/') . '/u', $reversed, $text, 1) ?? $text;
+    }
+
+    /**
+     * @param array<string, mixed> $event
+     */
+    private function appendCallSignalEvent(
+        CacheItemPoolInterface $cache,
+        int $conversationId,
+        int $targetUserId,
+        array $event
+    ): void {
+        $key = $this->buildCallSignalCacheKey($conversationId, $targetUserId);
+        $item = $cache->getItem($key);
+        $events = $item->isHit() ? $item->get() : [];
+        if (!is_array($events)) {
+            $events = [];
+        }
+
+        $events[] = $event;
+        if (count($events) > 120) {
+            $events = array_slice($events, -120);
+        }
+
+        $item->set($events);
+        $item->expiresAfter(3600);
+        $cache->save($item);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function readCallSignalEvents(
+        CacheItemPoolInterface $cache,
+        int $conversationId,
+        int $userId,
+        int $after
+    ): array {
+        $key = $this->buildCallSignalCacheKey($conversationId, $userId);
+        $item = $cache->getItem($key);
+        $events = $item->isHit() ? $item->get() : [];
+        if (!is_array($events)) {
+            return [];
+        }
+
+        return array_values(array_filter($events, static fn ($event): bool => is_array($event) && (int) ($event['id'] ?? 0) > $after));
+    }
+
+    private function hasActiveCallSession(
+        CacheItemPoolInterface $cache,
+        int $conversationId,
+        string $sessionId
+    ): bool {
+        return in_array(
+            $this->getCallSessionState($cache, $conversationId, $sessionId),
+            ['invited', 'accepted'],
+            true
+        );
+    }
+
+    private function buildCallSignalCacheKey(int $conversationId, int $userId): string
+    {
+        return sprintf('call_signal_%d_%d', $conversationId, $userId);
+    }
+
+    private function getCallSessionState(
+        CacheItemPoolInterface $cache,
+        int $conversationId,
+        string $sessionId
+    ): string {
+        $item = $cache->getItem($this->buildCallSessionStateCacheKey($conversationId, $sessionId));
+        $value = $item->isHit() ? (string) $item->get() : '';
+
+        return $value !== '' ? $value : 'new';
+    }
+
+    private function setCallSessionState(
+        CacheItemPoolInterface $cache,
+        int $conversationId,
+        string $sessionId,
+        string $state
+    ): void {
+        $item = $cache->getItem($this->buildCallSessionStateCacheKey($conversationId, $sessionId));
+        $item->set($state);
+        $item->expiresAfter(3600);
+        $cache->save($item);
+    }
+
+    private function buildCallSessionStateCacheKey(int $conversationId, string $sessionId): string
+    {
+        return sprintf('call_session_%d_%s', $conversationId, sha1($sessionId));
+    }
+
+    /**
+     * @param array<int, mixed> $messages
+     * @return array<int, mixed>
+     */
+    private function sanitizeConversationMessagesForDisplay(array $messages): array
+    {
+        $baseUploadDir = rtrim((string) $this->getParameter('messages_upload_directory'), '/\\');
+
+        foreach ($messages as $message) {
+            if (!$message instanceof Message) {
+                continue;
+            }
+
+            $attachments = $message->getAttachments();
+            if (is_array($attachments) && $attachments !== []) {
+                $validAttachments = [];
+                foreach ($attachments as $attachment) {
+                    if (!is_array($attachment)) {
+                        continue;
+                    }
+
+                    $path = trim((string) ($attachment['path'] ?? ''));
+                    if ($path === '' || str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+                        $validAttachments[] = $attachment;
+                        continue;
+                    }
+
+                    if ($this->uploadedMediaExists($baseUploadDir, $path)) {
+                        $validAttachments[] = $attachment;
+                    }
+                }
+
+                if (count($validAttachments) !== count($attachments)) {
+                    $message->setAttachments($validAttachments);
+
+                    if ($validAttachments === []) {
+                        $currentContent = trim((string) ($message->getContenu() ?? ''));
+                        if ($currentContent === '' || str_starts_with($currentContent, '/uploads/')) {
+                            $message->setContenu('[Media introuvable]');
+                        }
+                    }
+                }
+            }
+
+            $content = trim((string) ($message->getContenu() ?? ''));
+            if ($content !== '' && str_starts_with($content, '/uploads/')) {
+                $rawPath = trim(explode('|', $content, 2)[0] ?? '');
+                if ($rawPath !== '' && !$this->uploadedMediaExists($baseUploadDir, $rawPath)) {
+                    $message->setContenu('[Media introuvable]');
+                }
+            }
+        }
+
+        return $messages;
+    }
+
+    private function uploadedMediaExists(string $baseUploadDir, string $path): bool
+    {
+        $normalizedPath = str_replace('\\', '/', trim($path));
+        if ($normalizedPath === '' || str_starts_with($normalizedPath, 'http://') || str_starts_with($normalizedPath, 'https://')) {
+            return false;
+        }
+
+        $relative = str_starts_with($normalizedPath, '/uploads/')
+            ? ltrim(substr($normalizedPath, 9), '/')
+            : ltrim($normalizedPath, '/');
+
+        if ($relative === '') {
+            return false;
+        }
+
+        $absolutePath = $baseUploadDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+        clearstatcache(true, $absolutePath);
+
+        return is_file($absolutePath) && is_readable($absolutePath);
+    }
+
+    private function parseIsoDateTime(mixed $value): ?\DateTimeImmutable
+    {
+        $text = trim((string) $value);
+        if ($text === '') {
+            return null;
+        }
+
+        try {
+            return new \DateTimeImmutable($text);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function formatCallDurationLabel(int $durationSeconds): string
+    {
+        $minutes = intdiv($durationSeconds, 60);
+        $seconds = $durationSeconds % 60;
+
+        return sprintf('%02d:%02d', $minutes, $seconds);
     }
 }

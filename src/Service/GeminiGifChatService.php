@@ -10,7 +10,9 @@ class GeminiGifChatService
         private readonly HttpClientInterface $httpClient,
         private readonly string $groqApiKey,
         private readonly string $groqModel,
-        private readonly string $giphyApiKey
+        private readonly string $giphyApiKey,
+        private readonly string $groqVisionModel,
+        private readonly string $groqAudioModel
     ) {
     }
 
@@ -142,6 +144,47 @@ class GeminiGifChatService
     }
 
     /**
+     * @param array<int, array<string, mixed>> $attachments
+     */
+    public function generateReplyForAttachments(string $prompt, array $attachments, string $baseUploadDir): string
+    {
+        if ($this->groqApiKey === '') {
+            return 'La cle Groq API est manquante. Ajoutez GROQ_API_KEY dans votre .env.local.';
+        }
+
+        $normalizedPrompt = trim($prompt);
+        $descriptions = [];
+
+        foreach ($attachments as $attachment) {
+            if (!is_array($attachment)) {
+                continue;
+            }
+
+            $description = $this->describeAttachment($attachment, $baseUploadDir, $normalizedPrompt);
+            if ($description !== '') {
+                $descriptions[] = $description;
+            }
+        }
+
+        if ($descriptions === []) {
+            return $this->generateReply($normalizedPrompt !== ''
+                ? $normalizedPrompt
+                : 'Je ne trouve pas de contenu exploitable dans la piece jointe.');
+        }
+
+        $userInstruction = $normalizedPrompt !== ''
+            ? $normalizedPrompt
+            : 'Decris clairement les pieces jointes en francais simple.';
+
+        $finalPrompt = $userInstruction
+            . "\n\nAnalyse des pieces jointes:\n"
+            . implode("\n\n", $descriptions)
+            . "\n\nDonne une reponse utile, concrete et courte.";
+
+        return $this->generateReply($finalPrompt);
+    }
+
+    /**
      * @return array<int, string>
      */
     public function searchGifUrls(string $query, int $limit = 12): array
@@ -226,5 +269,249 @@ class GeminiGifChatService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * @param array<string, mixed> $attachment
+     */
+    private function describeAttachment(array $attachment, string $baseUploadDir, string $prompt): string
+    {
+        $path = (string) ($attachment['path'] ?? '');
+        $name = (string) ($attachment['name'] ?? 'fichier');
+        $mime = strtolower((string) ($attachment['mime'] ?? 'application/octet-stream'));
+        $type = strtoupper((string) ($attachment['type'] ?? ''));
+
+        if ($path === '' || str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return sprintf('Fichier "%s" (%s): analyse locale impossible.', $name, $mime);
+        }
+
+        $absolutePath = $this->resolveLocalUploadPath($path, $baseUploadDir);
+        if ($absolutePath === null || !is_file($absolutePath) || !is_readable($absolutePath)) {
+            return sprintf('Fichier "%s" (%s): introuvable sur le serveur.', $name, $mime);
+        }
+
+        if (str_starts_with($mime, 'audio/') || $type === 'VOCALE' || $type === 'AUDIO') {
+            $transcription = $this->transcribeAudioFile($absolutePath);
+            if ($transcription === null || trim($transcription) === '') {
+                return sprintf('Vocal "%s": transcription indisponible.', $name);
+            }
+
+            return sprintf('Vocal "%s" transcrit: %s', $name, $this->limitTo1000($transcription));
+        }
+
+        if (str_starts_with($mime, 'image/')) {
+            $vision = $this->describeImageFile($absolutePath, $mime, $prompt);
+            if ($vision === null || trim($vision) === '') {
+                return sprintf('Image "%s": description indisponible.', $name);
+            }
+
+            return sprintf('Image "%s": %s', $name, $this->limitTo1000($vision));
+        }
+
+        if ($mime === 'application/pdf' || str_ends_with(strtolower($name), '.pdf') || $type === 'PDF') {
+            $snippet = $this->extractPdfTextSnippet($absolutePath, 5000);
+            if ($snippet === '') {
+                return sprintf('PDF "%s": aucun texte extractible detecte.', $name);
+            }
+
+            $summary = $this->summarizeDocumentSnippet('PDF', $name, $snippet, $prompt);
+            return sprintf('PDF "%s": %s', $name, $this->limitTo1000($summary));
+        }
+
+        if ($this->isTextLikeFile($mime, $name)) {
+            $snippet = $this->extractTextFileSnippet($absolutePath, 5000);
+            if ($snippet === '') {
+                return sprintf('Fichier "%s": aucun texte lisible detecte.', $name);
+            }
+
+            $summary = $this->summarizeDocumentSnippet('FICHIER', $name, $snippet, $prompt);
+            return sprintf('Fichier "%s": %s', $name, $this->limitTo1000($summary));
+        }
+
+        $size = @filesize($absolutePath);
+        $sizeLabel = is_int($size) ? $size . ' octets' : 'taille inconnue';
+        return sprintf('Fichier "%s": type %s, %s. Description detaillee non supportee pour ce format.', $name, $mime, $sizeLabel);
+    }
+
+    private function resolveLocalUploadPath(string $path, string $baseUploadDir): ?string
+    {
+        $normalizedBase = rtrim(str_replace('\\', '/', $baseUploadDir), '/');
+        if ($normalizedBase === '') {
+            return null;
+        }
+
+        $normalizedPath = str_replace('\\', '/', $path);
+        $relative = str_starts_with($normalizedPath, '/uploads/')
+            ? ltrim(substr($normalizedPath, 9), '/')
+            : ltrim($normalizedPath, '/');
+
+        if ($relative === '') {
+            return null;
+        }
+
+        return $normalizedBase . '/' . $relative;
+    }
+
+    private function transcribeAudioFile(string $absolutePath): ?string
+    {
+        if ($this->groqApiKey === '') {
+            return null;
+        }
+
+        try {
+            $stream = @fopen($absolutePath, 'r');
+            if ($stream === false) {
+                return null;
+            }
+
+            $response = $this->httpClient->request('POST', 'https://api.groq.com/openai/v1/audio/transcriptions', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->groqApiKey,
+                ],
+                'body' => [
+                    'model' => $this->groqAudioModel !== '' ? $this->groqAudioModel : 'whisper-large-v3',
+                    'language' => 'fr',
+                    'file' => $stream,
+                ],
+                'timeout' => 45,
+            ]);
+
+            $data = $response->toArray(false);
+            $text = $data['text'] ?? null;
+
+            return is_string($text) ? trim($text) : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function describeImageFile(string $absolutePath, string $mimeType, string $prompt): ?string
+    {
+        if ($this->groqApiKey === '') {
+            return null;
+        }
+
+        $imageSize = @filesize($absolutePath);
+        if (is_int($imageSize) && $imageSize > 4 * 1024 * 1024) {
+            return 'Image trop lourde pour analyse automatique (max environ 4MB).';
+        }
+
+        $binary = @file_get_contents($absolutePath);
+        if (!is_string($binary) || $binary === '') {
+            return null;
+        }
+
+        $base64 = base64_encode($binary);
+        $userPrompt = trim($prompt) !== ''
+            ? $prompt
+            : 'Decris cette image en francais avec les elements importants.';
+
+        try {
+            $response = $this->httpClient->request('POST', 'https://api.groq.com/openai/v1/chat/completions', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->groqApiKey,
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => [
+                    'model' => $this->groqVisionModel !== '' ? $this->groqVisionModel : 'llama-3.2-11b-vision-preview',
+                    'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => 'Tu decris des images en francais. Sois clair et utile.',
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $userPrompt,
+                                ],
+                                [
+                                    'type' => 'image_url',
+                                    'image_url' => [
+                                        'url' => 'data:' . ($mimeType !== '' ? $mimeType : 'image/jpeg') . ';base64,' . $base64,
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    'temperature' => 0.2,
+                ],
+                'timeout' => 35,
+            ]);
+
+            $data = $response->toArray(false);
+            $text = $data['choices'][0]['message']['content'] ?? null;
+
+            return is_string($text) ? trim($text) : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function summarizeDocumentSnippet(string $kind, string $name, string $snippet, string $prompt): string
+    {
+        $baseInstruction = trim($prompt) !== ''
+            ? $prompt
+            : 'Donne une description claire du document.';
+
+        $summaryPrompt = $baseInstruction
+            . "\n\nType: {$kind}\nNom: {$name}\n\n"
+            . "Extrait texte du document:\n"
+            . $snippet
+            . "\n\nResume le contenu important en francais.";
+
+        return $this->generateReply($summaryPrompt);
+    }
+
+    private function extractPdfTextSnippet(string $absolutePath, int $maxChars = 5000): string
+    {
+        $raw = @file_get_contents($absolutePath, false, null, 0, 1_500_000);
+        if (!is_string($raw) || $raw === '') {
+            return '';
+        }
+
+        $matches = [];
+        preg_match_all('/\(([^\)]{2,})\)/', $raw, $matches);
+        $chunks = $matches[1] ?? [];
+        if (!is_array($chunks) || $chunks === []) {
+            return '';
+        }
+
+        $text = implode(' ', array_slice($chunks, 0, 300));
+        $text = str_replace(['\\n', '\\r', '\\t'], ' ', $text);
+        $text = preg_replace('/[^\x20-\x7E]+/', ' ', $text) ?? '';
+        $text = trim(preg_replace('/\s+/', ' ', $text) ?? '');
+
+        return $text === '' ? '' : mb_substr($text, 0, $maxChars);
+    }
+
+    private function extractTextFileSnippet(string $absolutePath, int $maxChars = 5000): string
+    {
+        $raw = @file_get_contents($absolutePath, false, null, 0, 500_000);
+        if (!is_string($raw) || $raw === '') {
+            return '';
+        }
+
+        $raw = preg_replace('/[^\x09\x0A\x0D\x20-\x7E]+/', ' ', $raw) ?? '';
+        $normalized = trim(preg_replace('/\s+/', ' ', $raw) ?? '');
+
+        return $normalized === '' ? '' : mb_substr($normalized, 0, $maxChars);
+    }
+
+    private function isTextLikeFile(string $mime, string $name): bool
+    {
+        if (str_starts_with($mime, 'text/')) {
+            return true;
+        }
+
+        $lower = strtolower($name);
+        foreach (['.txt', '.md', '.csv', '.json', '.xml', '.log'] as $extension) {
+            if (str_ends_with($lower, $extension)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

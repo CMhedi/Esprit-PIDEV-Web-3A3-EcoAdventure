@@ -6,8 +6,8 @@
 {% set hasUrlInText = rawContent matches '/(https?:\\/\\/|www\\.)\\S+/i' %}
 {% set isTextStyled = msgType in ['TEXTE', 'TEXT'] and not hasUrlInText %}
 
-<div class="d-flex {{ is_mine ? 'justify-content-end' : 'justify-content-start' }} mb-3 message-item" data-message-id="{{ message.id_message }}">
-    <div class="message-bubble {{ (is_mine and isTextStyled) ? 'message-sent shadow' : 'message-received shadow-sm' }}" style="position: relative;">
+<div class="d-flex {{ is_mine ? 'justify-content-end message-item-mine' : 'justify-content-start message-item-theirs' }} mb-3 message-item" data-message-id="{{ message.id_message }}">
+    <div class="message-bubble {{ is_mine ? 'message-sent shadow' : 'message-received shadow-sm' }}" style="position: relative;">
         <div class="mb-2 fw-bold small text-muted">
             {% if is_ai_author %}
                 <i class="bi bi-robot me-1 text-success"></i>Assistant IA Gemini
@@ -137,7 +137,7 @@
 
         <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap">
             <div>
-                <span class="time-stamp {{ (is_mine and isTextStyled) ? 'text-white-50' : 'text-muted' }}">
+                <span class="time-stamp {{ is_mine ? 'text-white-50' : 'text-muted' }}">
                     {{ message.date_envoi ? message.date_envoi|date('H:i') : '' }}
                     {% if is_mine %}
                         <span class="message-checkmarks">
@@ -151,8 +151,8 @@
                     {% endif %}
                 </span>
                 {% if message.date_modifier %}
-                    <div class="small {{ (is_mine and isTextStyled) ? 'text-white-50' : 'text-muted' }}" style="font-size: 0.75rem; margin-top: 2px;">
-                        <span class="badge {{ (is_mine and isTextStyled) ? 'bg-secondary' : 'bg-light text-dark' }}">Modifié</span>
+                    <div class="small {{ is_mine ? 'text-white-50' : 'text-muted' }}" style="font-size: 0.75rem; margin-top: 2px;">
+                        <span class="badge {{ is_mine ? 'bg-secondary' : 'bg-light text-dark' }}">Modifié</span>
                         {{ message.date_modifier|date('H:i') }}
                     </div>
                 {% endif %}
