@@ -45,6 +45,10 @@ class Evenement
     #[Assert\Positive(message: "Le nombre de places doit être positif.")]
     private ?int $nb_places = null;
 
+    #[ORM\Column(type: 'integer', options: ["default" => 10])]
+    #[Assert\PositiveOrZero(message: "La limite de la liste d'attente doit être positive ou zéro.")]
+    private int $limite_attente = 10;
+
     #[ORM\Column(type: 'float', options: ["default" => 0.0])]
     #[Assert\NotBlank(message: "Le prix est obligatoire.")]
     #[Assert\PositiveOrZero(message: "Le prix doit être positif.")]
@@ -87,6 +91,17 @@ class Evenement
     public function setNb_places(int $nb_places): self
     {
         $this->nb_places = $nb_places;
+        return $this;
+    }
+
+    public function getLimite_attente(): int
+    {
+        return $this->limite_attente;
+    }
+
+    public function setLimite_attente(int $limite): self
+    {
+        $this->limite_attente = $limite;
         return $this;
     }
 
@@ -178,6 +193,18 @@ class Evenement
     {
         $this->getReservationEvenements()->removeElement($reservationEvenement);
         return $this;
+    }
+
+    public function getPlacesRestantes(): int
+    {
+        $nbReservationsExistantes = 0;
+        foreach ($this->reservationEvenements as $res) {
+            $statut = $res->getStatut_res();
+            if ($statut !== \App\Enum\StatutReservationEvenement::ANNULEE && $statut !== \App\Enum\StatutReservationEvenement::LISTE_ATTENTE) {
+                $nbReservationsExistantes += $res->getNb_billets();
+            }
+        }
+        return max(0, $this->nb_places - $nbReservationsExistantes);
     }
 
 }

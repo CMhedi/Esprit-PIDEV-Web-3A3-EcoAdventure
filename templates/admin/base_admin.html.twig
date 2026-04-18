@@ -36,6 +36,7 @@
             <li><a href="{{ path('app_admin_planning') }}" class="{{ app.request.get('_route') starts with 'app_admin_planning' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Planning</a></li>
             <li><a href="{{ path('app_event_admin_index') }}" class="{{ app.request.get('_route') starts with 'app_event_admin' and app.request.get('_route') != 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-calendar-event"></i> Événements</a></li>
             <li><a href="{{ path('app_event_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-ticket-detailed"></i> Réservations Événements</a></li>
+            <li><a href="{{ path('app_admin_statistiques_event') }}" class="{{ app.request.get('_route') == 'app_admin_statistiques_event' ? 'active' : '' }}"><i class="bi bi-bar-chart"></i> Statistiques Event</a></li>
             <li><a href="{{ path('admin_messagerie_index') }}" class="{{ app.request.get('_route') starts with 'admin_messagerie' ? 'active' : '' }}"><i class="bi bi-chat-dots"></i> Messagerie</a></li>
             <li>
                 <a href="{{ path('app_user_app_index') }}" class="{{ app.request.get('_route') == 'app_user_app_index' ? 'active' : '' }}">
@@ -69,10 +70,38 @@
                 <h2 class="fw-bold mb-0">{% block page_title %}Dashboard{% endblock %}</h2>
                 <small class="text-muted">Gestion de l'agence sportive</small>
             </div>
-            <div class="admin-user">
-                <span class="badge text-bg-light px-3 py-2 rounded-pill">Admin</span>
+            
+            <div class="d-flex align-items-center gap-3">
+                <!-- Notification Center (Show only on Reservations page) -->
+                {% if app.request.get('_route') == 'app_event_admin_reservations' %}
+                <div class="dropdown" id="notificationCenter">
+                    <button class="btn btn-light position-relative rounded-pill p-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notifBtn">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifBadge">
+                            0
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 p-0 overflow-hidden" style="width: 320px;" id="notifList">
+                        <li class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+                            <h6 class="mb-0 fw-bold">Notifications</h6>
+                            <button class="btn btn-sm btn-link text-decoration-none p-0" id="markAllRead">Tout marquer comme lu</button>
+                        </li>
+                        <div id="notifContainer" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Notifications injectées par JS -->
+                            <li class="p-4 text-center text-muted small">Aucune notification</li>
+                        </div>
+                    </ul>
+                </div>
+                {% endif %}
+
+                <div class="admin-user">
+                    <span class="badge text-bg-light px-3 py-2 rounded-pill">Admin</span>
+                </div>
             </div>
         </div>
+
+        <!-- Notification Toasts Container -->
+        <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer" style="z-index: 9999"></div>
         {% endblock %}
 
         <div class="row">
@@ -132,12 +161,137 @@
         border-radius: 999px;
         padding-inline: 1.25rem;
     }
+
+    /* Notifications Styling */
+    .notification-item {
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+    }
+    .notification-item:hover {
+        background-color: #f8f9fa;
+    }
+    #notifBadge {
+        font-size: 0.65rem;
+        padding: 0.35em 0.5em;
+    }
+    .toast {
+        min-width: 300px;
+    }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const notifBadge = document.getElementById('notifBadge');
+        const notifContainer = document.getElementById('notifContainer');
+        const markAllRead = document.getElementById('markAllRead');
+        const toastContainer = document.getElementById('toastContainer');
+
+        // Only initialize JS if notification elements exist (i.e. we are on the Reservations page)
+        if (notifBadge && notifContainer) {
+            let knownNotifIds = new Set();
+            let isFirstLoad = true;
+
+            const showToast = (notif) => {
+                const toastId = `toast-${notif.id}`;
+                const toastHtml = `
+                    <div id="${toastId}" class="toast border-0 shadow-lg rounded-4" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header border-0 rounded-top-4 bg-danger text-white">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong class="me-auto">${notif.title}</strong>
+                            <small class="text-white-50">À l'instant</small>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="toast-body p-3">
+                            ${notif.message}
+                            <div class="mt-2 pt-2 border-top">
+                                <a href="{{ path('app_event_admin_reservations') }}" class="btn btn-sm btn-outline-danger rounded-pill">Voir les réservations</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+                const toastElement = document.getElementById(toastId);
+                const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 10000 });
+                toast.show();
+            };
+
+            const fetchNotifications = async () => {
+                try {
+                    const response = await fetch('{{ path('app_admin_notifications_unread') }}');
+                    const data = await response.json();
+                    const notifications = data.notifications;
+                    const unreadCount = data.unreadCount;
+                    
+                    // Update badge
+                    if (unreadCount > 0) {
+                        notifBadge.textContent = unreadCount;
+                        notifBadge.classList.remove('d-none');
+                    } else {
+                        notifBadge.classList.add('d-none');
+                    }
+
+                    // Render list
+                    if (notifications.length === 0) {
+                        notifContainer.innerHTML = '<li class="p-4 text-center text-muted small">Aucune notification</li>';
+                    } else {
+                        notifContainer.innerHTML = notifications.map(n => `
+                            <li class="p-3 border-bottom notification-item ${n.isRead ? 'opacity-50 bg-light' : ''}" data-id="${n.id}">
+                                <div class="d-flex gap-3 align-items-start">
+                                    <div class="bg-danger bg-opacity-10 text-danger p-2 rounded-circle">
+                                        <i class="bi bi-x-circle"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold small d-flex justify-content-between">
+                                            ${n.title}
+                                            ${!n.isRead ? '<span class="badge bg-primary rounded-pill" style="font-size: 0.5rem;">New</span>' : ''}
+                                        </div>
+                                        <div class="text-muted small mb-1">${n.message}</div>
+                                        <div class="text-end" style="font-size: 0.7rem;">${n.createdAt}</div>
+                                    </div>
+                                </div>
+                            </li>
+                        `).join('');
+                    }
+
+                    // Show Toasts only for new UNREAD notifications
+                    notifications.forEach(n => {
+                        if (!n.isRead && !knownNotifIds.has(n.id)) {
+                            knownNotifIds.add(n.id);
+                            if (!isFirstLoad) {
+                                showToast(n);
+                            }
+                        } else if (n.isRead) {
+                            knownNotifIds.add(n.id);
+                        }
+                    });
+
+                    isFirstLoad = false;
+                } catch (error) {
+                    console.error('Error fetching notifications:', error);
+                }
+            };
+
+            // Mark all as read
+            if (markAllRead) {
+                markAllRead.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    try {
+                        await fetch('{{ path('app_admin_notifications_read_all') }}', { method: 'POST' });
+                        fetchNotifications();
+                    } catch (error) {
+                        console.error('Error marking all read:', error);
+                    }
+                });
+            }
+
+            // Polling every 10 seconds
+            setInterval(fetchNotifications, 10000);
+            fetchNotifications();
+        }
+
+        // Admin confirmation modal logic (pre-existing)
         const modalElement = document.getElementById('adminConfirmModal');
         if (!modalElement || typeof bootstrap === 'undefined') {
             return;

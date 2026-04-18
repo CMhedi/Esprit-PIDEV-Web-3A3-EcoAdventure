@@ -48,8 +48,8 @@
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100 shadow-sm border-0 position-relative">
                         <div class="position-absolute top-0 end-0 p-2 d-flex flex-column gap-1">
-                            <span class="badge bg-{{ res.statut.value == 'CONFIRMEE' ? 'success' : (res.statut.value == 'ANNULEE' ? 'danger' : 'warning') }}">
-                                {{ res.statut.value }}
+                            <span class="badge bg-{{ res.statut.value == 'CONFIRMEE' ? 'success' : (res.statut.value == 'ANNULEE' ? 'danger' : (res.statut.value == 'LISTE_ATTENTE' ? 'secondary' : 'warning')) }}">
+                                {{ res.statut.value == 'LISTE_ATTENTE' ? "SUR FILE D'ATTENTE" : (res.statut.value == 'EN_ATTENTE' ? 'EN ATTENTE (PRÊT)' : res.statut.value) }}
                             </span>
                         </div>
                         
@@ -74,9 +74,15 @@
                                 <span class="fw-bold text-muted small">Prix unitaire :</span>
                                 <span class="small">{{ res.evenement.prix|number_format(2, ',', ' ') }} DT</span>
                             </div>
+                            {% if res.pricing is defined and res.pricing.appliquePromo %}
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <span class="fw-bold text-danger small"><i class="bi bi-gift-fill me-1"></i>Remise ({{ res.pricing.tauxRemise }}%) :</span>
+                                <span class="small text-danger">-{{ res.pricing.remise|number_format(2, ',', ' ') }} DT</span>
+                            </div>
+                            {% endif %}
                             <div class="d-flex justify-content-between align-items-center mt-1 border-top pt-1">
                                 <span class="fw-bold">Total à payer :</span>
-                                <span class="fs-5 fw-bold text-primary">{{ (res.total_billets * res.evenement.prix)|number_format(2, ',', ' ') }} DT</span>
+                                <span class="fs-5 fw-bold text-primary">{{ res.pricing is defined ? res.pricing.totalFinal|number_format(2, ',', ' ') : (res.total_billets * res.evenement.prix)|number_format(2, ',', ' ') }} DT</span>
                             </div>
                             <div class="text-muted small mt-2">
                                 Dernière réservation le {{ res.latest_date|date('d/m/Y H:i') }}
@@ -87,18 +93,32 @@
                                         <i class="bi bi-plus-circle me-1"></i>Réserver
                                     </a>
                                     {% if res.statut.value == 'CONFIRMEE' %}
-                                        <a href="{{ path('app_reservation_event_ticket', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-success flex-grow-1">
-                                            <i class="bi bi-file-earmark-pdf me-1"></i>Ticket PDF
-                                        </a>
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ path('app_reservation_event_ticket', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-success flex-grow-1">
+                                                <i class="bi bi-ticket-perforated me-1"></i>Ticket
+                                            </a>
+                                            <a href="{{ path('app_reservation_event_invoice', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                                <i class="bi bi-receipt me-1"></i>Facture
+                                            </a>
+                                        </div>
                                     {% endif %}
                                 </div>
                                 
                                 {% if res.statut.value == 'EN_ATTENTE' %}
+                                    <div class="alert alert-success p-2 small mt-2 mb-1 text-center badge-nouveau" role="alert">
+                                        <i class="bi bi-bell-fill"></i> Place disponible !
+                                    </div>
                                     <form method="post" action="{{ path('app_reservation_confirm_event', {'id_evenement': res.evenement.id_evenement}) }}">
                                         <button type="submit" class="btn btn-sm btn-success w-100 mt-1">
                                             <i class="bi bi-check-circle me-1"></i>Confirmer ma réservation
                                         </button>
                                     </form>
+                                {% endif %}
+
+                                {% if res.statut.value == 'LISTE_ATTENTE' %}
+                                    <div class="alert alert-secondary p-2 small mt-2 mb-1 text-center" role="alert">
+                                        <i class="bi bi-hourglass-split"></i> Vous êtes sur la liste d'attente. Nous vous notifierons si une place se libère.
+                                    </div>
                                 {% endif %}
 
                                 {% if res.statut.value != 'ANNULEE' %}

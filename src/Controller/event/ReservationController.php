@@ -17,6 +17,8 @@ use Endroid\QrCode\Label\Label;
 use Endroid\QrCode\Logo\Logo;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\SvgWriter;
+use App\Entity\Notification;
+use App\Service\ReservationPricingService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,7 +31,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class ReservationController extends AbstractController
 {
     #[Route('/download-all-tickets', name: 'app_reservation_all_tickets', methods: ['GET'])]
-    public function downloadAllTickets(EntityManagerInterface $entityManager): Response
+    public function downloadAllTickets(EntityManagerInterface $entityManager, ReservationPricingService $pricingService): Response
     {
         $user = $this->getUser();
 
@@ -84,7 +86,8 @@ class ReservationController extends AbstractController
                 'evenement' => $data['evenement'],
                 'totalBillets' => $data['total_billets'],
                 'qrCode' => base64_encode($result->getString()),
-                'reference' => $ref
+                'reference' => $ref,
+                'pricing' => $pricingService->calculatePricing($data['evenement'], $data['total_billets'])
             ];
         }
 
@@ -107,8 +110,63 @@ class ReservationController extends AbstractController
         ]);
     }
 
+    #[Route('/invoice-event/{id_evenement}', name: 'app_reservation_event_invoice', methods: ['GET'])]
+    public function generateEventInvoice(Evenement $evenement, EntityManagerInterface $entityManager, ReservationPricingService $pricingService): Response
+    {
+        /** @var UserApp $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            $this->addFlash('error', 'Vous devez être connecté.');
+            return $this->redirectToRoute('app_login');
+        }
+
+        $reservations = $entityManager->getRepository(ReservationEvenement::class)->findBy([
+            'userApp' => $user,
+            'evenement' => $evenement,
+            'statut_res' => StatutReservationEvenement::CONFIRMEE
+        ]);
+
+        if (empty($reservations)) {
+            $this->addFlash('error', 'Aucune réservation confirmée trouvée pour cet événement.');
+            return $this->redirectToRoute('app_mes_reservations');
+        }
+
+        $totalBillets = 0;
+        foreach ($reservations as $res) {
+            $totalBillets += $res->getNb_billets();
+        }
+
+        // Prepare PDF Content
+        $options = new Options();
+        $options->set('defaultFont', 'Arial');
+        $dompdf = new Dompdf($options);
+
+        $pricing = $pricingService->calculatePricing($evenement, $totalBillets);
+
+        $html = $this->renderView('front/event/invoice_pdf.html.twig', [
+            'evenement' => $evenement,
+            'user' => $user,
+            'totalBillets' => $totalBillets,
+            'pricing' => $pricing,
+            'reference' => 'FAC-' . strtoupper(substr($evenement->getTitre(), 0, 3)) . '-' . $evenement->getId_evenement() . '-' . $user->getId_user()
+        ]);
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $output = $dompdf->output();
+        $filename = sprintf('facture-%s-%d.pdf', str_replace(' ', '-', $evenement->getTitre()), $user->getId_user());
+
+        return new Response($output, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => sprintf('attachment; filename="%s"', $filename),
+        ]);
+    }
+
     #[Route('/ticket-event/{id_evenement}', name: 'app_reservation_event_ticket', methods: ['GET'])]
-    public function generateEventTicket(Evenement $evenement, EntityManagerInterface $entityManager): Response
+    public function generateEventTicket(Evenement $evenement, EntityManagerInterface $entityManager, ReservationPricingService $pricingService): Response
     {
         $user = $this->getUser();
 
@@ -161,12 +219,15 @@ class ReservationController extends AbstractController
         $options->set('defaultFont', 'Arial');
         $dompdf = new Dompdf($options);
 
+        $pricing = $pricingService->calculatePricing($evenement, $totalBillets);
+
         $html = $this->renderView('front/event/ticket_pdf.html.twig', [
             'evenement' => $evenement,
             'user' => $user,
             'totalBillets' => $totalBillets,
             'qrCode' => $qrCodeBase64,
-            'reference' => 'EVT-' . $evenement->getId_evenement() . '-' . $user->getId_user()
+            'reference' => 'EVT-' . $evenement->getId_evenement() . '-' . $user->getId_user(),
+            'pricing' => $pricing
         ]);
 
         $dompdf->loadHtml($html);
@@ -183,7 +244,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/ticket/{id_res_evt}', name: 'app_reservation_ticket', methods: ['GET'])]
-    public function generateTicket(ReservationEvenement $reservation): Response
+    public function generateTicket(ReservationEvenement $reservation, ReservationPricingService $pricingService): Response
     {
         // 1. Generate QR Code
         $writer = new SvgWriter();
@@ -205,10 +266,17 @@ class ReservationController extends AbstractController
         $options = new Options();
         $options->set('defaultFont', 'Arial');
         $dompdf = new Dompdf($options);
+        
+        $pricing = $pricingService->calculatePricing($reservation->getEvenement(), $reservation->getNb_billets());
 
         $html = $this->renderView('front/event/ticket_pdf.html.twig', [
             'reservation' => $reservation,
+            'evenement' => $reservation->getEvenement(),
+            'user' => $reservation->getUserApp(),
+            'totalBillets' => $reservation->getNb_billets(),
             'qrCode' => $qrCodeBase64,
+            'reference' => 'EVT-' . $reservation->getEvenement()->getId_evenement() . '-' . $reservation->getUserApp()->getId_user(),
+            'pricing' => $pricing,
         ]);
 
         $dompdf->loadHtml($html);
@@ -227,7 +295,7 @@ class ReservationController extends AbstractController
     #[Route('/evenement/{id_evenement}', name: 'app_reservation_event', methods: ['POST'])]
     public function reserver(Request $request, Evenement $evenement, EntityManagerInterface $entityManager): Response
     {
-        // 1. Check if user is connected
+        /** @var UserApp $user */
         $user = $this->getUser();
         
         if (!$user) {
@@ -236,37 +304,51 @@ class ReservationController extends AbstractController
         }
 
         $nbBillets = (int) $request->request->get('nb_billets', 1);
-
-        // 2. Gestion intelligente des places & Validation
-        $nbReservationsExistantes = 0;
-        foreach ($evenement->getReservationEvenements() as $res) {
-            if ($res->getStatut_res() !== StatutReservationEvenement::ANNULEE) {
-                $nbReservationsExistantes += $res->getNb_billets();
-            }
-        }
-        $placesRestantes = $evenement->getNb_places() - $nbReservationsExistantes;
+        $placesRestantes = $evenement->getPlacesRestantes();
 
         if ($placesRestantes <= 0) {
-            $this->addFlash('error', 'Désolé, cet événement est Complet.');
+            $this->addFlash('error', 'Désolé, cet événement est complet.');
             return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
         }
 
         if ($nbBillets > $placesRestantes) {
-            $this->addFlash('error', "Il ne reste que $placesRestantes place(s).");
-            return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
+            $reservationsAttente = $entityManager->getRepository(ReservationEvenement::class)->findBy([
+                'evenement' => $evenement,
+                'statut_res' => StatutReservationEvenement::LISTE_ATTENTE
+            ]);
+            $placesEnAttente = 0;
+            foreach ($reservationsAttente as $res) {
+                $placesEnAttente += $res->getNb_billets();
+            }
+
+            if ($placesEnAttente + $nbBillets > $evenement->getLimite_attente()) {
+                $this->addFlash('error', sprintf('Désolé, il ne reste que %d place(s) et la liste d\'attente est pleine.', $placesRestantes));
+                return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
+            }
+
+            $reservation = new ReservationEvenement();
+            $reservation->setEvenement($evenement)
+                ->setUserApp($user)
+                ->setDate_reservation(new \DateTime())
+                ->setStatut_res(StatutReservationEvenement::LISTE_ATTENTE)
+                ->setNb_billets($nbBillets);
+
+            $entityManager->persist($reservation);
+            $entityManager->flush();
+
+            $this->addFlash('warning', 'Plus de places disponibles. Vous avez été ajouté à la liste d\'attente, vous serez notifié si une place se libère.');
+            return $this->redirectToRoute('app_mes_reservations');
         }
 
-        // 3. Create Reservation
         $reservation = new ReservationEvenement();
-        $reservation->setEvenement($evenement);
-        $reservation->setUserApp($user);
-        $reservation->setDate_reservation(new \DateTime());
-        $reservation->setStatut_res(StatutReservationEvenement::EN_ATTENTE);
-        $reservation->setNb_billets($nbBillets);
+        $reservation->setEvenement($evenement)
+            ->setUserApp($user)
+            ->setDate_reservation(new \DateTime())
+            ->setStatut_res(StatutReservationEvenement::EN_ATTENTE)
+            ->setNb_billets($nbBillets);
 
         $entityManager->persist($reservation);
         
-        // Advanced Business Logic: Loyalty Points
         if ($user instanceof UserApp) {
             $user->addLoyaltyPoints($nbBillets * 10);
             $entityManager->persist($user);
@@ -280,15 +362,18 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/annuler-event/{id_evenement}', name: 'app_reservation_cancel_event', methods: ['POST'])]
-    public function annulerEvent(Evenement $evenement, EntityManagerInterface $entityManager): Response
-    {
+    public function annulerEvent(
+        Evenement $evenement, 
+        EntityManagerInterface $entityManager
+    ): Response {
+        /** @var UserApp $user */
         $user = $this->getUser();
+        
         if (!$user) {
             $this->addFlash('error', 'Vous devez être connecté.');
             return $this->redirectToRoute('app_login');
         }
 
-        // Find all reservations for this event and user
         $reservations = $entityManager->getRepository(ReservationEvenement::class)->findBy([
             'userApp' => $user,
             'evenement' => $evenement
@@ -299,14 +384,49 @@ class ReservationController extends AbstractController
             return $this->redirectToRoute('app_mes_reservations');
         }
 
-        foreach ($reservations as $res) {
-            // Hard delete as requested "supprimé"
-            $entityManager->remove($res);
+        foreach ($reservations as $reservation) {
+            $entityManager->remove($reservation);
         }
+
+        // Création d'une notification pour l'admin
+        $notif = new Notification();
+        $notif->setTitle('Annulation de Réservation')
+            ->setMessage(sprintf('Le client %s %s a annulé sa participation à l\'événement %s.', $user->getNom(), $user->getPrenom(), $evenement->getTitre()))
+            ->setType('cancellation');
+        $entityManager->persist($notif);
         
         $entityManager->flush();
 
-        $this->addFlash('success', 'Votre réservation pour l\'événement "' . $evenement->getTitre() . '" a été supprimée.');
+        // Check if we can accommodate someone from the waiting list
+        $reservationsAttente = $entityManager->getRepository(ReservationEvenement::class)->findBy(
+            ['evenement' => $evenement, 'statut_res' => StatutReservationEvenement::LISTE_ATTENTE],
+            ['date_reservation' => 'ASC']
+        );
+
+        $placesRestantes = $evenement->getPlacesRestantes();
+        foreach ($reservationsAttente as $resAttente) {
+            if ($resAttente->getNb_billets() <= $placesRestantes) {
+                $resAttente->setStatut_res(StatutReservationEvenement::EN_ATTENTE);
+                $placesRestantes -= $resAttente->getNb_billets();
+                
+                // Add an admin notification as well to log that someone was moved from waitlist
+                $notifWaitlist = new Notification();
+                $notifWaitlist->setTitle('Priorité liste d\'attente')
+                    ->setMessage(sprintf('La réservation du client %s %s pour l\'événement %s est passée de la liste d\'attente à En Attente (disponible).', 
+                        $resAttente->getUserApp()->getNom(), 
+                        $resAttente->getUserApp()->getPrenom(), 
+                        $evenement->getTitre()
+                    ))
+                    ->setType('availability');
+                $entityManager->persist($notifWaitlist);
+                
+                // TODO: Here ideally we send an EMAIL to $resAttente->getUserApp()
+            }
+        }
+        $entityManager->flush();
+
+        $this->addFlash('success', sprintf('Votre réservation pour l\'événement "%s" a été supprimée.', $evenement->getTitre()));
+        
         return $this->redirectToRoute('app_mes_reservations');
     }
 
@@ -341,7 +461,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/mes-reservations', name: 'app_mes_reservations', methods: ['GET'])]
-    public function mesReservations(EntityManagerInterface $entityManager): Response
+    public function mesReservations(EntityManagerInterface $entityManager, ReservationPricingService $pricingService): Response
     {
         $user = $this->getUser();
         
@@ -370,10 +490,15 @@ class ReservationController extends AbstractController
                     'latest_date' => $res->getDate_reservation(),
                     'statut' => $res->getStatut_res(),
                     'ids' => [], // Store all reservation IDs for this event
+                    'pricing' => null
                 ];
             }
             $groupedReservations[$eventId]['total_billets'] += $res->getNb_billets();
             $groupedReservations[$eventId]['ids'][] = $res->getId_res_evt();
+        }
+
+        foreach ($groupedReservations as $eventId => $data) {
+            $groupedReservations[$eventId]['pricing'] = $pricingService->calculatePricing($data['evenement'], $data['total_billets']);
         }
 
         return $this->render('front/event/mes_reservations.html.twig', [

@@ -31,6 +31,16 @@
                         <span class="ms-1 text-muted fs-6">({{ evenement.ratings|length }})</span>
                     </div>
                 </div>
+
+                {% if promo_threshold and promo_discount %}
+                <div class="alert alert-info d-flex align-items-center shadow-sm" role="alert">
+                    <span class="fs-3 me-3">🎁</span>
+                    <div>
+                        <strong>Offre de groupe :</strong> -{{ promo_discount * 100 }}% à partir de {{ promo_threshold }} places réservées !
+                    </div>
+                </div>
+                {% endif %}
+
                 <p class="lead">{{ evenement.description }}</p>
 
                 {% if weather %}
@@ -55,7 +65,11 @@
                     <li><i class="bi bi-calendar-event text-warning me-2"></i><strong>Date:</strong> {{ evenement.date_event|date('d/m/Y H:i') }}</li>
                     <li><i class="bi bi-people text-warning me-2"></i><strong>Places Restantes:</strong> 
                         {% if places_dispo <= 0 %}
-                            <span class="text-danger fw-bold">Complet</span>
+                            {% if attente_dispo > 0 %}
+                                <span class="text-warning fw-bold">Complet (Liste d'attente ouverte)</span>
+                            {% else %}
+                                <span class="text-danger fw-bold">Complet (Attente pleine)</span>
+                            {% endif %}
                         {% else %}
                             <span class="text-success fw-bold">{{ places_dispo }} / {{ evenement.nb_places }}</span>
                         {% endif %}
@@ -73,11 +87,21 @@
                         <form action="{{ path('app_reservation_event', {'id_evenement': evenement.id_evenement}) }}" method="POST">
                             <div class="mb-3 text-start">
                                 <label for="nb_billets" class="form-label">Nombre de billets</label>
-                                <input type="number" name="nb_billets" id="nb_billets" class="form-control" value="1" min="1" max="{{ places_dispo > 0 ? places_dispo : 1 }}" {% if places_dispo <= 0 %}disabled{% endif %}>
+                                <input type="number" name="nb_billets" id="nb_billets" class="form-control" value="1" min="1" max="{{ places_dispo > 0 ? places_dispo : (attente_dispo > 0 ? attente_dispo : 1) }}" {% if places_dispo <= 0 and attente_dispo <= 0 %}disabled{% endif %}>
+                            </div>
+
+                            <div class="mb-3 text-start border-top pt-2" id="price-container">
+                                <span class="d-block mb-1">Total estimé :</span>
+                                <h4 class="fw-bold text-success mb-0" id="total-price">{{ evenement.prix|number_format(2, ',', ' ') }} DT</h4>
+                                <small class="text-danger fw-bold d-none" id="promo-info">Remise de {{ promo_discount * 100 }}% appliquée !</small>
                             </div>
                             
                             {% if places_dispo <= 0 %}
-                                <button type="button" class="btn btn-secondary w-100 fw-bold py-2 disabled">Complet</button>
+                                {% if attente_dispo > 0 %}
+                                    <button type="submit" class="btn btn-warning w-100 fw-bold py-2"><i class="bi bi-hourglass-split"></i> Rejoindre la file d'attente</button>
+                                {% else %}
+                                    <button type="button" class="btn btn-secondary w-100 fw-bold py-2 disabled">Totalement Complet</button>
+                                {% endif %}
                             {% else %}
                                 <button type="submit" class="btn btn-warning w-100 fw-bold py-2">Valider la Réservation</button>
                             {% endif %}
@@ -137,6 +161,39 @@ function setSelectedStars(val) {
 }
 // Initial state
 highlightStars(5);
+
+// Calcul dynamique du prix
+const basePrice = {{ evenement.prix }};
+const promoThreshold = {{ promo_threshold|default(1000) }};
+const promoDiscount = {{ promo_discount|default(0) }};
+const inputBillets = document.getElementById('nb_billets');
+const totalPriceEl = document.getElementById('total-price');
+const promoInfoEl = document.getElementById('promo-info');
+
+if (inputBillets) {
+    inputBillets.addEventListener('input', function() {
+        let nb = parseInt(this.value) || 1;
+        let sousTotal = basePrice * nb;
+        let isPromo = false;
+
+        if (nb >= promoThreshold) {
+            sousTotal = sousTotal * (1 - promoDiscount);
+            isPromo = true;
+        }
+
+        totalPriceEl.textContent = sousTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DT';
+        
+        if (isPromo) {
+            promoInfoEl.classList.remove('d-none');
+            totalPriceEl.classList.remove('text-success');
+            totalPriceEl.classList.add('text-danger');
+        } else {
+            promoInfoEl.classList.add('d-none');
+            totalPriceEl.classList.remove('text-danger');
+            totalPriceEl.classList.add('text-success');
+        }
+    });
+}
 </script>
 {% endblock %}
 {% endblock %}

@@ -7,6 +7,7 @@ use App\Entity\EventRating;
 use App\Entity\UserApp;
 use App\Repository\EvenementRepository;
 use App\Service\WeatherService;
+use App\Service\ReservationPricingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -93,16 +94,18 @@ class EventFrontController extends AbstractController
     }
 
     #[Route('/{id_evenement}', name: 'app_event_front_show', methods: ['GET'])]
-    public function show(Evenement $evenement, WeatherService $weatherService): Response
+    public function show(Evenement $evenement, WeatherService $weatherService, ReservationPricingService $pricingService): Response
     {
         // Compute available places properly
-        $nbReservationsExistantes = 0;
+        $placesDispo = $evenement->getPlacesRestantes();
+        
+        $reservationsAttente = 0;
         foreach ($evenement->getReservationEvenements() as $res) {
-            if ($res->getStatut_res() !== \App\Enum\StatutReservationEvenement::ANNULEE) {
-                $nbReservationsExistantes += $res->getNb_billets();
+            if ($res->getStatut_res() === \App\Enum\StatutReservationEvenement::LISTE_ATTENTE) {
+                $reservationsAttente += $res->getNb_billets();
             }
         }
-        $placesDispo = $evenement->getNb_places() - $nbReservationsExistantes;
+        $attenteDispo = $evenement->getLimite_attente() - $reservationsAttente;
 
         // Fetch Weather
         $weather = $weatherService->getWeather($evenement->getLieu());
@@ -110,7 +113,10 @@ class EventFrontController extends AbstractController
         return $this->render('front/event/show.html.twig', [
             'evenement' => $evenement,
             'places_dispo' => $placesDispo,
-            'weather' => $weather
+            'attente_dispo' => $attenteDispo,
+            'weather' => $weather,
+            'promo_threshold' => $pricingService->getPromoThreshold(),
+            'promo_discount' => $pricingService->getPromoDiscount(),
         ]);
     }
 }
