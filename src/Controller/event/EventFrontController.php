@@ -99,7 +99,7 @@ class EventFrontController extends AbstractController
     }
 
     #[Route('/{id_evenement}', name: 'app_event_front_show', methods: ['GET'])]
-    public function show(Evenement $evenement, WeatherService $weatherService, ReservationPricingService $pricingService): Response
+    public function show(Evenement $evenement, WeatherService $weatherService, ReservationPricingService $pricingService, \App\Service\AiEventOptimizerService $aiOptimizer): Response
     {
         // Compute available places properly
         $placesDispo = $evenement->getPlacesRestantes();
@@ -115,6 +115,12 @@ class EventFrontController extends AbstractController
         // Fetch Weather
         $weather = $weatherService->getWeather($evenement->getLieu());
 
+        // 🤖 Récupérer une recommandation IA si l'événement est complet
+        $aiRecommendation = null;
+        if ($placesDispo <= 0) {
+            $aiRecommendation = $aiOptimizer->getSimilarAvailableEvent($evenement);
+        }
+
         return $this->render('front/event/show.html.twig', [
             'evenement' => $evenement,
             'places_dispo' => $placesDispo,
@@ -122,6 +128,7 @@ class EventFrontController extends AbstractController
             'weather' => $weather,
             'promo_threshold' => $pricingService->getPromoThreshold(),
             'promo_discount' => $pricingService->getPromoDiscount(),
+            'ai_recommendation' => $aiRecommendation
         ]);
     }
 }

@@ -4,6 +4,59 @@
 
 {% block css %}
 <style>
+    body {
+        background-color: #f4f6f9;
+        font-family: 'Inter', sans-serif;
+    }
+    .dashboard-header {
+        background: linear-gradient(135deg, rgba(46, 125, 50, 0.95) 0%, rgba(0, 150, 136, 0.95) 100%), url('https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat;
+        padding: 80px 0 60px 0;
+        color: white;
+        border-radius: 0 0 40px 40px;
+        margin-bottom: 50px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .res-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        background: white;
+        overflow: hidden;
+    }
+    .res-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    }
+    .res-img {
+        height: 180px;
+        object-fit: cover;
+        width: 100%;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .badge-status {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        font-size: 0.75rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px dashed #e9ecef;
+    }
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    .action-buttons .btn {
+        border-radius: 12px;
+        font-weight: 600;
+        padding: 10px 15px;
+    }
     .badge-nouveau {
         animation: pulse-animation 2s infinite;
     }
@@ -15,126 +68,154 @@
 {% endblock %}
 
 {% block body %}
-<div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="fw-bold"><i class="bi bi-ticket-detailed me-2 text-success"></i>Mes Réservations</h1>
-        <div class="d-flex gap-2">
+<div class="dashboard-header text-center position-relative">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3"><i class="bi bi-ticket-detailed me-3"></i>Mon Carnet d'Aventures</h1>
+        <p class="lead opacity-75 mb-4">Gérez vos réservations, consultez vos billets et préparez vos prochaines expériences.</p>
+        
+        <div class="d-flex justify-content-center gap-3">
             {% if reservations is not empty %}
-                <a href="{{ path('app_reservation_all_tickets') }}" class="btn btn-success shadow-sm">
-                    <i class="bi bi-file-earmark-pdf-fill me-1"></i>Télécharger tout (PDF)
+                <a href="{{ path('app_reservation_all_tickets') }}" class="btn btn-light text-success fw-bold px-4 py-2 rounded-pill shadow-sm">
+                    <i class="bi bi-file-earmark-pdf-fill me-2"></i>Télécharger tout (PDF)
                 </a>
             {% endif %}
-            <a href="{{ path('app_event_front_index') }}" class="btn btn-outline-success">Voir d'autres événements</a>
+            <a href="{{ path('app_event_front_index') }}" class="btn btn-outline-light fw-bold px-4 py-2 rounded-pill">
+                Découvrir d'autres aventures
+            </a>
         </div>
     </div>
+</div>
 
+<div class="container pb-5">
     {% for label, messages in app.flashes %}
         {% for message in messages %}
-            <div class="alert alert-{{ label }} alert-dismissible fade show">
-                {{ message }}
+            <div class="alert alert-{{ label }} alert-dismissible fade show border-0 shadow-sm rounded-4 fw-bold mb-4">
+                {% if label == 'success' %}<i class="bi bi-check-circle-fill me-2"></i>
+                {% elseif label == 'danger' %}<i class="bi bi-exclamation-triangle-fill me-2"></i>
+                {% else %}<i class="bi bi-info-circle-fill me-2"></i>{% endif %}
+                {{ message|raw }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         {% endfor %}
     {% endfor %}
 
     {% if reservations is empty %}
-        <div class="alert alert-info py-4 text-center">
-            <h4 class="mb-3">Vous n'avez pas encore de réservations.</h4>
-            <a href="{{ path('app_event_front_index') }}" class="btn btn-success">Explorer les événements</a>
+        <div class="text-center py-5">
+            <div class="mb-4 text-muted" style="font-size: 5rem;">
+                <i class="bi bi-calendar-x"></i>
+            </div>
+            <h3 class="fw-bold text-dark mb-3">Aucune aventure réservée</h3>
+            <p class="text-muted fs-5 mb-4">Votre carnet est vide pour le moment. Trouvez votre prochaine escapade nature !</p>
+            <a href="{{ path('app_event_front_index') }}" class="btn btn-success btn-lg fw-bold rounded-pill shadow-sm px-5">Explorer le catalogue</a>
         </div>
     {% else %}
         <div class="row g-4">
             {% for res in reservations %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 shadow-sm border-0 position-relative">
-                        <div class="position-absolute top-0 end-0 p-2 d-flex flex-column gap-1">
-                            <span class="badge bg-{{ res.statut.value == 'CONFIRMEE' ? 'success' : (res.statut.value == 'ANNULEE' ? 'danger' : (res.statut.value == 'LISTE_ATTENTE' ? 'secondary' : 'warning')) }}">
-                                {{ res.statut.value == 'LISTE_ATTENTE' ? "SUR FILE D'ATTENTE" : (res.statut.value == 'EN_ATTENTE' ? 'EN ATTENTE (PRÊT)' : res.statut.value) }}
-                            </span>
+                <div class="col-lg-4 col-md-6">
+                    <div class="res-card position-relative h-100 d-flex flex-column">
+                        
+                        <div class="position-absolute top-0 start-0 w-100 p-3 d-flex justify-content-end" style="z-index: 5;">
+                            {% if res.statut.value == 'CONFIRMEE' %}
+                                <span class="badge bg-success badge-status"><i class="bi bi-check2-circle me-1"></i> CONFIRMÉE</span>
+                            {% elseif res.statut.value == 'ANNULEE' %}
+                                <span class="badge bg-danger badge-status"><i class="bi bi-x-circle me-1"></i> ANNULÉE</span>
+                            {% elseif res.statut.value == 'LISTE_ATTENTE' %}
+                                <span class="badge bg-secondary badge-status"><i class="bi bi-hourglass-split me-1"></i> FILE D'ATTENTE</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark badge-status"><i class="bi bi-clock-history me-1"></i> EN ATTENTE (PRÊT)</span>
+                            {% endif %}
                         </div>
                         
                         {% if res.evenement.image_url %}
-                            <img src="{{ asset(res.evenement.image_url) }}" class="card-img-top" alt="{{ res.evenement.titre }}" style="height: 150px; object-fit: cover;">
+                            <img src="{{ asset(res.evenement.image_url) }}" class="res-img" alt="{{ res.evenement.titre }}">
                         {% else %}
-                            <img src="{{ asset('assets/img/default-event.png') }}" class="card-img-top" alt="{{ res.evenement.titre }}" style="height: 150px; object-fit: cover;">
+                            <img src="{{ asset('assets/img/default-event.png') }}" class="res-img" alt="{{ res.evenement.titre }}">
                         {% endif %}
 
-                        <div class="card-body">
-                            <h5 class="card-title fw-bold">{{ res.evenement.titre }}</h5>
-                            <p class="text-muted small mb-3">
-                                <i class="bi bi-geo-alt"></i> {{ res.evenement.lieu }}<br>
-                                <i class="bi bi-calendar-event"></i> {{ res.evenement.date_event|date('d/m/Y à H:i') }}
-                            </p>
-                            <hr>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bold"><i class="bi bi-ticket-perforated text-success"></i> Billets Total :</span>
-                                <span class="fs-5 fw-bold text-success">{{ res.total_billets }}</span>
+                        <div class="card-body p-4 d-flex flex-column">
+                            <h5 class="fw-bold text-dark mb-3">{{ res.evenement.titre }}</h5>
+                            
+                            <div class="d-flex align-items-center text-muted small mb-2">
+                                <i class="bi bi-geo-alt-fill text-warning me-2"></i> {{ res.evenement.lieu }}
                             </div>
-                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                <span class="fw-bold text-muted small">Prix unitaire :</span>
-                                <span class="small">{{ res.evenement.prix|number_format(2, ',', ' ') }} DT</span>
+                            <div class="d-flex align-items-center text-muted small mb-4">
+                                <i class="bi bi-calendar-event-fill text-warning me-2"></i> {{ res.evenement.date_event|date('d/m/Y à H:i') }}
                             </div>
-                            {% if res.pricing is defined and res.pricing.appliquePromo %}
-                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                <span class="fw-bold text-danger small"><i class="bi bi-gift-fill me-1"></i>Remise ({{ res.pricing.tauxRemise }}%) :</span>
-                                <span class="small text-danger">-{{ res.pricing.remise|number_format(2, ',', ' ') }} DT</span>
-                            </div>
-                            {% endif %}
-                            <div class="d-flex justify-content-between align-items-center mt-1 border-top pt-1">
-                                <span class="fw-bold">Total à payer :</span>
-                                <span class="fs-5 fw-bold text-primary">{{ res.pricing is defined ? res.pricing.totalFinal|number_format(2, ',', ' ') : (res.total_billets * res.evenement.prix)|number_format(2, ',', ' ') }} DT</span>
-                            </div>
-                            <div class="text-muted small mt-2">
-                                Dernière réservation le {{ res.latest_date|date('d/m/Y H:i') }}
-                            </div>
-                            <div class="mt-3 d-flex flex-column gap-2">
-                                <div class="d-flex gap-2">
-                                    <a href="{{ path('app_event_front_show', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-outline-success flex-grow-1">
-                                        <i class="bi bi-plus-circle me-1"></i>Réserver
-                                    </a>
-                                    {% if res.statut.value == 'CONFIRMEE' %}
-                                        <div class="d-flex gap-2">
-                                            <a href="{{ path('app_reservation_event_ticket', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-success flex-grow-1">
-                                                <i class="bi bi-ticket-perforated me-1"></i>Ticket
-                                            </a>
-                                            <a href="{{ path('app_reservation_event_invoice', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-sm btn-outline-primary flex-grow-1">
-                                                <i class="bi bi-receipt me-1"></i>Facture
-                                            </a>
-                                        </div>
-                                    {% endif %}
+
+                            <div class="bg-light rounded-4 p-3 mb-4">
+                                <div class="detail-row">
+                                    <span class="text-muted small fw-bold">Billets réservés</span>
+                                    <span class="fw-bold text-dark"><i class="bi bi-ticket-perforated-fill text-success me-2"></i>{{ res.total_billets }}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="text-muted small fw-bold">Prix unitaire</span>
+                                    <span class="text-dark fw-bold">{{ res.evenement.prix|number_format(2, ',', ' ') }} DT</span>
                                 </div>
                                 
+                                {% if res.pricing is defined and res.pricing.appliquePromo %}
+                                <div class="detail-row">
+                                    <span class="text-danger small fw-bold"><i class="bi bi-gift-fill me-1"></i>Remise (-{{ res.pricing.tauxRemise }}%)</span>
+                                    <span class="text-danger fw-bold">-{{ res.pricing.remise|number_format(2, ',', ' ') }} DT</span>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="detail-row border-0 mt-2">
+                                    <span class="text-dark fw-bold text-uppercase" style="font-size: 0.8rem;">Total Payé</span>
+                                    <span class="fs-4 fw-bold text-success">{{ res.pricing is defined ? res.pricing.totalFinal|number_format(2, ',', ' ') : (res.total_billets * res.evenement.prix)|number_format(2, ',', ' ') }} DT</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto action-buttons d-flex flex-column gap-2">
+                                
                                 {% if res.statut.value == 'EN_ATTENTE' %}
-                                    <div class="alert alert-success p-2 small mt-2 mb-1 text-center badge-nouveau" role="alert">
-                                        <i class="bi bi-bell-fill"></i> Place disponible !
+                                    <div class="alert alert-success border-0 py-2 text-center badge-nouveau rounded-3 mb-2 shadow-sm" role="alert">
+                                        <i class="bi bi-bell-fill mb-1 d-block"></i> <span class="fw-bold">Place libérée !</span>
                                     </div>
                                     <form method="post" action="{{ path('app_reservation_confirm_event', {'id_evenement': res.evenement.id_evenement}) }}">
-                                        <button type="submit" class="btn btn-sm btn-success w-100 mt-1">
-                                            <i class="bi bi-check-circle me-1"></i>Confirmer ma réservation
+                                        <button type="submit" class="btn btn-success w-100 shadow-sm">
+                                            <i class="bi bi-check-circle-fill me-2"></i>Confirmer la réservation
                                         </button>
                                     </form>
                                 {% endif %}
 
                                 {% if res.statut.value == 'LISTE_ATTENTE' %}
-                                    <div class="alert alert-secondary p-2 small mt-2 mb-1 text-center" role="alert">
-                                        <i class="bi bi-hourglass-split"></i> Vous êtes sur la liste d'attente. Nous vous notifierons si une place se libère.
+                                    <div class="alert alert-secondary border-0 py-2 px-3 text-center rounded-3 mb-2 small" role="alert">
+                                        <i class="bi bi-hourglass-split me-1"></i> Vous êtes sur la liste d'attente. Maintien automatique de votre position.
+                                    </div>
+                                {% endif %}
+
+                                <div class="d-flex gap-2">
+                                    <a href="{{ path('app_event_front_show', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-outline-dark flex-grow-1">
+                                        <i class="bi bi-eye-fill me-1"></i>Détails
+                                    </a>
+                                </div>
+
+                                {% if res.statut.value == 'CONFIRMEE' %}
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ path('app_reservation_event_ticket', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-success flex-grow-1 shadow-sm">
+                                            <i class="bi bi-qr-code me-1"></i>Billet
+                                        </a>
+                                        <a href="{{ path('app_reservation_event_invoice', {'id_evenement': res.evenement.id_evenement}) }}" class="btn btn-outline-success flex-grow-1">
+                                            <i class="bi bi-receipt me-1"></i>Facture
+                                        </a>
                                     </div>
                                 {% endif %}
 
                                 {% if res.statut.value != 'ANNULEE' %}
                                     {% if res.statut.value == 'CONFIRMEE' %}
                                         {% set google_cal_url = "https://www.google.com/calendar/render?action=TEMPLATE&text=" ~ res.evenement.titre|url_encode ~ "&details=Réservation EcoAdventure&location=" ~ res.evenement.lieu|url_encode ~ "&dates=" ~ res.evenement.date_event|date('Ymd\\THis') ~ "/" ~ res.evenement.date_event|date_modify("+2 hours")|date('Ymd\\THis') %}
-                                        <a href="{{ google_cal_url }}" target="_blank" class="btn btn-sm btn-outline-primary w-100">
-                                            <i class="bi bi-calendar-plus me-1"></i>Ajouter au Calendrier
+                                        <a href="{{ google_cal_url }}" target="_blank" class="btn btn-light border text-primary">
+                                            <i class="bi bi-calendar-plus-fill me-1"></i>Ajouter Calendrier
                                         </a>
                                     {% endif %}
 
-                                    <form method="post" action="{{ path('app_reservation_cancel_event', {'id_evenement': res.evenement.id_evenement}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer toutes vos réservations pour cet événement ?');">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger w-100 mt-1">
-                                            <i class="bi bi-trash me-1"></i>{{ res.statut.value == 'EN_ATTENTE' ? 'Annuler' : 'Supprimer' }} mes réservations
+                                    <form method="post" action="{{ path('app_reservation_cancel_event', {'id_evenement': res.evenement.id_evenement}) }}" onsubmit="return confirm('Attention ! L\'annulation est définitive. Êtes-vous sûr ?');">
+                                        <button type="submit" class="btn btn-outline-danger w-100 border-0 bg-danger bg-opacity-10 text-danger mt-1">
+                                            <i class="bi bi-trash-fill me-1"></i>{{ res.statut.value == 'EN_ATTENTE' ? 'Annuler' : 'Supprimer' }} ma réservation
                                         </button>
                                     </form>
                                 {% endif %}
+
                             </div>
                         </div>
                     </div>
@@ -143,21 +224,21 @@
         </div>
         
         {% if total_pages > 1 %}
-        <div class="col-12 mt-5 d-flex justify-content-center w-100">
-            <nav aria-label="Pagination événements">
-                <ul class="pagination pagination-success">
+        <div class="col-12 mt-5 mb-4 d-flex justify-content-center w-100">
+            <nav aria-label="Pagination aventures">
+                <ul class="pagination pagination-md shadow-sm rounded-pill overflow-hidden">
                     <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
-                        <a class="page-link" href="{{ path('app_mes_reservations', {'page': current_page - 1}) }}" {% if current_page <= 1 %}tabindex="-1" aria-disabled="true"{% endif %}><i class="bi bi-chevron-left"></i> Précédent</a>
+                        <a class="page-link border-0 text-success px-4" href="{{ path('app_mes_reservations', {'page': current_page - 1}) }}" {% if current_page <= 1 %}tabindex="-1" aria-disabled="true"{% endif %}><i class="bi bi-chevron-left me-1"></i> Précédent</a>
                     </li>
                     
                     {% for i in 1..total_pages %}
                         <li class="page-item {% if current_page == i %}active{% endif %}">
-                            <a class="page-link" href="{{ path('app_mes_reservations', {'page': i}) }}">{{ i }}</a>
+                            <a class="page-link border-0 {% if current_page == i %}bg-success text-white fw-bold{% else %}text-success{% endif %}" href="{{ path('app_mes_reservations', {'page': i}) }}">{{ i }}</a>
                         </li>
                     {% endfor %}
                     
                     <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
-                        <a class="page-link" href="{{ path('app_mes_reservations', {'page': current_page + 1}) }}" {% if current_page >= total_pages %}tabindex="-1" aria-disabled="true"{% endif %}>Suivant <i class="bi bi-chevron-right"></i></a>
+                        <a class="page-link border-0 text-success px-4" href="{{ path('app_mes_reservations', {'page': current_page + 1}) }}" {% if current_page >= total_pages %}tabindex="-1" aria-disabled="true"{% endif %}>Suivant <i class="bi bi-chevron-right ms-1"></i></a>
                     </li>
                 </ul>
             </nav>

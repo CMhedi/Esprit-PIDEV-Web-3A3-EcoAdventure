@@ -68,7 +68,7 @@ class ReservationController extends AbstractController
         foreach ($groupedTickets as $eventId => $data) {
             $ref = 'EVT-' . $eventId . '-' . $user->getId_user();
             $qrContent = sprintf('EVENT:%d|USER:%d|TICKETS:%d', $eventId, $user->getId_user(), $data['total_billets']);
-            
+
             $qrCode = new QrCode(
                 data: $qrContent,
                 encoding: new Encoding('UTF-8'),
@@ -81,7 +81,7 @@ class ReservationController extends AbstractController
             );
 
             $result = $writer->write($qrCode);
-            
+
             $ticketsData[] = [
                 'evenement' => $data['evenement'],
                 'totalBillets' => $data['total_billets'],
@@ -194,9 +194,10 @@ class ReservationController extends AbstractController
 
         // 1. Generate QR Code with unique reference (EventID + UserID)
         $writer = new SvgWriter();
-        $qrContent = sprintf('EVENT:%d|USER:%d|TICKETS:%d', 
-            $evenement->getId_evenement(), 
-            $user->getId_user(), 
+        $qrContent = sprintf(
+            'EVENT:%d|USER:%d|TICKETS:%d',
+            $evenement->getId_evenement(),
+            $user->getId_user(),
             $totalBillets
         );
 
@@ -266,7 +267,7 @@ class ReservationController extends AbstractController
         $options = new Options();
         $options->set('defaultFont', 'Arial');
         $dompdf = new Dompdf($options);
-        
+
         $pricing = $pricingService->calculatePricing($reservation->getEvenement(), $reservation->getNb_billets());
 
         $html = $this->renderView('front/event/ticket_pdf.html.twig', [
@@ -293,11 +294,11 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/evenement/{id_evenement}', name: 'app_reservation_event', methods: ['POST'])]
-    public function reserver(Request $request, Evenement $evenement, EntityManagerInterface $entityManager): Response
+    public function reserver(Request $request, Evenement $evenement, EntityManagerInterface $entityManager, \App\Service\AiEventOptimizerService $aiOptimizer): Response
     {
         /** @var UserApp $user */
         $user = $this->getUser();
-        
+
         if (!$user) {
             $this->addFlash('error', 'Vous devez être connecté pour réserver.');
             return $this->redirectToRoute('app_login');
@@ -313,7 +314,7 @@ class ReservationController extends AbstractController
             return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
         }
 
-        if ($placesRestantes <= 0) {
+            if ($placesRestantes <= 0) {
             $reservationsAttente = $entityManager->getRepository(ReservationEvenement::class)->findBy([
                 'evenement' => $evenement,
                 'statut_res' => StatutReservationEvenement::LISTE_ATTENTE
@@ -323,8 +324,11 @@ class ReservationController extends AbstractController
                 $placesEnAttente += $res->getNb_billets();
             }
 
-            if ($placesEnAttente + $nbBillets > $evenement->getLimite_attente()) {
-                $this->addFlash('error', 'Désolé, l\'événement est complet et la liste d\'attente est pleine.');
+            // 🤖 2) EXPANSION DYNAMIQUE PAR L'IA
+            $dynamicWaitlistLimit = $aiOptimizer->optimizeWaitlistLimit($evenement);
+
+            if ($placesEnAttente + $nbBillets > $dynamicWaitlistLimit) {
+                $this->addFlash('error', sprintf('Désolé, liste d\'attente fermée. Notre IA a calculé une limite maximale optimale de %d place(s) afin d\'éviter de vous frustrer.', $dynamicWaitlistLimit));
                 return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
             }
 
@@ -338,7 +342,15 @@ class ReservationController extends AbstractController
             $entityManager->persist($reservation);
             $entityManager->flush();
 
-            $this->addFlash('warning', 'Plus de places disponibles. Vous avez été ajouté à la liste d\'attente, vous serez notifié si une place se libère.');
+            // 🤖 3) MOTEUR DE RECOMMANDATION PRÉVENTIVE (Avec alternative proposée)
+            $aiData = $aiOptimizer->getAiRecommendationMessage($evenement, $placesEnAttente + 1);
+            if ($aiData) {
+                $fullMessage = $aiData['message'] . " 👉 " . $aiData['event']->getTitre();
+                $this->addFlash('info', $fullMessage);
+            } else {
+                $this->addFlash('warning', 'Plus de places disponibles. Vous avez été ajouté à la liste d\'attente, vous serez notifié si une place se libère.');
+            }
+            
             return $this->redirectToRoute('app_mes_reservations');
         }
 
@@ -350,13 +362,29 @@ class ReservationController extends AbstractController
             ->setNb_billets($nbBillets);
 
         $entityManager->persist($reservation);
-        
+
         if ($user instanceof UserApp) {
             $user->addLoyaltyPoints($nbBillets * 10);
             $entityManager->persist($user);
         }
 
         $entityManager->flush();
+
+        // 🤖 4) YIELD MANAGEMENT (TARIFICATION DYNAMIQUE)
+        $yieldData = $aiOptimizer->analyzeYieldManagement($evenement, 1.5);
+        if (isset($yieldData['admin_alert']) && strpos($yieldData['admin_alert'], 'FORTE') !== false) {
+            $notifYield = new Notification();
+            $notifYield->setTitle('⚡ PRIX DYNAMIQUE IA')
+                ->setMessage(sprintf(
+                    "L'événement '%s' est ultra-populaire ! L'IA suggère d'augmenter le prix à %s DT (Actuel: %s DT) pour les prochaines éditions.", 
+                    $evenement->getTitre(), 
+                    number_format($yieldData['suggested_price'], 2, ',', ' '), 
+                    number_format($evenement->getPrix(), 2, ',', ' ')
+                ))
+                ->setType('system');
+            $entityManager->persist($notifYield);
+            $entityManager->flush();
+        }
 
         $this->addFlash('success', 'Votre réservation a été enregistrée en attente de confirmation !');
 
@@ -365,12 +393,12 @@ class ReservationController extends AbstractController
 
     #[Route('/annuler-event/{id_evenement}', name: 'app_reservation_cancel_event', methods: ['POST'])]
     public function annulerEvent(
-        Evenement $evenement, 
+        Evenement $evenement,
         EntityManagerInterface $entityManager
     ): Response {
         /** @var UserApp $user */
         $user = $this->getUser();
-        
+
         if (!$user) {
             $this->addFlash('error', 'Vous devez être connecté.');
             return $this->redirectToRoute('app_login');
@@ -396,7 +424,7 @@ class ReservationController extends AbstractController
             ->setMessage(sprintf('Le client %s %s a annulé sa participation à l\'événement %s.', $user->getNom(), $user->getPrenom(), $evenement->getTitre()))
             ->setType('cancellation');
         $entityManager->persist($notif);
-        
+
         $entityManager->flush();
 
         // Check if we can accommodate someone from the waiting list
@@ -411,25 +439,26 @@ class ReservationController extends AbstractController
                 $resAttente->setStatut_res(StatutReservationEvenement::EN_ATTENTE);
                 $resAttente->setIsNotifiedAvailability(true);
                 $placesRestantes -= $resAttente->getNb_billets();
-                
+
                 // Add an admin notification as well to log that someone was moved from waitlist
                 $notifWaitlist = new Notification();
                 $notifWaitlist->setTitle('Priorité liste d\'attente')
-                    ->setMessage(sprintf('La réservation du client %s %s pour l\'événement %s est passée de la liste d\'attente à En Attente (disponible).', 
-                        $resAttente->getUserApp()->getNom(), 
-                        $resAttente->getUserApp()->getPrenom(), 
+                    ->setMessage(sprintf(
+                        'La réservation du client %s %s pour l\'événement %s est passée de la liste d\'attente à En Attente (disponible).',
+                        $resAttente->getUserApp()->getNom(),
+                        $resAttente->getUserApp()->getPrenom(),
                         $evenement->getTitre()
                     ))
                     ->setType('availability');
                 $entityManager->persist($notifWaitlist);
-                
+
                 // TODO: Here ideally we send an EMAIL to $resAttente->getUserApp()
             }
         }
         $entityManager->flush();
 
         $this->addFlash('success', sprintf('Votre réservation pour l\'événement "%s" a été supprimée.', $evenement->getTitre()));
-        
+
         return $this->redirectToRoute('app_mes_reservations');
     }
 
@@ -457,7 +486,7 @@ class ReservationController extends AbstractController
             $res->setStatut_res(StatutReservationEvenement::CONFIRMEE);
             $res->setIsNotifiedAvailability(false);
         }
-        
+
         $entityManager->flush();
 
         $this->addFlash('success', 'Votre réservation pour l\'événement "' . $evenement->getTitre() . '" est maintenant confirmée !');
@@ -468,7 +497,7 @@ class ReservationController extends AbstractController
     public function mesReservations(Request $request, EntityManagerInterface $entityManager, ReservationPricingService $pricingService): Response
     {
         $user = $this->getUser();
-        
+
         if (!$user) {
             $this->addFlash('warning', 'Vous devez être connecté.');
             return $this->redirectToRoute('app_login');
@@ -493,7 +522,7 @@ class ReservationController extends AbstractController
             if ($res->getStatut_res() === StatutReservationEvenement::ANNULEE) {
                 continue;
             }
-            
+
             $eventId = $res->getEvenement()->getId_evenement();
             if (!isset($groupedReservations[$eventId])) {
                 $groupedReservations[$eventId] = [
@@ -523,8 +552,10 @@ class ReservationController extends AbstractController
         $totalItems = count($groupedReservations);
         $totalPages = max(1, ceil($totalItems / $limit));
 
-        if ($page < 1) $page = 1;
-        if ($page > $totalPages && $totalPages > 0) $page = $totalPages;
+        if ($page < 1)
+            $page = 1;
+        if ($page > $totalPages && $totalPages > 0)
+            $page = $totalPages;
 
         $paginatedReservations = array_slice($groupedReservations, ($page - 1) * $limit, $limit);
 

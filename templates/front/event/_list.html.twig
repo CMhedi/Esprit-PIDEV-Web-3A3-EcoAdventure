@@ -1,53 +1,96 @@
 {% for event in events %}
-    <div class="col-lg-4 col-md-6">
-        <div class="card event-card border-0 shadow-sm h-100">
-            {% if event.image_url %}
-                <img src="{{ asset(event.image_url) }}" class="card-img-top event-image" alt="{{ event.titre }}" style="height: 200px; object-fit: cover;">
-            {% else %}
-                <img src="{{ asset('assets/img/default-event.png') }}" class="card-img-top event-image" alt="{{ event.titre }}" style="height: 200px; object-fit: cover;">
-            {% endif %}
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card event-card border-0 h-100 position-relative overflow-hidden" style="border-radius: 16px; background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);">
             
-            <div class="card-body">
-                <span class="badge bg-light text-dark mb-2">{{ event.categorie_evt.value }}</span>
-                <h5 class="fw-bold">{{ event.titre }}</h5>
-                <p class="mb-1"><i class="bi bi-geo-alt me-2"></i>{{ event.lieu }}</p>
-                <p class="mb-1"><i class="bi bi-calendar-event me-2"></i>{{ event.date_event ? event.date_event|date('d M Y') : '' }}</p>
-                <p class="mb-1 text-success fw-bold"><i class="bi bi-tag me-2"></i>{{ event.prix|number_format(2, ',', ' ') }} DT</p>
-                <p class="price-text mb-3"><i class="bi bi-people me-2"></i>{{ event.nb_places }} Places</p>
+            <a href="{{ path('app_event_front_show', {'id_evenement': event.id_evenement}) }}" class="position-relative d-block overflow-hidden" style="height: 220px;">
+                {% if event.placesRestantes <= 0 %}
+                    <div class="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-flex justify-content-center align-items-center" style="z-index: 2;">
+                        <span class="badge bg-danger fs-6 px-3 py-2 rounded-pill shadow">COMPLET</span>
+                    </div>
+                {% endif %}
+                <div class="position-absolute top-0 end-0 m-3" style="z-index: 2;">
+                    <span class="badge bg-white text-success fw-bold shadow-sm px-3 py-2 rounded-pill">
+                        {{ event.categorie_evt.value }}
+                    </span>
+                </div>
+                
+                {% if event.image_url %}
+                    <img src="{{ asset(event.image_url) }}" class="card-img-top w-100 h-100" alt="{{ event.titre }}" style="object-fit: cover; transition: transform 0.5s ease;">
+                {% else %}
+                    <img src="{{ asset('assets/img/default-event.png') }}" class="card-img-top w-100 h-100" alt="{{ event.titre }}" style="object-fit: cover; transition: transform 0.5s ease;">
+                {% endif %}
+            </a>
+            
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.25rem;">{{ event.titre }}</h5>
+                </div>
+                
+                <p class="text-muted small mb-3 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                    {{ event.description }}
+                </p>
 
-                <div class="d-flex gap-2">
-                    <a href="{{ path('app_event_front_show', {'id_evenement': event.id_evenement}) }}" class="btn btn-light border w-100">Détails</a>
+                <div class="d-flex align-items-center text-muted small mb-2">
+                    <i class="bi bi-geo-alt-fill text-warning me-2"></i> {{ event.lieu }}
+                </div>
+                <div class="d-flex align-items-center text-muted small mb-3">
+                    <i class="bi bi-calendar-event-fill text-warning me-2"></i> {{ event.date_event ? event.date_event|date('d M Y - H:i') : '' }}
+                </div>
+                
+                <div class="mt-auto border-top pt-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="d-block text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">Prix</span>
+                        <span class="fs-5 fw-bold text-success">{{ event.prix|number_format(2, ',', ' ') }} DT</span>
+                    </div>
+                    <div>
+                        <span class="d-block text-muted text-end" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">Dispo</span>
+                        <span class="fs-6 fw-bold {% if event.placesRestantes > 0 %}text-primary{% else %}text-danger{% endif %}">
+                            {{ event.placesRestantes > 0 ? event.placesRestantes : 0 }} <small class="text-muted fw-normal">/ {{ event.nb_places }}</small>
+                        </span>
+                    </div>
                 </div>
             </div>
+            
+            <!-- Hover Overlay Button -->
+            <a href="{{ path('app_event_front_show', {'id_evenement': event.id_evenement}) }}" class="stretched-link"></a>
         </div>
     </div>
+    
+    <style>
+        .event-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.12) !important; }
+        .event-card:hover img { transform: scale(1.08); }
+    </style>
 {% else %}
     <div class="col-12 py-5 text-center">
-        <div class="empty-state">
-            <i class="bi bi-search fs-1 text-muted mb-3 d-block"></i>
-            <h4 class="fw-bold">Aucun événement trouvé</h4>
-            <p class="text-muted">Essayez de modifier vos critères de recherche ou de réinitialiser les filtres.</p>
-            <a href="{{ path('app_event_front_index') }}" class="btn btn-outline-warning mt-2">Voir tous les événements</a>
+        <div class="empty-state p-5 bg-white rounded-4 shadow-sm border border-light">
+            <div class="mb-4 text-warning" style="font-size: 4rem;">
+                <i class="bi bi-binoculars"></i>
+            </div>
+            <h3 class="fw-bold text-dark">Aucune aventure en vue</h3>
+            <p class="text-muted mb-4 fs-5">Essayez d'ajuster vos critères ou de retirer des filtres pour trouver ce que vous cherchez.</p>
+            <button onclick="document.getElementById('filter-form').reset(); document.getElementById('search').value=''; document.getElementById('filter-form').dispatchEvent(new Event('submit'));" class="btn btn-warning px-4 py-2 rounded-pill fw-bold shadow-sm">
+                <i class="bi bi-arrow-clockwise me-2"></i>Réinitialiser l'exploration
+            </button>
         </div>
     </div>
 {% endfor %}
 
 {% if total_pages > 1 %}
-<div class="col-12 mt-4 d-flex justify-content-center w-100">
-    <nav aria-label="Pagination événements">
-        <ul class="pagination pagination-success">
+<div class="col-12 mt-5 mb-4 d-flex justify-content-center w-100 position-relative z-3">
+    <nav aria-label="Pagination aventures">
+        <ul class="pagination pagination-md shadow-sm rounded-pill overflow-hidden">
             <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
-                <button class="page-link" data-page="{{ current_page - 1 }}" {% if current_page <= 1 %}tabindex="-1" aria-disabled="true"{% endif %}><i class="bi bi-chevron-left"></i> Précédent</button>
+                <button class="page-link border-0 text-success px-4" data-page="{{ current_page - 1 }}" {% if current_page <= 1 %}tabindex="-1" aria-disabled="true"{% endif %}><i class="bi bi-chevron-left me-1"></i> Précedent</button>
             </li>
             
             {% for i in 1..total_pages %}
                 <li class="page-item {% if current_page == i %}active{% endif %}">
-                    <button class="page-link" data-page="{{ i }}">{{ i }}</button>
+                    <button class="page-link border-0 {% if current_page == i %}bg-success text-white fw-bold{% else %}text-success{% endif %}" data-page="{{ i }}">{{ i }}</button>
                 </li>
             {% endfor %}
             
             <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
-                <button class="page-link" data-page="{{ current_page + 1 }}" {% if current_page >= total_pages %}tabindex="-1" aria-disabled="true"{% endif %}>Suivant <i class="bi bi-chevron-right"></i></button>
+                <button class="page-link border-0 text-success px-4" data-page="{{ current_page + 1 }}" {% if current_page >= total_pages %}tabindex="-1" aria-disabled="true"{% endif %}>Suivant <i class="bi bi-chevron-right ms-1"></i></button>
             </li>
         </ul>
     </nav>
