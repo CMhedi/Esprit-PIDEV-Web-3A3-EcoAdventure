@@ -1,5 +1,4 @@
-
-###> symfony/framework-bundle ###
+### Symfony ###
 /.env.local
 /.env.local.php
 /.env.*.local
@@ -7,27 +6,27 @@
 /public/bundles/
 /var/
 /vendor/
-###< symfony/framework-bundle ###
 
-###> phpunit/phpunit ###
+### PHPUnit ###
 /phpunit.xml
 /.phpunit.cache/
-###< phpunit/phpunit ###
 
-###> symfony/asset-mapper ###
+### Assets ###
 /public/assets/
 /assets/vendor/
-###< symfony/asset-mapper ###
-# Python
+
+### Python ###
 venv/
+ml-api/venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# ML files
+### ML ###
 *.pkl
+!ml-api/xgboost_churn_production_final.pkl
 
-# OS
+### OS ###
 .DS_Store
 Thumbs.db
