@@ -48,8 +48,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private ?RoleUser $role = null;
 
     #[ORM\Column(type: 'string', length: 255)]
-    private ?string $mot_de_passe = null;
 
+    private ?string $mot_de_passe = null;
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $date_creation = null;
 
@@ -76,6 +76,9 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'integer', options: ["default" => 0])]
     private int $loyaltyPoints = 0;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $faceDescriptor = null;
 
     // RELATIONS
     #[ORM\OneToMany(targetEntity: Inscription::class, mappedBy: 'userApp')]
@@ -218,6 +221,9 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function getLoyaltyPoints(): int { return $this->loyaltyPoints; }
     public function setLoyaltyPoints(int $points): self { $this->loyaltyPoints = $points; return $this; }
     public function addLoyaltyPoints(int $points): self { $this->loyaltyPoints += $points; return $this; }
+
+    public function getFaceDescriptor(): ?array { return $this->faceDescriptor; }
+    public function setFaceDescriptor(?array $faceDescriptor): self { $this->faceDescriptor = $faceDescriptor; return $this; }
 
     /**
      * @return Collection<int, Inscription>

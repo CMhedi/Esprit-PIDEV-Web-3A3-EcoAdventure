@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Controller;
-
+use App\Service\ReclamationProcessor;
 use App\Entity\Reclamation;
 use App\Form\ReclamationType;
 use App\Repository\ReclamationRepository;
@@ -42,28 +42,37 @@ final class ReclamationController extends AbstractController
     }
 
 
-    #[Route('/new', name: 'app_reclamation_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+#[Route('/new', name: 'app_reclamation_new', methods: ['GET', 'POST'])]
+    public function new(Request $request, EntityManagerInterface $entityManager, ReclamationProcessor $processor): Response
     {
         $reclamation = new Reclamation();
-        
-        // 1. Data automatique
-        $reclamation->setDate_creation(new \DateTime()); // Thabbet f'ism el function f'el Entity (date_creation)
+        $reclamation->setDate_creation(new \DateTime());
         $reclamation->setStatut(StatutReclamation::EN_ATTENTE);
         $reclamation->setUserApp($this->getUser());
 
         $form = $this->createForm(ReclamationType::class, $reclamation);
         $form->handleRequest($request);
 
-        // 2. Thabbet ken el form t'eb3at
-        if ($form->isSubmitted() && $form->isValid()) { 
+        if ($form->isSubmitted() && $form->isValid()) {
+            $type = $reclamation->getType();
+
+            // Logique de priorité
+            if ($type === 'Séance' || $type === 'Paiement') {
+                $reclamation->setPriorite('HAUTE');
+            } elseif ($type === 'Technique') {
+                $reclamation->setPriorite('MOYENNE');
+            } else {
+                $reclamation->setPriorite('BASSE');
+            }
+
             $entityManager->persist($reclamation);
             $entityManager->flush();
-
-            return $this->redirectToRoute('app_reclamation_index');
+            
+            return $this->redirectToRoute('app_reclamation_index'); 
         }
 
         return $this->render('reclamation/new.html.twig', [
+            'reclamation' => $reclamation, 
             'form' => $form->createView(),
         ]);
     }

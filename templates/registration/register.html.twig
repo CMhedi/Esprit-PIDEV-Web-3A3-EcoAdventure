@@ -142,8 +142,14 @@
 
         <div class="mb-3">
             {{ form_label(registrationForm.motdepasse, 'Mot de passe', {'label_attr': {'class': 'form-label fw-bold small'}}) }}
-            {{ form_widget(registrationForm.motdepasse, {'attr': {'class': 'form-control rounded-pill ' ~ (registrationForm.motdepasse.vars.errors|length > 0 ? 'is-invalid' : '')}}) }}
+            {{ form_widget(registrationForm.motdepasse, {'attr': {
+                'class': 'form-control rounded-pill ' ~ (registrationForm.motdepasse.vars.errors|length > 0 ? 'is-invalid' : ''),
+                'placeholder': 'Min. 8 caractères, 1 majuscule, 1 chiffre'
+            }}) }}
             <div class="text-danger small">{{ form_errors(registrationForm.motdepasse) }}</div>
+            <div class="form-text small" style="font-size: 0.75rem;">
+                Doit contenir au moins 8 caractères, une majuscule et un chiffre.
+            </div>
         </div>
 
         <div class="mb-4 form-check">

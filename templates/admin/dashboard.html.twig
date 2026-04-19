@@ -35,6 +35,236 @@
     </div>
 </div>
 
+<!-- Section Face ID Premium -->
+<div class="admin-card mb-4 border-0 shadow-lg overflow-hidden position-relative" style="background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%);">
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);"></div>
+    
+    <div class="position-relative p-4 text-white">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="bg-primary rounded-circle p-2 me-3 shadow-lg">
+                        <i class="bi bi-shield-lock-fill fs-4"></i>
+                    </div>
+                    <h4 class="fw-bold mb-0">Connexion Biométrique (Face ID)</h4>
+                </div>
+                <p class="opacity-75 mb-0 fs-5">Activez la reconnaissance faciale pour une sécurité maximale et un accès sans mot de passe.</p>
+                <div class="mt-2 small opacity-50">
+                    <i class="bi bi-info-circle me-1"></i> Vos données biométriques sont hashées localement. Aucune image n'est stockée.
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <button id="btn-register-face" class="btn btn-light rounded-pill px-4 py-2 fw-bold shadow-lg transition-transform hover-scale">
+                    <i class="bi bi-camera-fill me-2 text-primary"></i>Configurer Face ID
+                </button>
+            </div>
+        </div>
+
+        <div id="enrollment-container" style="display: none; margin-top: 30px;" class="glass-container p-4 rounded-4 animate-fade-in">
+            <div class="row justify-content-center text-center">
+                <div class="col-md-8">
+                    <div class="webcam-wrapper position-relative mx-auto mb-4" style="max-width: 420px;">
+                        <p id="enrollment-status" class="status-badge mb-3">Initialisation de l'IA...</p>
+                        
+                        <div class="video-frame rounded-4 overflow-hidden shadow-2xl position-relative" style="aspect-ratio: 4/3; border: 4px solid rgba(255,255,255,0.2);">
+                            <video id="webcam-enroll" autoplay muted playsinline class="w-100 h-100 object-fit-cover"></video>
+                            <canvas id="overlay-enroll" class="position-absolute top-0 start-0 w-100 h-100"></canvas>
+                            
+                            <!-- Scanning Animation -->
+                            <div class="scan-line" id="scan-line" style="display: none;"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-3 mt-4">
+                            <button id="btn-capture" class="btn btn-success rounded-pill px-5 py-2 fw-bold shadow-lg" disabled>
+                                <i class="bi bi-check-lg me-2"></i>Capturer l'empreinte
+                            </button>
+                            <button id="btn-cancel-enroll" class="btn btn-outline-light rounded-pill px-4 py-2 border-2 fw-bold">
+                                Annuler
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .transition-transform { transition: transform 0.3s ease; }
+    .hover-scale:hover { transform: scale(1.05); }
+    
+    .glass-container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 6px 20px;
+        border-radius: 50px;
+        background: rgba(0, 0, 0, 0.3);
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    
+    .scan-line {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(to bottom, transparent, #0d6efd, transparent);
+        box-shadow: 0 0 15px #0d6efd;
+        z-index: 10;
+        animation: scan 2.5s ease-in-out infinite;
+    }
+    
+    @keyframes scan {
+        0%, 100% { top: 0%; }
+        50% { top: 100%; }
+    }
+    
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .video-frame::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border: 40px solid rgba(0,0,0,0.1);
+        pointer-events: none;
+    }
+</style>
+
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const registerBtn = document.getElementById('btn-register-face');
+        const cancelBtn = document.getElementById('btn-cancel-enroll');
+        const captureBtn = document.getElementById('btn-capture');
+        const container = document.getElementById('enrollment-container');
+        const video = document.getElementById('webcam-enroll');
+        const status = document.getElementById('enrollment-status');
+        const scanLine = document.getElementById('scan-line');
+        
+        let stream = null;
+        let detectionInterval = null;
+        let currentDescriptor = null;
+
+        async function loadModels() {
+            if (window.modelsLoaded) return;
+            status.innerText = "Chargement du moteur d'IA...";
+            await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+            await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+            await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+            window.modelsLoaded = true;
+        }
+
+        async function startEnrollment() {
+            container.style.display = 'block';
+            registerBtn.style.display = 'none';
+            
+            try {
+                await loadModels();
+                status.innerText = "Activation de la vision...";
+                
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
+                video.srcObject = stream;
+                
+                video.onloadedmetadata = () => {
+                    scanLine.style.display = 'block';
+                    status.innerText = "Analysez votre visage...";
+                    startDetectionLoop();
+                };
+            } catch (e) {
+                status.innerText = "Caméra non trouvée ou bloquée.";
+                status.style.background = "rgba(220, 53, 69, 0.4)";
+            }
+        }
+
+        function startDetectionLoop() {
+            const canvas = document.getElementById('overlay-enroll');
+            const displaySize = { width: video.clientWidth, height: video.clientHeight };
+            faceapi.matchDimensions(canvas, displaySize);
+
+            detectionInterval = setInterval(async () => {
+                const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+                const context = canvas.getContext('2d');
+                context.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (detection) {
+                    const resizedDetection = faceapi.resizeResults(detection, displaySize);
+                    
+                    // Style detection box
+                    const box = resizedDetection.detection.box;
+                    context.strokeStyle = '#00ff00';
+                    context.lineWidth = 3;
+                    context.strokeRect(box.x, box.y, box.width, box.height);
+                    
+                    currentDescriptor = detection.descriptor;
+                    captureBtn.disabled = false;
+                    status.innerText = "Visage détecté ! Prêt.";
+                    status.style.background = "rgba(40, 167, 69, 0.4)";
+                } else {
+                    currentDescriptor = null;
+                    captureBtn.disabled = true;
+                    status.innerText = "Cherche un visage...";
+                    status.style.background = "rgba(0, 0, 0, 0.3)";
+                }
+            }, 300);
+        }
+
+        async function saveDescriptor() {
+            if (!currentDescriptor) return;
+            
+            status.innerText = "Génération de votre clé biométrique...";
+            captureBtn.disabled = true;
+
+            try {
+                const descriptorArray = Array.from(currentDescriptor);
+                const response = await fetch('/api/user/save-face-descriptor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ descriptor: descriptorArray })
+                });
+
+                if (response.ok) {
+                    status.innerText = "Profil Face ID enregistré !";
+                    status.style.background = "rgba(40, 167, 69, 0.8)";
+                    setTimeout(stopEnrollment, 2000);
+                } else {
+                    throw new Error();
+                }
+            } catch (e) {
+                status.innerText = "Échec. Réessayez.";
+                captureBtn.disabled = false;
+            }
+        }
+
+        function stopEnrollment() {
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            if (detectionInterval) clearInterval(detectionInterval);
+            container.style.display = 'none';
+            registerBtn.style.display = 'inline-block';
+            scanLine.style.display = 'none';
+        }
+
+        registerBtn.addEventListener('click', startEnrollment);
+        cancelBtn.addEventListener('click', stopEnrollment);
+        captureBtn.addEventListener('click', saveDescriptor);
+    });
+</script>
+
 <div class="admin-card mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="fw-bold mb-0">Gestion des événements</h4>

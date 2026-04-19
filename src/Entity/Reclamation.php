@@ -42,6 +42,11 @@ private ?string $type = null;
         return $this;
     }
 
+#[ORM\Column(type: 'string', length: 20)]
+private ?string $priorite = 'BASSE'; // Valeurs: HAUTE, MOYENNE, BASSE
+
+public function getPriorite(): ?string { return $this->priorite; }
+public function setPriorite(string $priorite): self { $this->priorite = $priorite; return $this; }
 #[ORM\Column(type: 'string', length: 2000)]
 private ?string $contenu = null;
 

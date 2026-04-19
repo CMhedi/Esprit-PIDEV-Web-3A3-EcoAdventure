@@ -21,7 +21,10 @@ class ReclamationType extends AbstractType
             'choices'  => [
                 'Problème Mot de passe' => 'Mot de passe',
                 'Problème Séance' => 'Séance',
-                'Autre' => 'Autre',
+                'Problème Technique' => 'Technique',
+                'Annulation Séance'  => 'Séance',
+                'Paiement & Facture' => 'Paiement',
+                'Autre'              => 'Autre',
             ],
             'attr' => ['class' => 'form-select mb-3']
         ])

@@ -19,6 +19,7 @@ use Symfony\Component\Validator\Constraints\IsTrue;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class RegistrationFormType extends AbstractType
 {
@@ -74,13 +75,25 @@ class RegistrationFormType extends AbstractType
             
             ->add('agreeTerms', CheckboxType::class, ['mapped' => false])
             ->add('motdepasse', PasswordType::class, [
-                'mapped' => false,
+                'label' => 'Mot de passe',
+                'mapped' => false, // <--- AJOUTE CETTE LIGNE ICI
                 'constraints' => [
-                    new NotBlank(['message' => 'Veuillez entrer un mot de passe']),
-                    new Length([
-                        'min' => 6,
-                        'minMessage' => 'Le mot de passe doit faire au moins {{ limit }} caractères'
+                    new Assert\NotBlank([
+                        'message' => 'Veuillez entrer un mot de passe',
+                    ]),
+                    new Assert\Length([
+                        'min' => 8,
+                        'minMessage' => 'Votre mot de passe doit avoir au moins {{ limit }} caractères',
+                        'max' => 4096,
+                    ]),
+                    new Assert\Regex([
+                        'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
+                        'message' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.'
                     ])
+                ],
+                'attr' => [
+                    'class' => 'form-control rounded-pill',
+                    'placeholder' => 'Min. 8 caractères (A, a, 1...)'
                 ]
             ]);
     }

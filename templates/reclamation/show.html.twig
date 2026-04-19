@@ -10,7 +10,7 @@
         <div class="container-fluid">
             <div class="card shadow-sm border-0 mb-4" style="border-radius: 20px;">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center" style="border-radius: 20px 20px 0 0;">
-                    <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-info-circle me-2"></i>Détails de la Réclamation #{{ reclamation.id_reclamation }}</h5>
+                    <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-info-circle me-2"></i>Détails de la Réclamation </h5>
                     <span class="badge {% if reclamation.statut.value == 'TRAITEE' %}bg-success{% elseif reclamation.statut.value == 'REJETEE' %}bg-danger{% else %}bg-warning text-dark{% endif %} rounded-pill px-3 py-2">
                         {{ reclamation.statut.value }}
                     </span>

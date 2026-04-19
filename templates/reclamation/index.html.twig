@@ -150,6 +150,7 @@
                         <th>Date</th>
                         <th>Statut</th>
                         <th>Réponse</th>
+                        <th>Priorité</th>
                         <th class="text-center">Actions</th>
                     </tr>
                 </thead>
@@ -171,6 +172,17 @@
                         </td>
                         <td class="text-muted small italic">
                             {{ reclamation.reponse ?: 'Pas encore de réponse' }}
+                        </td>
+                        <td>
+                            {% if reclamation.priorite == 'HAUTE' %}
+<span class="badge {% if reclamation.priorite == 'URGENT' or reclamation.priorite == 'HAUTE' %}bg-danger{% else %}bg-secondary{% endif %}">
+    {{ reclamation.priorite }}
+</span>                         
+                            {% elseif reclamation.priorite == 'MOYENNE' %}
+                                <span class="badge bg-info text-dark">MOYENNE</span>
+                            {% else %}
+                                <span class="badge bg-secondary">BASSE</span>
+                            {% endif %}
                         </td>
                         <td class="text-center">
                             <div class="d-flex justify-content-center gap-2">

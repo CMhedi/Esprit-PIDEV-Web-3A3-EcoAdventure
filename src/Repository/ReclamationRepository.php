@@ -15,6 +15,26 @@ class ReclamationRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Reclamation::class);
     }
+    public function countByStatus(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->select('r.statut, COUNT(r.id_reclamation) as total')
+            ->groupBy('r.statut')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findUrgentTickets(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.priorite = :p')
+            ->andWhere('r.statut = :s')
+            ->setParameter('p', 'HAUTE')
+            ->setParameter('s', StatutReclamation::EN_ATTENTE)
+            ->orderBy('r.date_creation', 'DESC')
+            ->getQuery()
+            ->getResult();
+}
 
 //    /**
 //     * @return Reclamation[] Returns an array of Reclamation objects

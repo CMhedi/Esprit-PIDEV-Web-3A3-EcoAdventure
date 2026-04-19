@@ -10,6 +10,8 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
+        bind:
+            $geminiApiKey: '%env(GEMINI_API_KEY)%'
 
     App\:
         resource: '../src/'
