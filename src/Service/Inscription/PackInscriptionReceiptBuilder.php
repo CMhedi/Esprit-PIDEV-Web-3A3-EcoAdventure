@@ -25,11 +25,12 @@ final class PackInscriptionReceiptBuilder
         $writer = new SvgWriter();
         $qrCode = new QrCode(
             data: sprintf(
-                'PACK_INSCRIPTION:%d|PACK:%s|USER:%s|AMOUNT:%s',
+                'PACK_INSCRIPTION:%d|PACK:%s|USER:%s|AMOUNT:%s|PAYMENT:%s',
                 $inscription->getIdInscription(),
                 $inscription->getNomPack() ?: ($inscription->getPack()?->getNom() ?? 'PACK'),
                 $inscription->getNomUser() ?: ($inscription->getUserApp()?->getEmail() ?? 'USER'),
-                $inscription->getMontantTotal() ?? '0'
+                $inscription->getMontantTotal() ?? '0',
+                $inscription->getPaymentReference() ?? 'MANUAL'
             ),
             encoding: new Encoding('UTF-8'),
             errorCorrectionLevel: ErrorCorrectionLevel::Medium,

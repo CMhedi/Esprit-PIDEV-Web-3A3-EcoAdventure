@@ -25,7 +25,7 @@
 <div class="shell">
     <div class="hero">
         <h1>Confirmation d'inscription EcoAdventure</h1>
-        <p>Document généré automatiquement pour le module Pack / Inscription.</p>
+        <p>Document genere automatiquement pour le module Pack / Inscription.</p>
     </div>
 
     <table class="grid">
@@ -33,26 +33,33 @@
             <td class="card">
                 <div class="label">Utilisateur</div>
                 <div class="value">{{ inscription.nomUser ?: (inscription.userApp ? inscription.userApp.prenom ~ ' ' ~ inscription.userApp.nom : 'Utilisateur') }}</div>
-                <div class="muted">{{ inscription.userApp ? inscription.userApp.email : 'Compte non lié' }}</div>
+                <div class="muted">{{ inscription.userApp ? inscription.userApp.email : 'Compte non lie' }}</div>
             </td>
             <td class="card">
                 <div class="label">Pack</div>
                 <div class="value">{{ inscription.nomPack ?: (inscription.pack ? inscription.pack.nom : 'Pack') }}</div>
                 <div class="muted">Montant total: {{ inscription.montantTotal }} DT</div>
             </td>
+        </tr>
+        <tr>
             <td class="card">
                 <div class="label">Statut</div>
                 <div class="value">{{ inscription.statutInscr ? inscription.statutInscr.value : 'INCONNU' }}</div>
-                <div class="muted">Créé le {{ inscription.dateInscription ? inscription.dateInscription|date('d/m/Y H:i') : '-' }}</div>
+                <div class="muted">Cree le {{ inscription.dateInscription ? inscription.dateInscription|date('d/m/Y H:i') : '-' }}</div>
+            </td>
+            <td class="card">
+                <div class="label">Paiement</div>
+                <div class="value">{{ inscription.paymentStatus ? inscription.paymentStatus|replace({'_': ' '})|upper : 'CONFIRME' }}</div>
+                <div class="muted">{{ inscription.paymentReference ? 'Ref: ' ~ inscription.paymentReference : 'Validation interne' }}</div>
             </td>
         </tr>
     </table>
 
     <div class="section">
-        <h2>Traçabilité</h2>
+        <h2>Tracabilite</h2>
         <p>
-            Ce reçu démontre une inscription générée sans modification de schéma, avec un QR code calculé
-            à la volée à partir des données existantes de l'inscription.
+            Ce recu confirme une inscription payee ou validee, avec un QR code calcule a partir
+            des donnees de l'inscription et de la reference paiement.
         </p>
 
         <div class="qr">
@@ -61,7 +68,7 @@
     </div>
 
     <div class="footer">
-        Généré le {{ generatedAt|date('d/m/Y H:i') }} • EcoAdventure
+        Genere le {{ generatedAt|date('d/m/Y H:i') }} - EcoAdventure
     </div>
 </div>
 </body>

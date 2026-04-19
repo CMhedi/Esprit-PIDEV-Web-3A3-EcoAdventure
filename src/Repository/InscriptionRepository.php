@@ -63,4 +63,17 @@ class InscriptionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    public function findOneByPaymentReference(string $paymentReference): ?Inscription
+    {
+        return $this->createQueryBuilder('i')
+            ->leftJoin('i.pack', 'p')
+            ->leftJoin('i.userApp', 'u')
+            ->addSelect('p')
+            ->addSelect('u')
+            ->andWhere('i.payment_reference = :paymentReference')
+            ->setParameter('paymentReference', $paymentReference)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

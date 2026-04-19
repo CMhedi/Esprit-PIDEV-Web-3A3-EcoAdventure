@@ -11,6 +11,18 @@ parameters:
     openai_api_key: '%env(default:default_openai_api_key:OPENAI_API_KEY)%'
     default_openai_model: 'gpt-4o-mini'
     openai_model: '%env(default:default_openai_model:OPENAI_MODEL)%'
+    default_konnect_api_base_url: 'https://api.sandbox.konnect.network/api/v2'
+    konnect_api_base_url: '%env(default:default_konnect_api_base_url:KONNECT_API_BASE_URL)%'
+    default_konnect_api_key: ''
+    konnect_api_key: '%env(default:default_konnect_api_key:KONNECT_API_KEY)%'
+    default_konnect_wallet_id: ''
+    konnect_wallet_id: '%env(default:default_konnect_wallet_id:KONNECT_WALLET_ID)%'
+    default_konnect_token: 'TND'
+    konnect_token: '%env(default:default_konnect_token:KONNECT_TOKEN)%'
+    default_demo_card_payment_enabled: false
+    demo_card_payment_enabled: '%env(default:default_demo_card_payment_enabled:DEMO_CARD_PAYMENT_ENABLED)%'
+    default_card_ocr_api_url: 'http://127.0.0.1:5055/ocr/card'
+    card_ocr_api_url: '%env(default:default_card_ocr_api_url:CARD_OCR_API_URL)%'
 
 services:
     _defaults:
@@ -42,3 +54,10 @@ services:
         arguments:
             $apiKey: '%openai_api_key%'
             $model: '%openai_model%'
+
+    App\Service\Payment\KonnectPaymentGateway:
+        arguments:
+            $apiKey: '%konnect_api_key%'
+            $walletId: '%konnect_wallet_id%'
+            $apiBaseUrl: '%konnect_api_base_url%'
+            $token: '%konnect_token%'

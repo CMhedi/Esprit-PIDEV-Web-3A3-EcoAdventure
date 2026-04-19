@@ -13,7 +13,7 @@ class InscriptionPackType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('save', SubmitType::class, [
-            'label' => "Confirmer l'inscription",
+            'label' => "Payer et confirmer l'inscription",
             'attr' => [
                 'class' => 'btn btn-eco rounded-pill px-4 py-2',
             ],
