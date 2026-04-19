@@ -267,7 +267,10 @@
                                     <i class="bi bi-person-badge me-3" style="color: #27ae60; font-size: 1.1rem;"></i>
                                     <div>
                                         <small class="text-muted d-block" style="font-size: 0.85rem;">Coach</small>
-                                        <strong style="color: #2c3e50;">{{ r.seance.coach.nom|default('N/A') }} {{ r.seance.coach.prenom|default('N/A')  }}</strong>
+                                     <strong style="color: #2c3e50;">
+    {{ r.seance.coach ? r.seance.coach.nom : 'N/A' }}
+    {{ r.seance.coach ? r.seance.coach.prenom : '' }}
+</strong>
                                     </div>
                                 </div>
 
@@ -284,6 +287,7 @@
                                 </div>
 
                             </div>
+                            
 
                         </div>
 
@@ -291,23 +295,45 @@
                         <div class="card-footer bg-white border-top-0 p-3">
                             
                             {% if r.seance.statutSeance.value == 'PLANIFIEE' %}
-                                <div class="d-grid gap-2">
-                                    <button class="btn btn-sm fw-bold shadow-sm" 
-                                            style="background-color: #27ae60; color: white; border: none;"
-                                            disabled>
-                                        <i class="bi bi-check-lg me-2"></i>
-                                        Confirmation reçue
-                                    </button>
-<button class="btn btn-sm btn-outline-danger fw-bold"
-        data-bs-toggle="modal"
-        data-bs-target="#cancelModal"
-        data-reservation-id="{{ r.id_reservation }}"
-        data-cancel-url="{{ path('app_reservation_cancel', {'id': r.id_reservation}) }}"
-        data-seance-name="{{ r.seance.nom }}">
-    <i class="bi bi-trash me-2"></i>
-    Annuler
-</button>
-                                </div>
+                      <div class="d-grid gap-2">
+
+    <!-- Confirmation -->
+    <button class="btn btn-sm fw-bold shadow-sm" 
+            style="background-color: #27ae60; color: white; border: none;"
+            disabled>
+        <i class="bi bi-check-lg me-2"></i>
+        Confirmation reçue
+    </button>
+
+    <!-- GOOGLE -->
+    {% if r.google_event_id %}
+        <a href="{{ r.google_event_link }}" target="_blank"
+           class="btn btn-sm btn-outline-primary fw-bold">
+            <i class="bi bi-calendar-check me-2"></i>
+            Voir dans Google Calendar
+        </a>
+    {% else %}
+        <form method="post" action="{{ path('app_add_google', {id: r.id_reservation}) }}">
+            <button type="submit"
+                    class="btn btn-sm btn-outline-success fw-bold">
+                <i class="bi bi-calendar-plus me-2"></i>
+                Ajouter à Google Calendar
+            </button>
+        </form>
+    {% endif %}
+
+    <!-- ANNULER -->
+    <button class="btn btn-sm btn-outline-danger fw-bold"
+            data-bs-toggle="modal"
+            data-bs-target="#cancelModal"
+            data-reservation-id="{{ r.id_reservation }}"
+            data-cancel-url="{{ path('app_reservation_cancel', {'id': r.id_reservation}) }}"
+            data-seance-name="{{ r.seance.nom }}">
+        <i class="bi bi-trash me-2"></i>
+        Annuler
+    </button>
+
+</div>
                             {% elseif r.seance.statutSeance.value == 'TERMINEE' %}
                                 <button class="btn w-100 btn-sm fw-bold" 
                                         style="background-color: #95a5a6; color: white; border: none;">

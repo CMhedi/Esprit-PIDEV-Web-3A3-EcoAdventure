@@ -146,7 +146,19 @@ private Collection $seances;
     }
 
     // ========== SYMFONY SECURITY METHODS ==========
+#[ORM\Column(type: 'text', nullable: true)]
+private ?string $google_token = null;
 
+public function getGoogleToken(): ?string
+{
+    return $this->google_token;
+}
+
+public function setGoogleToken(?string $google_token): self
+{
+    $this->google_token = $google_token;
+    return $this;
+}
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
@@ -419,6 +431,59 @@ public function setImageUrl(?string $image_url): self
     public function getMessages(): Collection { return $this->messages; }
 
 
+#[ORM\Column(type: 'float', nullable: true)]
+private ?float $churnProbability = null;
 
+#[ORM\Column(type: 'boolean', options: ['default' => false])]
+private bool $churnPrediction = false;
+
+#[ORM\Column(type: 'string', length: 10, options: ['default' => 'low'])]
+private string $churnRisk = 'low';
+
+#[ORM\Column(type: 'datetime', nullable: true)]
+private ?\DateTimeInterface $lastPredictionAt = null;
  
+public function getChurnProbability(): ?float
+{
+    return $this->churnProbability;
+}
+
+public function setChurnProbability(float $value): self
+{
+    $this->churnProbability = $value;
+    return $this;
+}
+
+public function getChurnPrediction(): bool
+{
+    return $this->churnPrediction;
+}
+
+public function setChurnPrediction(bool $value): self
+{
+    $this->churnPrediction = $value;
+    return $this;
+}
+
+public function getChurnRisk(): string
+{
+    return $this->churnRisk;
+}
+
+public function setChurnRisk(string $value): self
+{
+    $this->churnRisk = $value;
+    return $this;
+}
+
+public function getLastPredictionAt(): ?\DateTimeInterface
+{
+    return $this->lastPredictionAt;
+}
+
+public function setLastPredictionAt(\DateTimeInterface $value): self
+{
+    $this->lastPredictionAt = $value;
+    return $this;
+}
 }
