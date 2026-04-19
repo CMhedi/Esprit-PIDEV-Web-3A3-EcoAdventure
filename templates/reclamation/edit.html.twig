@@ -4,76 +4,163 @@
 
 {% block body %}
 <style>
-    /* Background mta3 el "Nature" kima screenshot */
     body {
         background: url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070') no-repeat center center fixed !important;
         background-size: cover !important;
     }
 
-    .glass-wrapper-edit {
-        background: rgba(255, 255, 255, 0.25) !important;
-        backdrop-filter: blur(15px) !important;
-        -webkit-backdrop-filter: blur(15px);
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
+    .form-container {
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
         padding: 40px;
-        margin: 60px auto;
+        margin-top: 60px;
+        box-shadow: 0 15px 45px rgba(0, 0, 0, 0.2);
         max-width: 700px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        margin-left: auto;
+        margin-right: auto;
     }
 
-    .form-container-pro {
-        background: white !important;
-        border-radius: 15px !important;
-        padding: 30px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    .form-header {
+        text-align: center;
+        margin-bottom: 35px;
     }
 
-    .edit-title {
-        color: white !important;
+    .form-header h2 {
+        color: white;
+        font-weight: 800;
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+        letter-spacing: -0.5px;
+    }
+
+    .inner-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 35px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .custom-label {
         font-weight: 700;
-        margin-bottom: 30px;
-        text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        color: #2f3542;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    /* Styling el form inputs */
-    .form-container-pro input, 
-    .form-container-pro select, 
-    .form-container-pro textarea {
-        border-radius: 8px !important;
-        border: 1px solid #ddd !important;
-        padding: 10px !important;
-        margin-bottom: 15px !important;
+    .input-group-custom {
+        position: relative;
+        margin-bottom: 25px;
+    }
+
+    .input-group-custom i.field-icon {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #3a7bd5;
+        font-size: 1.1rem;
+        z-index: 5;
+    }
+
+    .form-control-custom {
+        width: 100%;
+        padding: 15px 20px 15px 55px !important;
+        border-radius: 15px !important;
+        border: 2px solid #f1f2f6 !important;
+        background: #f8f9fa !important;
+        transition: 0.3s;
+        font-size: 1rem;
+    }
+
+    .form-control-custom:focus {
+        border-color: #3a7bd5 !important;
+        background: white !important;
+        box-shadow: 0 0 0 4px rgba(58, 123, 213, 0.1) !important;
+        outline: none;
+    }
+
+    textarea.form-control-custom {
+        padding-top: 15px !important;
+        min-height: 150px;
     }
 
     .btn-update {
-        background-color: #27ae60 !important;
+        background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
         color: white !important;
-        border-radius: 50px !important;
-        padding: 10px 30px !important;
-        font-weight: 600 !important;
-        border: none !important;
+        border: none;
+        padding: 15px;
+        border-radius: 15px;
+        font-weight: 800;
+        width: 100%;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: 0.3s;
+        box-shadow: 0 10px 20px rgba(46, 204, 113, 0.2);
+    }
+
+    .btn-update:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(46, 204, 113, 0.4);
+    }
+
+    .btn-back {
+        background: #f1f2f6;
+        color: #2f3542;
+        padding: 10px 20px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.9rem;
+        transition: 0.2s;
+    }
+
+    .btn-back:hover {
+        background: #dfe4ea;
     }
 </style>
 
-<div class="container">
-    <div class="glass-wrapper-edit shadow-lg">
-        <h2 class="edit-title text-center">Modifier la Réclamation</h2>
+<div class="container pb-5">
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Modifier Réclamation</h2>
+        </div>
 
-        <div class="form-container-pro">
-            {# Include el form mta3ek elli fih el fields #}
-            {{ include('reclamation/_form.html.twig', {'button_label': 'Mettre à jour'}) }}
+        <div class="inner-card">
+            {{ form_start(form) }}
+                <div class="mb-4">
+                    <label class="custom-label">Type de problème</label>
+                    <div class="input-group-custom">
+                        <i class="fas fa-list-ul field-icon"></i>
+                        {{ form_widget(form.type, {'attr': {'class': 'form-control-custom form-select'}}) }}
+                    </div>
+                </div>
 
-            <hr class="my-4">
+                <div class="mb-4">
+                    <label class="custom-label">Détails</label>
+                    <div class="input-group-custom">
+                        {{ form_widget(form.contenu, {'attr': {'class': 'form-control-custom', 'placeholder': 'Détails...'}}) }}
+                    </div>
+                    <div class="text-danger small">{{ form_errors(form.contenu) }}</div>
+                </div>
 
-            <div class="d-flex justify-content-between align-items-center">
-                <a href="{{ path('app_reclamation_index') }}" class="btn btn-outline-secondary rounded-pill px-4">
-                    <i class="fas fa-arrow-left me-2"></i>Retour
-                </a>
-                
-                {# Button delete l'outa #}
-                {{ include('reclamation/_delete_form.html.twig') }}
-            </div>
+                <div class="d-grid gap-3">
+                    <button type="submit" class="btn-update">
+                        <i class="fas fa-save me-2"></i> Mettre à jour
+                    </button>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <a href="{{ path('app_reclamation_index') }}" class="btn-back">
+                            <i class="fas fa-arrow-left me-1"></i> Retour
+                        </a>
+                        {{ include('reclamation/_delete_form.html.twig') }}
+                    </div>
+                </div>
+            {{ form_end(form) }}
         </div>
     </div>
 </div>

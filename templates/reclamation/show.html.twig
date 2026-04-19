@@ -1,120 +1,144 @@
-{# templates/reclamation/show.html.twig #}
-
 {% extends is_granted('ROLE_ADMIN') ? 'admin/base_admin.html.twig' : 'base.html.twig' %}
 
 {% block title %}Détails Réclamation - EcoAdventure{% endblock %}
 
 {% block body %}
-    {% if is_granted('ROLE_ADMIN') %}
-        {# --- VERSION ADMIN: Dakhél el Dashboard --- #}
-        <div class="container-fluid">
-            <div class="card shadow-sm border-0 mb-4" style="border-radius: 20px;">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center" style="border-radius: 20px 20px 0 0;">
-                    <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-info-circle me-2"></i>Détails de la Réclamation </h5>
-                    <span class="badge {% if reclamation.statut.value == 'TRAITEE' %}bg-success{% elseif reclamation.statut.value == 'REJETEE' %}bg-danger{% else %}bg-warning text-dark{% endif %} rounded-pill px-3 py-2">
-                        {{ reclamation.statut.value }}
-                    </span>
-                </div>
-                <div class="card-body p-4">
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <label class="small text-muted text-uppercase fw-bold">Type de Problème</label>
-                            <p class="fs-5 fw-semibold border-bottom pb-2">{{ reclamation.type }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="small text-muted text-uppercase fw-bold">Date de Soumission</label>
-                            <p class="fs-5 border-bottom pb-2">{{ reclamation.date_creation|date('d/m/Y H:i') }}</p>
-                        </div>
-                        <div class="col-12">
-                            <label class="small text-muted text-uppercase fw-bold">Contenu de la Plainte</label>
-                            <div class="p-3 bg-light rounded-3 mt-2 border-start border-primary border-4">
-                                {{ reclamation.contenu|nl2br }}
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <label class="small text-muted text-uppercase fw-bold">Réponse Administrative</label>
-                            <p class="mt-2 p-3 rounded-3 {% if reclamation.reponse %}bg-light text-dark{% else %}bg-light text-muted italic{% endif %}" style="border: 1px dashed #dee2e6;">
-                                {{ reclamation.reponse ?: 'Aucune réponse n\'a été formulée pour le moment.' }}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top">
-                        <a href="{{ path('app_reclamation_index') }}" class="btn btn-outline-secondary rounded-pill px-4">
-                            <i class="bi bi-arrow-left me-2"></i>Retour à la liste
-                        </a>
-                        <div class="d-flex gap-2">
-                            {# El Admin i-najem i-fasakh ama ma i-badelch el contenu mta3 el User #}
-                            {{ include('reclamation/_delete_form.html.twig') }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    {% else %}
-        {# --- VERSION USER: Glassmorphism m3a el Nature --- #}
-        <style>
-            body { background: url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070') no-repeat center center fixed !important; background-size: cover !important; }
-            .glass-wrapper { background: rgba(255, 255, 255, 0.25) !important; backdrop-filter: blur(15px); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.3); padding: 40px; margin-top: 50px; }
-            .content-card { background: white !important; border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-            .label-pro { color: #1b4f72 !important; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; margin-bottom: 5px; }
-            .value-pro { font-size: 1.1rem !important; color: #333 !important; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-        </style>
-
-        <div class="container pb-5">
-            <div class="glass-wrapper shadow-lg">
-                <div class="d-flex justify-content-between align-items-center mb-5">
-                    <h1 class="text-white fw-bold mb-0">Ma Réclamation</h1>
-                    <span class="badge {% if reclamation.statut.value == 'TRAITEE' %}bg-success{% elseif reclamation.statut.value == 'REJETEE' %}bg-danger{% else %}bg-warning text-dark{% endif %} px-4 py-2 rounded-pill shadow-sm">
-                        {{ reclamation.statut.value }}
-                    </span>
-                </div>
-
-                <div class="content-card">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p class="label-pro">Type de Problème</p>
-                            <p class="value-pro">{{ reclamation.type }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p class="label-pro">Date de Soumission</p>
-                            <p class="value-pro">{{ reclamation.date_creation|date('d/m/Y H:i') }}</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-2">
-                        <p class="label-pro">Description</p>
-                        <div class="p-3 bg-light rounded mb-4" style="border-left: 5px solid #1b4f72;">
-                            {{ reclamation.contenu|nl2br }}
-                        </div>
-                    </div>
-
-                    <div class="mt-2">
-                        <p class="label-pro">Réponse de l'administration</p>
-                        <p class="value-pro" style="border-bottom: none; font-style: italic; color: #2980b9;">
-                            {{ reclamation.reponse ?: 'En attente d\'un retour de notre équipe...' }}
-                        </p>
-                    </div>
-
-                    <hr class="my-4">
-
-                    <div class="d-flex justify-content-between align-items-center">
-                        <a href="{{ path('app_reclamation_index') }}" class="btn btn-outline-secondary rounded-pill px-4">
-                            <i class="bi bi-arrow-left me-2"></i>Retour
-                        </a>
-                        <div class="d-flex gap-2">
-                            {# User i-najem i-modifier ken el réclamation mazalet en attente #}
-                            {% if reclamation.statut.value == 'EN_ATTENTE' %}
-                                <a href="{{ path('app_reclamation_edit', {'id_reclamation': reclamation.id_reclamation}) }}" class="btn btn-warning text-dark rounded-pill px-4">
-                                    <i class="bi bi-pencil-square me-2"></i>Modifier
-                                </a>
-                            {% endif %}
-                            {{ include('reclamation/_delete_form.html.twig') }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<style>
+    {% if not is_granted('ROLE_ADMIN') %}
+    body {
+        background: url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070') no-repeat center center fixed !important;
+        background-size: cover !important;
+    }
     {% endif %}
+
+    .glass-container {
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(20px) !important;
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 40px;
+        margin-top: 40px;
+        box-shadow: 0 15px 45px rgba(0, 0, 0, 0.2);
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .detail-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 35px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .info-label {
+        font-weight: 800;
+        color: rgba(0, 0, 0, 0.4);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+    }
+
+    .info-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2f3542;
+        margin-bottom: 25px;
+    }
+
+    .message-box {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 20px;
+        border-left: 5px solid #3a7bd5;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: #2f3542;
+        margin-bottom: 25px;
+    }
+
+    .response-box {
+        background: #eef2f7;
+        border-radius: 15px;
+        padding: 20px;
+        border: 1px dashed #3a7bd5;
+        font-style: italic;
+    }
+
+    .status-pill {
+        padding: 8px 20px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+
+    .btn-back {
+        background: #f1f2f6;
+        color: #2f3542;
+        padding: 10px 20px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 700;
+        transition: 0.2s;
+    }
+</style>
+
+<div class="container pb-5">
+    <div class="glass-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="text-white fw-800 mb-0">Détails de la Plainte</h1>
+            <span class="status-pill {% if reclamation.statut.value == 'TRAITEE' %}bg-success text-white{% elseif reclamation.statut.value == 'REJETEE' %}bg-danger text-white{% else %}bg-warning text-dark{% endif %} shadow-sm">
+                {{ reclamation.statut.value }}
+            </span>
+        </div>
+
+        <div class="detail-card">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-label">Type de problème</div>
+                    <div class="info-value">{{ reclamation.type }}</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-label">Date de soumission</div>
+                    <div class="info-value">{{ reclamation.date_creation|date('d M Y à H:i') }}</div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="info-label">Description de votre problème</div>
+                <div class="message-box">
+                    {{ reclamation.contenu|nl2br }}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="info-label">Réponse de l'équipe EcoAdventure</div>
+                <div class="response-box {% if not reclamation.reponse %}text-muted{% else %}text-dark{% endif %}">
+                    {% if reclamation.reponse %}
+                        <i class="fas fa-reply me-2 text-primary"></i> {{ reclamation.reponse }}
+                    {% else %}
+                        <i class="fas fa-hourglass-half me-2"></i> En attente d'un retour de nos administrateurs...
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <a href="{{ path('app_reclamation_index') }}" class="btn-back">
+                    <i class="fas fa-arrow-left me-1"></i> Retour à la liste
+                </a>
+                
+                <div class="d-flex gap-2">
+                    {% if not is_granted('ROLE_ADMIN') and reclamation.statut.value == 'EN_ATTENTE' %}
+                        <a href="{{ path('app_reclamation_edit', {'id_reclamation': reclamation.id_reclamation}) }}" class="btn btn-warning text-dark fw-bold rounded-pill px-4">
+                            <i class="fas fa-edit me-1"></i> Modifier
+                        </a>
+                    {% endif %}
+                    {{ include('reclamation/_delete_form.html.twig') }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -27,10 +27,12 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'string', length: 80)]
     #[Assert\NotBlank(message: "Le nom est obligatoire")]
+    #[Assert\Length(min: 2, max: 80, minMessage: "Le nom doit faire au moins {{ limit }} caractères")]
     private ?string $nom = null;
 
     #[ORM\Column(type: 'string', length: 80)]
     #[Assert\NotBlank(message: "Le prénom est obligatoire")]
+    #[Assert\Length(min: 2, max: 80, minMessage: "Le prénom doit faire au moins {{ limit }} caractères")]
     private ?string $prenom = null;
 
     #[ORM\Column(type: 'string', length: 120, unique: true)]
@@ -39,6 +41,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $email = null;
 
     #[ORM\Column(type: 'string', length: 30, nullable: true)]
+    #[Assert\Regex(pattern: "/^[0-9]+$/", message: "Le numéro de téléphone ne doit contenir que des chiffres")]
+    #[Assert\Length(min: 8, max: 15, minMessage: "Le numéro de téléphone doit faire au moins {{ limit }} chiffres")]
     private ?string $telephone = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
@@ -57,6 +61,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private ?\DateTimeInterface $last_seen = null;
 
     #[ORM\Column(type: 'integer', nullable: true)]
+    #[Assert\Range(min: 16, max: 100, notInRangeMessage: "L'âge doit être compris entre {{ min }} et {{ max }} ans")]
     private ?int $age = null;
 
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
@@ -185,11 +190,11 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function getId(): ?int { return $this->id_user; }
     public function getId_user(): ?int { return $this->id_user; }
     public function getNom(): ?string { return $this->nom; }
-    public function setNom(string $nom): self { $this->nom = $nom; return $this; }
+    public function setNom(?string $nom): self { $this->nom = $nom; return $this; }
     public function getPrenom(): ?string { return $this->prenom; }
-    public function setPrenom(string $prenom): self { $this->prenom = $prenom; return $this; }
+    public function setPrenom(?string $prenom): self { $this->prenom = $prenom; return $this; }
     public function getEmail(): ?string { return $this->email; }
-    public function setEmail(string $email): self { $this->email = $email; return $this; }
+    public function setEmail(?string $email): self { $this->email = $email; return $this; }
     public function getTelephone(): ?string { return $this->telephone; }
     public function setTelephone(?string $telephone): self { $this->telephone = $telephone; return $this; }
     public function getRole(): ?RoleUser { return $this->role; }

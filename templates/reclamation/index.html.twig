@@ -12,196 +12,283 @@
     }
     {% endif %}
 
-    .glass-wrapper {
-        background: rgba(255, 255, 255, 0.2) !important;
-        backdrop-filter: blur(15px) !important;
-        -webkit-backdrop-filter: blur(15px);
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
+    .glass-container {
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
         padding: 40px;
-        margin-top: 50px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        margin-top: 40px;
+        box-shadow: 0 15px 45px rgba(0, 0, 0, 0.2);
     }
 
-    .main-title {
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 35px;
+    }
+
+    .title-group h1 {
+        color: white;
+        font-weight: 800;
+        font-size: 2.5rem;
+        margin: 0;
+        letter-spacing: -1px;
+    }
+
+    .title-group p {
+        color: rgba(255, 255, 255, 0.8);
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .btn-add {
+        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
         color: white !important;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 15px;
         font-weight: 700;
-        font-size: 2.8rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        transition: 0.3s;
+        box-shadow: 0 10px 20px rgba(58, 123, 213, 0.3);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
-    .table-glass {
-        background: white !important;
-        border-radius: 10px !important;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    .btn-add:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 25px rgba(58, 123, 213, 0.5);
     }
 
-    .table-glass th {
-        background: #fff !important;
-        color: #1b4f72 !important;
-        font-weight: 800 !important;
-        border-bottom: 2px solid #eee !important;
-        padding: 15px !important;
-        text-transform: uppercase;
-        font-size: 0.8rem;
+    .search-box {
+        position: relative;
+        max-width: 450px;
+        margin-bottom: 30px;
     }
 
-    .table-glass td {
-        padding: 15px !important;
-        background: #fff !important;
-        vertical-align: middle;
-        color: #333;
-    }
-
-    .btn-nouvelle {
-        background-color: #007bff !important;
-        border-radius: 50px !important;
-        padding: 12px 30px !important;
-        font-weight: 600 !important;
+    .search-box input {
+        background: rgba(255, 255, 255, 0.15) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 18px !important;
+        padding: 15px 15px 15px 55px !important;
         color: white !important;
-        border: none !important;
+        backdrop-filter: blur(10px);
+        font-size: 1.05rem;
         transition: 0.3s;
     }
-    .btn-nouvelle:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,123,255,0.4); }
-    
-    .action-btn { border-radius: 50px !important; padding: 5px 15px !important; font-weight: 600; font-size: 0.85rem; }
-    
-    .admin-row:hover {
-        background-color: #f8f9fa !important;
-        cursor: pointer;
+
+    .search-box input::placeholder { color: rgba(255, 255, 255, 0.6); }
+    .search-box input:focus {
+        background: rgba(255, 255, 255, 0.25) !important;
+        border-color: white !important;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.1) !important;
     }
 
-.search-wrapper {
-    position: relative;
-    max-width: 400px;
-    margin: 20px 0;
-}
+    .search-box i {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+        font-size: 1.2rem;
+        opacity: 0.8;
+    }
 
-/* El Input bidhet */
-.search-input {
-    width: 100%;
-    padding: 12px 20px 12px 50px !important;
-    border-radius: 50px !important;
+    .custom-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 12px;
+    }
+
+    .custom-table thead th {
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        padding: 10px 20px;
+        border: none;
+    }
+
+    .reclamation-row {
+        background: rgba(255, 255, 255, 0.95);
+        transition: 0.3s;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .reclamation-row.row-answered {
+        background: #bbf7d0 !important; /* Vert bien plus foncé et visible */
+        border-left: 8px solid #15803d;
+        box-shadow: 0 4px 15px rgba(21, 128, 61, 0.2);
+    }
+
+    .reclamation-row:hover {
+        transform: scale(1.01) translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        background: #ffffff;
+    }
+
+    .reclamation-row td {
+        padding: 20px;
+        vertical-align: middle;
+        border: none;
+    }
+
+    .reclamation-row td:first-child { border-top-left-radius: 15px; border-bottom-left-radius: 15px; }
+    .reclamation-row td:last-child { border-top-right-radius: 15px; border-bottom-right-radius: 15px; }
+
+    /* Badges */
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        display: inline-block;
+        text-transform: uppercase;
+        min-width: 120px;
+        text-align: center;
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+    }
+    .status-traitée, .status-traitee { background: #dcfce7 !important; color: #166534 !important; }
+    .status-en_attente, .status-en-attente { background: #fef9c3 !important; color: #854d0e !important; }
+    .status-rejetée, .status-rejetee { background: #fee2e2 !important; color: #991b1b !important; }
+
+    .priority-badge {
+        padding: 6px 14px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        display: inline-block;
+    }
+    .priority-haute { background: #ef4444 !important; color: white !important; }
+    .priority-moyenne { background: #f59e0b !important; color: white !important; }
+    .priority-basse { background: #10b981 !important; color: white !important; }
+
+    .action-group { display: flex; gap: 8px; justify-content: center; }
     
-    /* El Alwen tawa bech t'ban dima */
-    background: rgba(255, 255, 255, 0.9) !important; /* Abyadh ghamaq chwaya */
-    border: 1px solid #e0e0e0 !important; /* Border gris dhyif */
-    color: #333 !important; /* Ktiba ghamaqa */
-    
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important; /* Dhall khfif */
-    transition: all 0.3s ease;
-}
+    .action-btn-custom {
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
 
-/* Ki t'7ott el mouse fouqha (hover) */
-.search-input:hover {
-    border-color: #007bff !important;
-    background: #ffffff !important;
-}
+    .btn-view { background: #eff6ff; color: #1e40af; }
+    .btn-view:hover { background: #1e40af; color: white; transform: translateY(-2px); }
 
-/* Ki t'enzel 3liha (focus) */
-.search-input:focus {
-    background: #ffffff !important;
-    border-color: #007bff !important;
-    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.15) !important;
-    outline: none;
-}
+    .btn-edit { background: #fffbeb; color: #92400e; }
+    .btn-edit:hover { background: #92400e; color: white; transform: translateY(-2px); }
 
-/* El Icon mta3 el Loupe */
-.search-icon {
-    position: absolute;
-    left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #007bff; /* Louneha bleu kima el theme mte3ek */
-    font-size: 1.1rem;
-    z-index: 10;
-}
+    .btn-delete { background: #fef2f2; color: #991b1b; }
+    .btn-delete:hover { background: #991b1b; color: white; transform: translateY(-2px); }
 
-/* Placeholder louneha mrigel bech ya3ref el user chnouwa y'kteb */
-.search-input::placeholder {
-    color: #999 !important;
-    font-weight: 400;
-}
+    .type-icon {
+        width: 48px;
+        height: 48px;
+        background: #f1f5f9;
+        border: 2px solid #e2e8f0;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        margin-right: 18px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
 </style>
 
 <div class="container pb-5">
-    <div class="glass-wrapper shadow-lg">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="main-title">EcoAdventure</h1>
-            {# --- ZEDNA EL FAZA: Kenou USER barka i-chouf el bouton Nouvelle Plainte --- #}
+    <div class="glass-container">
+        <div class="dashboard-header">
+            <div class="title-group">
+                <h1>Mes Réclamations</h1>
+                <p>Suivez l'état de vos demandes en temps réel</p>
+            </div>
             {% if not adminMode %}
-                <a href="{{ path('app_reclamation_new') }}" class="btn btn-nouvelle shadow">
-                    <i class="fas fa-plus-circle me-2"></i>Nouvelle Plainte
+                <a href="{{ path('app_reclamation_new') }}" class="btn-add">
+                    <i class="bi bi-plus-circle-fill"></i> Nouvelle Plainte
                 </a>
             {% endif %}
         </div>
 
-        <div class="search-wrapper">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" id="rechercheReclamation" class="form-control search-input" placeholder="Chercher une réclamation...">
+        <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" id="rechercheReclamation" placeholder="Rechercher par type, date ou statut...">
         </div>            
 
-        <div class="table-responsive rounded-3">
-            <table class="table table-glass mb-0" id="tableReclamation">
+        <div class="table-responsive">
+            <table class="custom-table" id="tableReclamation">
                 <thead>
                     <tr>
-                        <th>Type</th>
-                        <th>Date</th>
-                        <th>Statut</th>
-                        <th>Réponse</th>
+                        <th>Type de Plainte</th>
+                        <th>Date de création</th>
+                        <th>État</th>
                         <th>Priorité</th>
                         <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                 {% for reclamation in reclamations %}
-                    <tr {% if adminMode %} 
-                            class="admin-row"
-                            ondblclick="openReponseModal('{{ reclamation.id_reclamation }}', '{{ reclamation.reponse|e('js') }}')" 
-                            title="Double-cliquez pour répondre"
-                        {% endif %}>
-                        <td class="fw-bold">{{ reclamation.type }}</td>
-                        <td class="text-muted small">
-                            {{ reclamation.date_creation ? reclamation.date_creation|date('d/m/Y H:i') : '---' }}
+                    <tr class="reclamation-row {% if reclamation.reponse %}row-answered{% endif %}" {% if adminMode %}ondblclick="openReponseModal('{{ reclamation.id_reclamation }}', '{{ reclamation.reponse|e('js') }}')"{% endif %}>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="type-icon">
+                                    {% if 'Paiement' in reclamation.type %}
+                                        <i class="bi bi-credit-card-fill" style="color: #6366f1;"></i>
+                                    {% elseif 'Technique' in reclamation.type %}
+                                        <i class="bi bi-tools" style="color: #0ea5e9;"></i>
+                                    {% elseif 'Séance' in reclamation.type %}
+                                        <i class="bi bi-person-walking" style="color: #10b981;"></i>
+                                    {% else %}
+                                        <i class="bi bi-exclamation-triangle-fill" style="color: #f59e0b;"></i>
+                                    {% endif %}
+                                </div>
+                                <span class="fw-bold text-dark">{{ reclamation.type }}</span>
+                            </div>
                         </td>
                         <td>
-                            <span class="badge {% if reclamation.statut.value == 'TRAITEE' %}bg-success{% elseif reclamation.statut.value == 'REJETEE' %}bg-danger{% else %}bg-warning text-dark{% endif %} px-3 py-2 rounded-pill">
+                            <div class="text-dark fw-500">{{ reclamation.date_creation ? reclamation.date_creation|date('d M Y') : '---' }}</div>
+                            <small class="text-muted">{{ reclamation.date_creation ? reclamation.date_creation|date('H:i') : '' }}</small>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ reclamation.statut.value|lower }}">
                                 {{ reclamation.statut.value }}
                             </span>
                         </td>
-                        <td class="text-muted small italic">
-                            {{ reclamation.reponse ?: 'Pas encore de réponse' }}
+                        <td>
+                            <span class="priority-badge priority-{{ reclamation.priorite|lower }}">
+                                {{ reclamation.priorite }}
+                            </span>
                         </td>
                         <td>
-                            {% if reclamation.priorite == 'HAUTE' %}
-<span class="badge {% if reclamation.priorite == 'URGENT' or reclamation.priorite == 'HAUTE' %}bg-danger{% else %}bg-secondary{% endif %}">
-    {{ reclamation.priorite }}
-</span>                         
-                            {% elseif reclamation.priorite == 'MOYENNE' %}
-                                <span class="badge bg-info text-dark">MOYENNE</span>
-                            {% else %}
-                                <span class="badge bg-secondary">BASSE</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            <div class="d-flex justify-content-center gap-2">
-                                <a href="{{ path('app_reclamation_show', {'id_reclamation': reclamation.id_reclamation}) }}" class="btn btn-sm btn-outline-info action-btn">
-                                    <i class="fas fa-eye me-1"></i> details
+                            <div class="action-group">
+                                <a href="{{ path('app_reclamation_show', {'id_reclamation': reclamation.id_reclamation}) }}" class="action-btn-custom btn-view">
+                                    <i class="bi bi-eye"></i> <span>Détails</span>
                                 </a>
                                 
-                                {# --- FAZET EL USER: I-chouf Modifier barka --- #}
                                 {% if not adminMode %}
-                                    <a href="{{ path('app_reclamation_edit', {'id_reclamation': reclamation.id_reclamation}) }}" class="btn btn-sm btn-warning text-dark action-btn">
-                                        <i class="fas fa-edit me-1"></i> Modifier
+                                    <a href="{{ path('app_reclamation_edit', {'id_reclamation': reclamation.id_reclamation}) }}" class="action-btn-custom btn-edit">
+                                        <i class="bi bi-pencil-square"></i> <span>Modifier</span>
                                     </a>
                                 {% endif %}
 
-                                {# --- FAZET EL ADMIN: Yejem i-fasakh dima --- #}
-                                <form method="post" action="{{ path('app_reclamation_delete', {'id_reclamation': reclamation.id_reclamation}) }}" onsubmit="return confirm('Etes-vous sûr ?');" style="display:inline-block;">
+                                <form method="post" action="{{ path('app_reclamation_delete', {'id_reclamation': reclamation.id_reclamation}) }}" onsubmit="return confirm('Etes-vous sûr de vouloir supprimer cette réclamation ?');">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ reclamation.id_reclamation) }}">
-                                    <button class="btn btn-sm btn-danger action-btn">
-                                        <i class="fas fa-trash-alt me-1"></i> Supprimer
+                                    <button class="action-btn-custom btn-delete">
+                                        <i class="bi bi-trash3"></i> <span>Supprimer</span>
                                     </button>
                                 </form>
                             </div>
@@ -209,7 +296,12 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">Aucune réclamation trouvée.</td>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="text-white opacity-75">
+                                <i class="bi bi-folder-x display-1 mb-3"></i>
+                                <p class="fs-5">Aucune réclamation trouvée.</p>
+                            </div>
+                        </td>
                     </tr>
                 {% endfor %}
                 </tbody>

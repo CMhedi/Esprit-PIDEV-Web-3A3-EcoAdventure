@@ -99,7 +99,7 @@
         /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
             margin-bottom: 40px;
         }
@@ -327,13 +327,8 @@
                     <span class="stat-label">Réservations</span>
                 </div>
                 <div class="stat-item">
-                    <i class="bi bi-trophy stat-icon" style="color: #ffc107;"></i>
-                    <span class="stat-value">{{ user.loyaltyPoints|default(0) }}</span>
-                    <span class="stat-label">Points Eco</span>
-                </div>
-                <div class="stat-item">
                     <i class="bi bi-star stat-icon" style="color: #4caf50;"></i>
-                    <span class="stat-value">{{ user.dateCreation ? user.dateCreation|date('Y') : '2024' }}</span>
+                    <span class="stat-value">{{ user.date_creation ? user.date_creation|date('Y') : '2024' }}</span>
                     <span class="stat-label">Depuis</span>
                 </div>
             </div>
@@ -356,21 +351,6 @@
                     <div>
                         <span class="info-label">Téléphone</span>
                         <span class="info-value">{{ user.telephone ?? 'Non renseigné' }}</span>
-                    </div>
-                </div>
-
-                <div class="referral-box">
-                    <div>
-                        <span class="info-label">Votre Code de Parrainage</span>
-                        <div class="d-flex align-items-center gap-2 mt-1">
-                            <span class="code-display" id="refCode">{{ user.referralCode ?? 'ECO-' ~ user.id_user }}</span>
-                            <button class="copy-btn" onclick="copyCode()" title="Copier le code">
-                                <i class="bi bi-clipboard" id="copyIcon"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="text-end d-none d-sm-block">
-                        <small class="text-muted">Gagnez des points en invitant vos amis !</small>
                     </div>
                 </div>
             </div>

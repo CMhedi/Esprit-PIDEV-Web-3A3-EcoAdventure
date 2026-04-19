@@ -11,38 +11,70 @@ use Symfony\Component\Form\Extension\Core\Type\EnumType; // Muhim barcha lel Enu
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class UserAppType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $isAdmin = $options['is_admin'] ?? false;
+        $isCoach = $options['is_coach'] ?? false;
+
         $builder
             ->add('nom')
             ->add('prenom')
-            ->add('email')
+            ->add('email', TextType::class, [
+                'disabled' => !$isAdmin, // User cannot change email unless admin
+                'attr' => [
+                    'readonly' => !$isAdmin,
+                    'title' => !$isAdmin ? 'L\'email ne peut pas être modifié' : ''
+                ]
+            ])
             ->add('telephone')
             ->add('age')
-            /* Ista3mel EnumType bech tna7i error "Object could not be converted to string" */
-            ->add('role', EnumType::class, ['class' => RoleUser::class])
-            ->add('specialite', EnumType::class, ['class' => Specialite::class])
-            ->add('disponibilite', EnumType::class, ['class' => Disponibilite::class])
-            ->add('bioCertifs')
-            ->add('plainPassword', TextType::class, [
-                'mapped' => false, // Symfony ma i-lawajch 3liha f'el Entity
-                'required' => false,
-                'label' => 'Mot de passe',
-                'attr' => [
-                    'class' => 'form-control',
-                    'placeholder' => 'Entrez un nouveau mot de passe...'
-                ]
+            ->add('role', EnumType::class, [
+                'class' => RoleUser::class,
+                'disabled' => !$isAdmin, // User cannot change their own role
             ]);
-            
+
+        // Only show coach fields if the user is a coach or it's an admin editing
+        if ($isCoach || $isAdmin) {
+            $builder
+                ->add('specialite', EnumType::class, ['class' => Specialite::class])
+                ->add('disponibilite', EnumType::class, ['class' => Disponibilite::class])
+                ->add('bioCertifs');
+        }
+
+        $builder->add('plainPassword', PasswordType::class, [
+            'mapped' => false,
+            'required' => false,
+            'label' => 'Mot de passe',
+            'constraints' => [
+                new Length([
+                    'min' => 8,
+                    'minMessage' => 'Votre mot de passe doit avoir au moins {{ limit }} caractères',
+                    'max' => 4096,
+                ]),
+                new Assert\Regex([
+                    'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
+                    'message' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.'
+                ])
+            ],
+            'attr' => [
+                'class' => 'form-control',
+                'placeholder' => 'Entrez un nouveau mot de passe...'
+            ]
+        ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'data_class' => UserApp::class,
+            'is_admin' => false,
+            'is_coach' => false,
         ]);
     }
 }

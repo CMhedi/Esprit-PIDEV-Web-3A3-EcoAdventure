@@ -26,7 +26,10 @@ final class UserAppController extends AbstractController
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $userApp = new UserApp();
-        $form = $this->createForm(UserAppType::class, $userApp);
+        $form = $this->createForm(UserAppType::class, $userApp, [
+            'is_admin' => $this->isGranted('ROLE_ADMIN'),
+            'is_coach' => false,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -55,7 +58,15 @@ final class UserAppController extends AbstractController
 #[Route('/{id_user}/edit', name: 'app_user_app_edit', methods: ['GET', 'POST'])]
 public function edit(Request $request, UserApp $user, EntityManagerInterface $entityManager, UserPasswordHasherInterface $userPasswordHasher): Response
 {
-    $form = $this->createForm(UserAppType::class, $user);
+    // Security check: Only Admin or the owner can edit
+    if (!$this->isGranted('ROLE_ADMIN') && $this->getUser() !== $user) {
+        throw $this->createAccessDeniedException("Vous n'avez pas le droit de modifier ce profil.");
+    }
+
+    $form = $this->createForm(UserAppType::class, $user, [
+        'is_admin' => $this->isGranted('ROLE_ADMIN'),
+        'is_coach' => ($user->getRole() && $user->getRole()->value === 'COACH'),
+    ]);
     $form->handleRequest($request);
 
     if ($form->isSubmitted() && $form->isValid()) {
