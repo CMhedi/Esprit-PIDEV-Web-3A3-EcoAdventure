@@ -533,6 +533,14 @@ function updateStats(data) {
         const todayFat = Math.round(data.macros?.fat || 0);
         const todayCarbs = Math.round(data.macros?.carbs || 0);
 
+        // ===== 🧠 NOUVEAU: OBJECTIFS =====
+        const goals = data.goals || {
+            calories: 2000,
+            protein: 150,
+            fat: 70,
+            carbs: 250
+        };
+
         const caloriesEl = document.getElementById('todayCalories');
         const proteinEl = document.getElementById('todayProtein');
         const fatEl = document.getElementById('todayFat');
@@ -543,23 +551,65 @@ function updateStats(data) {
         if (fatEl) fatEl.textContent = todayFat + 'g';
         if (carbsEl) carbsEl.textContent = todayCarbs + 'g';
 
-        // Update progress bars
+        // ===== 🎯 UPDATE OBJECTIFS TEXTE =====
+        if (caloriesEl) {
+            const small = caloriesEl.parentElement.querySelector('small');
+            if (small) small.textContent = `/ ${goals.calories} kcal`;
+        }
+
+        if (proteinEl) {
+            const small = proteinEl.parentElement.querySelector('small');
+            if (small) small.textContent = `Objectif: ${goals.protein}g`;
+        }
+
+        if (fatEl) {
+            const small = fatEl.parentElement.querySelector('small');
+            if (small) small.textContent = `Objectif: ${goals.fat}g`;
+        }
+
+        if (carbsEl) {
+            const small = carbsEl.parentElement.querySelector('small');
+            if (small) small.textContent = `Objectif: ${goals.carbs}g`;
+        }
+
+        // ===== 📊 PROGRESS BARS (DYNAMIQUE) =====
         const caloriesProgress = document.getElementById('caloriesProgress');
         const proteinProgress = document.getElementById('proteinProgress');
         const fatProgress = document.getElementById('fatProgress');
         const carbsProgress = document.getElementById('carbsProgress');
 
-        if (caloriesProgress) caloriesProgress.style.width = Math.min((todayCalories / 2000) * 100, 100) + '%';
-        if (proteinProgress) proteinProgress.style.width = Math.min((todayProtein / 150) * 100, 100) + '%';
-        if (fatProgress) fatProgress.style.width = Math.min((todayFat / 78) * 100, 100) + '%';
-        if (carbsProgress) carbsProgress.style.width = Math.min((todayCarbs / 275) * 100, 100) + '%';
+        if (caloriesProgress) {
+            caloriesProgress.style.width =
+                Math.min((todayCalories / goals.calories) * 100, 100) + '%';
+        }
 
-        console.log('Stats updated:', { todayCalories, todayProtein, todayFat, todayCarbs });
+        if (proteinProgress) {
+            proteinProgress.style.width =
+                Math.min((todayProtein / goals.protein) * 100, 100) + '%';
+        }
+
+        if (fatProgress) {
+            fatProgress.style.width =
+                Math.min((todayFat / goals.fat) * 100, 100) + '%';
+        }
+
+        if (carbsProgress) {
+            carbsProgress.style.width =
+                Math.min((todayCarbs / goals.carbs) * 100, 100) + '%';
+        }
+
+        console.log('✅ Stats updated with goals:', {
+            todayCalories,
+            todayProtein,
+            todayFat,
+            todayCarbs,
+            goals
+        });
+
     } catch (e) {
-        console.error('Error updating stats:', e);
+        console.error('❌ Error updating stats:', e);
     }
 }
-
 // ===== FILTER AND SORT =====
 function filterAndSort() {
     try {

@@ -50,67 +50,83 @@ class NutritionLogController extends AbstractController
     /**
      * Récupère les stats du jour (Calories + Macros)
      */
-    #[Route('/today', name: 'today', methods: ['GET'])]
-    public function getTodayStats(): JsonResponse
-    {
-        try {
-            /** @var UserApp $user */
-            $user = $this->getUser();
+   #[Route('/today', name: 'today', methods: ['GET'])]
+public function getTodayStats(Request $request): JsonResponse
+{
+    try {
+        /** @var UserApp $user */
+        $user = $this->getUser();
 
-            if (!$user) {
-                return $this->json(['error' => 'Utilisateur non authentifié'], 401);
-            }
-
-            $userId = $user->getId();
-            $today = new \DateTime('today');
-
-            try {
-                $totalCalories = $this->repository->getTodayTotal($userId);
-            } catch (\Exception $e) {
-                error_log('getTodayTotal error: ' . $e->getMessage());
-                $totalCalories = 0;
-            }
-
-            try {
-                $macros = $this->repository->getTotalMacros($userId, $today);
-            } catch (\Exception $e) {
-                error_log('getTotalMacros error: ' . $e->getMessage());
-                $macros = ['calories' => 0, 'protein' => 0, 'fat' => 0, 'carbs' => 0];
-            }
-
-            try {
-                $logs = $this->repository->findByDateRange(
-                    $userId,
-                    new \DateTime('today'),
-                    new \DateTime('tomorrow')
-                );
-            } catch (\Exception $e) {
-                error_log('findByDateRange error: ' . $e->getMessage());
-                $logs = [];
-            }
-
-            return $this->json([
-                'success' => true,
-                'date' => $today->format('Y-m-d'),
-                'total_calories' => (float)($totalCalories ?? 0),
-                'macros' => [
-                    'calories' => (float)($macros['calories'] ?? 0),
-                    'protein' => (float)($macros['protein'] ?? 0),
-                    'fat' => (float)($macros['fat'] ?? 0),
-                    'carbs' => (float)($macros['carbs'] ?? 0),
-                ],
-                'logs_count' => is_array($logs) ? count($logs) : 0,
-                'logs' => is_array($logs) ? array_map(fn($log) => $this->formatLog($log), $logs) : []
-            ]);
-
-        } catch (\Exception $e) {
-            error_log('getTodayStats error: ' . $e->getMessage());
-            return $this->json(
-                ['error' => 'Erreur: ' . $e->getMessage()],
-                500
-            );
+        if (!$user) {
+            return $this->json(['error' => 'Utilisateur non authentifié'], 401);
         }
+
+        $userId = $user->getId();
+        $today = new \DateTime('today');
+
+        // ===== 🧠 RÉCUPÉRER LES OBJECTIFS =====
+        $session = $request->getSession();
+        $goals = $session->get('nutrition_goals', [
+            'calories' => 2000,
+            'protein' => 150,
+            'fat' => 70,
+            'carbs' => 250
+        ]);
+
+        try {
+            $totalCalories = $this->repository->getTodayTotal($userId);
+        } catch (\Exception $e) {
+            error_log('getTodayTotal error: ' . $e->getMessage());
+            $totalCalories = 0;
+        }
+
+        try {
+            $macros = $this->repository->getTotalMacros($userId, $today);
+        } catch (\Exception $e) {
+            error_log('getTotalMacros error: ' . $e->getMessage());
+            $macros = ['calories' => 0, 'protein' => 0, 'fat' => 0, 'carbs' => 0];
+        }
+
+        try {
+            $logs = $this->repository->findByDateRange(
+                $userId,
+                new \DateTime('today'),
+                new \DateTime('tomorrow')
+            );
+        } catch (\Exception $e) {
+            error_log('findByDateRange error: ' . $e->getMessage());
+            $logs = [];
+        }
+
+        return $this->json([
+            'success' => true,
+            'date' => $today->format('Y-m-d'),
+
+            // ===== CONSOMMATION =====
+            'total_calories' => (float)($totalCalories ?? 0),
+            'macros' => [
+                'calories' => (float)($macros['calories'] ?? 0),
+                'protein' => (float)($macros['protein'] ?? 0),
+                'fat' => (float)($macros['fat'] ?? 0),
+                'carbs' => (float)($macros['carbs'] ?? 0),
+            ],
+
+            // ===== 🧠 OBJECTIFS (NOUVEAU) =====
+            'goals' => $goals,
+
+            // ===== LOGS =====
+            'logs_count' => is_array($logs) ? count($logs) : 0,
+            'logs' => is_array($logs) ? array_map(fn($log) => $this->formatLog($log), $logs) : []
+        ]);
+
+    } catch (\Exception $e) {
+        error_log('getTodayStats error: ' . $e->getMessage());
+        return $this->json(
+            ['error' => 'Erreur: ' . $e->getMessage()],
+            500
+        );
     }
+}
 
     /**
      * Récupère les stats de la semaine groupées par jour
@@ -650,68 +666,100 @@ class NutritionLogController extends AbstractController
         }
     }
 
-    #[Route('/imc/dashboard', name: 'imc_dashboard', methods: ['POST'])]
-    public function getIMCDashboard(Request $request, SessionInterface $session): JsonResponse
-    {
-        try {
-            $data = json_decode($request->getContent(), true);
+   #[Route('/imc/dashboard', name: 'imc_dashboard', methods: ['POST'])]
+public function getIMCDashboard(Request $request, SessionInterface $session): JsonResponse
+{
+    try {
+        $data = json_decode($request->getContent(), true);
 
-            if (!isset($data['weight']) || !isset($data['height'])) {
-                return $this->json(['error' => 'Données manquantes'], 400);
-            }
-
-            $weight = (float)$data['weight'];
-            $height = (float)$data['height'];
-            $age = (int)($data['age'] ?? 30);
-            $gender = $data['gender'] ?? 'M';
-
-            $heightM = $height / 100;
-            $imc = round($weight / ($heightM * $heightM), 2);
-
-            $analysis = $this->analyzeIMC($imc, $weight, $height);
-            $recommendations = $this->getRecommendations($imc, $weight, $height, $age, $gender);
-            $ideal = $this->calculateIdealWeight($height, $gender);
-            $history = $session->get('imc_history', []);
-
-            $bmr = $this->calculateBMR($weight, $height, $age, $gender);
-            $activityLevel = $data['activity_level'] ?? 1.5;
-            $tdee = round($bmr * $activityLevel);
-
-            $stats = [];
-            if (!empty($history)) {
-                $imcValues = array_column($history, 'imc');
-                $stats = [
-                    'total_measurements' => count($history),
-                    'min_imc' => min($imcValues),
-                    'max_imc' => max($imcValues),
-                    'avg_imc' => round(array_sum($imcValues) / count($imcValues), 2),
-                    'imc_trend' => end($imcValues) - reset($imcValues)
-                ];
-            }
-
-            return $this->json([
-                'success' => true,
-                'measurements' => [
-                    'weight' => $weight,
-                    'height' => $height,
-                    'age' => $age,
-                    'gender' => $gender
-                ],
-                'imc' => $imc,
-                'analysis' => $analysis,
-                'ideal_weight' => $ideal,
-                'bmr' => $bmr,
-                'tdee' => $tdee,
-                'recommendations' => $recommendations,
-                'statistics' => $stats,
-                'history_count' => count($history)
-            ]);
-
-        } catch (\Exception $e) {
-            error_log('getIMCDashboard error: ' . $e->getMessage());
-            return $this->json(['error' => $e->getMessage()], 500);
+        if (!isset($data['weight']) || !isset($data['height'])) {
+            return $this->json(['error' => 'Données manquantes'], 400);
         }
+
+        $weight = (float)$data['weight'];
+        $height = (float)$data['height'];
+        $age = (int)($data['age'] ?? 30);
+        $gender = $data['gender'] ?? 'M';
+        $activityLevel = (float)($data['activity_level'] ?? 1.5);
+
+        // ===== IMC =====
+        $heightM = $height / 100;
+        $imc = round($weight / ($heightM * $heightM), 2);
+
+        // ===== ANALYSIS =====
+        $analysis = $this->analyzeIMC($imc, $weight, $height);
+        $recommendations = $this->getRecommendations($imc, $weight, $height, $age, $gender);
+        $ideal = $this->calculateIdealWeight($height, $gender);
+
+        // ===== HISTORY =====
+        $history = $session->get('imc_history', []);
+
+        // ===== BMR & TDEE =====
+        $bmr = $this->calculateBMR($weight, $height, $age, $gender);
+        $tdee = round($bmr * $activityLevel);
+
+        // ===== 🧠 NOUVEAU: OBJECTIFS NUTRITION =====
+        $goals = $this->calculateNutritionGoals(
+            $weight,
+            $height,
+            $age,
+            $gender,
+            $activityLevel
+        );
+
+        // ===== 🧠 SAUVEGARDE SESSION =====
+        $session->set('nutrition_goals', $goals);
+
+        // ===== STATS =====
+        $stats = [];
+        if (!empty($history)) {
+            $imcValues = array_column($history, 'imc');
+            $stats = [
+                'total_measurements' => count($history),
+                'min_imc' => min($imcValues),
+                'max_imc' => max($imcValues),
+                'avg_imc' => round(array_sum($imcValues) / count($imcValues), 2),
+                'imc_trend' => end($imcValues) - reset($imcValues)
+            ];
+        }
+
+        return $this->json([
+            'success' => true,
+
+            'measurements' => [
+                'weight' => $weight,
+                'height' => $height,
+                'age' => $age,
+                'gender' => $gender
+            ],
+
+            'imc' => $imc,
+            'analysis' => $analysis,
+            'ideal_weight' => $ideal,
+
+            // ===== ENERGY =====
+            'bmr' => $goals['bmr'],
+            'tdee' => $goals['calories'],
+
+            // ===== 🧠 NOUVEAU: MACROS =====
+            'recommendations' => [
+                'protein' => $goals['protein'],
+                'fat' => $goals['fat'],
+                'carbs' => $goals['carbs']
+            ],
+
+            // ===== OPTIONNEL (debug / UI avancé) =====
+            'goals' => $goals,
+
+            'statistics' => $stats,
+            'history_count' => count($history)
+        ]);
+
+    } catch (\Exception $e) {
+        error_log('getIMCDashboard error: ' . $e->getMessage());
+        return $this->json(['error' => $e->getMessage()], 500);
     }
+}
 
     #[Route('/search', name: 'search', methods: ['GET'])]
     public function searchIngredients(Request $request, NutritionApiService $apiService): JsonResponse
@@ -1071,4 +1119,42 @@ class NutritionLogController extends AbstractController
             'macros_total' => (float)(($log->getProtein() ?? 0) + ($log->getFat() ?? 0) + ($log->getCarbs() ?? 0))
         ];
     }
+    private function calculateNutritionGoals(
+    float $weight,
+    float $height,
+    int $age,
+    string $gender,
+    float $activityLevel
+): array {
+
+    // ===== 1. BMR (Mifflin-St Jeor) =====
+    if ($gender === 'M') {
+        $bmr = 10 * $weight + 6.25 * $height - 5 * $age + 5;
+    } else {
+        $bmr = 10 * $weight + 6.25 * $height - 5 * $age - 161;
+    }
+
+    // ===== 2. TDEE =====
+    $tdee = $bmr * $activityLevel;
+
+    // ===== 3. PROTEIN =====
+    // 1.6 - 2.2 g/kg → on prend 1.8
+    $protein = $weight * 1.8;
+
+    // ===== 4. FAT =====
+    // 25% des calories
+    $fat = ($tdee * 0.25) / 9;
+
+    // ===== 5. CARBS =====
+    // reste des calories
+    $carbs = ($tdee - ($protein * 4 + $fat * 9)) / 4;
+
+    return [
+        'bmr' => round($bmr),
+        'calories' => round($tdee),
+        'protein' => round($protein),
+        'fat' => round($fat),
+        'carbs' => round($carbs)
+    ];
+}
 }
