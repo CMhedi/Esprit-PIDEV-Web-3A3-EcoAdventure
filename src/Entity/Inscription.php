@@ -11,6 +11,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'inscription')]
 class Inscription
 {
+    public const PAYMENT_GATEWAY_STRIPE = 'stripe';
     public const PAYMENT_GATEWAY_KONNECT = 'konnect';
     public const PAYMENT_GATEWAY_CARD_DEMO = 'card_demo';
     public const PAYMENT_STATUS_INITIATED = 'initiated';

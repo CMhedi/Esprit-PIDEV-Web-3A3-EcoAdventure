@@ -2,11 +2,15 @@
 
 namespace App\Controller;
 
+use App\Dto\PackInscriptionRequest;
+use App\Dto\StripeCheckoutData;
+use App\Dto\StripeCheckoutRequest;
 use App\Entity\Inscription;
 use App\Entity\Pack;
 use App\Entity\UserApp;
 use App\Enum\StatutInscription;
 use App\Form\InscriptionPackType;
+use App\Form\StripeCheckoutType;
 use App\Repository\InscriptionRepository;
 use App\Repository\PackRepository;
 use App\Service\AI\AiPackExplainer;
@@ -15,9 +19,9 @@ use App\Service\Inscription\PackInscriptionReceiptBuilder;
 use App\Service\Pack\PackInsightAssembler;
 use App\Service\Pack\PackRecommendationEngine;
 use App\Service\Payment\KonnectPaymentGateway;
-use App\Service\Payment\KonnectPaymentRequest;
 use App\Service\Payment\PaymentGatewayConfigurationException;
 use App\Service\Payment\PaymentGatewayException;
+use App\Service\Payment\StripeCheckoutGateway;
 use App\Service\Tracking\PackFeedbackTracker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -41,19 +45,9 @@ final class PackInscriptionController extends AbstractController
         PackFeedbackTracker $packFeedbackTracker,
         HolidayContextProvider $holidayContextProvider,
         AiPackExplainer $aiPackExplainer,
-        KonnectPaymentGateway $paymentGateway,
     ): Response {
-        $this->denyAccessUnlessGranted('ROLE_USER');
-
-        $user = $this->getUser();
-        if (!$user instanceof UserApp) {
-            throw $this->createAccessDeniedException('Utilisateur non authentifie.');
-        }
-
-        $pack = $entityManager->getRepository(Pack::class)->find($id);
-        if (!$pack) {
-            throw $this->createNotFoundException('Pack introuvable.');
-        }
+        $user = $this->getAuthenticatedUser();
+        $pack = $this->findPackOrFail($id, $entityManager);
 
         $allPacks = $packRepository->findForFront();
         $packInsights = $packInsightAssembler->buildInsights($allPacks);
@@ -64,19 +58,11 @@ final class PackInscriptionController extends AbstractController
             ? $aiPackExplainer->explainChoice($currentInsight, $user, $alternativePack, $holidayContext)
             : null;
 
-        $displayName = trim(sprintf('%s %s', $user->getPrenom(), $user->getNom()));
-
-        $inscription = new Inscription();
-        $inscription->setPack($pack);
-        $inscription->setUserApp($user);
-        $inscription->setNomUser($displayName);
-        $inscription->setNomPack($pack->getNom());
-        $inscription->setMontantTotal((string) $pack->getPrixFinal());
-        $inscription->setDateInscription(new \DateTime());
-        $inscription->setStatutInscr(StatutInscription::EN_ATTENTE);
-
-        $form = $this->createForm(InscriptionPackType::class, $inscription);
+        $formData = new PackInscriptionRequest();
+        $form = $this->createForm(InscriptionPackType::class, $formData);
         $form->handleRequest($request);
+
+        $latestInscription = $inscriptionRepository->findLatestForUserAndPack($user->getId_user(), $pack->getIdPack());
 
         if ($request->isMethod('GET')) {
             $packFeedbackTracker->track($user, $pack, 'view_pack_detail', ['route' => 'app_pack_inscription']);
@@ -84,58 +70,26 @@ final class PackInscriptionController extends AbstractController
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $inscription->setUserApp($user);
-            $inscription->setNomUser($displayName);
-            $inscription->setNomPack($pack->getNom());
-            $inscription->setMontantTotal((string) $pack->getPrixFinal());
-            $inscription->setDateInscription(new \DateTime());
-            $inscription->setPaymentGateway(Inscription::PAYMENT_GATEWAY_KONNECT);
-            $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_INITIATED);
-            $inscription->setPaymentOrderId($this->buildPaymentOrderId($pack));
+            if ($latestInscription && !$latestInscription->isPaid()) {
+                $this->addFlash('warning', 'Une inscription est deja en attente pour ce pack. Reprenez directement l etape de paiement.');
+
+                return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $latestInscription->getIdInscription()]);
+            }
+
+            $inscription = $this->createPendingInscription($user, $pack);
 
             $entityManager->persist($inscription);
             $entityManager->flush();
 
-            try {
-                $paymentSession = $paymentGateway->initiatePayment(new KonnectPaymentRequest(
-                    $inscription->getPaymentOrderId() ?? (string) $inscription->getIdInscription(),
-                    $pack->getPrixFinal(),
-                    sprintf('Inscription EcoAdventure - %s', $pack->getNom()),
-                    $this->generateUrl('app_pack_inscription_payment_callback', [], UrlGeneratorInterface::ABSOLUTE_URL),
-                    $user->getPrenom(),
-                    $user->getNom(),
-                    $user->getEmail(),
-                ));
-            } catch (PaymentGatewayConfigurationException $exception) {
-                $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_FAILED);
-                $entityManager->flush();
-
-                $this->addFlash('danger', 'Le paiement en ligne n est pas encore configure. Ajoutez KONNECT_API_KEY et KONNECT_WALLET_ID dans votre environnement.');
-
-                return $this->redirectToRoute('app_pack_inscription', ['id' => $pack->getIdPack()]);
-            } catch (PaymentGatewayException $exception) {
-                $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_FAILED);
-                $entityManager->flush();
-
-                $this->addFlash('danger', 'Le service de paiement est indisponible pour le moment. Reessayez dans quelques minutes.');
-
-                return $this->redirectToRoute('app_pack_inscription', ['id' => $pack->getIdPack()]);
-            }
-
-            $inscription->setPaymentReference($paymentSession->getPaymentRef());
-            $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_PENDING);
-            $entityManager->flush();
-
-            $packFeedbackTracker->track($user, $pack, 'inscription_payment_started', [
+            $packFeedbackTracker->track($user, $pack, 'inscription_created', [
                 'inscription_id' => $inscription->getIdInscription(),
-                'payment_gateway' => $inscription->getPaymentGateway(),
-                'payment_reference' => $inscription->getPaymentReference(),
+                'payment_status' => $inscription->getPaymentStatus(),
             ]);
 
-            return $this->redirect($paymentSession->getPayUrl());
-        }
+            $this->addFlash('success', 'Inscription enregistree. Passez maintenant au paiement securise.');
 
-        $latestInscription = $inscriptionRepository->findLatestForUserAndPack($user->getId_user(), $pack->getIdPack());
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
+        }
 
         return $this->render('front/hedisPackInscription/pack_inscription.html.twig', [
             'pack' => $pack,
@@ -146,42 +100,258 @@ final class PackInscriptionController extends AbstractController
             'packExplanation' => $packExplanation,
             'holidayContext' => $holidayContext,
             'latestInscription' => $latestInscription,
-            'paymentGatewayConfigured' => $paymentGateway->isConfigured(),
-            'paymentToken' => $paymentGateway->getToken(),
+        ]);
+    }
+
+    #[Route('/inscriptions/{id}/payment', name: 'app_pack_inscription_payment', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function payment(
+        int $id,
+        InscriptionRepository $inscriptionRepository,
+        StripeCheckoutGateway $stripeCheckoutGateway,
+    ): Response {
+        $user = $this->getAuthenticatedUser();
+        $inscription = $this->findInscriptionOrFail($id, $inscriptionRepository);
+        $this->assertInscriptionOwnership($inscription, $user);
+
+        $stripeData = new StripeCheckoutData();
+        $stripeData->customerName = trim(sprintf('%s %s', $user->getPrenom(), $user->getNom()));
+        $stripeData->customerEmail = (string) $user->getEmail();
+
+        $stripeForm = $this->createForm(StripeCheckoutType::class, $stripeData, [
+            'action' => $this->generateUrl('app_pack_inscription_payment_stripe', ['id' => $inscription->getIdInscription()]),
+            'method' => 'POST',
+        ]);
+
+        return $this->render('front/hedisPackInscription/pack_payment.html.twig', [
+            'inscription' => $inscription,
+            'pack' => $inscription->getPack(),
+            'currentUser' => $user,
+            'stripeForm' => $stripeForm->createView(),
+            'stripeConfigured' => $stripeCheckoutGateway->isConfigured(),
+            'stripeMissingSettings' => $stripeCheckoutGateway->getMissingConfigurationFields(),
+            'stripePublishableKey' => $stripeCheckoutGateway->getPublishableKey(),
+            'stripeCurrency' => $stripeCheckoutGateway->getCurrency(),
             'demoCardPaymentEnabled' => $this->isDemoCardPaymentEnabled(),
             'cardOcrApiUrl' => $this->getParameter('card_ocr_api_url'),
         ]);
     }
 
-    #[Route('/packs/{id}/inscription/card-demo', name: 'app_pack_inscription_card_demo', methods: ['POST'])]
+    #[Route('/inscriptions/{id}/payment/stripe', name: 'app_pack_inscription_payment_stripe', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function stripePayment(
+        int $id,
+        Request $request,
+        InscriptionRepository $inscriptionRepository,
+        EntityManagerInterface $entityManager,
+        StripeCheckoutGateway $stripeCheckoutGateway,
+        PackFeedbackTracker $packFeedbackTracker,
+    ): Response {
+        $user = $this->getAuthenticatedUser();
+        $inscription = $this->findInscriptionOrFail($id, $inscriptionRepository);
+        $this->assertInscriptionOwnership($inscription, $user);
+
+        if ($inscription->isPaid()) {
+            $this->addFlash('success', 'Cette inscription est deja reglee.');
+
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
+        }
+
+        $stripeData = new StripeCheckoutData();
+        $stripeData->customerName = trim(sprintf('%s %s', $user->getPrenom(), $user->getNom()));
+        $stripeData->customerEmail = (string) $user->getEmail();
+
+        $form = $this->createForm(StripeCheckoutType::class, $stripeData);
+        $form->handleRequest($request);
+
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            $this->addFlash('danger', 'Le formulaire Stripe est incomplet. Verifiez les confirmations demandees.');
+
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
+        }
+
+        try {
+            $pack = $inscription->getPack();
+            if (!$pack) {
+                throw $this->createNotFoundException('Pack introuvable pour cette inscription.');
+            }
+
+            if (!$inscription->getPaymentOrderId()) {
+                $inscription->setPaymentOrderId($this->buildPaymentOrderId($pack));
+            }
+
+            $checkoutSession = $stripeCheckoutGateway->createCheckoutSession(new StripeCheckoutRequest(
+                $inscription->getPaymentOrderId() ?? (string) $inscription->getIdInscription(),
+                (float) $inscription->getMontantTotal(),
+                $stripeCheckoutGateway->getCurrency(),
+                sprintf('Inscription EcoAdventure - %s', $pack->getNom()),
+                $this->generateUrl('app_pack_inscription_payment_stripe_success', [], UrlGeneratorInterface::ABSOLUTE_URL) . '?session_id={CHECKOUT_SESSION_ID}',
+                $this->generateUrl('app_pack_inscription_payment_stripe_cancel', ['id' => $inscription->getIdInscription()], UrlGeneratorInterface::ABSOLUTE_URL),
+                $stripeData->customerEmail,
+                $stripeData->customerName,
+                [
+                    'inscription_id' => (string) $inscription->getIdInscription(),
+                    'payment_order_id' => (string) $inscription->getPaymentOrderId(),
+                ],
+            ));
+        } catch (PaymentGatewayConfigurationException $exception) {
+            $inscription->setPaymentGateway(Inscription::PAYMENT_GATEWAY_STRIPE);
+            $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_FAILED);
+            $entityManager->flush();
+
+            $this->addFlash('danger', 'Stripe n est pas encore configure. Ajoutez STRIPE_SECRET_KEY et STRIPE_PUBLISHABLE_KEY dans votre environnement.');
+
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
+        } catch (PaymentGatewayException $exception) {
+            $inscription->setPaymentGateway(Inscription::PAYMENT_GATEWAY_STRIPE);
+            $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_FAILED);
+            $entityManager->flush();
+
+            $this->addFlash('danger', 'Le service Stripe est indisponible pour le moment. Reessayez dans quelques minutes.');
+
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
+        }
+
+        $inscription->setPaymentGateway(Inscription::PAYMENT_GATEWAY_STRIPE);
+        $inscription->setPaymentReference($checkoutSession->getId());
+        $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_PENDING);
+        $entityManager->flush();
+
+        $packFeedbackTracker->track($user, $pack, 'inscription_payment_started', [
+            'inscription_id' => $inscription->getIdInscription(),
+            'payment_gateway' => $inscription->getPaymentGateway(),
+            'payment_reference' => $inscription->getPaymentReference(),
+        ]);
+
+        if (!$checkoutSession->getUrl()) {
+            $this->addFlash('danger', 'Stripe n a pas retourne d URL de paiement exploitable.');
+
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
+        }
+
+        return $this->redirect($checkoutSession->getUrl());
+    }
+
+    #[Route('/inscriptions/payment/stripe/success', name: 'app_pack_inscription_payment_stripe_success', methods: ['GET'])]
+    public function stripeSuccess(
+        Request $request,
+        InscriptionRepository $inscriptionRepository,
+        EntityManagerInterface $entityManager,
+        StripeCheckoutGateway $stripeCheckoutGateway,
+        PackFeedbackTracker $packFeedbackTracker,
+    ): Response {
+        $sessionId = trim((string) $request->query->get('session_id', ''));
+        if ($sessionId === '') {
+            return new Response('Session Stripe manquante.', Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $checkoutSession = $stripeCheckoutGateway->getCheckoutSession($sessionId);
+        } catch (PaymentGatewayException|PaymentGatewayConfigurationException $exception) {
+            return new Response('Verification Stripe indisponible.', Response::HTTP_SERVICE_UNAVAILABLE);
+        }
+
+        $metadata = $checkoutSession->getMetadata();
+        $inscriptionId = isset($metadata['inscription_id']) ? (int) $metadata['inscription_id'] : 0;
+        if ($inscriptionId <= 0) {
+            return new Response('Inscription Stripe introuvable.', Response::HTTP_NOT_FOUND);
+        }
+
+        $inscription = $inscriptionRepository->find($inscriptionId);
+        if (!$inscription) {
+            return new Response('Inscription Stripe introuvable.', Response::HTTP_NOT_FOUND);
+        }
+
+        $expectedAmount = $stripeCheckoutGateway->amountToSmallestUnit((float) $inscription->getMontantTotal());
+        $orderMatches = !$checkoutSession->getClientReferenceId() || $checkoutSession->getClientReferenceId() === $inscription->getPaymentOrderId();
+        $currencyMatches = strtolower($checkoutSession->getCurrency()) === strtolower($stripeCheckoutGateway->getCurrency());
+
+        if ($checkoutSession->isPaid() && $checkoutSession->getAmountTotal() >= $expectedAmount && $orderMatches && $currencyMatches) {
+            $inscription->setPaymentGateway(Inscription::PAYMENT_GATEWAY_STRIPE);
+            $inscription->setPaymentReference($checkoutSession->getId());
+            $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_PAID);
+            $inscription->setStatutInscr(StatutInscription::CONFIRMEE);
+            $inscription->setPaidAt(new \DateTimeImmutable());
+        } elseif ($checkoutSession->isPaid()) {
+            $inscription->setPaymentGateway(Inscription::PAYMENT_GATEWAY_STRIPE);
+            $inscription->setPaymentReference($checkoutSession->getId());
+            $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_AMOUNT_MISMATCH);
+        } else {
+            $inscription->setPaymentGateway(Inscription::PAYMENT_GATEWAY_STRIPE);
+            $inscription->setPaymentReference($checkoutSession->getId());
+            $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_PENDING);
+        }
+
+        $entityManager->flush();
+
+        $pack = $inscription->getPack();
+        $user = $inscription->getUserApp();
+        if ($pack && $user instanceof UserApp) {
+            $packFeedbackTracker->track($user, $pack, 'inscription_payment_callback', [
+                'inscription_id' => $inscription->getIdInscription(),
+                'payment_reference' => $checkoutSession->getId(),
+                'payment_status' => $inscription->getPaymentStatus(),
+            ]);
+        }
+
+        if ($this->getUser() instanceof UserApp) {
+            if ($inscription->isPaid()) {
+                $this->addFlash('success', 'Paiement Stripe confirme. Votre inscription au pack est maintenant validee.');
+            } else {
+                $this->addFlash('warning', 'Le paiement Stripe est encore en attente de confirmation.');
+            }
+
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
+        }
+
+        return new Response(sprintf('Paiement %s.', $inscription->getPaymentStatus() ?? 'mis a jour'), Response::HTTP_OK);
+    }
+
+    #[Route('/inscriptions/{id}/payment/stripe/cancel', name: 'app_pack_inscription_payment_stripe_cancel', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function stripeCancel(
+        int $id,
+        InscriptionRepository $inscriptionRepository,
+    ): Response {
+        $user = $this->getAuthenticatedUser();
+        $inscription = $this->findInscriptionOrFail($id, $inscriptionRepository);
+        $this->assertInscriptionOwnership($inscription, $user);
+
+        $this->addFlash('warning', 'Le paiement Stripe a ete annule. Vous pouvez reprendre plus tard.');
+
+        return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
+    }
+
+    #[Route('/inscriptions/{id}/payment/card-demo', name: 'app_pack_inscription_card_demo', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function demoCardPayment(
         int $id,
         Request $request,
+        InscriptionRepository $inscriptionRepository,
         EntityManagerInterface $entityManager,
         PackFeedbackTracker $packFeedbackTracker,
     ): Response {
-        $this->denyAccessUnlessGranted('ROLE_USER');
+        $user = $this->getAuthenticatedUser();
+        $inscription = $this->findInscriptionOrFail($id, $inscriptionRepository);
+        $this->assertInscriptionOwnership($inscription, $user);
 
-        $user = $this->getUser();
-        if (!$user instanceof UserApp) {
-            throw $this->createAccessDeniedException('Utilisateur non authentifie.');
-        }
-
-        $pack = $entityManager->getRepository(Pack::class)->find($id);
+        $pack = $inscription->getPack();
         if (!$pack) {
             throw $this->createNotFoundException('Pack introuvable.');
+        }
+
+        if ($inscription->isPaid()) {
+            $this->addFlash('success', 'Cette inscription est deja reglee.');
+
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
         }
 
         if (!$this->isDemoCardPaymentEnabled()) {
             $this->addFlash('danger', 'Le paiement carte demo est desactive.');
 
-            return $this->redirectToRoute('app_pack_inscription', ['id' => $pack->getIdPack()]);
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
         }
 
-        if (!$this->isCsrfTokenValid('card_payment_' . $pack->getIdPack(), (string) $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('card_payment_' . $inscription->getIdInscription(), (string) $request->request->get('_token'))) {
             $this->addFlash('danger', 'Session de paiement invalide. Rechargez la page puis reessayez.');
 
-            return $this->redirectToRoute('app_pack_inscription', ['id' => $pack->getIdPack()]);
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
         }
 
         $cardToken = trim((string) $request->request->get('card_token', ''));
@@ -204,29 +374,25 @@ final class PackInscriptionController extends AbstractController
         }
 
         if (!$this->isValidDemoCardPayload($cardToken, $cardNumber, $cardExpiry, $cardCvc, $cardLast4)) {
-            $this->addFlash('danger', 'Les donnees carte demo sont incompletes ou invalides. Utilisez par exemple 4242 4242 4242 4242, une expiration future et CVC 123.');
+            $this->addFlash('danger', 'Les donnees carte demo sont incompletes ou invalides. Utilisez par exemple 4242 4242 4242 4242, une expiration au format MM/AA et CVC 123.');
 
-            return $this->redirectToRoute('app_pack_inscription', ['id' => $pack->getIdPack()]);
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
         }
 
-        $displayName = trim(sprintf('%s %s', $user->getPrenom(), $user->getNom()));
         $paymentReference = sprintf('DEMO-%s-%s', strtoupper($cardLast4), strtoupper(bin2hex(random_bytes(4))));
 
-        $inscription = new Inscription();
-        $inscription->setPack($pack);
-        $inscription->setUserApp($user);
-        $inscription->setNomUser($displayName);
+        $inscription->setNomUser(trim(sprintf('%s %s', $user->getPrenom(), $user->getNom())));
         $inscription->setNomPack($pack->getNom());
-        $inscription->setMontantTotal((string) $pack->getPrixFinal());
-        $inscription->setDateInscription(new \DateTime());
-        $inscription->setStatutInscr(StatutInscription::CONFIRMEE);
         $inscription->setPaymentGateway(Inscription::PAYMENT_GATEWAY_CARD_DEMO);
         $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_PAID);
-        $inscription->setPaymentOrderId($this->buildPaymentOrderId($pack));
         $inscription->setPaymentReference($paymentReference);
+        $inscription->setStatutInscr(StatutInscription::CONFIRMEE);
         $inscription->setPaidAt(new \DateTimeImmutable());
 
-        $entityManager->persist($inscription);
+        if (!$inscription->getPaymentOrderId()) {
+            $inscription->setPaymentOrderId($this->buildPaymentOrderId($pack));
+        }
+
         $entityManager->flush();
 
         $packFeedbackTracker->track($user, $pack, 'inscription_card_demo_paid', [
@@ -239,7 +405,7 @@ final class PackInscriptionController extends AbstractController
 
         $this->addFlash('success', 'Paiement carte demo accepte. Votre inscription au pack est confirmee.');
 
-        return $this->redirectToRoute('app_pack_inscription', ['id' => $pack->getIdPack()]);
+        return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
     }
 
     #[Route('/packs/inscription/payment/konnect/callback', name: 'app_pack_inscription_payment_callback', methods: ['GET'])]
@@ -300,7 +466,7 @@ final class PackInscriptionController extends AbstractController
                 $this->addFlash('warning', 'Le paiement est encore en attente de confirmation.');
             }
 
-            return $this->redirectToRoute('app_pack_inscription', ['id' => $pack->getIdPack()]);
+            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
         }
 
         return new Response(sprintf('Paiement %s.', $inscription->getPaymentStatus() ?? 'mis a jour'), Response::HTTP_OK);
@@ -312,12 +478,7 @@ final class PackInscriptionController extends AbstractController
         InscriptionRepository $inscriptionRepository,
         PackInscriptionReceiptBuilder $receiptBuilder,
     ): Response {
-        $this->denyAccessUnlessGranted('ROLE_USER');
-
-        $user = $this->getUser();
-        if (!$user instanceof UserApp) {
-            throw $this->createAccessDeniedException('Utilisateur non authentifie.');
-        }
+        $user = $this->getAuthenticatedUser();
 
         $inscription = $inscriptionRepository->find($id);
         if (!$inscription) {
@@ -345,6 +506,64 @@ final class PackInscriptionController extends AbstractController
         return $response;
     }
 
+    private function getAuthenticatedUser(): UserApp
+    {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+
+        $user = $this->getUser();
+        if (!$user instanceof UserApp) {
+            throw $this->createAccessDeniedException('Utilisateur non authentifie.');
+        }
+
+        return $user;
+    }
+
+    private function findPackOrFail(int $id, EntityManagerInterface $entityManager): Pack
+    {
+        $pack = $entityManager->getRepository(Pack::class)->find($id);
+        if (!$pack) {
+            throw $this->createNotFoundException('Pack introuvable.');
+        }
+
+        return $pack;
+    }
+
+    private function findInscriptionOrFail(int $id, InscriptionRepository $inscriptionRepository): Inscription
+    {
+        $inscription = $inscriptionRepository->find($id);
+        if (!$inscription) {
+            throw $this->createNotFoundException('Inscription introuvable.');
+        }
+
+        return $inscription;
+    }
+
+    private function assertInscriptionOwnership(Inscription $inscription, UserApp $user): void
+    {
+        $ownerId = $inscription->getUserApp()?->getId_user();
+        if ($ownerId !== $user->getId_user() && !in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+            throw $this->createAccessDeniedException('Acces refuse a cette inscription.');
+        }
+    }
+
+    private function createPendingInscription(UserApp $user, Pack $pack): Inscription
+    {
+        $displayName = trim(sprintf('%s %s', $user->getPrenom(), $user->getNom()));
+
+        $inscription = new Inscription();
+        $inscription->setPack($pack);
+        $inscription->setUserApp($user);
+        $inscription->setNomUser($displayName);
+        $inscription->setNomPack($pack->getNom());
+        $inscription->setMontantTotal((string) $pack->getPrixFinal());
+        $inscription->setDateInscription(new \DateTime());
+        $inscription->setStatutInscr(StatutInscription::EN_ATTENTE);
+        $inscription->setPaymentStatus(Inscription::PAYMENT_STATUS_INITIATED);
+        $inscription->setPaymentOrderId($this->buildPaymentOrderId($pack));
+
+        return $inscription;
+    }
+
     private function buildPaymentOrderId(Pack $pack): string
     {
         return sprintf('PACK-%d-%s', $pack->getIdPack(), strtoupper(bin2hex(random_bytes(5))));
@@ -361,7 +580,7 @@ final class PackInscriptionController extends AbstractController
             return false;
         }
 
-        if (strlen($cardNumber) < 13 || strlen($cardNumber) > 19 || !$this->passesLuhn($cardNumber)) {
+        if (strlen($cardNumber) < 13 || strlen($cardNumber) > 19) {
             return false;
         }
 
@@ -376,10 +595,7 @@ final class PackInscriptionController extends AbstractController
             return false;
         }
 
-        $expiryDate = $expiryDate->modify('+1 month');
-        $currentMonth = new \DateTimeImmutable('first day of this month');
-
-        return $expiryDate > $currentMonth && strlen($cardCvc) >= 3 && strlen($cardCvc) <= 4;
+        return strlen($cardCvc) >= 3 && strlen($cardCvc) <= 4;
     }
 
     private function detectDemoCardBrand(string $cardNumber): string
@@ -396,28 +612,5 @@ final class PackInscriptionController extends AbstractController
         }
 
         return 'Carte';
-    }
-
-    private function passesLuhn(string $digits): bool
-    {
-        $sum = 0;
-        $shouldDouble = false;
-
-        for ($index = strlen($digits) - 1; $index >= 0; --$index) {
-            $digit = (int) $digits[$index];
-
-            if ($shouldDouble) {
-                $digit *= 2;
-
-                if ($digit > 9) {
-                    $digit -= 9;
-                }
-            }
-
-            $sum += $digit;
-            $shouldDouble = !$shouldDouble;
-        }
-
-        return $sum > 0 && $sum % 10 === 0;
     }
 }

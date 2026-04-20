@@ -19,6 +19,12 @@ parameters:
     konnect_wallet_id: '%env(default:default_konnect_wallet_id:KONNECT_WALLET_ID)%'
     default_konnect_token: 'TND'
     konnect_token: '%env(default:default_konnect_token:KONNECT_TOKEN)%'
+    default_stripe_secret_key: ''
+    stripe_secret_key: '%env(default:default_stripe_secret_key:STRIPE_SECRET_KEY)%'
+    default_stripe_publishable_key: ''
+    stripe_publishable_key: '%env(default:default_stripe_publishable_key:STRIPE_PUBLISHABLE_KEY)%'
+    default_stripe_currency: 'eur'
+    stripe_currency: '%env(default:default_stripe_currency:STRIPE_CURRENCY)%'
     default_demo_card_payment_enabled: false
     demo_card_payment_enabled: '%env(default:default_demo_card_payment_enabled:DEMO_CARD_PAYMENT_ENABLED)%'
     default_card_ocr_api_url: 'http://127.0.0.1:5055/ocr/card'
@@ -61,3 +67,9 @@ services:
             $walletId: '%konnect_wallet_id%'
             $apiBaseUrl: '%konnect_api_base_url%'
             $token: '%konnect_token%'
+
+    App\Service\Payment\StripeCheckoutGateway:
+        arguments:
+            $secretKey: '%stripe_secret_key%'
+            $publishableKey: '%stripe_publishable_key%'
+            $currency: '%stripe_currency%'

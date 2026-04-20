@@ -25,6 +25,24 @@ final class KonnectPaymentGateway
         return trim($this->apiKey) !== '' && trim($this->walletId) !== '';
     }
 
+    /**
+     * @return string[]
+     */
+    public function getMissingConfigurationFields(): array
+    {
+        $missing = [];
+
+        if (trim($this->apiKey) === '') {
+            $missing[] = 'KONNECT_API_KEY';
+        }
+
+        if (trim($this->walletId) === '') {
+            $missing[] = 'KONNECT_WALLET_ID';
+        }
+
+        return $missing;
+    }
+
     public function getToken(): string
     {
         return strtoupper(trim($this->token) ?: 'TND');

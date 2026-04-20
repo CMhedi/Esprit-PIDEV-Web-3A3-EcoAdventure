@@ -33,7 +33,7 @@ except ImportError:
 
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 CARD_NUMBER_RE = re.compile(r"(?:\d[\s-]?){13,19}")
-EXPIRY_RE = re.compile(r"\b(0[1-9]|1[0-2])\s*[\/\-]\s*(\d{2}|\d{4})\b")
+EXPIRY_RE = re.compile(r"\b(0[1-9]|1[0-2])(?:\s*[\/\-\s]\s*|\s+)(\d{2}|\d{4})\b")
 IGNORED_NAME_LINES = {
     "VISA",
     "MASTERCARD",
@@ -48,11 +48,17 @@ IGNORED_NAME_LINES = {
     "CARDHOLDER",
     "CARD HOLDER",
 }
+OCR_CONFIGS = (
+    "--oem 3 --psm 6",
+    "--oem 3 --psm 11",
+    "--oem 3 --psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/ -c preserve_interword_spaces=1",
+)
+THRESHOLDS = (110, 140, 170)
 
 
 app = FastAPI(
     title="EcoAdventure Card OCR API",
-    version="1.2.0",
+    version="1.3.0",
     description=(
         "OCR de carte bancaire pour mode demo. "
         "Cette version peut retourner le numero detecte pour pre-remplir un formulaire."
@@ -119,6 +125,7 @@ class CardOcrResult:
 def root() -> dict[str, Any]:
     return {
         "ok": True,
+        "version": app.version,
         "message": "EcoAdventure OCR API is running",
         "endpoints": {
             "health": "/health",
@@ -140,6 +147,7 @@ def health() -> dict[str, Any]:
 
     return {
         "ok": True,
+        "version": app.version,
         "ocr_engine": "pytesseract",
         "pillow_loaded": Image is not None,
         "pytesseract_loaded": pytesseract is not None,
@@ -187,17 +195,35 @@ async def ocr_card(file: UploadFile = File(...)) -> dict[str, Any]:
 
 
 def extract_text(image: Any) -> str:
+    texts: list[str] = []
+
+    for prepared in build_ocr_images(image):
+        for config in OCR_CONFIGS:
+            text = pytesseract.image_to_string(prepared, config=config)
+            cleaned = text.strip()
+            if cleaned:
+                texts.append(cleaned)
+
+    return "\n".join(deduplicate_lines(texts))
+
+
+def build_ocr_images(image: Any) -> list[Any]:
     prepared = ImageOps.exif_transpose(image).convert("L")
     width, height = prepared.size
 
-    if width < 1200:
-        scale = 1200 / max(width, 1)
+    if width < 1600:
+        scale = 1600 / max(width, 1)
         prepared = prepared.resize((int(width * scale), int(height * scale)))
 
     prepared = ImageOps.autocontrast(prepared)
-    prepared = prepared.point(lambda pixel: 255 if pixel > 150 else 0)
 
-    return pytesseract.image_to_string(prepared, config="--psm 6")
+    images = [prepared]
+    for threshold in THRESHOLDS:
+        binary = prepared.point(lambda pixel, cutoff=threshold: 255 if pixel > cutoff else 0)
+        images.append(binary)
+        images.append(ImageOps.invert(binary))
+
+    return images
 
 
 def parse_card_text(text: str) -> CardOcrResult:
@@ -235,14 +261,23 @@ def normalize_text(text: str) -> str:
 
 
 def extract_pan_candidates(text: str) -> list[str]:
-    candidates: list[str] = []
+    luhn_valid_candidates: list[str] = []
+    fallback_candidates: list[str] = []
 
     for match in CARD_NUMBER_RE.finditer(text):
         digits = re.sub(r"\D", "", match.group(0))
-        if 13 <= len(digits) <= 19 and luhn_valid(digits):
-            candidates.append(digits)
+        if len(set(digits)) < 3:
+            continue
 
-    return candidates
+        if 13 <= len(digits) <= 19 and luhn_valid(digits):
+            luhn_valid_candidates.append(digits)
+        elif 13 <= len(digits) <= 19:
+            fallback_candidates.append(digits)
+
+    if luhn_valid_candidates:
+        return unique_values(luhn_valid_candidates)
+
+    return unique_values(sorted(fallback_candidates, key=score_pan_candidate, reverse=True))
 
 
 def extract_expiry(text: str) -> str | None:
@@ -256,7 +291,7 @@ def extract_expiry(text: str) -> str | None:
 
 
 def extract_holder_name(text: str) -> str | None:
-    for line in text.splitlines():
+    for line in reversed(text.splitlines()):
         cleaned = re.sub(r"[^A-Z\s'-]", " ", line)
         cleaned = re.sub(r"\s+", " ", cleaned).strip()
 
@@ -271,6 +306,44 @@ def extract_holder_name(text: str) -> str | None:
             return cleaned.title()
 
     return None
+
+
+def deduplicate_lines(texts: list[str]) -> list[str]:
+    seen: set[str] = set()
+    merged: list[str] = []
+
+    for text in texts:
+        for raw_line in text.splitlines():
+            line = raw_line.strip()
+            if not line or line in seen:
+                continue
+
+            seen.add(line)
+            merged.append(line)
+
+    return merged
+
+
+def unique_values(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    unique: list[str] = []
+
+    for value in values:
+        if value in seen:
+            continue
+
+        seen.add(value)
+        unique.append(value)
+
+    return unique
+
+
+def score_pan_candidate(digits: str) -> tuple[int, int, int]:
+    return (
+        1 if len(digits) == 16 else 0,
+        len(set(digits)),
+        len(digits),
+    )
 
 
 def detect_brand(pan: str | None, text: str) -> str | None:

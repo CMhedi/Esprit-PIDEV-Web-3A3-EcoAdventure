@@ -84,6 +84,14 @@ final class KonnectPaymentGatewayTest extends TestCase
         ));
     }
 
+    public function testMissingConfigurationFieldsExposeActivationHints(): void
+    {
+        $client = new MockHttpClient(static fn (): MockResponse => new MockResponse(''));
+        $gateway = new KonnectPaymentGateway($client, '', 'wallet-123', 'https://api.konnect.test/api/v2', 'TND');
+
+        self::assertSame(['KONNECT_API_KEY'], $gateway->getMissingConfigurationFields());
+    }
+
     /**
      * @param array<string, mixed> $options
      *
