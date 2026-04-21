@@ -33,7 +33,12 @@ class UserAppType extends AbstractType
                 ]
             ])
             ->add('telephone')
-            ->add('age')
+            ->add('age', null, [
+                'attr' => [
+                    'min' => 18,
+                    'max' => 40
+                ]
+            ])
             ->add('role', EnumType::class, [
                 'class' => RoleUser::class,
                 'disabled' => !$isAdmin, // User cannot change their own role
@@ -44,27 +49,42 @@ class UserAppType extends AbstractType
             $builder
                 ->add('specialite', EnumType::class, ['class' => Specialite::class])
                 ->add('disponibilite', EnumType::class, ['class' => Disponibilite::class])
+                ->add('experience', TextType::class, [
+                    'label' => 'Expérience (en années)',
+                    'required' => false,
+                    'attr' => ['placeholder' => 'Ex: 5']
+                ])
                 ->add('bioCertifs');
+        }
+
+        $isNew = !($options['data'] && $options['data']->getId_user());
+
+        $passwordConstraints = [
+            new Length([
+                'min' => 8,
+                'minMessage' => 'Votre mot de passe doit avoir au moins {{ limit }} caractères',
+                'max' => 4096,
+            ]),
+            new Assert\Regex([
+                'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
+                'message' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.'
+            ])
+        ];
+
+        if ($isNew) {
+            $passwordConstraints[] = new Assert\NotBlank([
+                'message' => 'Le mot de passe est obligatoire pour un nouvel utilisateur.',
+            ]);
         }
 
         $builder->add('plainPassword', PasswordType::class, [
             'mapped' => false,
-            'required' => false,
-            'label' => 'Mot de passe',
-            'constraints' => [
-                new Length([
-                    'min' => 8,
-                    'minMessage' => 'Votre mot de passe doit avoir au moins {{ limit }} caractères',
-                    'max' => 4096,
-                ]),
-                new Assert\Regex([
-                    'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
-                    'message' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.'
-                ])
-            ],
+            'required' => $isNew,
+            'label' => $isNew ? 'Mot de passe' : 'Nouveau mot de passe (laisser vide pour ne pas changer)',
+            'constraints' => $passwordConstraints,
             'attr' => [
                 'class' => 'form-control',
-                'placeholder' => 'Entrez un nouveau mot de passe...'
+                'placeholder' => $isNew ? 'Entrez un mot de passe...' : 'Entrez un nouveau mot de passe...'
             ]
         ]);
     }

@@ -48,7 +48,9 @@
         "symfonycasts/verify-email-bundle": "^1.18",
         "twig/extra-bundle": "^2.12|^3.0",
         "twig/intl-extra": "*",
-        "twig/twig": "^2.12|^3.0"
+        "twig/twig": "^2.12|^3.0",
+        "twilio/sdk": "^8.11",
+        "vonage/client": "^4.3"
     },
     "config": {
         "allow-plugins": {

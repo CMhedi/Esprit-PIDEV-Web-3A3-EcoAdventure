@@ -182,6 +182,20 @@
             <p class="text-muted small">Connectez-vous à votre espace EcoAdventure</p>
         </div>
 
+        {% for message in app.flashes('success') %}
+            <div class="alert-error-custom" style="background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.2); color: #15803d;">
+                <i class="fas fa-check-circle me-2"></i>
+                {{ message }}
+            </div>
+        {% endfor %}
+        
+        {% for message in app.flashes('error') %}
+            <div class="alert-error-custom">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                {{ message }}
+            </div>
+        {% endfor %}
+
         {% if error %}
             <div class="alert-error-custom">
                 <i class="fas fa-exclamation-circle me-2"></i>

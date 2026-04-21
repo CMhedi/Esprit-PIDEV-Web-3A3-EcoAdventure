@@ -23,7 +23,7 @@ final class UserAppController extends AbstractController
     }
 
     #[Route('/new', name: 'app_user_app_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    public function new(Request $request, EntityManagerInterface $entityManager, UserPasswordHasherInterface $userPasswordHasher): Response
     {
         $userApp = new UserApp();
         $form = $this->createForm(UserAppType::class, $userApp, [
@@ -33,8 +33,21 @@ final class UserAppController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $plainPassword = $form->get('plainPassword')->getData();
+            if ($plainPassword) {
+                $userApp->setMot_de_passe(
+                    $userPasswordHasher->hashPassword($userApp, $plainPassword)
+                );
+            } else {
+                // If no password is provided during creation, you might want to handle this error
+                // or provide a default password. Since the DB requires it, we should probably
+                // have made it required in the form.
+            }
+
             $entityManager->persist($userApp);
             $entityManager->flush();
+
+            $this->addFlash('success', 'Utilisateur ' . $userApp->getNom() . ' ajouté avec succès !');
 
             return $this->redirectToRoute('app_user_app_index', [], Response::HTTP_SEE_OTHER);
         }
@@ -80,8 +93,10 @@ public function edit(Request $request, UserApp $user, EntityManagerInterface $en
 
         // REDIRECTION: Admin editing someone else -> List, otherwise -> Show Details
         if ($this->isGranted('ROLE_ADMIN') && $this->getUser() !== $user) {
+            $this->addFlash('success', 'Le profil de ' . $user->getNom() . ' a été mis à jour.');
             return $this->redirectToRoute('app_user_app_index');
         }
+        $this->addFlash('success', 'Votre profil a été mis à jour.');
         return $this->redirectToRoute('app_user_app_show', ['id_user' => $user->getId_user()]); 
     }
 

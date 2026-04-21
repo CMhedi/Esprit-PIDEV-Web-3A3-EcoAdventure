@@ -61,7 +61,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private ?\DateTimeInterface $last_seen = null;
 
     #[ORM\Column(type: 'integer', nullable: true)]
-    #[Assert\Range(min: 16, max: 100, notInRangeMessage: "L'âge doit être compris entre {{ min }} et {{ max }} ans")]
+    #[Assert\Range(min: 18, max: 40, notInRangeMessage: "L'âge doit être compris entre {{ min }} et {{ max }} ans")]
     private ?int $age = null;
 
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
@@ -81,6 +81,9 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'integer', options: ["default" => 0])]
     private int $loyaltyPoints = 0;
+
+    #[ORM\Column(type: 'integer', options: ["default" => 0])]
+    private int $failedAttempts = 0;
 
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $faceDescriptor = null;
@@ -226,6 +229,11 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function getLoyaltyPoints(): int { return $this->loyaltyPoints; }
     public function setLoyaltyPoints(int $points): self { $this->loyaltyPoints = $points; return $this; }
     public function addLoyaltyPoints(int $points): self { $this->loyaltyPoints += $points; return $this; }
+
+    public function getFailedAttempts(): int { return $this->failedAttempts; }
+    public function setFailedAttempts(int $failedAttempts): self { $this->failedAttempts = $failedAttempts; return $this; }
+    public function incrementFailedAttempts(): self { $this->failedAttempts++; return $this; }
+    public function resetFailedAttempts(): self { $this->failedAttempts = 0; return $this; }
 
     public function getFaceDescriptor(): ?array { return $this->faceDescriptor; }
     public function setFaceDescriptor(?array $faceDescriptor): self { $this->faceDescriptor = $faceDescriptor; return $this; }

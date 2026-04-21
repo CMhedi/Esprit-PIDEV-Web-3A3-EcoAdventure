@@ -114,6 +114,10 @@
         .btn-cancel-pro:hover { background: #e2e8f0; color: var(--text-dark) !important; }
 
         .special-accent { color: var(--eco-orange) !important; }
+
+        /* Validation Styles */
+        .input-error { border-color: var(--eco-red) !important; background: #fff5f5 !important; }
+        .error-text { color: var(--eco-red); font-size: 0.75rem; font-weight: 800; margin-top: 5px; display: none; }
     </style>
 
 <div class="main-edit-wrapper">
@@ -134,7 +138,7 @@
 
         <!-- 2. Right Side Form -->
         <div class="form-main-panel">
-            {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+            {{ form_start(form, {'attr': {'novalidate': 'novalidate', 'id': 'edit-user-form'}}) }}
                 
                 <div class="section-label-pro"><i class="bi bi-person-check-fill special-accent"></i> Identity Details</div>
                 <div class="row">
@@ -144,6 +148,7 @@
                             <i class="bi bi-tag"></i>
                             {{ form_widget(form.prenom, {'attr': {'class': 'form-input-pro'}}) }}
                         </div>
+                        <span class="error-text">Prénom invalide.</span>
                     </div>
                     <div class="col-md-6 input-box-pro">
                         <label>Nom</label>
@@ -151,6 +156,7 @@
                             <i class="bi bi-person"></i>
                             {{ form_widget(form.nom, {'attr': {'class': 'form-input-pro'}}) }}
                         </div>
+                        <span class="error-text">Nom invalide.</span>
                     </div>
                 </div>
 
@@ -159,8 +165,9 @@
                         <label>Âge</label>
                         <div class="input-wrapper-pro">
                             <i class="bi bi-calendar3"></i>
-                            {{ form_widget(form.age, {'attr': {'class': 'form-input-pro'}}) }}
+                            {{ form_widget(form.age, {'attr': {'class': 'form-input-pro', 'type': 'number', 'min': '18', 'max': '40'}}) }}
                         </div>
+                        <span class="error-text">Âge invalide.</span>
                     </div>
                     <div class="col-md-6 input-box-pro">
                         <label>Téléphone</label>
@@ -168,6 +175,7 @@
                             <i class="bi bi-phone"></i>
                             {{ form_widget(form.telephone, {'attr': {'class': 'form-input-pro'}}) }}
                         </div>
+                        <span class="error-text">Téléphone invalide.</span>
                     </div>
                 </div>
 
@@ -186,6 +194,7 @@
                             <i class="bi bi-key"></i>
                             {{ form_widget(form.plainPassword, {'attr': {'class': 'form-input-pro', 'placeholder': '••••••••'}}) }}
                         </div>
+                        <span class="error-text">Mot de passe invalide.</span>
                     </div>
                 </div>
 
@@ -195,15 +204,25 @@
                         <div class="col-md-6 input-box-pro">
                             <label>Spécialité</label>
                             {{ form_widget(form.specialite, {'attr': {'class': 'form-input-pro', 'style': 'padding-left: 20px;'}}) }}
+                            <span class="error-text"></span>
                         </div>
+                        <div class="col-md-6 input-box-pro">
+                            <label>Expérience (Années)</label>
+                            {{ form_widget(form.experience, {'attr': {'class': 'form-input-pro', 'style': 'padding-left: 20px;'}}) }}
+                            <span class="error-text">Expérience invalide.</span>
+                        </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6 input-box-pro">
                             <label>Disponibilité</label>
                             {{ form_widget(form.disponibilite, {'attr': {'class': 'form-input-pro', 'style': 'padding-left: 20px;'}}) }}
+                            <span class="error-text"></span>
                         </div>
-                        <div class="col-12 input-box-pro">
-                            <label>Biographie</label>
-                            {{ form_widget(form.bioCertifs, {'attr': {'class': 'form-input-pro', 'style': 'padding-left: 20px;', 'rows': 4}}) }}
-                        </div>
+                    </div>
+                    <div class="col-12 input-box-pro">
+                        <label>Biographie</label>
+                        {{ form_widget(form.bioCertifs, {'attr': {'class': 'form-input-pro', 'style': 'padding-left: 20px;', 'rows': 4}}) }}
+                        <span class="error-text"></span>
                     </div>
                 {% endif %}
 
@@ -221,4 +240,126 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('edit-user-form');
+    
+    const showError = (input, show, message = null) => {
+        const group = input.closest('.input-box-pro');
+        if (!group) return;
+        const errorSpan = group.querySelector('.error-text');
+        if (show) {
+            input.classList.add('input-error');
+            if (errorSpan) {
+                errorSpan.style.display = 'block';
+                if (message) errorSpan.innerText = message;
+            }
+        } else {
+            input.classList.remove('input-error');
+            if (errorSpan) {
+                errorSpan.style.display = 'none';
+            }
+        }
+    };
+
+    const validateField = (input) => {
+        const val = input.value.trim();
+        const id = input.id || input.name;
+
+        // Skip read-only email
+        if (input.classList.contains('bg-disabled')) return true;
+
+        if (input.required && !val) {
+            showError(input, true, "Ce champ est obligatoire.");
+            return false;
+        }
+
+        // Name/Surname: No numbers
+        if (id.includes('nom') || id.includes('prenom')) {
+            if (/[0-9]/.test(val)) {
+                showError(input, true, "Ne doit pas contenir de chiffres.");
+                return false;
+            }
+            if (val.length > 0 && val.length < 2) {
+                showError(input, true, "Minimum 2 caractères.");
+                return false;
+            }
+        }
+
+        // Phone: 8 digits (Tunisia: 2,4,5,9)
+        if (id.includes('telephone')) {
+            if (val && !/^[2459]\d{7}$/.test(val)) {
+                showError(input, true, "Numéro invalide (8 chiffres commençant par 2, 4, 5 ou 9).");
+                return false;
+            }
+        }
+
+        // Age: 18-40
+        if (id.includes('age')) {
+            const ageVal = parseInt(val);
+            if (val && (isNaN(ageVal) || ageVal < 18 || ageVal > 40)) {
+                showError(input, true, "Entre 18 et 40 ans.");
+                return false;
+            }
+        }
+
+        // Password: min 8 (if not empty)
+        if (id.includes('plainPassword')) {
+            if (val.length > 0) {
+                if (val.length < 8) {
+                    showError(input, true, "Minimum 8 caractères.");
+                    return false;
+                }
+                if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(val)) {
+                    showError(input, true, "Majuscule, minuscule et chiffre requis.");
+                    return false;
+                }
+            }
+        }
+
+        // Experience
+        if (id.includes('experience')) {
+            const expVal = parseInt(val);
+            if (val && (isNaN(expVal) || expVal < 0 || expVal > 50)) {
+                showError(input, true, "Entre 0 et 50 ans.");
+                return false;
+            }
+        }
+
+        showError(input, false);
+        return true;
+    };
+
+    form.addEventListener('submit', (e) => {
+        let hasError = false;
+        const inputs = form.querySelectorAll('input:not([type="hidden"]), select, textarea');
+        
+        inputs.forEach(input => {
+            input.dataset.touched = 'true'; // Mark as touched on submit
+            if (!validateField(input)) {
+                hasError = true;
+            }
+        });
+
+        if (hasError) {
+            e.preventDefault();
+            const firstError = document.querySelector('.input-error');
+            if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+
+    form.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('blur', () => {
+            input.dataset.touched = 'true';
+            validateField(input);
+        });
+        input.addEventListener('input', () => {
+            if (input.dataset.touched === 'true') {
+                validateField(input);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

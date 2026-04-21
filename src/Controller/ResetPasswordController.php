@@ -35,21 +35,114 @@ class ResetPasswordController extends AbstractController
      * Display & process form to request a password reset.
      */
     #[Route('', name: 'app_forgot_password_request')]
-    public function request(Request $request, MailerInterface $mailer, TranslatorInterface $translator): Response
+    public function request(Request $request, MailerInterface $mailer, TranslatorInterface $translator, \App\Service\SmsService $smsService): Response
     {
         $form = $this->createForm(ResetPasswordRequestFormType::class);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var string $email */
-            $email = $form->get('email')->getData();
+            /** @var string $identifier */
+            $identifier = $form->get('identifier')->getData();
 
-            return $this->processSendingPasswordResetEmail($email, $mailer, $translator
-            );
+            $user = $this->entityManager->getRepository(UserApp::class)->createQueryBuilder('u')
+                ->where('u.email = :identifier OR u.telephone = :identifier')
+                ->setParameter('identifier', $identifier)
+                ->getQuery()
+                ->getOneOrNullResult();
+
+            if (!$user) {
+                $this->addFlash('reset_password_error', 'Utilisateur non trouvé en base de données.');
+                return $this->redirectToRoute('app_forgot_password_request');
+            }
+
+            if ($identifier === $user->getTelephone() && $identifier !== null) {
+                // SMS logic using Twilio Verify
+                try {
+                    $request->getSession()->set('sms_reset_user_id', $user->getId());
+                    
+                    $smsService->sendVerificationCode($user->getTelephone());
+                    
+                    return $this->redirectToRoute('app_check_sms_code');
+                } catch (\Exception $e) {
+                    $this->addFlash('reset_password_error', 'Erreur lors de l\'envoi du SMS: ' . $e->getMessage());
+                    return $this->redirectToRoute('app_forgot_password_request');
+                }
+            }
+
+            return $this->processSendingPasswordResetEmail($user->getEmail(), $mailer, $translator);
         }
 
         return $this->render('reset_password/request.html.twig', [
             'requestForm' => $form,
+        ]);
+    }
+
+    #[Route('/check-sms-code', name: 'app_check_sms_code')]
+    public function checkSmsCode(Request $request, \App\Service\SmsService $smsService): Response
+    {
+        $userId = $request->getSession()->get('sms_reset_user_id');
+        if (!$userId) {
+            return $this->redirectToRoute('app_forgot_password_request');
+        }
+
+        if ($request->isMethod('POST')) {
+            $code = $request->request->get('code');
+            
+            $user = $this->entityManager->getRepository(UserApp::class)->find($userId);
+
+            if ($code && $user) {
+                try {
+                    if ($smsService->checkVerificationCode($user->getTelephone(), $code)) {
+                        $request->getSession()->set('sms_reset_verified', true);
+                        return $this->redirectToRoute('app_reset_password_sms');
+                    } else {
+                        $this->addFlash('reset_password_error', 'Code SMS incorrect.');
+                    }
+                } catch (\Exception $e) {
+                    $this->addFlash('reset_password_error', 'Erreur de vérification : ' . $e->getMessage());
+                }
+            } else {
+                $this->addFlash('reset_password_error', 'Code invalide.');
+            }
+        }
+
+        return $this->render('reset_password/check_sms_code.html.twig');
+    }
+
+    #[Route('/reset-sms', name: 'app_reset_password_sms')]
+    public function resetSms(Request $request, UserPasswordHasherInterface $passwordHasher): Response
+    {
+        $userId = $request->getSession()->get('sms_reset_user_id');
+        $isVerified = $request->getSession()->get('sms_reset_verified');
+
+        if (!$userId || !$isVerified) {
+            return $this->redirectToRoute('app_forgot_password_request');
+        }
+
+        $user = $this->entityManager->getRepository(UserApp::class)->find($userId);
+        if (!$user) {
+            return $this->redirectToRoute('app_forgot_password_request');
+        }
+
+        $form = $this->createForm(ChangePasswordFormType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            /** @var string $plainPassword */
+            $plainPassword = $form->get('plainPassword')->getData();
+            $user->setMot_de_passe($passwordHasher->hashPassword($user, $plainPassword));
+            $this->entityManager->flush();
+
+            $request->getSession()->remove('sms_reset_user_id');
+            $request->getSession()->remove('sms_reset_code');
+            $request->getSession()->remove('sms_reset_verified');
+
+            $this->addFlash('success', 'Votre mot de passe a été réinitialisé avec succès.');
+            return $this->redirectToRoute('app_login');
+        }
+
+        return $this->render('reset_password/reset.html.twig', [
+            'resetForm' => $form,
         ]);
     }
 

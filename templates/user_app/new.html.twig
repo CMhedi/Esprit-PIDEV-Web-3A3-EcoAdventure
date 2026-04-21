@@ -117,6 +117,25 @@
     }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
+    .btn-cancel-eco {
+        display: block;
+        text-align: center;
+        padding: 16px;
+        color: #64748b !important;
+        font-weight: 700;
+        border-radius: 20px;
+        background: #f1f5f9;
+        text-decoration: none;
+        margin-top: 15px;
+        transition: 0.3s;
+        border: 1px solid transparent;
+    }
+    .btn-cancel-eco:hover {
+        background: #e2e8f0;
+        color: #1e293b !important;
+        transform: translateY(-2px);
+    }
+
 </style>
 
 <div class="new-user-wrapper">
@@ -160,9 +179,9 @@
                         <label>Âge</label>
                         <div class="input-wrapper-eco">
                             <i class="bi bi-calendar-check"></i>
-                            {{ form_widget(form.age, {'attr': {'id': 'user-age', 'placeholder': 'Ex: 25'}}) }}
+                            {{ form_widget(form.age, {'attr': {'id': 'user-age', 'placeholder': 'Ex: 25', 'type': 'number', 'min': '18', 'max': '40'}}) }}
                         </div>
-                        <span class="error-text">Âge invalide (18-100).</span>
+                        <span class="error-text">Âge invalide (18-40).</span>
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -197,6 +216,7 @@
                             <i class="bi bi-shield-lock"></i>
                             {{ form_widget(form.role, {'attr': {'id': 'role-selector'}}) }}
                         </div>
+                        <span class="error-text"></span>
                     </div>
                 </div>
             </div>
@@ -220,8 +240,21 @@
                                 <i class="bi bi-award"></i>
                                 {{ form_widget(form.specialite) }}
                             </div>
+                            <span class="error-text"></span>
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="input-group-eco">
+                            <label>Expérience (Années)</label>
+                            <div class="input-wrapper-eco">
+                                <i class="bi bi-briefcase"></i>
+                                {{ form_widget(form.experience) }}
+                            </div>
+                            <span class="error-text"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
                     <div class="col-md-6">
                         <div class="input-group-eco">
                             <label>Disponibilité</label>
@@ -229,6 +262,7 @@
                                 <i class="bi bi-clock-history"></i>
                                 {{ form_widget(form.disponibilite) }}
                             </div>
+                            <span class="error-text"></span>
                         </div>
                     </div>
                 </div>
@@ -238,6 +272,7 @@
                         <i class="bi bi-file-earmark-text" style="top: 25px;"></i>
                         {{ form_widget(form.bioCertifs, {'attr': {'rows': '3', 'placeholder': 'Détails sur le coach...'}}) }}
                     </div>
+                    <span class="error-text"></span>
                 </div>
             </div>
 
@@ -278,79 +313,138 @@
         toggleCoachSection(); // Init
 
         // --- Contrôle de Saisie (Validation) ---
-        const showError = (input, show) => {
-            const errorSpan = input.closest('.input-group-eco').querySelector('.error-text');
+        const showError = (input, show, message = null) => {
+            const group = input.closest('.input-group-eco');
+            if (!group) return;
+            const errorSpan = group.querySelector('.error-text');
             if (show) {
                 input.classList.add('input-error');
-                errorSpan.style.display = 'block';
+                if (errorSpan) {
+                    errorSpan.style.display = 'block';
+                    if (message) errorSpan.innerText = message;
+                }
             } else {
                 input.classList.remove('input-error');
-                errorSpan.style.display = 'none';
+                if (errorSpan) {
+                    errorSpan.style.display = 'none';
+                }
             }
+        };
+
+        const validateField = (input) => {
+            const val = input.value.trim();
+            const id = input.id || input.name;
+            const isVisible = input.offsetParent !== null;
+
+            if (!isVisible) return true;
+
+            // Define which fields are mandatory
+            const isMandatory = input.classList.contains('validate-empty') || 
+                               id.includes('email') || 
+                               id.includes('telephone') || 
+                               id.includes('age') || 
+                               id.includes('plainPassword') ||
+                               (id.includes('experience') && coachSection.style.display === 'block');
+
+            if (isMandatory && !val) {
+                showError(input, true, "Ce champ est obligatoire.");
+                return false;
+            }
+
+            // Name/Surname: No numbers
+            if (id.includes('nom') || id.includes('prenom')) {
+                if (/[0-9]/.test(val)) {
+                    showError(input, true, "Le nom/prénom ne doit pas contenir de chiffres.");
+                    return false;
+                }
+                if (val.length < 2) {
+                    showError(input, true, "Minimum 2 caractères.");
+                    return false;
+                }
+            }
+
+            // Email
+            if (input.type === 'email' || id.includes('email')) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(val)) {
+                    showError(input, true, "Format email invalide.");
+                    return false;
+                }
+            }
+
+            // Phone: 8 digits starting with 2, 4, 5, 9 (Tunisia)
+            if (id.includes('telephone')) {
+                if (!/^[2459]\d{7}$/.test(val)) {
+                    showError(input, true, "Numéro invalide (8 chiffres commençant par 2, 4, 5 ou 9).");
+                    return false;
+                }
+            }
+
+            // Age: 18-40
+            if (id.includes('age')) {
+                const ageVal = parseInt(val);
+                if (isNaN(ageVal) || ageVal < 18 || ageVal > 40) {
+                    showError(input, true, "L'âge doit être compris entre 18 et 40.");
+                    return false;
+                }
+            }
+
+            // Password: min 8
+            if (id.includes('pass') || id.includes('plainPassword')) {
+                if (val.length < 8) {
+                    showError(input, true, "Le mot de passe doit faire au moins 8 caractères.");
+                    return false;
+                }
+                if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(val)) {
+                    showError(input, true, "Il faut une majuscule, une minuscule et un chiffre.");
+                    return false;
+                }
+            }
+
+            // Experience (only if coach section is visible)
+            if (id.includes('experience') && coachSection.style.display === 'block') {
+                const expVal = parseInt(val);
+                if (isNaN(expVal) || expVal < 0 || expVal > 50) {
+                    showError(input, true, "Expérience invalide (0-50).");
+                    return false;
+                }
+            }
+
+            showError(input, false);
+            return true;
         };
 
         form.addEventListener('submit', (e) => {
             let hasError = false;
-
-            // 1. Validate Empty
-            document.querySelectorAll('.validate-empty').forEach(input => {
-                if (!input.value.trim()) {
-                    showError(input, true);
-                    hasError = true;
-                } else {
-                    showError(input, false);
+            const inputs = form.querySelectorAll('input:not([type="hidden"]), select, textarea');
+            
+            inputs.forEach(input => {
+                if (input.offsetParent !== null) { // Only validate visible fields
+                    input.dataset.touched = 'true'; // Mark as touched on submit attempt
+                    if (!validateField(input)) {
+                        hasError = true;
+                    }
                 }
             });
 
-            // 2. Email Validation
-            const email = document.getElementById('user-email');
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email.value)) {
-                showError(email, true);
-                hasError = true;
-            } else {
-                showError(email, false);
-            }
-
-            // 3. Phone Validation (8 digits)
-            const phone = document.getElementById('user-phone');
-            if (!/^\d{8}$/.test(phone.value)) {
-                showError(phone, true);
-                hasError = true;
-            } else {
-                showError(phone, false);
-            }
-
-            // 4. Age Validation (18-100)
-            const age = document.getElementById('user-age');
-            const ageVal = parseInt(age.value);
-            if (isNaN(ageVal) || ageVal < 18 || ageVal > 100) {
-                showError(age, true);
-                hasError = true;
-            } else {
-                showError(age, false);
-            }
-
-            // 5. Password Validation
-            const pass = document.getElementById('user-pass');
-            if (pass.value.length < 8) {
-                showError(pass, true);
-                hasError = true;
-            } else {
-                showError(pass, false);
-            }
-
             if (hasError) {
                 e.preventDefault();
-                // Scroll to first error
                 const firstError = document.querySelector('.input-error');
                 if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
 
-        // Real-time validation clear
-        document.querySelectorAll('input, select').forEach(input => {
-            input.addEventListener('input', () => showError(input, false));
+        // Real-time validation
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+            input.addEventListener('blur', () => {
+                input.dataset.touched = 'true';
+                validateField(input);
+            });
+            input.addEventListener('input', () => {
+                if (input.dataset.touched === 'true') {
+                    validateField(input);
+                }
+            });
         });
     });
 </script>
