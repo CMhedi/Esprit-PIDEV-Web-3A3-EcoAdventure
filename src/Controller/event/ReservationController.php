@@ -386,9 +386,10 @@ class ReservationController extends AbstractController
             $entityManager->flush();
         }
 
-        $this->addFlash('success', 'Votre réservation a été enregistrée en attente de confirmation !');
+        $this->addFlash('success', 'Votre réservation a été pré-enregistrée. Procédons au paiement pour la confirmer définitivement !');
 
-        return $this->redirectToRoute('app_mes_reservations');
+        // Redirect directly to the payment tunnel instead of the dashboard
+        return $this->redirectToRoute('app_reservation_confirm_event', ['id_evenement' => $evenement->getId_evenement()]);
     }
 
     #[Route('/annuler-event/{id_evenement}', name: 'app_reservation_cancel_event', methods: ['POST'])]
@@ -462,8 +463,8 @@ class ReservationController extends AbstractController
         return $this->redirectToRoute('app_mes_reservations');
     }
 
-    #[Route('/confirmer-event/{id_evenement}', name: 'app_reservation_confirm_event', methods: ['POST'])]
-    public function confirmerEvent(Evenement $evenement, EntityManagerInterface $entityManager): Response
+    #[Route('/confirmer-event/{id_evenement}', name: 'app_reservation_confirm_event', methods: ['GET', 'POST'])]
+    public function confirmerEvent(Evenement $evenement, EntityManagerInterface $entityManager, \Symfony\Component\Routing\Generator\UrlGeneratorInterface $urlGenerator, ReservationPricingService $pricingService): Response
     {
         $user = $this->getUser();
         if (!$user) {
@@ -482,6 +483,71 @@ class ReservationController extends AbstractController
             return $this->redirectToRoute('app_mes_reservations');
         }
 
+        $totalBillets = 0;
+        foreach ($reservations as $res) {
+            $totalBillets += $res->getNb_billets();
+        }
+
+        $pricing = $pricingService->calculatePricing($evenement, $totalBillets);
+        $totalFinal = $pricing['totalFinal'];
+
+        // Tentative d'utilisation de Stripe (Mode Test)
+        try {
+            // Remplacez par votre VRAIE clé secrète Stripe de test (sk_test_...)
+            \Stripe\Stripe::setApiKey('sk_test_fake_key_for_pidev_demo');
+
+            $session = \Stripe\Checkout\Session::create([
+                'payment_method_types' => ['card'],
+                'line_items' => [[
+                    'price_data' => [
+                        'currency' => 'eur', // Stripe utilise EUR/USD plus facilement que DT
+                        'product_data' => [
+                            'name' => 'Billet: ' . $evenement->getTitre(),
+                            'images' => ['https://img.freepik.com/vecteurs-libre/billet-evenement-isole-realiste_1284-47473.jpg'],
+                        ],
+                        'unit_amount' => (int)($totalFinal * 100), // En centimes
+                    ],
+                    'quantity' => 1,
+                ]],
+                'mode' => 'payment',
+                'success_url' => $urlGenerator->generate('app_reservation_payment_success', ['id_evenement' => $evenement->getId_evenement()], \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL),
+                'cancel_url' => $urlGenerator->generate('app_mes_reservations', [], \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL),
+            ]);
+
+            return $this->redirect($session->url, 303);
+
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            // FALLBACK FACTICE (Si Stripe n'est pas configuré, on redirige vers notre tunnel interne)
+            return $this->redirectToRoute('app_fake_payment_tunnel', [
+                'id_evenement' => $evenement->getId_evenement(),
+                'montant' => $totalFinal
+            ]);
+        }
+    }
+
+    #[Route('/fake-payment/{id_evenement}/{montant}', name: 'app_fake_payment_tunnel', methods: ['GET'])]
+    public function fakePaymentTunnel(Evenement $evenement, float $montant): Response
+    {
+        return $this->render('front/event/fake_payment.html.twig', [
+            'evenement' => $evenement,
+            'montant' => $montant
+        ]);
+    }
+
+    #[Route('/payment-success/{id_evenement}', name: 'app_reservation_payment_success', methods: ['GET', 'POST'])]
+    public function paymentSuccess(Evenement $evenement, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        $reservations = $entityManager->getRepository(ReservationEvenement::class)->findBy([
+            'userApp' => $user,
+            'evenement' => $evenement,
+            'statut_res' => StatutReservationEvenement::EN_ATTENTE
+        ]);
+
         foreach ($reservations as $res) {
             $res->setStatut_res(StatutReservationEvenement::CONFIRMEE);
             $res->setIsNotifiedAvailability(false);
@@ -489,7 +555,7 @@ class ReservationController extends AbstractController
 
         $entityManager->flush();
 
-        $this->addFlash('success', 'Votre réservation pour l\'événement "' . $evenement->getTitre() . '" est maintenant confirmée !');
+        $this->addFlash('success', 'Paiement réussi ! Votre réservation pour "' . $evenement->getTitre() . '" est officiellement CONFIRMÉE.');
         return $this->redirectToRoute('app_mes_reservations');
     }
 

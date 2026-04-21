@@ -169,11 +169,11 @@
                                 
                                 {% if res.statut.value == 'EN_ATTENTE' %}
                                     <div class="alert alert-success border-0 py-2 text-center badge-nouveau rounded-3 mb-2 shadow-sm" role="alert">
-                                        <i class="bi bi-bell-fill mb-1 d-block"></i> <span class="fw-bold">Place libérée !</span>
+                                        <i class="bi bi-bell-fill mb-1 d-block"></i> <span class="fw-bold">Prêt pour paiement !</span>
                                     </div>
                                     <form method="post" action="{{ path('app_reservation_confirm_event', {'id_evenement': res.evenement.id_evenement}) }}">
                                         <button type="submit" class="btn btn-success w-100 shadow-sm">
-                                            <i class="bi bi-check-circle-fill me-2"></i>Confirmer la réservation
+                                            <i class="bi bi-credit-card-fill me-2"></i>Payer et Confirmer
                                         </button>
                                     </form>
                                 {% endif %}

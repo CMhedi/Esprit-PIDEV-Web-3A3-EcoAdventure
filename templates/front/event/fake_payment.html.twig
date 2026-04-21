@@ -1,0 +1,172 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Paiement Sécurisé | EcoAdventure{% endblock %}
+
+{% block css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        font-family: 'Inter', sans-serif;
+    }
+    .payment-container {
+        max-width: 900px;
+        margin: 50px auto;
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .payment-left {
+        background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+        color: white;
+        padding: 40px;
+    }
+    .payment-right {
+        padding: 40px;
+    }
+    .form-control {
+        border-radius: 8px;
+        padding: 12px 15px;
+        border: 1px solid #ced4da;
+    }
+    .form-control:focus {
+        border-color: #2E7D32;
+        box-shadow: 0 0 0 0.25rem rgba(46, 125, 50, 0.25);
+    }
+    .btn-pay {
+        background-color: #2E7D32;
+        border: none;
+        padding: 15px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        border-radius: 8px;
+        width: 100%;
+        color: white;
+        transition: all 0.3s;
+    }
+    .btn-pay:hover {
+        background-color: #1b5e20;
+        transform: translateY(-2px);
+    }
+    .card-icons i {
+        font-size: 1.5rem;
+        margin-right: 10px;
+        color: #6c757d;
+    }
+    .spinner-border {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="payment-container row">
+        <!-- Left Side: Order Summary -->
+        <div class="col-md-5 payment-left d-flex flex-column justify-content-between">
+            <div>
+                <a href="{{ path('app_mes_reservations') }}" class="text-white text-decoration-none mb-4 d-inline-block">
+                    <i class="bi bi-arrow-left me-2"></i>Retour
+                </a>
+                <h4 class="fw-bold mb-4">EcoAdventure Checkout</h4>
+                <div class="d-flex align-items-center mb-4">
+                    {% if evenement.image_url %}
+                        <img src="{{ asset(evenement.image_url) }}" alt="{{ evenement.titre }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 10px;" class="me-3">
+                    {% else %}
+                        <div class="bg-secondary rounded-3 me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;"><i class="bi bi-image text-white"></i></div>
+                    {% endif %}
+                    <div>
+                        <h6 class="mb-1 text-light">{{ evenement.titre }}</h6>
+                        <small class="text-muted">Billet événement sportif</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <hr class="border-secondary mb-4">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Sous-total</span>
+                    <span>{{ montant|number_format(2, ',', ' ') }} DT</span>
+                </div>
+                <div class="d-flex justify-content-between mb-4">
+                    <span class="text-muted">Frais de service (IA)</span>
+                    <span>0,00 DT</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fs-5">Total à payer</span>
+                    <span class="fs-3 fw-bold text-success">{{ montant|number_format(2, ',', ' ') }} DT</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Credit Card Form -->
+        <div class="col-md-7 payment-right">
+            <h4 class="fw-bold mb-2">Détails de paiement</h4>
+            <p class="text-muted small mb-4">Processus sécurisé certifié EcoAdventure. (Mode Simulation)</p>
+            
+            <div class="card-icons mb-4">
+                <i class="bi bi-credit-card-2-front text-primary"></i>
+                <i class="bi bi-credit-card-2-back text-warning"></i>
+                <i class="bi bi-paypal text-info"></i>
+            </div>
+
+            <form id="fake-payment-form" action="{{ path('app_reservation_payment_success', {'id_evenement': evenement.id_evenement}) }}" method="POST">
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Titulaire de la carte</label>
+                    <input type="text" class="form-control" placeholder="Ex: Jean Dupont" required value="{{ app.user.nom|default('') }} {{ app.user.prenom|default('') }}">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Numéro de carte</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-credit-card text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" placeholder="0000 0000 0000 0000" maxlength="19" required oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" value="4242 4242 4242 4242">
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <label class="form-label fw-bold small">Date d'expiration</label>
+                        <input type="text" class="form-control" placeholder="MM/AA" maxlength="5" required value="12/25">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-bold small">CVC / Cryptogramme</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control border-end-0" placeholder="123" maxlength="3" required value="123">
+                            <span class="input-group-text bg-white"><i class="bi bi-lock-fill text-muted"></i></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning border-0 rounded-3 small p-3 mb-4">
+                    <i class="bi bi-info-circle-fill me-2"></i> Vous êtes en mode test <strong>(Simulation PIDEV)</strong>. Cliquez sur payer pour simuler le succès de la transaction.
+                </div>
+
+                <button type="submit" class="btn btn-pay" id="pay-btn">
+                    <span id="btn-text">Payer {{ montant|number_format(2, ',', ' ') }} DT</span>
+                    <div class="spinner-border spinner-border-sm text-light" role="status" id="btn-loader"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('fake-payment-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const btn = document.getElementById('pay-btn');
+        const text = document.getElementById('btn-text');
+        const loader = document.getElementById('btn-loader');
+        
+        btn.disabled = true;
+        text.style.display = 'none';
+        loader.style.display = 'inline-block';
+        
+        // Simuler un appel API de 1.5 secondes
+        setTimeout(() => {
+            this.submit();
+        }, 1500);
+    });
+</script>
+{% endblock %}
