@@ -16,7 +16,9 @@ security:
                 # Hadhi el line elli t'salla7 el mochkla:
                 entry_point: App\Security\LoginManagerAuthenticator
                 
-                custom_authenticator: App\Security\LoginManagerAuthenticator
+                custom_authenticator: 
+                    - App\Security\LoginManagerAuthenticator
+                    - App\Security\GoogleAuthenticator
                 
                 logout:
                     path: app_logout

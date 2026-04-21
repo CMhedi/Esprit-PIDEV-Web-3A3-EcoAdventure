@@ -14,6 +14,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Validator\Constraints\File;
 
 class UserAppType extends AbstractType
 {
@@ -42,6 +44,26 @@ class UserAppType extends AbstractType
             ->add('role', EnumType::class, [
                 'class' => RoleUser::class,
                 'disabled' => !$isAdmin, // User cannot change their own role
+            ])
+            ->add('imageFile', FileType::class, [
+                'label' => 'Photo de profil',
+                'mapped' => false,
+                'required' => false,
+                'constraints' => [
+                    new File([
+                        'maxSize' => '5M',
+                        'mimeTypes' => [
+                            'image/jpeg',
+                            'image/png',
+                            'image/gif',
+                            'image/webp'
+                        ],
+                        'mimeTypesMessage' => 'Veuillez uploader une image valide (JPEG, PNG, GIF, WEBP)',
+                    ])
+                ],
+                'attr' => [
+                    'accept' => 'image/jpeg, image/png, image/gif, image/webp'
+                ]
             ]);
 
         // Only show coach fields if the user is a coach or it's an admin editing

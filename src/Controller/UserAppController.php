@@ -11,6 +11,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\HttpFoundation\File\Exception\FileException;
+
 #[Route('/user/app')]
 final class UserAppController extends AbstractController
 {
@@ -69,7 +72,7 @@ final class UserAppController extends AbstractController
 // src/Controller/UserAppController.php
 
 #[Route('/{id_user}/edit', name: 'app_user_app_edit', methods: ['GET', 'POST'])]
-public function edit(Request $request, UserApp $user, EntityManagerInterface $entityManager, UserPasswordHasherInterface $userPasswordHasher): Response
+public function edit(Request $request, UserApp $user, EntityManagerInterface $entityManager, UserPasswordHasherInterface $userPasswordHasher, SluggerInterface $slugger): Response
 {
     // Security check: Only Admin or the owner can edit
     if (!$this->isGranted('ROLE_ADMIN') && $this->getUser() !== $user) {
@@ -91,13 +94,38 @@ public function edit(Request $request, UserApp $user, EntityManagerInterface $en
             );
         }
 
+        // 2. Gérer l'upload de l'image de profil
+        $imageFile = $form->get('imageFile')->getData();
+        if ($imageFile) {
+            $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
+            $safeFilename = $slugger->slug($originalFilename);
+            $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
+
+            try {
+                $imageFile->move(
+                    $this->getParameter('kernel.project_dir') . '/public/uploads',
+                    $newFilename
+                );
+                $user->setImageUrl($newFilename);
+            } catch (FileException $e) {
+                $this->addFlash('error', 'Erreur lors de l\'upload de l\'image.');
+            }
+        }
+
+        $entityManager->flush();
+
         // REDIRECTION: Admin editing someone else -> List, otherwise -> Show Details
         if ($this->isGranted('ROLE_ADMIN') && $this->getUser() !== $user) {
             $this->addFlash('success', 'Le profil de ' . $user->getNom() . ' a été mis à jour.');
             return $this->redirectToRoute('app_user_app_index');
         }
         $this->addFlash('success', 'Votre profil a été mis à jour.');
-        return $this->redirectToRoute('app_user_app_show', ['id_user' => $user->getId_user()]); 
+        return $this->redirectToRoute('app_profile_index'); 
+    } elseif ($form->isSubmitted() && !$form->isValid()) {
+        // Collect all errors and flash them
+        foreach ($form->getErrors(true) as $error) {
+            $this->addFlash('error', $error->getMessage());
+        }
     }
 
     return $this->render('user_app/edit.html.twig', [

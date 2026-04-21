@@ -241,6 +241,12 @@
                 <i class="fas fa-face-smile"></i> Se connecter avec Face ID
             </button>
 
+            <a href="{{ path('connect_google_start') }}" class="btn btn-outline-dark w-100 mt-3" style="border-radius: 16px; padding: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); transition: 0.3s;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 20px; height: 20px;">
+                Se connecter avec Google
+            </a>
+
+
             <div id="face-login-container" style="display: none; position: relative; text-align: center;">
                 <p id="face-login-status" class="text-muted small fw-bold mb-2">Initialisation...</p>
                 <div style="position: relative; border-radius: 16px; overflow: hidden;">
