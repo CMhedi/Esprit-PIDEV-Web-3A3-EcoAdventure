@@ -78,10 +78,11 @@ public function edit(Request $request, UserApp $user, EntityManagerInterface $en
             );
         }
 
-        $entityManager->flush();
-
-        // REDIRECTION LEL PROFIL (Mouch lel index/list)
-        return $this->redirectToRoute('app_profile_index'); 
+        // REDIRECTION: Admin editing someone else -> List, otherwise -> Show Details
+        if ($this->isGranted('ROLE_ADMIN') && $this->getUser() !== $user) {
+            return $this->redirectToRoute('app_user_app_index');
+        }
+        return $this->redirectToRoute('app_user_app_show', ['id_user' => $user->getId_user()]); 
     }
 
     return $this->render('user_app/edit.html.twig', [

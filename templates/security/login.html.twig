@@ -1,11 +1,29 @@
 {# templates/security/login.html.twig #}
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - EcoAdventure</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 & FontAwesome -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-dark: #1e293b;
+            --accent-blue: #3a7bd5;
+        }
+
         body {
             background: url("{{ asset('image/im.jpg') }}") no-repeat center center fixed;
             background-size: cover;
@@ -14,186 +32,297 @@
             align-items: center;
             justify-content: center;
             margin: 0;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-dark);
+            overflow-x: hidden;
         }
-        .login-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(10px);
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+
+        .login-container {
             width: 100%;
-            max-width: 450px;
+            max-width: 480px;
+            padding: 20px;
+            animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        /* Style l'el error message bech i-ji rouge w wada7 */
-        .alert-error-custom {
-            background-color: #f8d7da;
-            color: #842029;
-            border: 1px solid #f5c2c7;
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .login-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 40px;
+            border-radius: 28px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            position: relative;
+        }
+
+        .logo-area {
             text-align: center;
-            font-weight: bold;
+            margin-bottom: 30px;
         }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--primary-gradient);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            margin: 0 auto 15px;
+            box-shadow: 0 10px 20px rgba(58, 123, 213, 0.3);
+        }
+
+        h2 { font-weight: 700; font-size: 1.75rem; color: var(--text-dark); }
+
+        .form-label { font-weight: 600; font-size: 0.85rem; color: #475569; margin-left: 12px; margin-bottom: 6px; }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 16px;
+            padding: 12px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            background: white;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(58, 123, 213, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .input-group-custom { position: relative; margin-bottom: 20px; }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #64748b;
+            z-index: 10;
+            background: none;
+            border: none;
+            padding: 5px;
+        }
+
+        .btn-submit {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 14px;
+            font-weight: 700;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 12px 20px -8px rgba(58, 123, 213, 0.5); color: white; }
+
+        .btn-faceid {
+            background: white;
+            color: var(--accent-blue);
+            border: 1px solid rgba(58, 123, 213, 0.2);
+            border-radius: 16px;
+            padding: 12px;
+            font-weight: 600;
+            width: 100%;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .alert-error-custom {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #b91c1c;
+            padding: 12px;
+            border-radius: 14px;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .link-custom { color: var(--accent-blue); text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .link-custom:hover { text-decoration: underline; }
+
+        #face-login-container {
+            background: rgba(0,0,0,0.02);
+            border-radius: 20px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px dashed rgba(58, 123, 213, 0.3);
+        }
+
+        .spinner-border { width: 1.2rem; height: 1.2rem; }
     </style>
 </head>
 <body>
-<div class="login-card">
-    <form method="post" novalidate>
-        <h2 class="text-center mb-4 fw-bold" style="color: #2c3e50;">Connexion</h2>
-        
-        {# 1. Houni el message bi rouge ken famma ghalta #}
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="logo-area">
+            <div class="logo-icon"><i class="fas fa-mountain-sun"></i></div>
+            <h2>Bienvenue</h2>
+            <p class="text-muted small">Connectez-vous à votre espace EcoAdventure</p>
+        </div>
+
         {% if error %}
             <div class="alert-error-custom">
+                <i class="fas fa-exclamation-circle me-2"></i>
                 {{ error.messageKey|trans(error.messageData, 'security') }}
             </div>
         {% endif %}
 
-        <div class="mb-3">
-            <label for="inputEmail" class="small fw-bold mb-1">Email</label>
-            <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control rounded-pill" autocomplete="email" autofocus>
-        </div>
-
-        <div class="mb-3">
-            <label for="inputPassword" class="small fw-bold mb-1">Mot de passe</label>
-            <input type="password" name="password" id="inputPassword" class="form-control rounded-pill" autocomplete="current-password">
-        </div>
-
-        <div class="mb-3 form-check">
-            <input type="checkbox" name="_remember_me" id="remember_me" class="form-check-input">
-            <label class="form-check-label small text-muted" for="remember_me">Se souvenir de moi</label>
-        </div>
-
-        <button class="btn btn-primary w-100 py-2 mt-2 shadow-sm" type="submit" style="border-radius: 50px; background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); border: none; font-weight: bold;">
-            Se connecter
-        </button>
-        
-        <hr class="my-4">
-        
-        <div class="text-center">
-            <button type="button" id="start-face-login" class="btn btn-outline-info w-100 py-2 shadow-sm mb-3" style="border-radius: 50px; font-weight: bold;">
-                <i class="fas fa-camera"></i> Se connecter avec Face ID
-            </button>
-        </div>
-
-        <div id="face-login-container" style="display: none; position: relative; margin-top: 20px; text-align: center;">
-            <p id="face-login-status" class="text-muted small fw-bold mb-2">Chargement de la caméra...</p>
-            <video id="webcam" autoplay muted playsinline style="width: 100%; max-width: 400px; border-radius: 10px; border: 2px solid #00d2ff;"></video>
-            <!-- Canvas is used by face-api to draw overlays, it should be placed over the video -->
-            <canvas id="overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 10px;"></canvas>
-            
-            <button type="button" id="cancel-face-login" class="btn btn-sm btn-danger mt-3 rounded-pill">
-                Annuler
-            </button>
-        </div>
-
-        <div class="text-center mt-4">
-            <p class="text-muted small">Vous n'avez pas de compte ? 
-                <a href="{{ path('app_register') }}" class="fw-bold text-primary text-decoration-none">S'inscrire ici</a>
-            </p>
+        <form method="post" id="login-form">
             <div class="mb-3">
-                <a href="{{ path('app_forgot_password_request') }}">Mot de passe oublié ?</a>
+                <label for="inputEmail" class="form-label">Email</label>
+                <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control" placeholder="votre@email.com" required autofocus>
             </div>
+
+            <div class="mb-3">
+                <label for="inputPassword" class="form-label">Mot de passe</label>
+                <div class="input-group-custom">
+                    <input type="password" name="password" id="inputPassword" class="form-control" placeholder="••••••••" required>
+                    <button type="button" class="password-toggle" id="togglePassword">
+                        <i class="fas fa-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="form-check">
+                    <input type="checkbox" name="_remember_me" id="remember_me" class="form-check-input">
+                    <label class="form-check-label small text-muted" for="remember_me">Se souvenir de moi</label>
+                </div>
+                <a href="{{ path('app_forgot_password_request') }}" class="link-custom">Oublié ?</a>
+            </div>
+
+            <button class="btn btn-submit shadow-sm mb-3" type="submit" id="submitBtn">
+                <span class="spinner-border spinner-border-sm d-none" id="loader"></span>
+                <span>Se connecter</span>
+            </button>
+
+            <div class="text-center my-3">
+                <span class="text-muted small px-2 bg-white" style="position: relative; z-index: 1;">OU</span>
+                <hr style="margin-top: -10px; border-color: rgba(0,0,0,0.05);">
+            </div>
+
+            <button type="button" id="start-face-login" class="btn btn-faceid shadow-sm">
+                <i class="fas fa-face-smile"></i> Se connecter avec Face ID
+            </button>
+
+            <div id="face-login-container" style="display: none; position: relative; text-align: center;">
+                <p id="face-login-status" class="text-muted small fw-bold mb-2">Initialisation...</p>
+                <div style="position: relative; border-radius: 16px; overflow: hidden;">
+                    <video id="webcam" autoplay muted playsinline style="width: 100%;"></video>
+                    <canvas id="overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></canvas>
+                </div>
+                <button type="button" id="cancel-face-login" class="btn btn-sm btn-danger mt-3 rounded-pill">Annuler</button>
+            </div>
+        </form>
+
+        <div class="mt-4 text-center">
+            <span class="text-muted small">Pas encore de compte ?</span>
+            <a href="{{ path('app_register') }}" class="link-custom ms-1">S'inscrire</a>
         </div>
-    </form>
+    </div>
 </div>
 
-<!-- Add Face-API.js from CDN -->
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // Toggle Password
+        const toggleBtn = document.querySelector('#togglePassword');
+        const passwordInput = document.querySelector('#inputPassword');
+        const eyeIcon = document.querySelector('#eyeIcon');
+        if(toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                eyeIcon.classList.toggle('fa-eye');
+                eyeIcon.classList.toggle('fa-eye-slash');
+            });
+        }
+
+        // Loader
+        const loginForm = document.getElementById('login-form');
+        const submitBtn = document.getElementById('submitBtn');
+        const loader = document.getElementById('loader');
+        loginForm.addEventListener('submit', () => {
+            submitBtn.disabled = true;
+            loader.classList.remove('d-none');
+            submitBtn.querySelector('span:not(.spinner-border)').innerText = "Connexion...";
+        });
+
+        // Face ID
         const startBtn = document.getElementById('start-face-login');
         const cancelBtn = document.getElementById('cancel-face-login');
         const faceContainer = document.getElementById('face-login-container');
         const emailInput = document.getElementById('inputEmail');
         const video = document.getElementById('webcam');
         const statusText = document.getElementById('face-login-status');
-        let stream = null;
-        let faceMatcher = null;
-        let detectionInterval = null;
+        let stream = null, faceMatcher = null, detectionInterval = null;
 
         async function loadModels() {
-            statusText.innerText = "Chargement des modèles d'IA...";
-            // We use the local models downloaded to public/models
+            statusText.innerText = "Chargement de l'IA...";
             await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
             await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
             await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
-            statusText.innerText = "Modèles chargés. Veuillez entrer votre email en haut si ce n'est pas fait.";
         }
 
         async function initFaceLogin() {
             const email = emailInput.value.trim();
-            // On peut maintenant continuer sans email pour les admins déjà enregistrés
-            
             faceContainer.style.display = 'block';
             startBtn.style.display = 'none';
-
             try {
                 await loadModels();
-                
-                statusText.innerText = "Recherche des profils biométriques...";
-                
-                // 1. Fetch reference data
-                const response = await fetch('/api/user/face-image', {
+                statusText.innerText = "Recherche profil...";
+                const res = await fetch('/api/user/face-image', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: email })
                 });
-
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.error || "Erreur lors de la récupération des données.");
-                }
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Erreur données.");
 
                 let labeledDescriptors = [];
-
                 if (email) {
-                    // Cas 1: Email fourni, on cherche ce compte précis
-                    if (data.descriptor) {
-                        // Utilisation du descripteur JSON stocké
-                        labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(email, [new Float32Array(data.descriptor)]));
-                    } else if (data.imageUrl) {
-                        // Fallback: Utilisation de l'image si pas de descripteur
-                        statusText.innerText = "Analyse de votre photo de profil...";
-                        const refImage = await faceapi.fetchImage(data.imageUrl);
-                        const refDetection = await faceapi.detectSingleFace(refImage).withFaceLandmarks().withFaceDescriptor();
-                        if (refDetection) {
-                            labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(email, [refDetection.descriptor]));
-                        } else {
-                            throw new Error("Impossible de détecter un visage sur votre photo.");
-                        }
-                    } else {
-                        throw new Error("Aucune donnée biométrique pour ce compte.");
-                    }
+                    if (data.descriptor) labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(email, [new Float32Array(data.descriptor)]));
+                    else if (data.imageUrl) {
+                        const refImg = await faceapi.fetchImage(data.imageUrl);
+                        const refDet = await faceapi.detectSingleFace(refImg).withFaceLandmarks().withFaceDescriptor();
+                        if (refDet) labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(email, [refDet.descriptor]));
+                        else throw new Error("Visage non détecté.");
+                    } else throw new Error("Pas de biométrie.");
                 } else {
-                    // Cas 2: Pas d'email, on cherche parmi tous les admins enregistrés
-                    if (data.admins && data.admins.length > 0) {
-                        data.admins.forEach(admin => {
-                            labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(admin.email, [new Float32Array(admin.descriptor)]));
-                        });
-                        statusText.innerText = "Prêt pour identification automatique.";
-                    } else {
-                        throw new Error("Veuillez saisir votre email (aucun admin biométrique trouvé).");
-                    }
+                    if (data.admins) data.admins.forEach(a => labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(a.email, [new Float32Array(a.descriptor)])));
+                    else throw new Error("Email requis.");
                 }
 
                 faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
-
-                statusText.innerText = "Accès à la caméra...";
+                statusText.innerText = "Caméra active...";
                 stream = await navigator.mediaDevices.getUserMedia({ video: {} });
                 video.srcObject = stream;
-
-                video.onloadedmetadata = () => {
-                    statusText.innerText = email ? `Veuillez regarder la caméra, ${email}.` : "Identification automatique en cours...";
-                    detectFaceLoop();
-                };
-
+                video.onloadedmetadata = () => { statusText.innerText = "Scannage..."; detectFaceLoop(); };
             } catch (err) {
-                console.error(err);
-                statusText.innerText = "Erreur: " + err.message;
-                statusText.style.color = 'red';
+                statusText.innerText = err.message;
+                statusText.style.color = '#ef4444';
                 setTimeout(stopFaceLogin, 4000);
             }
         }
@@ -202,73 +331,36 @@
             const canvas = document.getElementById('overlay');
             const displaySize = { width: video.clientWidth, height: video.clientHeight };
             faceapi.matchDimensions(canvas, displaySize);
-
             detectionInterval = setInterval(async () => {
                 if (video.paused || video.ended) return;
-
                 const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
-                
                 if (detection) {
-                    const resizedDetection = faceapi.resizeResults(detection, displaySize);
+                    const resized = faceapi.resizeResults(detection, displaySize);
+                    const match = faceMatcher.findBestMatch(detection.descriptor);
                     const context = canvas.getContext('2d');
                     context.clearRect(0, 0, canvas.width, canvas.height);
-                    
-                    const match = faceMatcher.findBestMatch(detection.descriptor);
-                    
-                    const box = resizedDetection.detection.box;
-                    const drawBox = new faceapi.draw.DrawBox(box, { label: match.label === 'unknown' ? 'Inconnu' : match.label });
-                    drawBox.draw(canvas);
-
+                    new faceapi.draw.DrawBox(resized.detection.box, { label: match.label }).draw(canvas);
                     if (match.label !== 'unknown') {
-                        statusText.innerText = `Reconnu : ${match.label} ! Connexion...`;
-                        statusText.style.color = "green";
+                        statusText.innerText = "Reconnu !";
                         clearInterval(detectionInterval);
-                        
-                        try {
-                            const loginRes = await fetch('/login/face', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ email: match.label })
-                            });
-                            
-                            const loginData = await loginRes.json();
-                            if (loginData.success) {
-                                window.location.href = loginData.redirect;
-                            } else {
-                                throw new Error("Erreur de session.");
-                            }
-                        } catch (e) {
-                            statusText.innerText = "Erreur de connexion.";
-                        }
-                        
+                        const loginRes = await fetch('/login/face', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: match.label }) });
+                        const loginData = await loginRes.json();
+                        if (loginData.success) window.location.href = loginData.redirect;
                         stopFaceLogin(false);
                     }
                 }
-            }, 1000);
+            }, 800);
         }
 
-        function stopFaceLogin(hideContainer = true) {
+        function stopFaceLogin(hide = true) {
             if (detectionInterval) clearInterval(detectionInterval);
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            if (hideContainer) {
-                faceContainer.style.display = 'none';
-                startBtn.style.display = 'block';
-                statusText.style.color = '';
-                const canvas = document.getElementById('overlay');
-                const context = canvas.getContext('2d');
-                context.clearRect(0, 0, canvas.width, canvas.height);
-            }
+            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+            if (hide) { faceContainer.style.display = 'none'; startBtn.style.display = 'flex'; statusText.style.color = ''; }
         }
 
         startBtn.addEventListener('click', initFaceLogin);
         cancelBtn.addEventListener('click', stopFaceLogin);
     });
 </script>
-
-<!-- FontAwesome for the camera icon -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </body>
 </html>

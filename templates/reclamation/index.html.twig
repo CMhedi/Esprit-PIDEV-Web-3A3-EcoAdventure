@@ -13,14 +13,12 @@
     {% endif %}
 
     .glass-container {
-        background: rgba(255, 255, 255, 0.1) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 30px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: white !important;
+        border-radius: 35px;
+        border: 1px solid #f1f5f9;
         padding: 40px;
         margin-top: 40px;
-        box-shadow: 0 15px 45px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.05);
     }
 
     .dashboard-header {
@@ -31,7 +29,7 @@
     }
 
     .title-group h1 {
-        color: white;
+        color: #2d5a27 !important; /* Vert ghameq bech iban */
         font-weight: 800;
         font-size: 2.5rem;
         margin: 0;
@@ -39,29 +37,24 @@
     }
 
     .title-group p {
-        color: rgba(255, 255, 255, 0.8);
+        color: #64748b !important; /* Gris wadhah */
         margin: 0;
         font-size: 1.1rem;
     }
 
     .btn-add {
-        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+        background: linear-gradient(135deg, #2d5a27 0%, #4a7c44 100%);
         color: white !important;
         border: none;
         padding: 12px 25px;
         border-radius: 15px;
         font-weight: 700;
         transition: 0.3s;
-        box-shadow: 0 10px 20px rgba(58, 123, 213, 0.3);
+        box-shadow: 0 10px 20px rgba(45, 90, 39, 0.2);
         text-decoration: none;
         display: flex;
         align-items: center;
         gap: 10px;
-    }
-
-    .btn-add:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 15px 25px rgba(58, 123, 213, 0.5);
     }
 
     .search-box {
@@ -71,21 +64,20 @@
     }
 
     .search-box input {
-        background: rgba(255, 255, 255, 0.15) !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        background: #f8fafc !important;
+        border: 2px solid #f1f5f9 !important;
         border-radius: 18px !important;
         padding: 15px 15px 15px 55px !important;
-        color: white !important;
-        backdrop-filter: blur(10px);
+        color: #1e293b !important;
         font-size: 1.05rem;
         transition: 0.3s;
     }
 
-    .search-box input::placeholder { color: rgba(255, 255, 255, 0.6); }
+    .search-box input::placeholder { color: #94a3b8; }
     .search-box input:focus {
-        background: rgba(255, 255, 255, 0.25) !important;
-        border-color: white !important;
-        box-shadow: 0 0 20px rgba(255, 255, 255, 0.1) !important;
+        background: white !important;
+        border-color: #2d5a27 !important;
+        box-shadow: 0 10px 25px rgba(45, 90, 39, 0.08) !important;
     }
 
     .search-box i {
@@ -93,9 +85,8 @@
         left: 20px;
         top: 50%;
         transform: translateY(-50%);
-        color: white;
+        color: #2d5a27;
         font-size: 1.2rem;
-        opacity: 0.8;
     }
 
     .custom-table {
@@ -105,53 +96,52 @@
     }
 
     .custom-table thead th {
-        color: rgba(255, 255, 255, 0.7);
-        font-weight: 600;
+        color: #1e293b !important; /* Headers wadhin */
+        font-weight: 800;
         text-transform: uppercase;
         font-size: 0.85rem;
         padding: 10px 20px;
         border: none;
+        letter-spacing: 1px;
     }
 
     .reclamation-row {
-        background: rgba(255, 255, 255, 0.95);
+        background: white;
         transition: 0.3s;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border-radius: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+        border: 1px solid #f1f5f9;
     }
 
     .reclamation-row.row-answered {
-        background: #bbf7d0 !important; /* Vert bien plus foncé et visible */
-        border-left: 8px solid #15803d;
-        box-shadow: 0 4px 15px rgba(21, 128, 61, 0.2);
+        background: #f0fdf4 !important; /* Vert tres clair bech iban mriguel */
+        border-left: 8px solid #2d5a27;
     }
 
     .reclamation-row:hover {
-        transform: scale(1.01) translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        background: #ffffff;
+        transform: scale(1.005) translateY(-3px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
     }
 
     .reclamation-row td {
-        padding: 20px;
+        padding: 22px;
         vertical-align: middle;
         border: none;
     }
 
-    .reclamation-row td:first-child { border-top-left-radius: 15px; border-bottom-left-radius: 15px; }
-    .reclamation-row td:last-child { border-top-right-radius: 15px; border-bottom-right-radius: 15px; }
+    .reclamation-row td:first-child { border-top-left-radius: 20px; border-bottom-left-radius: 20px; }
+    .reclamation-row td:last-child { border-top-right-radius: 20px; border-bottom-right-radius: 20px; }
 
     /* Badges */
     .status-badge {
         padding: 8px 16px;
         border-radius: 12px;
-        font-weight: 700;
+        font-weight: 800;
         font-size: 0.8rem;
         display: inline-block;
         text-transform: uppercase;
         min-width: 120px;
         text-align: center;
-        box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
     }
     .status-traitée, .status-traitee { background: #dcfce7 !important; color: #166534 !important; }
     .status-en_attente, .status-en-attente { background: #fef9c3 !important; color: #854d0e !important; }
@@ -163,50 +153,44 @@
         font-size: 0.75rem;
         font-weight: 800;
         text-transform: uppercase;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        display: inline-block;
+        color: white;
     }
-    .priority-haute { background: #ef4444 !important; color: white !important; }
-    .priority-moyenne { background: #f59e0b !important; color: white !important; }
-    .priority-basse { background: #10b981 !important; color: white !important; }
+    .priority-haute { background: #ef4444 !important; }
+    .priority-moyenne { background: #f59e0b !important; }
+    .priority-basse { background: #10b981 !important; }
 
     .action-group { display: flex; gap: 8px; justify-content: center; }
     
     .action-btn-custom {
         padding: 8px 16px;
         border-radius: 12px;
-        font-weight: 700;
+        font-weight: 800;
         font-size: 0.85rem;
         text-decoration: none;
         display: flex;
         align-items: center;
         gap: 8px;
-        transition: all 0.3s ease;
+        transition: 0.3s;
         border: none;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     }
 
-    .btn-view { background: #eff6ff; color: #1e40af; }
-    .btn-view:hover { background: #1e40af; color: white; transform: translateY(-2px); }
+    .btn-view { background: #2d5a27; color: white !important; }
+    .btn-view:hover { background: #1a3617; transform: translateY(-2px); }
 
-    .btn-edit { background: #fffbeb; color: #92400e; }
-    .btn-edit:hover { background: #92400e; color: white; transform: translateY(-2px); }
-
-    .btn-delete { background: #fef2f2; color: #991b1b; }
-    .btn-delete:hover { background: #991b1b; color: white; transform: translateY(-2px); }
+    .btn-delete { background: #fee2e2; color: #991b1b !important; }
+    .btn-delete:hover { background: #ef4444; color: white !important; }
 
     .type-icon {
         width: 48px;
         height: 48px;
-        background: #f1f5f9;
-        border: 2px solid #e2e8f0;
+        background: white;
+        border: 1px solid #e2e8f0;
         border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 1.3rem;
         margin-right: 18px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 </style>
 
@@ -260,7 +244,7 @@
                             </div>
                         </td>
                         <td>
-                            <div class="text-dark fw-500">{{ reclamation.date_creation ? reclamation.date_creation|date('d M Y') : '---' }}</div>
+                            <div class="text-dark fw-bold">{{ reclamation.date_creation ? reclamation.date_creation|date('d M Y') : '---' }}</div>
                             <small class="text-muted">{{ reclamation.date_creation ? reclamation.date_creation|date('H:i') : '' }}</small>
                         </td>
                         <td>
@@ -278,17 +262,11 @@
                                 <a href="{{ path('app_reclamation_show', {'id_reclamation': reclamation.id_reclamation}) }}" class="action-btn-custom btn-view">
                                     <i class="bi bi-eye"></i> <span>Détails</span>
                                 </a>
-                                
-                                {% if not adminMode %}
-                                    <a href="{{ path('app_reclamation_edit', {'id_reclamation': reclamation.id_reclamation}) }}" class="action-btn-custom btn-edit">
-                                        <i class="bi bi-pencil-square"></i> <span>Modifier</span>
-                                    </a>
-                                {% endif %}
 
-                                <form method="post" action="{{ path('app_reclamation_delete', {'id_reclamation': reclamation.id_reclamation}) }}" onsubmit="return confirm('Etes-vous sûr de vouloir supprimer cette réclamation ?');">
+                                <form method="post" action="{{ path('app_reclamation_delete', {'id_reclamation': reclamation.id_reclamation}) }}" onsubmit="return confirm('Supprimer cette réclamation ?');">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ reclamation.id_reclamation) }}">
                                     <button class="action-btn-custom btn-delete">
-                                        <i class="bi bi-trash3"></i> <span>Supprimer</span>
+                                        <i class="bi bi-trash3"></i>
                                     </button>
                                 </form>
                             </div>
@@ -297,7 +275,7 @@
                 {% else %}
                     <tr>
                         <td colspan="5" class="text-center py-5">
-                            <div class="text-white opacity-75">
+                            <div class="text-muted">
                                 <i class="bi bi-folder-x display-1 mb-3"></i>
                                 <p class="fs-5">Aucune réclamation trouvée.</p>
                             </div>
@@ -315,28 +293,27 @@
 <div class="modal fade" id="reponseModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header bg-success text-white" style="border-radius: 20px 20px 0 0;">
-                <h5 class="modal-title fw-bold"><i class="fas fa-reply me-2"></i>Action Administrateur</h5>
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-reply-fill me-2"></i>Action Administrateur</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="reponseForm" method="POST">
                 <div class="modal-body p-4 text-start">
                     <div class="mb-3">
                         <label class="form-label fw-bold text-muted">Réponse</label>
-                        <textarea name="reponse" id="reponseText" class="form-control" rows="4" placeholder="Votre message ici..."></textarea>
-                        <small class="text-primary">Si vous écrivez une réponse, le statut passera à <strong>TRAITEE</strong> automatique.</small>
+                        <textarea name="reponse" id="reponseText" class="form-control" rows="4"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-muted">Ou changer direct</label>
+                        <label class="form-label fw-bold text-muted">Changer statut</label>
                         <select name="statut" id="statutSelect" class="form-select">
-                            <option value="TRAITEE">Accepter (TRAITEE)</option>
-                            <option value="REJETEE">Rejeter (REJETEE)</option>
+                            <option value="TRAITEE">Accepter</option>
+                            <option value="REJETEE">Rejeter</option>
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer border-0 p-3">
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">Valider</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">Valider</button>
                 </div>
             </form>
         </div>
@@ -345,35 +322,26 @@
 {% endif %}
 
 <script>
-// --- Recherche Logic ---
-const searchInput = document.getElementById('rechercheReclamation');
-if(searchInput) {
-    searchInput.addEventListener('keyup', function() {
-        let value = this.value.toLowerCase();
-        let rows = document.querySelectorAll('#tableReclamation tbody tr');
-        rows.forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(value) ? '' : 'none';
+    const searchInput = document.getElementById('rechercheReclamation');
+    if(searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            let value = this.value.toLowerCase();
+            let rows = document.querySelectorAll('#tableReclamation tbody tr');
+            rows.forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(value) ? '' : 'none';
+            });
         });
-    });
-}
+    }
 
-// --- Modal Logic ---
-function openReponseModal(id, currentReponse) {
-    {% if not adminMode %}
-    return;
-    {% endif %}
-    const modalElement = document.getElementById('reponseModal');
-    if(!modalElement) return;
-    const modal = new bootstrap.Modal(modalElement);
-    const form = document.getElementById('reponseForm');
-    
-    // Thabet f'el route mte3ek mta3 el reply
-    form.action = "/reclamation/admin-reply/" + id;
-    
-    const cleanReponse = (currentReponse === "Pas encore de réponse") ? "" : currentReponse;
-    document.getElementById('reponseText').value = cleanReponse;
-    
-    modal.show();
-}
+    function openReponseModal(id, currentReponse) {
+        {% if not adminMode %} return; {% endif %}
+        const modalElement = document.getElementById('reponseModal');
+        if(!modalElement) return;
+        const modal = new bootstrap.Modal(modalElement);
+        const form = document.getElementById('reponseForm');
+        form.action = "/reclamation/admin-reply/" + id;
+        document.getElementById('reponseText').value = (currentReponse === "Pas encore de réponse") ? "" : currentReponse;
+        modal.show();
+    }
 </script>
 {% endblock %}

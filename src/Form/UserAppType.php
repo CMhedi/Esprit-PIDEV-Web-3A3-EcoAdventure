@@ -26,10 +26,10 @@ class UserAppType extends AbstractType
             ->add('nom')
             ->add('prenom')
             ->add('email', TextType::class, [
-                'disabled' => !$isAdmin, // User cannot change email unless admin
+                'disabled' => ($options['data'] && $options['data']->getId_user() !== null),
                 'attr' => [
-                    'readonly' => !$isAdmin,
-                    'title' => !$isAdmin ? 'L\'email ne peut pas être modifié' : ''
+                    'readonly' => ($options['data'] && $options['data']->getId_user() !== null),
+                    'placeholder' => 'exemple@mail.com'
                 ]
             ])
             ->add('telephone')

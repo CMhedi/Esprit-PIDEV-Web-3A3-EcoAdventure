@@ -1,179 +1,357 @@
 {# templates/user_app/new.html.twig #}
-
 {% extends is_granted('ROLE_ADMIN') ? 'admin/base_admin.html.twig' : 'base.html.twig' %}
 
-{% block title %}Nouveau Membre - EcoAdventure{% endblock %}
-{% block page_title %}Ajouter un utilisateur{% endblock %}
+{% block title %}Ajouter Utilisateur - EcoAdventure{% endblock %}
+{% block page_title %}{% endblock %}
 
 {% block body %}
 <style>
-    .admin-new-wrapper {
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
+
+    :root {
+        --eco-green: #2d5a27 !important;
+        --eco-orange: #f39237 !important;
+        --eco-red: #ef4444;
+    }
+
+    .new-user-wrapper {
+        font-family: 'Outfit', sans-serif !important;
         padding: 40px 20px;
-        background: #f4f7f6; 
-        min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
+        animation: fadeIn 0.5s ease;
     }
 
-    .admin-glass-card {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        padding: 40px;
-        border-radius: 20px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-        width: 100%;
-        max-width: 650px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .premium-new-card {
+        background: white !important;
+        border-radius: 40px;
+        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.05);
+        border: 1px solid #f1f5f9;
+        max-width: 850px;
+        margin: 0 auto;
+        padding: 50px;
     }
 
-    .form-header-title {
-        color: #1e3a8a;
-        font-weight: 800;
+    .form-header-new {
         text-align: center;
-        margin-bottom: 30px;
-        border-bottom: 2px solid #e2e8f0;
-        padding-bottom: 15px;
+        margin-bottom: 40px;
     }
 
-    .btn-submit-custom {
-        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
-        color: white;
-        border: none;
-        border-radius: 50px;
-        padding: 12px 30px;
-        font-weight: bold;
+    .form-header-new i {
+        font-size: 3rem;
+        color: var(--eco-green);
+        background: #f0fdf4;
+        width: 80px; height: 80px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 25px;
+        margin: 0 auto 15px auto;
+        box-shadow: 0 10px 20px rgba(45, 90, 39, 0.1);
+    }
+
+    .form-header-new h1 { font-weight: 800; color: #1e293b; letter-spacing: -1px; }
+    .form-header-new p { color: #64748b; font-weight: 600; }
+
+    .section-label-new {
+        font-weight: 800; font-size: 0.85rem; color: var(--eco-green);
+        text-transform: uppercase; letter-spacing: 1.5px;
+        margin: 30px 0 20px 0; display: flex; align-items: center; gap: 15px;
+    }
+    .section-label-new::after { content: ""; flex: 1; height: 1px; background: #f1f5f9; }
+
+    .input-group-eco { margin-bottom: 25px; position: relative; }
+    .input-group-eco label {
+        font-weight: 800; font-size: 0.8rem; color: #64748b;
+        margin-bottom: 8px; display: block; padding-left: 5px;
+    }
+
+    .input-wrapper-eco { position: relative; }
+    .input-wrapper-eco i {
+        position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+        color: var(--eco-green); font-size: 1.2rem;
         transition: 0.3s;
     }
 
-    .btn-submit-custom:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 210, 255, 0.4);
-        color: white;
+    .input-wrapper-eco input, .input-wrapper-eco select, .input-wrapper-eco textarea {
+        width: 100%;
+        padding: 14px 20px 14px 55px !important;
+        border-radius: 18px !important;
+        border: 2px solid #f1f5f9 !important;
+        background: #f8fafc !important;
+        font-weight: 700 !important;
+        transition: 0.3s !important;
     }
 
-    .form-label-bold {
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: #475569;
-        margin-bottom: 5px;
+    .input-wrapper-eco input:focus, .input-wrapper-eco select:focus, .input-wrapper-eco textarea:focus {
+        border-color: var(--eco-green) !important;
+        background: white !important;
+        box-shadow: 0 10px 25px rgba(45, 90, 39, 0.08) !important;
+        outline: none;
     }
 
-    #coach_fields_container {
-        background: rgba(241, 245, 249, 0.7);
-        border-radius: 15px;
-        padding: 20px;
-        margin-top: 20px;
-        border: 1px dashed #3a7bd5;
+    /* Validation Styles */
+    .input-error { border-color: var(--eco-red) !important; background: #fff5f5 !important; }
+    .error-text { color: var(--eco-red); font-size: 0.75rem; font-weight: 800; margin-top: 5px; display: none; }
+
+    .btn-submit-eco {
+        background: linear-gradient(135deg, var(--eco-green) 0%, #4a7c44 100%) !important;
+        color: white !important;
+        width: 100%;
+        padding: 16px;
+        border-radius: 20px;
+        font-weight: 800;
+        font-size: 1.1rem;
+        border: none;
+        box-shadow: 0 15px 35px rgba(45, 90, 39, 0.2);
+        margin-top: 30px;
+        transition: 0.3s;
     }
+
+    .btn-submit-eco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 45px rgba(45, 90, 39, 0.35);
+    }
+
+    #coach-section {
+        display: none;
+        animation: slideDown 0.4s ease forwards;
+    }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
 </style>
 
-<div class="admin-new-wrapper">
-    <div class="admin-glass-card">
-        <div class="form-header-title">
-            <i class="bi bi-person-plus-fill me-2"></i>Créer un nouveau membre
+<div class="new-user-wrapper">
+    <div class="premium-new-card">
+        <div class="form-header-new">
+            <i class="bi bi-person-plus-fill"></i>
+            <h1>Nouveau Membre</h1>
+            <p>Ajoutez un nouvel utilisateur à la plateforme EcoAdventure</p>
         </div>
 
-        {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+        {{ form_start(form, {'attr': {'id': 'user-form', 'novalidate': 'novalidate'}}) }}
+            
+            <div class="section-label-new">Informations Personnelles</div>
             
             <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label-bold">Nom</label>
-                    {{ form_widget(form.nom, {'attr': {'class': 'form-control rounded-pill'}}) }}
-                    <div class="text-danger small">{{ form_errors(form.nom) }}</div>
+                <div class="col-md-6">
+                    <div class="input-group-eco">
+                        <label>Prénom</label>
+                        <div class="input-wrapper-eco">
+                            <i class="bi bi-person-tag"></i>
+                            {{ form_widget(form.prenom, {'attr': {'class': 'validate-empty', 'placeholder': 'Ex: Ahmed'}}) }}
+                        </div>
+                        <span class="error-text">Le prénom est requis.</span>
+                    </div>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label-bold">Prénom</label>
-                    {{ form_widget(form.prenom, {'attr': {'class': 'form-control rounded-pill'}}) }}
-                    <div class="text-danger small">{{ form_errors(form.prenom) }}</div>
+                <div class="col-md-6">
+                    <div class="input-group-eco">
+                        <label>Nom</label>
+                        <div class="input-wrapper-eco">
+                            <i class="bi bi-person-lines-fill"></i>
+                            {{ form_widget(form.nom, {'attr': {'class': 'validate-empty', 'placeholder': 'Ex: Lahmer'}}) }}
+                        </div>
+                        <span class="error-text">Le nom est requis.</span>
+                    </div>
                 </div>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label-bold">Email</label>
-                {{ form_widget(form.email, {'attr': {'class': 'form-control rounded-pill', 'placeholder': 'exemple@mail.com'}}) }}
-                <div class="text-danger small">{{ form_errors(form.email) }}</div>
             </div>
 
             <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label-bold">Téléphone</label>
-                    {{ form_widget(form.telephone, {'attr': {'class': 'form-control rounded-pill'}}) }}
-                    <div class="text-danger small">{{ form_errors(form.telephone) }}</div>
+                <div class="col-md-6">
+                    <div class="input-group-eco">
+                        <label>Âge</label>
+                        <div class="input-wrapper-eco">
+                            <i class="bi bi-calendar-check"></i>
+                            {{ form_widget(form.age, {'attr': {'id': 'user-age', 'placeholder': 'Ex: 25'}}) }}
+                        </div>
+                        <span class="error-text">Âge invalide (18-100).</span>
+                    </div>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label-bold">Rôle</label>
-                    {# id: role_selector bech nekhdmou bih f'el JS louta #}
-                    {{ form_widget(form.role, {'attr': {'class': 'form-select rounded-pill', 'id': 'role_selector'}}) }}
+                <div class="col-md-6">
+                    <div class="input-group-eco">
+                        <label>Numéro de Téléphone</label>
+                        <div class="input-wrapper-eco">
+                            <i class="bi bi-phone"></i>
+                            {{ form_widget(form.telephone, {'attr': {'id': 'user-phone', 'placeholder': '22 123 456'}}) }}
+                        </div>
+                        <span class="error-text">Numéro invalide (8 chiffres).</span>
+                    </div>
                 </div>
             </div>
 
-            {# Section Coach: Fields mrigla m3a el UserAppType #}
-            <div id="coach_fields_container" style="display: none;">
-                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-star-fill me-2"></i>Détails Professionnels</h6>
-                
+            <div class="section-label-new">Accès & Sécurité</div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="input-group-eco">
+                        <label>Adresse Email</label>
+                        <div class="input-wrapper-eco">
+                            <i class="bi bi-envelope-at"></i>
+                            {{ form_widget(form.email, {'attr': {'id': 'user-email'}}) }}
+                        </div>
+                        <span class="error-text">Email invalide.</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group-eco">
+                        <label>Rôle Système</label>
+                        <div class="input-wrapper-eco">
+                            <i class="bi bi-shield-lock"></i>
+                            {{ form_widget(form.role, {'attr': {'id': 'role-selector'}}) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group-eco">
+                <label>Mot de passe initial</label>
+                <div class="input-wrapper-eco">
+                    <i class="bi bi-key-fill"></i>
+                    {{ form_widget(form.plainPassword, {'attr': {'id': 'user-pass', 'placeholder': 'Entrez un mot de passe sécurisé'}}) }}
+                </div>
+                <span class="error-text">Le mot de passe est requis (min 8 car).</span>
+            </div>
+
+            <div id="coach-section">
+                <div class="section-label-new">Profil Professionnel (Coach)</div>
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="small fw-bold">Âge</label>
-                        {{ form_widget(form.age, {'attr': {'class': 'form-control rounded-pill'}}) }}
-                        <div class="text-danger small">{{ form_errors(form.age) }}</div>
+                    <div class="col-md-6">
+                        <div class="input-group-eco">
+                            <label>Spécialité</label>
+                            <div class="input-wrapper-eco">
+                                <i class="bi bi-award"></i>
+                                {{ form_widget(form.specialite) }}
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="small fw-bold">Disponibilité</label>
-                        {{ form_widget(form.disponibilite, {'attr': {'class': 'form-select rounded-pill'}}) }}
+                    <div class="col-md-6">
+                        <div class="input-group-eco">
+                            <label>Disponibilité</label>
+                            <div class="input-wrapper-eco">
+                                <i class="bi bi-clock-history"></i>
+                                {{ form_widget(form.disponibilite) }}
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <div class="mb-3">
-                    <label class="small fw-bold">Spécialité</label>
-                    {{ form_widget(form.specialite, {'attr': {'class': 'form-select rounded-pill'}}) }}
-                </div>
-
-                <div class="mb-3">
-                    <label class="small fw-bold">Bio & Certificats</label>
-                    {# TASLI7: bioCertifs (CamelCase) kima f'el FormType #}
-                    {{ form_widget(form.bioCertifs, {'attr': {'class': 'form-control', 'rows': 3, 'style': 'border-radius:15px'}}) }}
-                    <div class="text-danger small">{{ form_errors(form.bioCertifs) }}</div>
+                <div class="input-group-eco">
+                    <label>Bio & Certifications</label>
+                    <div class="input-wrapper-eco">
+                        <i class="bi bi-file-earmark-text" style="top: 25px;"></i>
+                        {{ form_widget(form.bioCertifs, {'attr': {'rows': '3', 'placeholder': 'Détails sur le coach...'}}) }}
+                    </div>
                 </div>
             </div>
 
-            <div class="mb-3 mt-3">
-                <label class="form-label-bold">Mot de passe</label>
-                {# plainPassword kima m3arraf f'el FormType #}
-                {{ form_widget(form.plainPassword, {'attr': {'class': 'form-control rounded-pill'}}) }}
-                <div class="text-danger small">{{ form_errors(form.plainPassword) }}</div>
-            </div>
+            <button type="submit" id="submit-btn" class="btn-submit-eco">
+                <i class="bi bi-check-circle-fill me-2"></i> Créer le compte utilisateur
+            </button>
 
-            <div class="d-flex gap-3 mt-4">
-                <button type="submit" class="btn btn-submit-custom w-100">
-                    <i class="bi bi-check-circle me-2"></i>Enregistrer
-                </button>
-                <a href="{{ path('app_user_app_index') }}" class="btn btn-outline-secondary rounded-pill px-4 d-flex align-items-center">
-                    Annuler
-                </a>
-            </div>
+            <a href="{{ path('app_user_app_index') }}" class="btn-cancel-eco">
+                Annuler et retour
+            </a>
 
         {{ form_end(form) }}
     </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const roleSelect = document.getElementById('role_selector');
-        const coachSection = document.getElementById('coach_fields_container');
+    document.addEventListener('DOMContentLoaded', () => {
+        const roleSelector = document.querySelector('select[name*="role"]');
+        const coachSection = document.getElementById('coach-section');
+        const form = document.getElementById('user-form');
 
-        if (roleSelect) {
-            function toggleCoachFields() {
-                // Thabbet f'el value exact mta3 el Enum (COACH)
-                if (roleSelect.value === 'COACH') {
-                    coachSection.style.display = 'block';
-                } else {
-                    coachSection.style.display = 'none';
-                }
-            }
-            roleSelect.addEventListener('change', toggleCoachFields);
-            toggleCoachFields(); // Initialisation
+        if (!roleSelector) {
+            console.error("Role selector not found!");
+            return;
         }
+
+        // --- Logic Dynamic Coach Section ---
+        const toggleCoachSection = () => {
+            const selectedRole = roleSelector.value ? roleSelector.value.toUpperCase() : '';
+            if (selectedRole === 'COACH') {
+                coachSection.style.display = 'block';
+            } else {
+                coachSection.style.display = 'none';
+            }
+        };
+
+        roleSelector.addEventListener('change', toggleCoachSection);
+        toggleCoachSection(); // Init
+
+        // --- Contrôle de Saisie (Validation) ---
+        const showError = (input, show) => {
+            const errorSpan = input.closest('.input-group-eco').querySelector('.error-text');
+            if (show) {
+                input.classList.add('input-error');
+                errorSpan.style.display = 'block';
+            } else {
+                input.classList.remove('input-error');
+                errorSpan.style.display = 'none';
+            }
+        };
+
+        form.addEventListener('submit', (e) => {
+            let hasError = false;
+
+            // 1. Validate Empty
+            document.querySelectorAll('.validate-empty').forEach(input => {
+                if (!input.value.trim()) {
+                    showError(input, true);
+                    hasError = true;
+                } else {
+                    showError(input, false);
+                }
+            });
+
+            // 2. Email Validation
+            const email = document.getElementById('user-email');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email.value)) {
+                showError(email, true);
+                hasError = true;
+            } else {
+                showError(email, false);
+            }
+
+            // 3. Phone Validation (8 digits)
+            const phone = document.getElementById('user-phone');
+            if (!/^\d{8}$/.test(phone.value)) {
+                showError(phone, true);
+                hasError = true;
+            } else {
+                showError(phone, false);
+            }
+
+            // 4. Age Validation (18-100)
+            const age = document.getElementById('user-age');
+            const ageVal = parseInt(age.value);
+            if (isNaN(ageVal) || ageVal < 18 || ageVal > 100) {
+                showError(age, true);
+                hasError = true;
+            } else {
+                showError(age, false);
+            }
+
+            // 5. Password Validation
+            const pass = document.getElementById('user-pass');
+            if (pass.value.length < 8) {
+                showError(pass, true);
+                hasError = true;
+            } else {
+                showError(pass, false);
+            }
+
+            if (hasError) {
+                e.preventDefault();
+                // Scroll to first error
+                const firstError = document.querySelector('.input-error');
+                if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+
+        // Real-time validation clear
+        document.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('input', () => showError(input, false));
+        });
     });
 </script>
 {% endblock %}

@@ -73,10 +73,22 @@ class RegistrationFormType extends AbstractType
                 'attr' => ['class' => 'form-select']
             ])
             
-            ->add('agreeTerms', CheckboxType::class, ['mapped' => false])
-            ->add('motdepasse', PasswordType::class, [
-                'label' => 'Mot de passe',
-                'mapped' => false, // <--- AJOUTE CETTE LIGNE ICI
+            ->add('agreeTerms', CheckboxType::class, [
+                'mapped' => false,
+                'constraints' => [
+                    new IsTrue([
+                        'message' => 'Vous devez accepter nos conditions.',
+                    ]),
+                ],
+            ])
+            ->add('motdepasse', \Symfony\Component\Form\Extension\Core\Type\RepeatedType::class, [
+                'type' => PasswordType::class,
+                'invalid_message' => 'Les deux mots de passe doivent correspondre.',
+                'options' => ['attr' => ['class' => 'password-field']],
+                'required' => true,
+                'first_options'  => ['label' => 'Mot de passe'],
+                'second_options' => ['label' => 'Confirmer le mot de passe'],
+                'mapped' => false,
                 'constraints' => [
                     new Assert\NotBlank([
                         'message' => 'Veuillez entrer un mot de passe',
@@ -90,10 +102,6 @@ class RegistrationFormType extends AbstractType
                         'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
                         'message' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.'
                     ])
-                ],
-                'attr' => [
-                    'class' => 'form-control rounded-pill',
-                    'placeholder' => 'Min. 8 caractères (A, a, 1...)'
                 ]
             ]);
     }
