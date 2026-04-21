@@ -29,6 +29,8 @@ parameters:
     demo_card_payment_enabled: '%env(default:default_demo_card_payment_enabled:DEMO_CARD_PAYMENT_ENABLED)%'
     default_card_ocr_api_url: 'http://127.0.0.1:5055/ocr/card'
     card_ocr_api_url: '%env(default:default_card_ocr_api_url:CARD_OCR_API_URL)%'
+    default_public_app_url: ''
+    public_app_url: '%env(default:default_public_app_url:PUBLIC_APP_URL)%'
 
 services:
     _defaults:

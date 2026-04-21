@@ -11,6 +11,8 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\SvgWriter;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 final class PackInscriptionTicketFactory
@@ -19,8 +21,11 @@ final class PackInscriptionTicketFactory
         private readonly InscriptionRepository $inscriptionRepository,
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly Code39BarcodeGenerator $barcodeGenerator,
+        private readonly RequestStack $requestStack,
         #[Autowire('%kernel.secret%')]
         private readonly string $appSecret,
+        #[Autowire('%public_app_url%')]
+        private readonly string $publicAppUrl,
     ) {
     }
 
@@ -56,13 +61,31 @@ final class PackInscriptionTicketFactory
 
     public function generatePublicTicketUrl(Inscription $inscription, bool $absolute = false): string
     {
+        $path = $this->urlGenerator->generate(
+            'app_pack_inscription_ticket',
+            [
+                'id' => $inscription->getIdInscription(),
+                'token' => $this->generatePublicToken($inscription),
+            ],
+            UrlGeneratorInterface::ABSOLUTE_PATH
+        );
+
+        if (!$absolute) {
+            return $path;
+        }
+
+        $baseUrl = $this->resolvePublicBaseUrl();
+        if ($baseUrl !== null) {
+            return rtrim($baseUrl, '/') . $path;
+        }
+
         return $this->urlGenerator->generate(
             'app_pack_inscription_ticket',
             [
                 'id' => $inscription->getIdInscription(),
                 'token' => $this->generatePublicToken($inscription),
             ],
-            $absolute ? UrlGeneratorInterface::ABSOLUTE_URL : UrlGeneratorInterface::ABSOLUTE_PATH
+            UrlGeneratorInterface::ABSOLUTE_URL
         );
     }
 
@@ -98,5 +121,80 @@ final class PackInscriptionTicketFactory
         );
 
         return base64_encode($writer->write($qrCode)->getString());
+    }
+
+    private function resolvePublicBaseUrl(): ?string
+    {
+        $configuredBaseUrl = trim($this->publicAppUrl);
+        if ($configuredBaseUrl !== '') {
+            return $configuredBaseUrl;
+        }
+
+        $request = $this->requestStack->getCurrentRequest();
+        if (!$request instanceof Request) {
+            return null;
+        }
+
+        $host = strtolower($request->getHost());
+        if (!$this->isLoopbackHost($host)) {
+            return $request->getSchemeAndHttpHost();
+        }
+
+        $lanIp = $this->detectLanIp();
+        if ($lanIp === null) {
+            return $request->getSchemeAndHttpHost();
+        }
+
+        $port = $request->getPort();
+        $portSuffix = $this->isDefaultPort($request->getScheme(), $port) ? '' : ':' . $port;
+
+        return sprintf('%s://%s%s', $request->getScheme(), $lanIp, $portSuffix);
+    }
+
+    private function detectLanIp(): ?string
+    {
+        $hostIps = gethostbynamel(gethostname()) ?: [];
+        $privateIps = [];
+
+        foreach ($hostIps as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && $this->isPrivateIpv4($ip)) {
+                $privateIps[] = $ip;
+            }
+        }
+
+        foreach ($privateIps as $ip) {
+            if (!preg_match('/\.(0|1|255)$/', $ip)) {
+                return $ip;
+            }
+        }
+
+        return $privateIps !== [] ? end($privateIps) ?: null : null;
+    }
+
+    private function isPrivateIpv4(string $ip): bool
+    {
+        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return false;
+        }
+
+        if (str_starts_with($ip, '10.') || str_starts_with($ip, '192.168.')) {
+            return true;
+        }
+
+        if (preg_match('/^172\.(1[6-9]|2\d|3[0-1])\./', $ip) === 1) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function isLoopbackHost(string $host): bool
+    {
+        return in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+    }
+
+    private function isDefaultPort(string $scheme, int $port): bool
+    {
+        return ($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443);
     }
 }
