@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\UserApp;
+use App\Enum\PrioriteMessage;
 use App\Enum\RoleUser;
 use App\Enum\StatutMessage;
 use App\Enum\TypeMessage;
@@ -121,7 +122,10 @@ class MessagerieController extends AbstractController
 
         $allUsers = $userAppRepo->findAll();
         $conversations = $conversationRepo->findConversationsByUser($user);
-        $tousLesUsers = $allUsers;
+        $tousLesUsers = array_values(array_filter(
+            $allUsers,
+            fn (UserApp $candidateUser): bool => !$this->isGeminiAssistantUser($candidateUser)
+        ));
         $presenceByUserId = [];
         $presenceThreshold = new \DateTime('-5 minutes');
         foreach ($allUsers as $candidateUser) {
@@ -142,10 +146,19 @@ class MessagerieController extends AbstractController
 
         $messages = [];
         $currentConvLastContact = null;
+        $currentConvCallTargetIds = [];
+        $currentConvCallTargetNames = [];
+        $currentConvCallTargetLabel = $currentConv?->getTitre() ?? '';
         if ($currentConv) {
             $messages = $messageRepo->findMessagesForConversation($currentConv);
             $messages = $this->sanitizeConversationMessagesForDisplay($messages);
             $messageRepo->markConversationAsRead($currentConv, $user);
+            [$currentConvCallTargetIds, $currentConvCallTargetNames] = $this->resolveCallableParticipants($currentConv, $user);
+            if ($currentConv->isEst_groupe()) {
+                $currentConvCallTargetLabel = trim((string) $currentConv->getTitre()) ?: 'Groupe';
+            } elseif ($currentConvCallTargetNames !== []) {
+                $currentConvCallTargetLabel = $currentConvCallTargetNames[0];
+            }
             if (!empty($messages)) {
                 $lastMessage = end($messages);
                 $currentConvLastContact = $lastMessage?->getDate_envoi();
@@ -164,6 +177,9 @@ class MessagerieController extends AbstractController
             'messages' => $messages,
             'current_conv_last_contact' => $currentConvLastContact,
             'current_conv_call_blocked' => $this->messagingAccessManager->isConversationCallBlocked($currentConv),
+            'current_conv_call_target_ids' => $currentConvCallTargetIds,
+            'current_conv_call_target_names' => $currentConvCallTargetNames,
+            'current_conv_call_target_label' => $currentConvCallTargetLabel,
             'tous_les_users' => $tousLesUsers,
             'presence_by_user_id' => $presenceByUserId,
             'unread_by_conversation_id' => $unreadByConversationId,
@@ -258,6 +274,11 @@ class MessagerieController extends AbstractController
             return $this->redirectToRoute('app_messagerie', ['id_user' => $id_createur]);
         }
 
+        if ($type === 'groupe' && $this->isGeminiAssistantUser($destinataire)) {
+            $this->addFlash('error', 'Le chatbot IA ne peut pas etre ajoute comme membre normal d un groupe.');
+            return $this->redirectToRoute('app_messagerie', ['id_user' => $id_createur]);
+        }
+
         // Vérifier si une conversation privée existe déjà entre les deux
         if ($type !== 'groupe') {
             $existingConv = $conversationRepo->findOneByParticipants($createur, $destinataire);
@@ -320,9 +341,13 @@ class MessagerieController extends AbstractController
         $participants = [];
         foreach ($selectedUsers as $userId) {
             $user = $userRepo->find($userId);
-            if ($user) {
+            if ($user && !$this->isGeminiAssistantUser($user)) {
                 $participants[] = $user;
             }
+        }
+        if ($participants === []) {
+            $this->addFlash('error', 'Le chatbot IA ne peut pas etre ajoute comme membre normal d un groupe.');
+            return $this->redirectToRoute('app_messagerie', ['id_user' => $id_createur]);
         }
         if (!in_array($createur, $participants)) {
             $participants[] = $createur;
@@ -443,6 +468,14 @@ class MessagerieController extends AbstractController
         $message->setDate_envoi(new \DateTime());
         $message->setStatut_message(StatutMessage::ENVOYE);
         $message->setType_message(TypeMessage::TEXTE);
+
+        $priorityInput = strtolower(trim((string) $request->request->get('message_priority', 'normal')));
+        $selectedPriority = match ($priorityInput) {
+            'urgent' => PrioriteMessage::URGENT,
+            'faible', 'low' => PrioriteMessage::FAIBLE,
+            default => PrioriteMessage::NORMAL,
+        };
+        $message->setPrioriteMessage($selectedPriority);
 
         $uploadedFiles = $request->files->all('mediaFiles');
         $textContent = $this->normalizeMirroredLatinText(trim($request->request->get('message', '')));
@@ -771,6 +804,11 @@ class MessagerieController extends AbstractController
         $userToAdd = $userRepo->find($id_user_to_add);
         $currentUser = $userRepo->find($id_user);
 
+        if ($userToAdd && $this->isGeminiAssistantUser($userToAdd)) {
+            $this->addFlash('error', 'Le chatbot IA ne peut pas etre ajoute comme membre normal d un groupe.');
+            return $this->redirectToRoute('app_messagerie', ['id_user' => $id_user]);
+        }
+
         if ($conv && $userToAdd && $currentUser && $conv->isEst_groupe()
             && $conv->getCreateur()?->getId_user() === $currentUser->getId_user()
             && !$conv->getParticipants()->contains($userToAdd)) {
@@ -980,6 +1018,9 @@ public function callLog(
             $callType = trim((string) ($payload['call_type'] ?? 'audio'));
             $sessionId = trim((string) ($payload['session_id'] ?? ''));
             $signalPayload = $payload['payload'] ?? [];
+            $isGroupCallSignal = is_array($signalPayload) && (bool) ($signalPayload['is_group_call'] ?? false);
+            $closeGroupSession = $isGroupCallSignal && (bool) ($signalPayload['close_session'] ?? false);
+            $conversationId = (int) $conversation->getId_conversation();
 
             if ($targetUserId <= 0 || $sessionId === '' || !in_array($signalType, ['invite', 'accept', 'offer', 'answer', 'candidate', 'end', 'reject'], true)) {
                 return $this->json(['error' => 'Invalid signaling payload'], 422);
@@ -990,8 +1031,28 @@ public function callLog(
                 return $this->json(['error' => 'Target user is not in conversation'], 422);
             }
 
-            $sessionState = $this->getCallSessionState($cache, $conversation->getId_conversation(), $sessionId);
-            if ($signalType === 'accept' && $sessionState !== 'invited') {
+            if (
+                $isGroupCallSignal
+                && $this->countCallableConversationParticipants($conversation) > $this->getMaxWebRtcGroupParticipants()
+            ) {
+                return $this->json([
+                    'success' => false,
+                    'closed' => false,
+                    'error' => sprintf(
+                        'Les appels WebRTC de groupe sont limites a %d participants.',
+                        $this->getMaxWebRtcGroupParticipants()
+                    ),
+                ], 422);
+            }
+
+            $sessionState = $this->getCallSessionState($cache, $conversationId, $sessionId);
+            if (
+                $signalType === 'accept'
+                && (
+                    (!$isGroupCallSignal && $sessionState !== 'invited')
+                    || ($isGroupCallSignal && $sessionState === 'closed')
+                )
+            ) {
                 return $this->json([
                     'success' => false,
                     'closed' => true,
@@ -1009,7 +1070,13 @@ public function callLog(
                 ]);
             }
 
-            if (in_array($signalType, ['reject', 'end'], true) && $sessionState === 'closed') {
+            if (
+                in_array($signalType, ['reject', 'end'], true)
+                && (
+                    (!$isGroupCallSignal && $sessionState === 'closed')
+                    || ($isGroupCallSignal && $signalType === 'end' && $closeGroupSession && $sessionState === 'closed')
+                )
+            ) {
                 return $this->json([
                     'success' => true,
                     'closed' => true,
@@ -1020,7 +1087,7 @@ public function callLog(
             $event = [
                 // Microsecond precision avoids collisions when multiple signaling events are sent quickly.
                 'id' => (int) floor(microtime(true) * 1000000),
-                'conversation_id' => $conversation->getId_conversation(),
+                'conversation_id' => $conversationId,
                 'sender_user_id' => $sender->getId_user(),
                 'target_user_id' => $targetUserId,
                 'signal_type' => $signalType,
@@ -1030,17 +1097,46 @@ public function callLog(
                 'created_at' => (new \DateTimeImmutable())->format(DATE_ATOM),
             ];
 
+            $groupPeers = [];
             if ($signalType === 'invite') {
-                $this->setCallSessionState($cache, $conversation->getId_conversation(), $sessionId, 'invited');
+                $this->setCallSessionState($cache, $conversationId, $sessionId, 'invited');
+                if ($isGroupCallSignal) {
+                    $callerName = trim((string) ($signalPayload['caller_name'] ?? $this->buildUserDisplayName($sender)));
+                    $this->upsertCallSessionParticipant($cache, $conversationId, $sessionId, $sender->getId_user(), $callerName);
+                }
             } elseif ($signalType === 'accept') {
-                $this->setCallSessionState($cache, $conversation->getId_conversation(), $sessionId, 'accepted');
-            } elseif (in_array($signalType, ['reject', 'end'], true)) {
-                $this->setCallSessionState($cache, $conversation->getId_conversation(), $sessionId, 'closed');
+                $this->setCallSessionState($cache, $conversationId, $sessionId, 'accepted');
+                if ($isGroupCallSignal) {
+                    $participantName = trim((string) ($signalPayload['participant_name'] ?? $this->buildUserDisplayName($sender)));
+                    $existingParticipants = $this->getCallSessionParticipants($cache, $conversationId, $sessionId);
+                    $groupPeers = array_values(array_filter(
+                        $existingParticipants,
+                        static fn (array $participant): bool => (int) ($participant['user_id'] ?? 0) !== (int) $sender->getId_user()
+                    ));
+                    $this->upsertCallSessionParticipant($cache, $conversationId, $sessionId, $sender->getId_user(), $participantName);
+                }
+            } elseif (
+                in_array($signalType, ['reject', 'end'], true)
+                && (
+                    !$isGroupCallSignal
+                    || ($signalType === 'end' && $closeGroupSession)
+                )
+            ) {
+                $this->setCallSessionState($cache, $conversationId, $sessionId, 'closed');
+                if ($isGroupCallSignal) {
+                    $this->clearCallSessionParticipants($cache, $conversationId, $sessionId);
+                }
+            } elseif ($signalType === 'end' && $isGroupCallSignal) {
+                $this->removeCallSessionParticipant($cache, $conversationId, $sessionId, $sender->getId_user());
             }
 
-            $this->appendCallSignalEvent($cache, $conversation->getId_conversation(), $targetUserId, $event);
+            $this->appendCallSignalEvent($cache, $conversationId, $targetUserId, $event);
 
-            return $this->json(['success' => true, 'event_id' => $event['id']]);
+            return $this->json([
+                'success' => true,
+                'event_id' => $event['id'],
+                'group_peers' => $groupPeers,
+            ]);
         } catch (\Throwable $exception) {
             return $this->json([
                 'success' => false,
@@ -1080,12 +1176,17 @@ public function callLog(
             $events = array_values(array_filter($events, function (array $event) use ($cache, $conversation): bool {
                 $sessionId = (string) ($event['session_id'] ?? '');
                 $signalType = (string) ($event['signal_type'] ?? '');
+                $isGroupCallSignal = (bool) ($event['payload']['is_group_call'] ?? false);
 
                 if ($sessionId === '') {
                     return false;
                 }
 
                 if ($signalType === 'invite') {
+                    if ($isGroupCallSignal) {
+                        return $this->getCallSessionState($cache, $conversation->getId_conversation(), $sessionId) !== 'closed';
+                    }
+
                     return $this->getCallSessionState($cache, $conversation->getId_conversation(), $sessionId) === 'invited';
                 }
 
@@ -1559,12 +1660,14 @@ public function callLog(
             return $this->json([
                 'latest_id' => $stats['latest_id'],
                 'incoming_count' => $stats['incoming_count'],
+                'attention_priority' => $stats['attention_priority'] ?? 'normal',
             ]);
         } catch (\Throwable $exception) {
             return $this->json([
                 'success' => false,
                 'latest_id' => (int) $request->query->get('last_seen_id', 0),
                 'incoming_count' => 0,
+                'attention_priority' => 'normal',
                 'error' => 'Polling failed',
                 'message' => $exception->getMessage(),
             ]);
@@ -1623,7 +1726,7 @@ public function callLog(
         }
 
         $assistant = $this->getOrCreateGeminiAssistant($userRepo, $em);
-        if (!$conversation->getParticipants()->contains($assistant)) {
+        if (!$conversation->isEst_groupe() && !$conversation->getParticipants()->contains($assistant)) {
             $conversation->addParticipant($assistant);
             $em->persist($conversation);
         }
@@ -1843,9 +1946,15 @@ public function callLog(
         if ($assistant->getId_user() === $sender->getId_user()) {
             return;
         }
-        if (!$conversation->getParticipants()->contains($assistant)) {
+        if (!$conversation->isEst_groupe() && !$conversation->getParticipants()->contains($assistant)) {
             $conversation->addParticipant($assistant);
             $em->persist($conversation);
+        }
+
+        // In assistant conversations, mark incoming unread messages as read server-side
+        // so users see read state without opening the chat manually.
+        if ($isAssistantConversation) {
+            $messageRepo->markConversationAsRead($conversation, $assistant);
         }
 
         if ($needsSummary) {
@@ -2010,6 +2119,59 @@ public function callLog(
         return trim((string) $conversation->getTitre()) ?: 'Contact';
     }
 
+    /**
+     * @return array{0: array<int>, 1: array<string>}
+     */
+    private function resolveCallableParticipants(Conversation $conversation, UserApp $currentUser): array
+    {
+        $ids = [];
+        $names = [];
+
+        foreach ($conversation->getParticipants() as $participant) {
+            if (
+                $participant->getId_user() === $currentUser->getId_user()
+                || $this->isGeminiAssistantUser($participant)
+            ) {
+                continue;
+            }
+
+            $ids[] = (int) $participant->getId_user();
+            $names[] = $this->buildUserDisplayName($participant);
+        }
+
+        return [$ids, $names];
+    }
+
+    private function isGeminiAssistantUser(?UserApp $user): bool
+    {
+        if (!$user instanceof UserApp) {
+            return false;
+        }
+
+        $assistantEmail = trim((string) ($_ENV['GEMINI_ASSISTANT_EMAIL'] ?? 'gemini.bot@ecoadventure.local'));
+
+        return $assistantEmail !== '' && strcasecmp((string) $user->getEmail(), $assistantEmail) === 0;
+    }
+
+    private function getMaxWebRtcGroupParticipants(): int
+    {
+        return 5;
+    }
+
+    private function countCallableConversationParticipants(Conversation $conversation): int
+    {
+        $count = 0;
+        foreach ($conversation->getParticipants() as $participant) {
+            if ($this->isGeminiAssistantUser($participant)) {
+                continue;
+            }
+
+            $count++;
+        }
+
+        return $count;
+    }
+
     private function normalizeMirroredLatinText(string $text): string
     {
         $trimmed = trim($text);
@@ -2119,6 +2281,117 @@ public function callLog(
     private function buildCallSessionStateCacheKey(int $conversationId, string $sessionId): string
     {
         return sprintf('call_session_%d_%s', $conversationId, sha1($sessionId));
+    }
+
+    /**
+     * @return array<int, array{user_id: int, name: string}>
+     */
+    private function getCallSessionParticipants(
+        CacheItemPoolInterface $cache,
+        int $conversationId,
+        string $sessionId
+    ): array {
+        $item = $cache->getItem($this->buildCallSessionParticipantsCacheKey($conversationId, $sessionId));
+        $value = $item->isHit() ? $item->get() : [];
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $participants = [];
+        foreach ($value as $participant) {
+            if (!is_array($participant)) {
+                continue;
+            }
+
+            $userId = (int) ($participant['user_id'] ?? 0);
+            $name = trim((string) ($participant['name'] ?? ''));
+            if ($userId <= 0 || $name === '') {
+                continue;
+            }
+
+            $participants[] = [
+                'user_id' => $userId,
+                'name' => $name,
+            ];
+        }
+
+        return $participants;
+    }
+
+    /**
+     * @param array<int, array{user_id: int, name: string}> $participants
+     */
+    private function saveCallSessionParticipants(
+        CacheItemPoolInterface $cache,
+        int $conversationId,
+        string $sessionId,
+        array $participants
+    ): void {
+        $item = $cache->getItem($this->buildCallSessionParticipantsCacheKey($conversationId, $sessionId));
+        $item->set(array_values($participants));
+        $item->expiresAfter(3600);
+        $cache->save($item);
+    }
+
+    private function upsertCallSessionParticipant(
+        CacheItemPoolInterface $cache,
+        int $conversationId,
+        string $sessionId,
+        int $userId,
+        string $name
+    ): void {
+        $participants = $this->getCallSessionParticipants($cache, $conversationId, $sessionId);
+        $updated = false;
+
+        foreach ($participants as &$participant) {
+            if ((int) ($participant['user_id'] ?? 0) !== $userId) {
+                continue;
+            }
+
+            $participant['name'] = $name;
+            $updated = true;
+            break;
+        }
+        unset($participant);
+
+        if (!$updated) {
+            $participants[] = [
+                'user_id' => $userId,
+                'name' => $name,
+            ];
+        }
+
+        $this->saveCallSessionParticipants($cache, $conversationId, $sessionId, $participants);
+    }
+
+    private function removeCallSessionParticipant(
+        CacheItemPoolInterface $cache,
+        int $conversationId,
+        string $sessionId,
+        int $userId
+    ): void {
+        $participants = array_values(array_filter(
+            $this->getCallSessionParticipants($cache, $conversationId, $sessionId),
+            static fn (array $participant): bool => (int) ($participant['user_id'] ?? 0) !== $userId
+        ));
+
+        $this->saveCallSessionParticipants($cache, $conversationId, $sessionId, $participants);
+    }
+
+    private function clearCallSessionParticipants(
+        CacheItemPoolInterface $cache,
+        int $conversationId,
+        string $sessionId
+    ): void {
+        $item = $cache->getItem($this->buildCallSessionParticipantsCacheKey($conversationId, $sessionId));
+        $item->set([]);
+        $item->expiresAfter(1);
+        $cache->save($item);
+    }
+
+    private function buildCallSessionParticipantsCacheKey(int $conversationId, string $sessionId): string
+    {
+        return sprintf('call_session_participants_%d_%s', $conversationId, sha1($sessionId));
     }
 
     /**

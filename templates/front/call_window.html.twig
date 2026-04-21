@@ -59,6 +59,17 @@
         flex-wrap: wrap;
         margin-top: 10px;
     }
+    .call-window-summary-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        margin-top: 12px;
+    }
+    .call-window-summary-line {
+        color: rgba(226, 232, 240, 0.76);
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
 
     .call-window-chip {
         display: inline-flex;
@@ -106,16 +117,54 @@
 
     .call-window-stage {
         flex: 1;
+        display: block;
+    }
+
+    .call-window-private-stage {
         display: grid;
         gap: 20px;
     }
 
-    .call-window-shell.video-mode .call-window-stage {
+    .call-window-shell.video-mode .call-window-private-stage {
         grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.95fr);
     }
 
-    .call-window-shell.audio-mode .call-window-stage {
+    .call-window-shell.audio-mode .call-window-private-stage {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .call-window-group-stage {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        align-content: start;
+    }
+
+    .call-window-group-tile {
+        position: relative;
+        overflow: hidden;
+        border-radius: 28px;
+        min-height: 260px;
+        background:
+            linear-gradient(180deg, rgba(15, 23, 42, 0.94) 0%, rgba(15, 23, 42, 0.82) 100%);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        box-shadow: 0 24px 52px rgba(3, 7, 18, 0.34);
+    }
+
+    .call-window-group-tile.local {
+        border-color: rgba(74, 222, 128, 0.36);
+    }
+
+    .call-window-group-tile.connected {
+        border-color: rgba(96, 165, 250, 0.38);
+    }
+
+    .call-window-group-tile.audio-only .call-placeholder-badge {
+        color: #86efac;
+    }
+
+    .call-window-group-tile.video-enabled .call-placeholder-badge {
+        color: #93c5fd;
     }
 
     .call-participant-card {
@@ -287,8 +336,8 @@
             padding: 18px;
         }
 
-        .call-window-shell.video-mode .call-window-stage,
-        .call-window-shell.audio-mode .call-window-stage {
+        .call-window-shell.video-mode .call-window-private-stage,
+        .call-window-shell.audio-mode .call-window-private-stage {
             grid-template-columns: 1fr;
         }
 
@@ -323,6 +372,11 @@
                 </span>
                 <span class="call-window-chip timer" id="callWindowTimerText">00:00</span>
             </div>
+            <div class="call-window-summary-list">
+                <div class="call-window-summary-line" id="callWindowConversationText">Conversation: {{ call_target_display_name }}</div>
+                <div class="call-window-summary-line" id="callWindowInitiatorText">Lance par: {{ call_target_display_name }}</div>
+                <div class="call-window-summary-line" id="callWindowParticipantsText">Membres: en attente de connexion</div>
+            </div>
         </div>
         <a href="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}" class="call-window-link leave-open" id="callWindowMessengerLink">
             <i class="bi bi-chat-left-text"></i>
@@ -335,51 +389,54 @@
     </div>
 
     <main class="call-window-stage">
-        <section class="call-participant-card remote">
-            <video id="callWindowRemoteVideo" class="call-media d-none" autoplay playsinline muted></video>
-            <div id="callWindowRemotePlaceholder" class="call-placeholder">
-                <div class="call-placeholder-badge">
-                    <i class="bi bi-mic-fill" id="callWindowRemoteIcon"></i>
+        <div id="callWindowPrivateStage" class="call-window-private-stage">
+            <section class="call-participant-card remote">
+                <video id="callWindowRemoteVideo" class="call-media d-none" autoplay playsinline muted></video>
+                <div id="callWindowRemotePlaceholder" class="call-placeholder">
+                    <div class="call-placeholder-badge">
+                        <i class="bi bi-mic-fill" id="callWindowRemoteIcon"></i>
+                    </div>
+                    <div class="call-placeholder-title" id="callWindowRemotePlaceholderTitle">{{ call_target_display_name }}</div>
+                    <div class="call-placeholder-subtitle" id="callWindowRemotePlaceholderSubtitle">
+                        Audio en attente. Le micro reste actif dans la conversation.
+                    </div>
                 </div>
-                <div class="call-placeholder-title" id="callWindowRemotePlaceholderTitle">{{ call_target_display_name }}</div>
-                <div class="call-placeholder-subtitle" id="callWindowRemotePlaceholderSubtitle">
-                    Audio en attente. Le micro reste actif dans la conversation.
+                <div class="call-participant-overlay">
+                    <div>
+                        <div class="call-participant-name" id="callWindowRemoteName">{{ call_target_display_name }}</div>
+                        <div class="call-participant-role">Participant distant</div>
+                    </div>
+                    <span class="call-window-chip" id="callWindowRemoteStateChip">
+                        <i class="bi bi-dot"></i>
+                        <span>En attente</span>
+                    </span>
                 </div>
-            </div>
-            <div class="call-participant-overlay">
-                <div>
-                    <div class="call-participant-name" id="callWindowRemoteName">{{ call_target_display_name }}</div>
-                    <div class="call-participant-role">Participant distant</div>
-                </div>
-                <span class="call-window-chip" id="callWindowRemoteStateChip">
-                    <i class="bi bi-dot"></i>
-                    <span>En attente</span>
-                </span>
-            </div>
-        </section>
+            </section>
 
-        <section class="call-participant-card local">
-            <video id="callWindowLocalVideo" class="call-media d-none" autoplay playsinline muted></video>
-            <div id="callWindowLocalPlaceholder" class="call-placeholder">
-                <div class="call-placeholder-badge">
-                    <i class="bi bi-mic-fill" id="callWindowLocalIcon"></i>
+            <section class="call-participant-card local">
+                <video id="callWindowLocalVideo" class="call-media d-none" autoplay playsinline muted></video>
+                <div id="callWindowLocalPlaceholder" class="call-placeholder">
+                    <div class="call-placeholder-badge">
+                        <i class="bi bi-mic-fill" id="callWindowLocalIcon"></i>
+                    </div>
+                    <div class="call-placeholder-title" id="callWindowLocalPlaceholderTitle">{{ current_user_display_name }}</div>
+                    <div class="call-placeholder-subtitle" id="callWindowLocalPlaceholderSubtitle">
+                        Votre apercu apparaitra ici des que le flux local sera pret.
+                    </div>
                 </div>
-                <div class="call-placeholder-title" id="callWindowLocalPlaceholderTitle">{{ current_user_display_name }}</div>
-                <div class="call-placeholder-subtitle" id="callWindowLocalPlaceholderSubtitle">
-                    Votre apercu apparaitra ici des que le flux local sera pret.
+                <div class="call-participant-overlay">
+                    <div>
+                        <div class="call-participant-name" id="callWindowLocalName">{{ current_user_display_name }}</div>
+                        <div class="call-participant-role">Vous</div>
+                    </div>
+                    <span class="call-window-chip" id="callWindowLocalStateChip">
+                        <i class="bi bi-mic-fill"></i>
+                        <span>Micro actif</span>
+                    </span>
                 </div>
-            </div>
-            <div class="call-participant-overlay">
-                <div>
-                    <div class="call-participant-name" id="callWindowLocalName">{{ current_user_display_name }}</div>
-                    <div class="call-participant-role">Vous</div>
-                </div>
-                <span class="call-window-chip" id="callWindowLocalStateChip">
-                    <i class="bi bi-mic-fill"></i>
-                    <span>Micro actif</span>
-                </span>
-            </div>
-        </section>
+            </section>
+        </div>
+        <div id="callWindowGroupStage" class="call-window-group-stage d-none"></div>
     </main>
 
     <footer class="call-window-controls">
@@ -419,8 +476,13 @@
     const typeChip = document.getElementById('callWindowTypeChip');
     const statusTextEl = document.getElementById('callWindowStatusText');
     const timerTextEl = document.getElementById('callWindowTimerText');
+    const conversationTextEl = document.getElementById('callWindowConversationText');
+    const initiatorTextEl = document.getElementById('callWindowInitiatorText');
+    const participantsTextEl = document.getElementById('callWindowParticipantsText');
     const messengerLink = document.getElementById('callWindowMessengerLink');
     const endedBanner = document.getElementById('callWindowEndedBanner');
+    const privateStage = document.getElementById('callWindowPrivateStage');
+    const groupStage = document.getElementById('callWindowGroupStage');
 
     const remoteVideo = document.getElementById('callWindowRemoteVideo');
     const localVideo = document.getElementById('callWindowLocalVideo');
@@ -443,6 +505,7 @@
     const hangupBtn = document.getElementById('callWindowHangupBtn');
 
     let refreshTimer = null;
+    let lastGroupRenderKey = '';
 
     messengerLink?.setAttribute('href', messengerUrl);
 
@@ -463,7 +526,7 @@
             return false;
         }
 
-        return stream.getVideoTracks().some((track) => track.readyState === 'live' && track.enabled);
+        return stream.getVideoTracks().some((track) => track.readyState === 'live' && track.enabled && !track.muted);
     }
 
     function applyMediaStream(element, stream, shouldShow) {
@@ -489,12 +552,137 @@
         chip.innerHTML = `<i class="bi ${iconClass}"></i><span>${label}</span>`;
     }
 
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function navigateToMessenger() {
+        try {
+            if (window.opener && !window.opener.closed) {
+                window.opener.location.href = messengerUrl;
+                window.opener.focus();
+                window.close();
+                return;
+            }
+        } catch (error) {
+            // fall back to current window navigation
+        }
+
+        window.location.href = messengerUrl;
+    }
+
+    function buildGroupParticipants(snapshot) {
+        const remoteParticipants = Array.isArray(snapshot.groupParticipants) ? snapshot.groupParticipants : [];
+
+        return [
+            {
+                id: 'local',
+                name: snapshot.currentUserDisplayName || fallbackCurrentUserName,
+                isLocal: true,
+                connected: true,
+                stream: snapshot.localStream || null,
+            },
+            ...remoteParticipants.map((participant) => ({
+                id: String(participant.userId || ''),
+                name: participant.name || 'Participant',
+                isLocal: false,
+                connected: !!participant.connected,
+                stream: participant.stream || null,
+            })),
+        ];
+    }
+
+    function renderGroupStage(snapshot) {
+        if (!groupStage) {
+            return;
+        }
+
+        const isVideoCall = !!snapshot.isVideoPresentation;
+        const participants = buildGroupParticipants(snapshot);
+        const renderKey = `${snapshot.callType}|${participants.map((participant) => `${participant.id}:${participant.name}`).join('|')}`;
+
+        if (renderKey !== lastGroupRenderKey) {
+            groupStage.innerHTML = participants.map((participant) => `
+                <section class="call-window-group-tile ${participant.isLocal ? 'local' : ''} ${participant.connected ? 'connected' : ''} ${isVideoCall ? 'video-enabled' : 'audio-only'}" data-group-tile="${escapeHtml(participant.id)}">
+                    <video class="call-media d-none" data-group-media="${escapeHtml(participant.id)}" autoplay playsinline ${participant.isLocal ? 'muted' : ''}></video>
+                    <div class="call-placeholder" data-group-placeholder="${escapeHtml(participant.id)}">
+                        <div class="call-placeholder-badge">
+                            <i class="bi ${isVideoCall ? 'bi-camera-video-fill' : 'bi-mic-fill'}"></i>
+                        </div>
+                        <div class="call-placeholder-title">${escapeHtml(participant.name)}</div>
+                        <div class="call-placeholder-subtitle" data-group-subtitle="${escapeHtml(participant.id)}">
+                            ${participant.isLocal ? 'Votre flux sera affiche ici.' : (participant.connected ? 'Participant connecte a l appel.' : 'En attente de connexion a l appel.')}
+                        </div>
+                    </div>
+                    <div class="call-participant-overlay">
+                        <div>
+                            <div class="call-participant-name">${escapeHtml(participant.name)}</div>
+                            <div class="call-participant-role">${participant.isLocal ? 'Vous' : 'Participant'}</div>
+                        </div>
+                        <span class="call-window-chip" data-group-state="${escapeHtml(participant.id)}">
+                            <i class="bi ${participant.isLocal ? 'bi-mic-fill' : (participant.connected ? 'bi-broadcast-pin' : 'bi-hourglass-split')}"></i>
+                            <span>${participant.isLocal ? 'Micro actif' : (participant.connected ? 'Connecte' : 'En attente')}</span>
+                        </span>
+                    </div>
+                </section>
+            `).join('');
+            lastGroupRenderKey = renderKey;
+        }
+
+        participants.forEach((participant) => {
+            const media = groupStage.querySelector(`[data-group-media="${participant.id}"]`);
+            const placeholder = groupStage.querySelector(`[data-group-placeholder="${participant.id}"]`);
+            const subtitle = groupStage.querySelector(`[data-group-subtitle="${participant.id}"]`);
+            const stateChip = groupStage.querySelector(`[data-group-state="${participant.id}"]`);
+            const tile = groupStage.querySelector(`[data-group-tile="${participant.id}"]`);
+            const showVideo = isVideoCall
+                && hasLiveVideoTrack(participant.stream)
+                && (!participant.isLocal || !snapshot.localVideoMuted);
+
+            tile?.classList.toggle('connected', !!participant.connected || participant.isLocal);
+            applyMediaStream(media, participant.stream || null, showVideo);
+            if (placeholder) {
+                placeholder.classList.toggle('d-none', showVideo);
+            }
+
+            if (subtitle) {
+                subtitle.textContent = participant.isLocal
+                    ? (isVideoCall
+                        ? (snapshot.localVideoMuted ? 'Votre camera est coupee pour le moment.' : 'Votre video est en cours.')
+                        : 'Votre micro reste actif dans cette session audio.')
+                    : (participant.connected
+                        ? (isVideoCall ? 'Video du participant active.' : 'Audio du participant actif.')
+                        : 'En attente de connexion a l appel.');
+            }
+
+            if (stateChip) {
+                stateChip.innerHTML = participant.isLocal
+                    ? `<i class="bi ${snapshot.localAudioMuted ? 'bi-mic-mute-fill' : 'bi-mic-fill'}"></i><span>${snapshot.localAudioMuted ? 'Micro coupe' : 'Micro actif'}</span>`
+                    : `<i class="bi ${participant.connected ? 'bi-broadcast-pin' : 'bi-hourglass-split'}"></i><span>${participant.connected ? 'Connecte' : 'En attente'}</span>`;
+            }
+        });
+    }
+
     function setEndedState(message) {
         pageRoot.classList.add('call-ended');
         endedBanner.textContent = message;
         statusTextEl.textContent = 'Appel termine';
         titleEl.textContent = 'Appel indisponible';
         timerTextEl.textContent = '00:00';
+        if (conversationTextEl) conversationTextEl.textContent = `Conversation: ${fallbackTargetUserName}`;
+        if (initiatorTextEl) initiatorTextEl.textContent = 'Lance par: indisponible';
+        if (participantsTextEl) participantsTextEl.textContent = 'Membres: indisponible';
+        privateStage?.classList.remove('d-none');
+        if (groupStage) {
+            groupStage.classList.add('d-none');
+            groupStage.innerHTML = '';
+        }
+        lastGroupRenderKey = '';
         setChipContent(typeChip, 'bi-telephone-x-fill', 'Termine');
         remotePlaceholderTitle.textContent = fallbackTargetUserName;
         localPlaceholderTitle.textContent = fallbackCurrentUserName;
@@ -520,21 +708,49 @@
         pageRoot.classList.remove('call-ended');
         endedBanner.textContent = '';
 
-        const isVideoCall = snapshot.callType === 'video';
-        const remoteName = snapshot.targetName || fallbackTargetUserName;
+        const isVideoCall = !!snapshot.isVideoPresentation;
+        const primaryGroupParticipant = snapshot.isGroupCall
+            ? ((snapshot.groupParticipants || []).find((participant) => participant.connected) || (snapshot.groupParticipants || [])[0] || null)
+            : null;
+        const remoteName = snapshot.isGroupCall
+            ? (primaryGroupParticipant?.name || snapshot.targetName || fallbackTargetUserName)
+            : (snapshot.targetName || fallbackTargetUserName);
         const localName = snapshot.currentUserDisplayName || fallbackCurrentUserName;
+        const conversationName = snapshot.conversationName || snapshot.targetName || fallbackTargetUserName;
+        const initiatorName = snapshot.initiatorName || remoteName || fallbackTargetUserName;
+        const participantsSummary = snapshot.isGroupCall
+            ? (snapshot.groupParticipantsSummary || 'Membres: en attente de connexion')
+            : `Correspondant: ${remoteName}`;
         const remoteVideoReady = isVideoCall && hasLiveVideoTrack(snapshot.remoteStream);
         const localVideoReady = isVideoCall && hasLiveVideoTrack(snapshot.localStream) && !snapshot.localVideoMuted;
 
         pageRoot.classList.toggle('video-mode', isVideoCall);
         pageRoot.classList.toggle('audio-mode', !isVideoCall);
 
-        document.title = `${isVideoCall ? 'Appel video' : 'Appel audio'} - ${remoteName}`;
-        titleEl.textContent = isVideoCall ? 'Appel video' : 'Appel audio';
+        document.title = `${snapshot.isGroupCall ? (isVideoCall ? 'Appel video de groupe' : 'Appel audio de groupe') : (isVideoCall ? 'Appel video' : 'Appel audio')} - ${conversationName}`;
+        titleEl.textContent = snapshot.isGroupCall
+            ? (isVideoCall ? 'Appel video de groupe' : 'Appel audio de groupe')
+            : (isVideoCall ? 'Appel video' : 'Appel audio');
         statusTextEl.textContent = snapshot.statusText || 'Connexion en cours...';
         timerTextEl.textContent = snapshot.timerText || '00:00';
+        if (conversationTextEl) conversationTextEl.textContent = `Conversation: ${conversationName}`;
+        if (initiatorTextEl) initiatorTextEl.textContent = `Lance par: ${initiatorName}`;
+        if (participantsTextEl) participantsTextEl.textContent = participantsSummary;
 
         setChipContent(typeChip, isVideoCall ? 'bi-camera-video-fill' : 'bi-mic-fill', isVideoCall ? 'Video' : 'Audio');
+
+        if (snapshot.isGroupCall) {
+            privateStage?.classList.add('d-none');
+            groupStage?.classList.remove('d-none');
+            renderGroupStage(snapshot);
+        } else {
+            if (groupStage) {
+                groupStage.classList.add('d-none');
+                groupStage.innerHTML = '';
+            }
+            lastGroupRenderKey = '';
+            privateStage?.classList.remove('d-none');
+        }
 
         remoteNameEl.textContent = remoteName;
         localNameEl.textContent = localName;
@@ -579,14 +795,12 @@
             ? '<i class="bi bi-mic-fill"></i><span>Activer</span>'
             : '<i class="bi bi-mic-mute-fill"></i><span>Muet</span>';
 
-        videoBtn.disabled = !isVideoCall;
-        videoBtn.classList.toggle('d-none', !isVideoCall);
-        videoBtn.classList.toggle('active', isVideoCall && !snapshot.localVideoMuted);
-        if (isVideoCall) {
-            videoBtn.innerHTML = snapshot.localVideoMuted
-                ? '<i class="bi bi-camera-video"></i><span>Activer</span>'
-                : '<i class="bi bi-camera-video-off"></i><span>Camera</span>';
-        }
+        videoBtn.disabled = false;
+        videoBtn.classList.remove('d-none');
+        videoBtn.classList.toggle('active', !snapshot.localVideoMuted);
+        videoBtn.innerHTML = snapshot.localVideoMuted
+            ? '<i class="bi bi-camera-video"></i><span>Video</span>'
+            : '<i class="bi bi-camera-video-off"></i><span>Audio</span>';
 
         hangupBtn.disabled = false;
     }
@@ -629,18 +843,30 @@
         performBridgeAction('toggleVideo', 'La camera ne peut plus etre geree depuis cette fenetre.');
     });
 
-    hangupBtn?.addEventListener('click', function () {
-        performBridgeAction('hangup', 'L appel est deja termine.');
+    focusBtn?.addEventListener('click', function () {
+        navigateToMessenger();
     });
 
-    focusBtn?.addEventListener('click', function () {
+    messengerLink?.addEventListener('click', function (event) {
+        event.preventDefault();
+        navigateToMessenger();
+    });
+
+    hangupBtn?.addEventListener('click', async function () {
         const bridge = getBridge();
-        if (bridge && typeof bridge.focusMessenger === 'function') {
-            bridge.focusMessenger();
+        if (!bridge || typeof bridge.hangup !== 'function') {
+            setEndedState('L appel est deja termine.');
+            navigateToMessenger();
             return;
         }
 
-        window.location.href = messengerUrl;
+        try {
+            await bridge.hangup();
+        } catch (error) {
+            // The messenger page already manages the visible error state.
+        }
+
+        navigateToMessenger();
     });
 
     refreshFromBridge();

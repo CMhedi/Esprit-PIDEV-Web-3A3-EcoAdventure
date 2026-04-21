@@ -50,9 +50,40 @@ class MessageRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult() ?? 0);
 
+        $attentionPriority = 'normal';
+        if ($incomingCount > 0) {
+            $prioritySql = <<<'SQL'
+SELECT COALESCE(priorite_message, 'NORMAL') AS priority
+FROM message
+WHERE id_conversation = :conversation_id
+  AND id_message > :last_seen_id
+  AND id_user <> :user_id
+  AND date_lecture IS NULL
+ORDER BY CASE priorite_message
+    WHEN 'URGENT' THEN 3
+    WHEN 'NORMAL' THEN 2
+    WHEN 'FAIBLE' THEN 1
+    ELSE 0
+END DESC, id_message DESC
+LIMIT 1
+SQL;
+
+            $priority = $this->getEntityManager()->getConnection()->fetchOne($prioritySql, [
+                'conversation_id' => $conversation->getId_conversation(),
+                'last_seen_id' => $lastSeenId,
+                'user_id' => $user->getId_user(),
+            ]);
+
+            $priority = strtoupper(trim((string) $priority));
+            if (in_array($priority, ['URGENT', 'NORMAL', 'FAIBLE'], true)) {
+                $attentionPriority = strtolower($priority);
+            }
+        }
+
         return [
             'latest_id' => $latestId,
             'incoming_count' => $incomingCount,
+            'attention_priority' => $attentionPriority,
         ];
     }
 
