@@ -486,4 +486,38 @@ public function setLastPredictionAt(\DateTimeInterface $value): self
     $this->lastPredictionAt = $value;
     return $this;
 }
+#[ORM\Column(type: 'float', nullable: true)]
+private ?float $weight = null;
+
+#[ORM\Column(type: 'float', nullable: true)]
+private ?float $height = null;
+
+#[ORM\Column(type: 'string', length: 1, nullable: true)]
+private ?string $gender = null;
+
+#[ORM\Column(type: 'float', nullable: true)]
+private ?float $activityLevel = null;
+public function getWeight(): ?float { return $this->weight; }
+public function setWeight(float $v): self { $this->weight = $v; return $this; }
+
+public function getHeight(): ?float { return $this->height; }
+public function setHeight(float $v): self { $this->height = $v; return $this; }
+
+public function getGender(): ?string { return $this->gender; }
+public function setGender(string $v): self { $this->gender = $v; return $this; }
+
+public function getActivityLevel(): ?float { return $this->activityLevel; }
+public function setActivityLevel(float $v): self { $this->activityLevel = $v; return $this; }
+#[ORM\Column(type: 'boolean', options: ['default' => false])]
+private bool $goalNotified = false;
+public function isGoalNotified(): bool
+{
+    return $this->goalNotified;
+}
+
+public function setGoalNotified(bool $goalNotified): self
+{
+    $this->goalNotified = $goalNotified;
+    return $this;
+}
 }

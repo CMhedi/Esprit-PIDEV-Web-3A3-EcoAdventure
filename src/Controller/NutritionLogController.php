@@ -1,7 +1,11 @@
 <?php
 
 namespace App\Controller;
-
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\NutritionLog;
 use App\Entity\UserApp;
 use App\Repository\NutritionLogRepository;
@@ -9,13 +13,11 @@ use App\Service\NutritionApiService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-
+use App\Service\NotificationService;
 #[Route('/nutrition', name: 'nutrition_')]
 #[IsGranted('ROLE_USER')]
 class NutritionLogController extends AbstractController
@@ -23,15 +25,17 @@ class NutritionLogController extends AbstractController
     private NutritionLogRepository $repository;
     private EntityManagerInterface $em;
     private ValidatorInterface $validator;
-
+    private NotificationService $notificationService;
     public function __construct(
         NutritionLogRepository $repository,
         EntityManagerInterface $em,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        NotificationService $notificationService
     ) {
         $this->repository = $repository;
         $this->em = $em;
         $this->validator = $validator;
+        $this->notificationService = $notificationService;
     }
 
     // ================================
@@ -50,7 +54,7 @@ class NutritionLogController extends AbstractController
     /**
      * Récupère les stats du jour (Calories + Macros)
      */
-   #[Route('/today', name: 'today', methods: ['GET'])]
+  #[Route('/today', name: 'today', methods: ['GET'])]
 public function getTodayStats(Request $request): JsonResponse
 {
     try {
@@ -64,15 +68,32 @@ public function getTodayStats(Request $request): JsonResponse
         $userId = $user->getId();
         $today = new \DateTime('today');
 
-        // ===== 🧠 RÉCUPÉRER LES OBJECTIFS =====
-        $session = $request->getSession();
-        $goals = $session->get('nutrition_goals', [
+        // ===== 🧠 OBJECTIFS DYNAMIQUES (DB) =====
+        $goals = [
             'calories' => 2000,
             'protein' => 150,
             'fat' => 70,
             'carbs' => 250
-        ]);
+        ];
 
+        if ($user->getWeight() && $user->getHeight()) {
+            $calc = $this->calculateNutritionGoals(
+                $user->getWeight(),
+                $user->getHeight(),
+                $user->getAge() ?? 30,
+                $user->getGender() ?? 'M',
+                $user->getActivityLevel() ?? 1.5
+            );
+
+            $goals = [
+                'calories' => $calc['calories'],
+                'protein' => $calc['protein'],
+                'fat' => $calc['fat'],
+                'carbs' => $calc['carbs'],
+            ];
+        }
+
+        // ===== CALORIES =====
         try {
             $totalCalories = $this->repository->getTodayTotal($userId);
         } catch (\Exception $e) {
@@ -80,13 +101,20 @@ public function getTodayStats(Request $request): JsonResponse
             $totalCalories = 0;
         }
 
+        // ===== MACROS =====
         try {
             $macros = $this->repository->getTotalMacros($userId, $today);
         } catch (\Exception $e) {
             error_log('getTotalMacros error: ' . $e->getMessage());
-            $macros = ['calories' => 0, 'protein' => 0, 'fat' => 0, 'carbs' => 0];
+            $macros = [
+                'calories' => 0,
+                'protein' => 0,
+                'fat' => 0,
+                'carbs' => 0
+            ];
         }
 
+        // ===== LOGS =====
         try {
             $logs = $this->repository->findByDateRange(
                 $userId,
@@ -111,20 +139,31 @@ public function getTodayStats(Request $request): JsonResponse
                 'carbs' => (float)($macros['carbs'] ?? 0),
             ],
 
-            // ===== 🧠 OBJECTIFS (NOUVEAU) =====
+            // ===== 🎯 OBJECTIFS =====
             'goals' => $goals,
+
+            // ===== BONUS UTILE =====
+            'progress' => [
+                'calories' => $goals['calories'] > 0 ? round(($totalCalories / $goals['calories']) * 100) : 0,
+                'protein' => $goals['protein'] > 0 ? round(($macros['protein'] / $goals['protein']) * 100) : 0,
+                'fat' => $goals['fat'] > 0 ? round(($macros['fat'] / $goals['fat']) * 100) : 0,
+                'carbs' => $goals['carbs'] > 0 ? round(($macros['carbs'] / $goals['carbs']) * 100) : 0,
+            ],
 
             // ===== LOGS =====
             'logs_count' => is_array($logs) ? count($logs) : 0,
-            'logs' => is_array($logs) ? array_map(fn($log) => $this->formatLog($log), $logs) : []
+            'logs' => is_array($logs)
+                ? array_map(fn($log) => $this->formatLog($log), $logs)
+                : []
         ]);
 
     } catch (\Exception $e) {
         error_log('getTodayStats error: ' . $e->getMessage());
-        return $this->json(
-            ['error' => 'Erreur: ' . $e->getMessage()],
-            500
-        );
+
+        return $this->json([
+            'success' => false,
+            'error' => 'Erreur: ' . $e->getMessage()
+        ], 500);
     }
 }
 
@@ -312,72 +351,99 @@ public function getTodayStats(Request $request): JsonResponse
     /**
      * Ajouter un log de nutrition
      */
-    #[Route('/add', name: 'add', methods: ['POST'])]
-    public function add(Request $request): JsonResponse
-    {
-        try {
-            $data = json_decode($request->getContent(), true);
+#[Route('/add', name: 'add', methods: ['POST'])]
+public function add(Request $request): JsonResponse
+{
+    try {
+        $data = json_decode($request->getContent(), true);
 
-            if (!isset($data['food_name']) || empty(trim($data['food_name']))) {
-                return $this->json(
-                    ['error' => 'Le nom de l\'aliment est requis'],
-                    400
-                );
-            }
-
-            if (!isset($data['calories']) || (float)$data['calories'] < 0) {
-                return $this->json(
-                    ['error' => 'Les calories doivent être >= 0'],
-                    400
-                );
-            }
-
-            /** @var UserApp $user */
-            $user = $this->getUser();
-
-            if (!$user) {
-                return $this->json(['error' => 'Utilisateur non authentifié'], 401);
-            }
-
-            $log = new NutritionLog();
-            $log->setUser($user);
-            $log->setFood_name(trim($data['food_name']));
-            $log->setCalories((float)$data['calories']);
-            $log->setProtein((float)($data['protein'] ?? 0));
-            $log->setFat((float)($data['fat'] ?? 0));
-            $log->setCarbs((float)($data['carbs'] ?? 0));
-
-            if (isset($data['log_date']) && !empty($data['log_date'])) {
-                $log->setLog_date(new \DateTime($data['log_date']));
-            } else {
-                $log->setLog_date(new \DateTime('today'));
-            }
-
-            $errors = $this->validator->validate($log);
-            if (count($errors) > 0) {
-                $errorMessages = [];
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
-                return $this->json(['errors' => $errorMessages], 400);
-            }
-
-            $this->repository->add($log, true);
-
-            return $this->json([
-                'success' => true,
-                'message' => 'Log de nutrition ajouté avec succès',
-                'log' => $this->formatLog($log)
-            ], 201);
-
-        } catch (\Exception $e) {
-            error_log('add error: ' . $e->getMessage());
+        if (!isset($data['food_name']) || empty(trim($data['food_name']))) {
             return $this->json(
-                ['error' => 'Erreur: ' . $e->getMessage()],
-                500
+                ['error' => 'Le nom de l\'aliment est requis'],
+                400
             );
         }
+
+        if (!isset($data['calories']) || (float)$data['calories'] < 0) {
+            return $this->json(
+                ['error' => 'Les calories doivent être >= 0'],
+                400
+            );
+        }
+
+        /** @var UserApp $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'Utilisateur non authentifié'], 401);
+        }
+
+        // ===== CREATE LOG =====
+        $log = new NutritionLog();
+        $log->setUser($user);
+        $log->setFood_name(trim($data['food_name']));
+        $log->setCalories((float)$data['calories']);
+        $log->setProtein((float)($data['protein'] ?? 0));
+        $log->setFat((float)($data['fat'] ?? 0));
+        $log->setCarbs((float)($data['carbs'] ?? 0));
+
+        if (isset($data['log_date']) && !empty($data['log_date'])) {
+            $log->setLog_date(new \DateTime($data['log_date']));
+        } else {
+            $log->setLog_date(new \DateTime('today'));
+        }
+
+        // ===== VALIDATION =====
+        $errors = $this->validator->validate($log);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            return $this->json(['errors' => $errorMessages], 400);
+        }
+
+        // ===== SAVE =====
+        $this->repository->add($log, true);
+
+        // ===== 🧠 CALCUL TOTAL JOUR =====
+        $stats = $this->repository->getTotalMacros($user->getId(), new \DateTime());
+
+        // ===== 🧠 CALCUL OBJECTIFS =====
+        $goals = $this->calculateNutritionGoals(
+            $user->getWeight(),
+            $user->getHeight(),
+            $user->getAge() ?? 30,
+            $user->getGender() ?? 'M',
+            $user->getActivityLevel() ?? 1.5
+        );
+
+        // ===== 🎉 EMAIL SI OBJECTIF ATTEINT =====
+        if (
+            $stats['calories'] >= $goals['calories'] &&
+            !$user->isGoalNotified()
+        ) {
+            $this->notificationService->sendGoalAchieved($user->getEmail());
+
+            $user->setGoalNotified(true);
+            $this->em->flush();
+        }
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Log de nutrition ajouté avec succès',
+            'log' => $this->formatLog($log)
+        ], 201);
+
+    } catch (\Exception $e) {
+        error_log('add error: ' . $e->getMessage());
+
+        return $this->json(
+            ['error' => 'Erreur: ' . $e->getMessage()],
+            500
+        );
     }
+}
 
     /**
      * Supprimer un log
@@ -666,7 +732,7 @@ public function getTodayStats(Request $request): JsonResponse
         }
     }
 
-   #[Route('/imc/dashboard', name: 'imc_dashboard', methods: ['POST'])]
+  #[Route('/imc/dashboard', name: 'imc_dashboard', methods: ['POST'])]
 public function getIMCDashboard(Request $request, SessionInterface $session): JsonResponse
 {
     try {
@@ -676,11 +742,28 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
             return $this->json(['error' => 'Données manquantes'], 400);
         }
 
+        // ===== INPUT =====
         $weight = (float)$data['weight'];
         $height = (float)$data['height'];
         $age = (int)($data['age'] ?? 30);
         $gender = $data['gender'] ?? 'M';
         $activityLevel = (float)($data['activity_level'] ?? 1.5);
+
+        /** @var UserApp $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'Utilisateur non authentifié'], 401);
+        }
+
+        // ===== 💾 SAVE USER DATA IN DB =====
+        $user->setWeight($weight);
+        $user->setHeight($height);
+        $user->setAge($age);
+        $user->setGender($gender);
+        $user->setActivityLevel($activityLevel);
+
+        $this->em->flush();
 
         // ===== IMC =====
         $heightM = $height / 100;
@@ -688,7 +771,7 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
 
         // ===== ANALYSIS =====
         $analysis = $this->analyzeIMC($imc, $weight, $height);
-        $recommendations = $this->getRecommendations($imc, $weight, $height, $age, $gender);
+        $recommendationsText = $this->getRecommendations($imc, $weight, $height, $age, $gender);
         $ideal = $this->calculateIdealWeight($height, $gender);
 
         // ===== HISTORY =====
@@ -698,7 +781,7 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
         $bmr = $this->calculateBMR($weight, $height, $age, $gender);
         $tdee = round($bmr * $activityLevel);
 
-        // ===== 🧠 NOUVEAU: OBJECTIFS NUTRITION =====
+        // ===== 🧠 OBJECTIFS =====
         $goals = $this->calculateNutritionGoals(
             $weight,
             $height,
@@ -707,7 +790,7 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
             $activityLevel
         );
 
-        // ===== 🧠 SAUVEGARDE SESSION =====
+        // ===== 🧠 SAVE SESSION (OPTIONNEL MAIS UTILE) =====
         $session->set('nutrition_goals', $goals);
 
         // ===== STATS =====
@@ -726,6 +809,7 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
         return $this->json([
             'success' => true,
 
+            // ===== USER DATA =====
             'measurements' => [
                 'weight' => $weight,
                 'height' => $height,
@@ -733,6 +817,7 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
                 'gender' => $gender
             ],
 
+            // ===== IMC =====
             'imc' => $imc,
             'analysis' => $analysis,
             'ideal_weight' => $ideal,
@@ -741,14 +826,14 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
             'bmr' => $goals['bmr'],
             'tdee' => $goals['calories'],
 
-            // ===== 🧠 NOUVEAU: MACROS =====
+            // ===== 🧠 MACROS =====
             'recommendations' => [
                 'protein' => $goals['protein'],
                 'fat' => $goals['fat'],
                 'carbs' => $goals['carbs']
             ],
 
-            // ===== OPTIONNEL (debug / UI avancé) =====
+            // ===== DEBUG / FRONT =====
             'goals' => $goals,
 
             'statistics' => $stats,
@@ -1157,4 +1242,6 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
         'carbs' => round($carbs)
     ];
 }
+
+
 }

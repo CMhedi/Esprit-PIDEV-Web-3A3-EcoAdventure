@@ -391,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     loadDashboard();
 
-    // Event listeners with null checks
+    // Event listeners
     const addLogForm = document.getElementById('addLogForm');
     const searchInput = document.getElementById('searchInput');
     const filterDate = document.getElementById('filterDate');
@@ -417,6 +417,30 @@ document.addEventListener('DOMContentLoaded', function() {
     if (resetBtn) {
         resetBtn.addEventListener('click', resetFilters);
     }
+
+    // ===== 🔥 AJOUT ICI =====
+    const addButton = document.querySelector('[data-bs-target="#addLogModal"]');
+
+    if (addButton) {
+        addButton.addEventListener('click', () => {
+
+            editMode = false;
+            currentLogId = null;
+
+            const form = document.getElementById('addLogForm');
+            if (form) form.reset();
+
+            document.getElementById('addLogModalLabel').innerHTML =
+                '<i class="bi bi-plus-circle me-2"></i> Ajouter un Log Nutrition';
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML =
+                    '<i class="bi bi-check-circle me-2"></i> Ajouter';
+            }
+        });
+    }
+
 });
 
 // ===== DEBOUNCE FUNCTION =====
@@ -760,8 +784,12 @@ function renderLogs(logs) {
 }
 
 // ===== ADD LOG =====
+let editMode = false;
+let currentLogId = null;
+
 function addLog(e) {
     e.preventDefault();
+
     const form = e.target;
     const formData = new FormData(form);
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -771,16 +799,26 @@ function addLog(e) {
         return;
     }
 
-    // Disable button during submission
+    // Disable button
     submitBtn.disabled = true;
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Ajout...';
+    submitBtn.innerHTML = editMode
+        ? '<span class="spinner-border spinner-border-sm me-2"></span>Modification...'
+        : '<span class="spinner-border spinner-border-sm me-2"></span>Ajout...';
 
     const body = Object.fromEntries(formData);
-    console.log('📝 Adding log:', body);
 
-    fetch('{{ path("nutrition_add") }}', {
-        method: 'POST',
+    console.log(editMode ? '✏️ Updating log:' : '📝 Adding log:', body);
+
+    // ===== 🔥 ICI LA MAGIE =====
+    const url = editMode
+        ? `{{ path("nutrition_update", {"id": 0}) }}`.replace('0', currentLogId)
+        : '{{ path("nutrition_add") }}';
+
+    const method = editMode ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     })
@@ -791,27 +829,50 @@ function addLog(e) {
         return r.json();
     })
     .then(data => {
-        console.log('✅ Log added:', data);
+        console.log('✅ Response:', data);
+
         if (data.success) {
-            showToast('✅ Log ajouté avec succès!', 'success');
+
+            showToast(
+                editMode
+                    ? '✅ Log modifié avec succès!'
+                    : '✅ Log ajouté avec succès!',
+                'success'
+            );
+
+            // reset form
             form.reset();
+
             const logDateInput = document.querySelector('input[name="log_date"]');
             if (logDateInput) {
                 logDateInput.valueAsDate = new Date();
             }
-            
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addLogModal'));
-            if (modal) {
-                modal.hide();
-            }
-            
+
+            // close modal
+            const modal = bootstrap.Modal.getInstance(
+                document.getElementById('addLogModal')
+            );
+            if (modal) modal.hide();
+
+            // ===== RESET EDIT MODE =====
+            editMode = false;
+            currentLogId = null;
+
+            // reset UI
+            document.getElementById('addLogModalLabel').innerHTML =
+                '<i class="bi bi-plus-circle me-2"></i> Ajouter un Log Nutrition';
+
+            submitBtn.innerHTML =
+                '<i class="bi bi-check-circle me-2"></i> Ajouter';
+
             loadDashboard();
+
         } else {
             showToast('❌ Erreur: ' + (data.error || 'Erreur inconnue'), 'danger');
         }
     })
     .catch(e => {
-        console.error('❌ Error adding log:', e);
+        console.error('❌ Error:', e);
         showToast('❌ Erreur: ' + e.message, 'danger');
     })
     .finally(() => {
@@ -1054,6 +1115,34 @@ window.addEventListener('error', function(e) {
 window.addEventListener('unhandledrejection', function(e) {
     console.error('🔴 Unhandled promise rejection:', e.reason);
 });
+function editLog(id) {
+    const log = allLogs.find(l => l.id === id);
+    if (!log) return;
+
+    editMode = true;
+    currentLogId = id;
+
+    const form = document.getElementById('addLogForm');
+
+    form.food_name.value = log.food_name;
+    form.calories.value = log.calories;
+    form.protein.value = log.protein;
+    form.fat.value = log.fat;
+    form.carbs.value = log.carbs;
+    form.log_date.value = log.log_date;
+
+    // changer titre modal
+    document.getElementById('addLogModalLabel').innerHTML =
+        '<i class="bi bi-pencil me-2"></i> Modifier Log';
+
+    // changer bouton
+    form.querySelector('button[type="submit"]').innerHTML =
+        '<i class="bi bi-check-circle me-2"></i> Modifier';
+
+    // ouvrir modal
+    const modal = new bootstrap.Modal(document.getElementById('addLogModal'));
+    modal.show();
+}
 </script>
 
 <style>

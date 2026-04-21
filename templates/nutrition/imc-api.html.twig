@@ -12,7 +12,7 @@
         <!-- TITRE -->
         <div class="col">
             <h1 class="mb-0">
-                <i class="bi bi-calculator me-2" style="color: var(--energy-orange);"></i>
+                <i class="bi bi-calculator me-2" style="color: #27ae60;"></i>
                 Calcul IMC & Nutrition API
             </h1>
         </div>
@@ -878,58 +878,247 @@ function compareIngredients() {
         .catch(e => alert('Erreur: ' + e.message));
 }
 
+
 function displayComparison(comp) {
     const ing1 = comp.ingredient1;
     const ing2 = comp.ingredient2;
     const healthier = comp.comparison.healthier === 'ingredient1' ? ing1.name : ing2.name;
+    const isIng1Healthier = comp.comparison.healthier === 'ingredient1';
+
+    // ===== FONCTION HELPER POUR CRÉER LES BADGES =====
+    const createNutrientRow = (nutrient, val1, val2, diff, unit, isPositiveBetter = true) => {
+        const isVal1Better = isPositiveBetter ? val1 < val2 : val1 > val2;
+        const color1 = isVal1Better ? '#27ae60' : '#e74c3c';
+        const color2 = !isVal1Better ? '#27ae60' : '#e74c3c';
+        
+        const diffIcon = diff > 0 ? '↑' : (diff < 0 ? '↓' : '=');
+        const diffColor = Math.abs(diff) > 5 ? '#e74c3c' : (Math.abs(diff) > 0 ? '#f39c12' : '#27ae60');
+
+        return `
+            <tr style="transition: all 0.2s ease; border-bottom: 1px solid #ecf0f1;">
+                <td style="padding: 1rem; font-weight: 600; color: #2c3e50;">
+                    <i class="bi bi-dot me-2" style="color: #27ae60;"></i>
+                    ${nutrient}
+                </td>
+                <td style="padding: 1rem; text-align: center;">
+                    <div style="background: ${isVal1Better ? 'rgba(39, 174, 96, 0.1)' : 'rgba(231, 76, 60, 0.1)'}; 
+                               padding: 0.5rem 1rem; border-radius: 0.5rem; border-left: 4px solid ${color1};">
+                        <strong style="color: ${color1}; font-size: 1.05rem;">
+                            ${val1.toFixed(1)}${unit}
+                        </strong>
+                    </div>
+                </td>
+                <td style="padding: 1rem; text-align: center;">
+                    <div style="background: ${!isVal1Better ? 'rgba(39, 174, 96, 0.1)' : 'rgba(231, 76, 60, 0.1)'}; 
+                               padding: 0.5rem 1rem; border-radius: 0.5rem; border-left: 4px solid ${color2};">
+                        <strong style="color: ${color2}; font-size: 1.05rem;">
+                            ${val2.toFixed(1)}${unit}
+                        </strong>
+                    </div>
+                </td>
+                <td style="padding: 1rem; text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <span style="color: ${diffColor}; font-weight: 700; font-size: 1.1rem;">
+                            ${diffIcon}
+                        </span>
+                        <strong style="color: ${diffColor};">
+                            ${Math.abs(diff).toFixed(1)}${unit}
+                        </strong>
+                    </div>
+                </td>
+            </tr>
+        `;
+    };
 
     let html = `
-        <div class="table-responsive">
-            <table class="table table-sm table-hover">
-                <thead class="table-light">
+        <!-- ===== COMPARAISON HEADER ===== -->
+        <div style="background: linear-gradient(135deg, #f8faf9 0%, #ffffff 100%); 
+                   padding: 2rem; border-radius: 1rem; margin-bottom: 1.5rem; border-left: 5px solid #27ae60;">
+            <div class="row align-items-center">
+                <div class="col-md-4 text-center">
+                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🥗</div>
+                    <h5 style="color: #2c3e50; font-weight: 700; margin-bottom: 0.5rem;">
+                        ${ing1.name}
+                    </h5>
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        ${ing1.category || 'Aliment'}
+                    </small>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div style="font-size: 1.5rem; color: #27ae60; font-weight: 700;">
+                        VS
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🥙</div>
+                    <h5 style="color: #2c3e50; font-weight: 700; margin-bottom: 0.5rem;">
+                        ${ing2.name}
+                    </h5>
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        ${ing2.category || 'Aliment'}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== TABLEAU COMPARAISON ===== -->
+        <div class="table-responsive rounded-4 overflow-hidden shadow-sm">
+            <table class="table mb-0">
+                <thead style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white;">
                     <tr>
-                        <th>Nutriment</th>
-                        <th>${ing1.name}</th>
-                        <th>${ing2.name}</th>
-                        <th>Différence</th>
+                        <th style="padding: 1.2rem; font-weight: 700; font-size: 1rem;">
+                            <i class="bi bi-graph-up me-2"></i>
+                            Nutriment
+                        </th>
+                        <th style="padding: 1.2rem; font-weight: 700; font-size: 1rem; text-align: center;">
+                            <i class="bi bi-apple me-1"></i>
+                            ${ing1.name}
+                        </th>
+                        <th style="padding: 1.2rem; font-weight: 700; font-size: 1rem; text-align: center;">
+                            <i class="bi bi-apple me-1"></i>
+                            ${ing2.name}
+                        </th>
+                        <th style="padding: 1.2rem; font-weight: 700; font-size: 1rem; text-align: center;">
+                            <i class="bi bi-arrow-left-right me-2"></i>
+                            Différence
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td><strong>Calories</strong></td>
-                        <td>${ing1.nutrition.calories} kcal</td>
-                        <td>${ing2.nutrition.calories} kcal</td>
-                        <td>${(comp.comparison.calories_diff).toFixed(1)} ${comp.comparison.calories_diff > 0 ? '↑' : '↓'}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Protéines</strong></td>
-                        <td>${ing1.nutrition.protein}g</td>
-                        <td>${ing2.nutrition.protein}g</td>
-                        <td>${(comp.comparison.protein_diff).toFixed(1)}g ${comp.comparison.protein_diff > 0 ? '✅' : ''}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Graisses</strong></td>
-                        <td>${ing1.nutrition.fat}g</td>
-                        <td>${ing2.nutrition.fat}g</td>
-                        <td>${(comp.comparison.fat_diff).toFixed(1)}g</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Glucides</strong></td>
-                        <td>${ing1.nutrition.carbs}g</td>
-                        <td>${ing2.nutrition.carbs}g</td>
-                        <td>${(comp.comparison.carbs_diff).toFixed(1)}g</td>
-                    </tr>
+                    ${createNutrientRow('🔥 Calories', 
+                        ing1.nutrition.calories, 
+                        ing2.nutrition.calories, 
+                        comp.comparison.calories_diff, 
+                        ' kcal', 
+                        true)}
+                    
+                    ${createNutrientRow('💪 Protéines', 
+                        ing1.nutrition.protein, 
+                        ing2.nutrition.protein, 
+                        comp.comparison.protein_diff, 
+                        'g', 
+                        false)}
+                    
+                    ${createNutrientRow('🍳 Graisses', 
+                        ing1.nutrition.fat, 
+                        ing2.nutrition.fat, 
+                        comp.comparison.fat_diff, 
+                        'g', 
+                        true)}
+                    
+                    ${createNutrientRow('🌾 Glucides', 
+                        ing1.nutrition.carbs, 
+                        ing2.nutrition.carbs, 
+                        comp.comparison.carbs_diff, 
+                        'g', 
+                        false)}
                 </tbody>
             </table>
         </div>
-        <div class="alert alert-success mt-3 rounded-3">
-            <strong>✅ Plus sain: ${healthier}</strong>
+
+        <!-- ===== RÉSULTAT FINAL ===== -->
+        <div style="margin-top: 1.5rem;">
+            <div style="background: linear-gradient(135deg, ${isIng1Healthier ? '#27ae60' : '#f39c12'} 0%, ${isIng1Healthier ? '#229954' : '#e67e22'} 100%); 
+                       color: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="mb-1" style="font-size: 1.2rem; font-weight: 700;">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            Plus sain : <strong>${healthier}</strong>
+                        </h5>
+                        <small style="opacity: 0.9;">
+                            ${isIng1Healthier ? 
+                                `${ing1.name} est meilleur pour la santé. ${ing2.name} contient plus de calories.` :
+                                `${ing2.name} est meilleur pour la santé. ${ing1.name} contient plus de calories.`}
+                        </small>
+                    </div>
+                    <div style="font-size: 3rem; opacity: 0.3;">
+                        ⭐
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== CONSEILS NUTRITIONNELS ===== -->
+        <div class="row mt-4 g-3">
+            <div class="col-md-6">
+                <div style="background: rgba(39, 174, 96, 0.1); border-left: 4px solid #27ae60; padding: 1rem; border-radius: 0.5rem;">
+                    <h6 style="color: #27ae60; font-weight: 700; margin-bottom: 0.5rem;">
+                        <i class="bi bi-lightbulb me-1"></i>
+                        Conseil ${ing1.name}
+                    </h6>
+                    <small style="color: #2c3e50;">
+                        ${ing1.nutrition.calories > 300 ? '⚠️ Aliment calorique, à consommer avec modération.' : 
+                          ing1.nutrition.protein > 20 ? '✅ Riche en protéines, idéal post-entraînement.' :
+                          '✅ Bon choix pour une alimentation équilibrée.'}
+                    </small>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div style="background: rgba(243, 156, 18, 0.1); border-left: 4px solid #f39c12; padding: 1rem; border-radius: 0.5rem;">
+                    <h6 style="color: #f39c12; font-weight: 700; margin-bottom: 0.5rem;">
+                        <i class="bi bi-lightbulb me-1"></i>
+                        Conseil ${ing2.name}
+                    </h6>
+                    <small style="color: #2c3e50;">
+                        ${ing2.nutrition.calories > 300 ? '⚠️ Aliment calorique, à consommer avec modération.' : 
+                          ing2.nutrition.protein > 20 ? '✅ Riche en protéines, idéal post-entraînement.' :
+                          '✅ Bon choix pour une alimentation équilibrée.'}
+                    </small>
+                </div>
+            </div>
         </div>
     `;
 
-    document.getElementById('comparisonResult').innerHTML = html;
-    document.getElementById('comparisonResult').classList.remove('d-none');
+    const resultDiv = document.getElementById('comparisonResult');
+    if (resultDiv) {
+        resultDiv.innerHTML = html;
+        resultDiv.classList.remove('d-none');
+        
+        // Animation d'apparition
+        resultDiv.style.animation = 'slideIn 0.4s ease';
+    }
 }
+
+// ===== STYLES CSS À AJOUTER =====
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    #comparisonResult {
+        animation: slideIn 0.4s ease;
+    }
+
+    #comparisonResult table tbody tr:hover {
+        background-color: #f8faf9 !important;
+    }
+
+    #comparisonResult .table td {
+        vertical-align: middle;
+    }
+
+    @media (max-width: 768px) {
+        #comparisonResult {
+            padding: 1rem !important;
+        }
+
+        #comparisonResult .table {
+            font-size: 0.9rem;
+        }
+    }
+`;
+document.head.appendChild(style);
 </script>
 
 {% endblock %}

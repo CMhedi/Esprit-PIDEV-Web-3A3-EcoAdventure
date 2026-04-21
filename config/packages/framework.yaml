@@ -17,6 +17,11 @@ framework:
     php_errors:
         log: true
 
+    # ✅ AJOUTEZ CECI :
+    asset_mapper:
+        paths:
+            - public/assets/
+
 when@test:
     framework:
         test: true
