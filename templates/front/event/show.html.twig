@@ -149,6 +149,27 @@
                         </div>
                     </div>
                 </div>
+                
+                {% if weather_ai_alert %}
+                <div class="alert alert-{{ weather_ai_alert.type }} border-0 rounded-4 shadow-sm position-relative overflow-hidden mb-5">
+                    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.4) 100%); z-index: 0;"></div>
+                    <div class="d-flex align-items-center position-relative" style="z-index: 1;">
+                        <div class="bg-{{ weather_ai_alert.type }} text-white rounded-circle d-flex justify-content-center align-items-center me-3 flex-shrink-0" style="width: 50px; height: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                            <i class="bi bi-robot fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-{{ weather_ai_alert.type }} mb-1">
+                                {% if weather_ai_alert.type == 'success' %}
+                                    <i class="bi bi-check-circle-fill me-1"></i>Avis Météo Favorable (IA)
+                                {% else %}
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Alerte Météo Intelligente
+                                {% endif %}
+                            </h6>
+                            <p class="mb-0 text-dark fw-bold" style="font-size: 0.95rem;">{{ weather_ai_alert.message }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </section>
             {% endif %}
 

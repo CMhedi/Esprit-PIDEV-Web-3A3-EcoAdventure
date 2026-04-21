@@ -146,4 +146,57 @@ class AiEventOptimizerService
             ];
         }
     }
+
+    /**
+     * Cas 5 : Widget Météo - Alerte automatique de l'IA (Maintenant pour toute condition météo)
+     */
+    public function getWeatherAiAlert(array $weather, Evenement $evenement): array
+    {
+        $icon = substr($weather['icon'], 0, 2);
+        $temp = $weather['temp'];
+        
+        // Liste des codes icon OpenWeatherMap associés au "mauvais temps"
+        $badIcons = ['09', '10', '11', '13', '50'];
+        $isExtremeTemp = ($temp > 35 || $temp < 5);
+        $isBadWeather = in_array($icon, $badIcons) || $isExtremeTemp;
+        
+        $type = $isBadWeather ? 'danger' : 'success';
+
+        try {
+            $response = $this->client->request('POST', 'http://127.0.0.1:5000/api/ai/weather-alert', [
+                'json' => [
+                    'weather_desc' => $weather['description'],
+                    'temp' => $temp,
+                    'is_bad_weather' => $isBadWeather,
+                    'event_title' => $evenement->getTitre()
+                ],
+                'timeout' => 2
+            ]);
+
+            $data = $response->toArray();
+            return ['type' => $type, 'message' => $data['alert_message']];
+
+        } catch (\Exception $e) {
+            $this->logger->warning('API Python IA injoignable pour Weather Alert. Fallback Mocked.');
+            
+            // Simulation d'une IA d'assistance sécuritaire (Good & Bad Weather)
+            if ($temp > 35) {
+                return ['type' => 'danger', 'message' => 'Alerte Canicule (' . $temp . '°C) détectée ! Pensez à prévoir minimum 2L d\'eau et une protection UV maximale pour "' . $evenement->getTitre() . '".'];
+            } elseif ($temp < 5) {
+                return ['type' => 'danger', 'message' => 'Températures glaciales prévues (' . $temp . '°C). Le système des 3 couches thermiques est impératif pour cette aventure.'];
+            } elseif (in_array($icon, ['09', '10', '11'])) {
+                return ['type' => 'danger', 'message' => 'Fortes précipitations (' . $weather['description'] . '). Un équipement 100% imperméable est obligatoire pour garantir votre confort et sécurité.'];
+            } elseif ($icon === '13') {
+                return ['type' => 'danger', 'message' => 'Risque d\'enneigement. Assurez-vous d\'avoir les bottes et crampons nécessaires avant le départ.'];
+            } elseif (in_array($icon, ['01', '02', '03'])) {
+                return ['type' => 'success', 'message' => 'Conditions météo idéales (' . $weather['description'] . ' à ' . $temp . '°C) ! Une météo parfaite pour profiter pleinement de "' . $evenement->getTitre() . '".'];
+            } else {
+                if ($isBadWeather) {
+                    return ['type' => 'warning', 'message' => 'Conditions de visibilité réduites (' . $weather['description'] . '). Restez groupés avec votre guide EcoAdventure.'];
+                } else {
+                    return ['type' => 'success', 'message' => 'Conditions météo très favorables pour l\'activité en plein air. Bonne aventure avec EcoAdventure !'];
+                }
+            }
+        }
+    }
 }

@@ -114,6 +114,12 @@ class EventFrontController extends AbstractController
 
         // Fetch Weather
         $weather = $weatherService->getWeather($evenement->getLieu());
+        
+        // IA Alerte Météo
+        $weatherAiAlert = null;
+        if ($weather) {
+            $weatherAiAlert = $aiOptimizer->getWeatherAiAlert($weather, $evenement);
+        }
 
         // 🤖 Récupérer une recommandation IA si l'événement est complet
         $aiRecommendation = null;
@@ -126,6 +132,7 @@ class EventFrontController extends AbstractController
             'places_dispo' => $placesDispo,
             'attente_dispo' => $attenteDispo,
             'weather' => $weather,
+            'weather_ai_alert' => $weatherAiAlert,
             'promo_threshold' => $pricingService->getPromoThreshold(),
             'promo_discount' => $pricingService->getPromoDiscount(),
             'ai_recommendation' => $aiRecommendation

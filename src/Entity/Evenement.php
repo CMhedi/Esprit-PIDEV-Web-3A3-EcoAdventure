@@ -105,6 +105,17 @@ class Evenement
         return $this;
     }
 
+    public function getLimiteAttente(): int
+    {
+        return $this->limite_attente;
+    }
+
+    public function setLimiteAttente(int $limite): self
+    {
+        $this->limite_attente = $limite;
+        return $this;
+    }
+
     public function getNbPlaces(): ?int { return $this->nb_places; }
     public function setNbPlaces(int $nb): self { $this->nb_places = $nb; return $this; }
 
