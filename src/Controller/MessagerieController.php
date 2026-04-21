@@ -13,6 +13,7 @@ use App\Repository\MessageRepository;
 use App\Repository\UserAppRepository;
 use App\Service\ContentModerationService;
 use App\Service\GeminiGifChatService;
+use App\Service\MessagingAccessManager;
 use App\Service\TextCorrectionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Cache\CacheItemPoolInterface;
@@ -30,6 +31,11 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class MessagerieController extends AbstractController
 {
+    public function __construct(
+        private readonly MessagingAccessManager $messagingAccessManager
+    ) {
+    }
+
     #[Route('/messagerie/open', name: 'app_messagerie_open')]
     public function openCurrentSessionMessenger(
         Request $request
@@ -113,11 +119,12 @@ class MessagerieController extends AbstractController
         $user->setLast_seen(new \DateTime());
         $em->persist($user);
 
+        $allUsers = $userAppRepo->findAll();
         $conversations = $conversationRepo->findConversationsByUser($user);
-        $tousLesUsers = $userAppRepo->findAll();
+        $tousLesUsers = $allUsers;
         $presenceByUserId = [];
         $presenceThreshold = new \DateTime('-5 minutes');
-        foreach ($tousLesUsers as $candidateUser) {
+        foreach ($allUsers as $candidateUser) {
             $lastSeen = $candidateUser->getLast_seen();
             $presenceByUserId[$candidateUser->getId_user()] = [
                 'online' => $lastSeen !== null && $lastSeen >= $presenceThreshold,
@@ -156,6 +163,7 @@ class MessagerieController extends AbstractController
             'current_conv' => $currentConv,
             'messages' => $messages,
             'current_conv_last_contact' => $currentConvLastContact,
+            'current_conv_call_blocked' => $this->messagingAccessManager->isConversationCallBlocked($currentConv),
             'tous_les_users' => $tousLesUsers,
             'presence_by_user_id' => $presenceByUserId,
             'unread_by_conversation_id' => $unreadByConversationId,
@@ -170,6 +178,34 @@ class MessagerieController extends AbstractController
             'jitsi_popup_mode' => (string) ($_ENV['JITSI_POPUP_MODE'] ?? 'auto'),
             'call_provider' => (string) ($_ENV['CALL_PROVIDER'] ?? 'webrtc'),
             'webrtc_ice_servers' => $this->buildWebRtcIceServers(),
+        ]);
+    }
+
+    #[Route('/messagerie/{id_user}/{id_conversation}/call-window', name: 'app_messagerie_call_window', requirements: ['id_user' => '\d+', 'id_conversation' => '\d+'])]
+    public function callWindow(
+        int $id_user,
+        int $id_conversation,
+        UserAppRepository $userAppRepo,
+        ConversationRepository $conversationRepo
+    ): Response {
+        $authenticatedUser = $this->getUser();
+        if ($authenticatedUser instanceof UserApp) {
+            $id_user = $authenticatedUser->getId_user();
+        }
+
+        $user = $userAppRepo->find($id_user);
+        $conversation = $conversationRepo->find($id_conversation);
+
+        if (!$user || !$conversation || !$this->canAccessConversation($user, $conversation)) {
+            return $this->redirectToRoute('app_messagerie', ['id_user' => $id_user]);
+        }
+
+        return $this->render('front/call_window.html.twig', [
+            'mon_id' => $user->getId_user(),
+            'conversation' => $conversation,
+            'call_blocked' => $this->messagingAccessManager->isConversationCallBlocked($conversation),
+            'current_user_display_name' => $this->buildUserDisplayName($user),
+            'call_target_display_name' => $this->resolveConversationDisplayName($conversation, $user),
         ]);
     }
 
@@ -839,11 +875,20 @@ public function callLog(
     Request $request,
     EntityManagerInterface $em
 ): Response {
+    $authenticatedUser = $this->getUser();
+    if ($authenticatedUser instanceof UserApp) {
+        $id_user = $authenticatedUser->getId_user();
+    }
+
     $user = $em->getRepository(UserApp::class)->find($id_user);
     $conversation = $em->getRepository(Conversation::class)->find($id_conversation);
 
-    if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
+    if (!$user || !$this->canAccessConversation($user, $conversation)) {
         throw $this->createNotFoundException();
+    }
+
+    if ($this->messagingAccessManager->isConversationCallBlocked($conversation)) {
+        return $this->json(['error' => 'Les appels audio et video sont bloques pour cette conversation.'], 403);
     }
 
     // Get call details from the request (sent by front‑end)
@@ -919,6 +964,10 @@ public function callLog(
 
             if (!$sender || !$conversation || !$this->canAccessConversation($sender, $conversation)) {
                 return $this->json(['error' => 'Unauthorized'], 403);
+            }
+
+            if ($this->messagingAccessManager->isConversationCallBlocked($conversation)) {
+                return $this->json(['error' => 'Les appels audio et video sont bloques pour cette conversation.'], 403);
             }
 
             $payload = json_decode($request->getContent(), true);
@@ -1020,6 +1069,10 @@ public function callLog(
 
             if (!$user || !$conversation || !$this->canAccessConversation($user, $conversation)) {
                 return $this->json(['error' => 'Unauthorized'], 403);
+            }
+
+            if ($this->messagingAccessManager->isConversationCallBlocked($conversation)) {
+                return $this->json(['success' => true, 'events' => []]);
             }
 
             $after = (int) $request->query->get('after', 0);
@@ -1166,48 +1219,127 @@ public function callLog(
         return ['❤️', '👍', '😂', '😮', '😢', '🔥'];
     }
 
-    private function normalizeEmojiPickerCategory(string $groupName): string
+    /**
+     * @return array<string, array<int, string>>
+     */
+    private function getEmojiAliasMap(): array
     {
-        $group = mb_strtolower(trim($groupName));
-        if ($group === '') {
-            return 'symbols';
+        return [
+            '😀' => ['happy', 'smile', 'joy'],
+            '😁' => ['happy', 'smile', 'grin'],
+            '😄' => ['happy', 'smile', 'laugh'],
+            '😅' => ['nervous laugh', 'relief', 'laugh'],
+            '😆' => ['haha', 'hahaha', 'lol', 'laugh', 'funny', 'grinning squinting'],
+            '😂' => ['haha', 'hahaha', 'lol', 'lmao', 'mdr', 'laugh', 'funny', 'tears of joy', 'crying laughing'],
+            '🤣' => ['haha', 'hahaha', 'lol', 'lmao', 'mdr', 'laugh', 'funny', 'rolling laughing', 'rolling on the floor laughing'],
+            '🙂' => ['smile', 'calm', 'friendly'],
+            '😊' => ['smile', 'blush', 'cute', 'happy'],
+            '😍' => ['love', 'heart eyes', 'crush'],
+            '😘' => ['love', 'kiss', 'heart'],
+            '😎' => ['cool', 'sunglasses', 'swag'],
+            '😮' => ['wow', 'surprise', 'shocked'],
+            '😢' => ['sad', 'cry', 'tear'],
+            '😭' => ['sad', 'cry', 'crying', 'tears'],
+            '😡' => ['angry', 'mad', 'rage'],
+            '🤔' => ['think', 'thinking', 'hmm'],
+            '😹' => ['haha', 'hahaha', 'lol', 'funny', 'laughing cat'],
+            '👍' => ['ok', 'yes', 'like', 'thumbs up'],
+            '👏' => ['clap', 'bravo', 'applause'],
+            '🔥' => ['fire', 'lit', 'hot'],
+            '❤️' => ['love', 'heart'],
+            '💔' => ['broken heart', 'sad love'],
+            '🥳' => ['party', 'celebration', 'birthday'],
+            '🤩' => ['wow', 'star eyes', 'excited'],
+        ];
+    }
+
+    private function normalizeEmojiSearchText(string $text): string
+    {
+        $normalized = mb_strtolower(trim($text));
+        $normalized = preg_replace('/[^\p{L}\p{N}\s]+/u', ' ', $normalized) ?? $normalized;
+        $normalized = preg_replace('/\s+/u', ' ', trim($normalized)) ?? $normalized;
+
+        return $normalized;
+    }
+
+    /**
+     * @return string[]
+     */
+    private function buildEmojiSearchNeedles(string $query): array
+    {
+        $needles = [];
+        $normalized = $this->normalizeEmojiSearchText($query);
+        if ($normalized !== '') {
+            $needles[] = $normalized;
         }
 
-        if (str_contains($group, 'smileys')) {
-            return 'smileys';
-        }
-        if (str_contains($group, 'people') || str_contains($group, 'body') || str_contains($group, 'component')) {
-            return 'people';
-        }
-        if (str_contains($group, 'animal') || str_contains($group, 'nature')) {
-            return 'nature';
-        }
-        if (str_contains($group, 'food') || str_contains($group, 'drink')) {
-            return 'food';
-        }
-        if (str_contains($group, 'travel') || str_contains($group, 'place')) {
-            return 'travel';
-        }
-        if (str_contains($group, 'activit')) {
-            return 'activities';
-        }
-        if (str_contains($group, 'object')) {
-            return 'objects';
+        $compact = str_replace(' ', '', $normalized);
+        if ($compact !== '') {
+            $needles[] = $compact;
         }
 
-        return 'symbols';
+        if (
+            $compact !== ''
+            && (
+                str_contains($compact, 'haha')
+                || str_contains($compact, 'hehe')
+                || in_array($compact, ['lol', 'lmao', 'mdr', 'funny'], true)
+                || preg_match('/^(ha){2,}$/u', $compact) === 1
+            )
+        ) {
+            array_push($needles, 'haha', 'hahaha', 'lol', 'lmao', 'mdr', 'laugh', 'laughing', 'funny', 'tears of joy', 'rolling laughing');
+        }
+
+        if ($compact !== '' && (str_contains($compact, 'love') || str_contains($compact, 'heart'))) {
+            array_push($needles, 'love', 'heart', 'heart eyes');
+        }
+
+        if ($compact !== '' && (str_contains($compact, 'sad') || str_contains($compact, 'cry'))) {
+            array_push($needles, 'sad', 'cry', 'crying', 'tears');
+        }
+
+        return array_values(array_unique(array_filter($needles, static fn (string $needle): bool => $needle !== '')));
+    }
+
+    /**
+     * @param array{emoji?:string,name?:string,group?:string,sub_group?:string} $item
+     * @param string[] $needles
+     */
+    private function emojiItemMatchesQuery(array $item, array $needles, string $rawQuery): bool
+    {
+        if ($needles === [] && trim($rawQuery) === '') {
+            return true;
+        }
+
+        $emoji = (string) ($item['emoji'] ?? '');
+        $aliases = $this->getEmojiAliasMap()[$emoji] ?? [];
+        $haystack = $this->normalizeEmojiSearchText(implode(' ', array_filter([
+            (string) ($item['name'] ?? ''),
+            (string) ($item['group'] ?? ''),
+            (string) ($item['sub_group'] ?? ''),
+            implode(' ', $aliases),
+        ])));
+
+        foreach ($needles as $needle) {
+            if ($needle !== '' && str_contains($haystack, $needle)) {
+                return true;
+            }
+        }
+
+        return $emoji !== '' && str_contains($emoji, $rawQuery);
     }
 
     /**
      * @return array<int, array{emoji:string,name:string,group:string,sub_group:string}>
      */
-    private function getEmojiPickerItems(string $query = '', int $limit = 1000, ?HttpClientInterface $httpClient = null): array
+    private function getEmojiPickerItems(string $query = '', int $limit = 20000, ?HttpClientInterface $httpClient = null): array
     {
+        $limit = max(1, min($limit, 20000));
+        $needles = $this->buildEmojiSearchNeedles($query);
+        $apiItems = [];
+
         if ($httpClient) {
             $apiItems = $this->fetchEmojiPickerItemsFromApi($httpClient, $query, $limit);
-            if ($apiItems !== []) {
-                return $apiItems;
-            }
         }
 
         static $catalog = null;
@@ -1226,14 +1358,15 @@ public function callLog(
                         continue;
                     }
 
+                    $aliases = $this->getEmojiAliasMap()[$char] ?? [];
                     $catalog[] = [
                         'emoji' => $char,
-                        'name' => sprintf('U+%04X', $cp),
+                        'name' => $aliases !== [] ? implode(' ', $aliases) : sprintf('U+%04X', $cp),
                         'group' => $cp >= 0x1F600 && $cp <= 0x1F64F ? 'smileys & emotion' : 'symbols',
                         'sub_group' => '',
                     ];
 
-                    if (count($catalog) >= 10000) {
+                    if (count($catalog) >= 20000) {
                         break 2;
                     }
                 }
@@ -1242,15 +1375,37 @@ public function callLog(
 
         $items = $catalog;
         if ($query !== '') {
-            $needle = mb_strtolower($query);
             $items = array_values(array_filter(
                 $items,
-                static fn (array $item): bool => str_contains(mb_strtolower((string) ($item['name'] ?? '')), $needle)
-                    || str_contains((string) ($item['emoji'] ?? ''), $query)
+                fn (array $item): bool => $this->emojiItemMatchesQuery($item, $needles, $query)
             ));
         }
 
-        return array_slice($items, 0, max(1, min($limit, 10000)));
+        if ($apiItems === []) {
+            return array_slice($items, 0, $limit);
+        }
+
+        $merged = [];
+        $seen = [];
+        foreach (array_merge($apiItems, $items) as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $emoji = (string) ($item['emoji'] ?? '');
+            if ($emoji === '' || isset($seen[$emoji])) {
+                continue;
+            }
+
+            $seen[$emoji] = true;
+            $merged[] = $item;
+
+            if (count($merged) >= $limit) {
+                break;
+            }
+        }
+
+        return $merged;
     }
 
     /**
@@ -1272,7 +1427,7 @@ public function callLog(
                 return [];
             }
 
-            $needle = mb_strtolower($query);
+            $needles = $this->buildEmojiSearchNeedles($query);
             $items = [];
             foreach ($rows as $row) {
                 if (!is_array($row)) {
@@ -1293,7 +1448,12 @@ public function callLog(
                 $subGroup = trim((string) ($row['subGroup'] ?? $groupRaw));
                 $label = trim($name . ' ' . $group . ' ' . $subGroup);
 
-                if ($needle !== '' && !str_contains(mb_strtolower($label), $needle) && !str_contains($emoji, $query)) {
+                if (!$this->emojiItemMatchesQuery([
+                    'emoji' => $emoji,
+                    'name' => $label !== '' ? $label : 'emoji',
+                    'group' => $group,
+                    'sub_group' => $subGroup,
+                ], $needles, $query)) {
                     continue;
                 }
 
@@ -1338,7 +1498,7 @@ public function callLog(
         }
 
         $conversation = $message->getConversation();
-        if (!$conversation || !$conversation->getParticipants()->contains($user)) {
+        if (!$this->canAccessConversation($user, $conversation)) {
             return $this->json(['error' => 'Action non autorisee.'], 403);
         }
 
@@ -1389,7 +1549,7 @@ public function callLog(
         try {
             $user = $userRepo->find($id_user);
             $conversation = $conversationRepo->find($id_conversation);
-            if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
+            if (!$user || !$this->canAccessConversation($user, $conversation)) {
                 return $this->json(['error' => 'Not found'], 404);
             }
 
@@ -1422,7 +1582,7 @@ public function callLog(
         $user = $userRepo->find($id_user);
         $conversation = $conversationRepo->find($id_conversation);
 
-        if (!$user || !$conversation || !$conversation->getParticipants()->contains($user)) {
+        if (!$user || !$this->canAccessConversation($user, $conversation)) {
             return $this->json(['error' => 'Not found'], 404);
         }
 
@@ -1591,15 +1751,7 @@ public function callLog(
     ): Response
     {
         $query = trim((string) $request->query->get('query', ''));
-        $category = trim((string) $request->query->get('category', 'smileys'));
-        $limit = max(1, min((int) $request->query->get('limit', 1000), 10000));
-        $sourceLimit = $limit;
-
-        // When filtering by category without a query, fetch a larger source set first,
-        // then apply category and final limit to avoid empty lists caused by early slicing.
-        if ($query === '' && $category !== '' && $category !== 'recent') {
-            $sourceLimit = min(10000, max($limit, 2500));
-        }
+        $limit = max(1, min((int) $request->query->get('limit', 20000), 20000));
 
         if ($query !== '' && $moderationService->containsProhibitedContent($query)) {
             return $this->json([
@@ -1621,7 +1773,7 @@ public function callLog(
             'sexual',
         ];
 
-        $items = $this->getEmojiPickerItems($query, $sourceLimit, $httpClient);
+        $items = $this->getEmojiPickerItems($query, $limit, $httpClient);
         $items = array_values(array_filter($items, function (array $item) use ($moderationService, $blockedMeaningHints): bool {
             $name = trim((string) ($item['name'] ?? ''));
             if ($name === '') {
@@ -1642,19 +1794,12 @@ public function callLog(
             return true;
         }));
 
-        if ($query === '' && $category !== '' && $category !== 'recent') {
-            $items = array_values(array_filter($items, function (array $item) use ($category): bool {
-                return $this->normalizeEmojiPickerCategory((string) ($item['group'] ?? '')) === $category;
-            }));
-        }
-
         $items = array_slice($items, 0, $limit);
 
         return $this->json([
             'success' => true,
             'blocked' => false,
             'items' => $items,
-            'category' => $category,
             'reaction_items' => $this->getSupportedReactionEmojis(),
         ]);
     }
@@ -1835,6 +1980,34 @@ public function callLog(
         }
 
         return $user->getRole() === RoleUser::ADMIN;
+    }
+
+    private function buildUserDisplayName(?UserApp $user): string
+    {
+        if (!$user instanceof UserApp) {
+            return 'Utilisateur';
+        }
+
+        $fullName = trim(sprintf('%s %s', (string) $user->getNom(), (string) $user->getPrenom()));
+
+        return $fullName !== '' ? $fullName : ((string) $user->getEmail() ?: 'Utilisateur');
+    }
+
+    private function resolveConversationDisplayName(Conversation $conversation, UserApp $currentUser): string
+    {
+        if ($conversation->isEst_groupe()) {
+            return trim((string) $conversation->getTitre()) ?: 'Conversation de groupe';
+        }
+
+        foreach ($conversation->getParticipants() as $participant) {
+            if ($participant->getId_user() === $currentUser->getId_user()) {
+                continue;
+            }
+
+            return $this->buildUserDisplayName($participant);
+        }
+
+        return trim((string) $conversation->getTitre()) ?: 'Contact';
     }
 
     private function normalizeMirroredLatinText(string $text): string

@@ -1147,6 +1147,10 @@
                             <small class="text-danger fw-semibold">
                                 <i class="bi bi-slash-circle me-1"></i>Conversation privee bloquee
                             </small>
+                        {% elseif current_conv and not current_conv.est_groupe and current_conv_call_blocked %}
+                            <small class="text-danger fw-semibold">
+                                <i class="bi bi-telephone-x me-1"></i>Appels audio et video bloques pour ce contact
+                            </small>
                         {% elseif current_conv and not current_conv.est_groupe and headerPresence %}
                             <small class="{{ headerPresence.online ? 'text-success' : 'text-muted' }} fw-semibold">
                                 <span class="online-dot {{ headerPresence.online ? '' : 'offline' }}"></span>
@@ -1157,11 +1161,17 @@
                         {% endif %}
                     </div>
                 </div>
-                {% set canStartDirectCall = current_conv and not current_conv.est_groupe and not current_conv.privateBlocked and headerOtherId %}
+                {% set canStartDirectCall = current_conv and not current_conv.est_groupe and not current_conv.privateBlocked and not current_conv_call_blocked and headerOtherId %}
                 <div class="text-muted fs-5 d-flex align-items-center">
                     <i class="bi bi-robot me-3" id="headerGeminiBtn" data-ai-open-url="{{ path('app_messagerie_ai_open', {'id_user': mon_id}) }}" style="cursor:pointer" title="Assistant IA"></i>
-                    <i class="bi bi-telephone-fill me-3 call-control {{ canStartDirectCall ? '' : 'opacity-50 disabled' }}" id="startAudioCallBtn" data-call-type="audio" data-target-user-id="{{ headerOtherId ?: '' }}" data-target-name="{{ headerDisplayTitle }}" title="Appel audio"></i>
-                    <i class="bi bi-camera-video-fill me-3 call-control {{ canStartDirectCall ? '' : 'opacity-50 disabled' }}" id="startVideoCallBtn" data-call-type="video" data-target-user-id="{{ headerOtherId ?: '' }}" data-target-name="{{ headerDisplayTitle }}" title="Appel video"></i>
+                    {% if not current_conv_call_blocked %}
+                        <i class="bi bi-telephone-fill me-3 call-control {{ canStartDirectCall ? '' : 'opacity-50 disabled' }}" id="startAudioCallBtn" data-call-type="audio" data-target-user-id="{{ headerOtherId ?: '' }}" data-target-name="{{ headerDisplayTitle }}" title="Appel audio"></i>
+                        <i class="bi bi-camera-video-fill me-3 call-control {{ canStartDirectCall ? '' : 'opacity-50 disabled' }}" id="startVideoCallBtn" data-call-type="video" data-target-user-id="{{ headerOtherId ?: '' }}" data-target-name="{{ headerDisplayTitle }}" title="Appel video"></i>
+                    {% else %}
+                        <span class="small text-danger fw-semibold me-3">
+                            <i class="bi bi-telephone-x me-1"></i>Appels bloques
+                        </span>
+                    {% endif %}
                     <i class="bi bi-info-circle-fill text-info" style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#infoModal"></i>
                 </div>
             </div>
@@ -1175,6 +1185,7 @@
                  data-current-title="{{ current_conv ? current_conv.titre : '' }}"
                  data-call-target-user-id="{{ headerOtherId ?: '' }}"
                  data-call-target-name="{{ headerDisplayTitle }}"
+                 data-call-blocked="{{ current_conv_call_blocked ? '1' : '0' }}"
                  data-jitsi-domain="{{ jitsi_domain }}"
                  data-jitsi-room-prefix="{{ jitsi_room_prefix }}"
                  data-jitsi-popup-mode="{{ jitsi_popup_mode|default('auto') }}"
@@ -1461,20 +1472,9 @@
                             <input type="text" id="emojiSearchInput" class="emoji-picker-search" placeholder="Rechercher un emoji...">
                             <i class="bi bi-search emoji-picker-search-icon"></i>
                         </div>
-                        <div id="emojiPickerMeta" class="emoji-picker-meta">Smileys et emotions</div>
+                        <div id="emojiPickerMeta" class="emoji-picker-meta">Tous les emojis</div>
                         <div id="emojiPickerGrid" class="emoji-picker-grid">
                             <div class="emoji-picker-loading">Chargement...</div>
-                        </div>
-                        <div id="emojiCategoryNav" class="emoji-category-nav" aria-label="Categories emoji">
-                            <button type="button" class="emoji-category-btn" data-emoji-category="recent" title="Recents"><i class="bi bi-clock-history"></i></button>
-                            <button type="button" class="emoji-category-btn active" data-emoji-category="smileys" title="Smileys"><i class="bi bi-emoji-smile"></i></button>
-                            <button type="button" class="emoji-category-btn" data-emoji-category="people" title="Personnes"><i class="bi bi-person-standing"></i></button>
-                            <button type="button" class="emoji-category-btn" data-emoji-category="nature" title="Nature"><i class="bi bi-tree"></i></button>
-                            <button type="button" class="emoji-category-btn" data-emoji-category="food" title="Nourriture"><i class="bi bi-cup-hot"></i></button>
-                            <button type="button" class="emoji-category-btn" data-emoji-category="travel" title="Voyage"><i class="bi bi-car-front"></i></button>
-                            <button type="button" class="emoji-category-btn" data-emoji-category="activities" title="Activites"><i class="bi bi-controller"></i></button>
-                            <button type="button" class="emoji-category-btn" data-emoji-category="objects" title="Objets"><i class="bi bi-lightbulb"></i></button>
-                            <button type="button" class="emoji-category-btn" data-emoji-category="symbols" title="Symboles"><i class="bi bi-heart"></i></button>
                         </div>
                     </div>
                 </div>
@@ -1942,7 +1942,6 @@ const emojiPickerPanel = document.getElementById('emojiPickerPanel');
 const emojiSearchInput = document.getElementById('emojiSearchInput');
 const emojiPickerGrid = document.getElementById('emojiPickerGrid');
 const emojiPickerMeta = document.getElementById('emojiPickerMeta');
-const emojiCategoryNav = document.getElementById('emojiCategoryNav');
 const attachVocaleBtn = document.getElementById('attachVocaleBtn');
 const correctTextBtn = document.getElementById('correctTextBtn');
 const geminiAskBtn = document.getElementById('geminiAskBtn');
@@ -2018,6 +2017,7 @@ const isPublicJitsiDomain = ['meet.jit.si', '8x8.vc'].includes(jitsiDomain);
 let jitsiApi = null;
 let jitsiScriptPromise = null;
 let callMeetingWindow = null;
+let callViewWindow = null;
 let callMeetingWindowMonitor = null;
 let peerConnection = null;
 let localCallStream = null;
@@ -2578,7 +2578,7 @@ async function ensureWebRtcPeerConnection(callSession) {
 }
 
 function syncCallActionButtons() {
-    const shouldDisable = startingOutgoingCall || acceptingIncomingCall || !!incomingCallInvite || !!activeCallSession;
+    const shouldDisable = startingOutgoingCall || acceptingIncomingCall || !!incomingCallInvite || !!activeCallSession || isCurrentConversationCallBlocked();
 
     [startAudioCallBtn, startVideoCallBtn].forEach((button) => {
         if (!button) {
@@ -2586,7 +2586,8 @@ function syncCallActionButtons() {
         }
 
         button.disabled = shouldDisable;
-        button.classList.toggle('opacity-75', shouldDisable);
+        button.classList.toggle('disabled', shouldDisable);
+        button.classList.toggle('opacity-50', shouldDisable);
     });
 }
 
@@ -2770,6 +2771,16 @@ function getCurrentCallTargetName() {
         || 'Contact';
 }
 
+function isCurrentConversationCallBlocked() {
+    return (callMessagesContainer?.getAttribute('data-call-blocked') || '0') === '1';
+}
+
+function buildCallWindowUrl(callSession = activeCallSession) {
+    const userId = getCurrentUserId();
+    const conversationId = callSession?.conversationId || getCurrentConversationId();
+    return userId && conversationId ? `/messagerie/${userId}/${conversationId}/call-window` : '';
+}
+
 function buildCallSignalUrl() {
     const userId = getCurrentUserId();
     const conversationId = getCurrentConversationId();
@@ -2781,6 +2792,98 @@ function buildCallLogUrl() {
     const conversationId = getCurrentConversationId();
     return userId && conversationId ? `/call-log/${userId}/${conversationId}` : '';
 }
+
+function getActiveCallSnapshot() {
+    if (!activeCallSession) {
+        return { hasActiveCall: false };
+    }
+
+    const statusText = (floatingCallStatusText?.textContent || jitsiCallStatusText?.textContent || 'Connexion en cours...').trim();
+    const timerText = (floatingCallTimerText?.textContent || jitsiCallTimerText?.textContent || '00:00').trim();
+
+    return {
+        hasActiveCall: true,
+        sessionId: activeCallSession.sessionId,
+        conversationId: activeCallSession.conversationId || getCurrentConversationId(),
+        callType: activeCallSession.callType || 'audio',
+        targetName: activeCallSession.targetName || getCurrentCallTargetName(),
+        currentUserDisplayName,
+        statusText,
+        timerText,
+        roomName: activeCallSession.roomName || '',
+        isCaller: !!activeCallSession.isCaller,
+        localAudioMuted,
+        localVideoMuted,
+        remoteParticipantConnected,
+        localStream: localCallStream || null,
+        remoteStream: remoteCallStream || null,
+    };
+}
+
+function openStandaloneCallWindow() {
+    if (!activeCallSession) {
+        return false;
+    }
+
+    const callWindowUrl = buildCallWindowUrl(activeCallSession);
+    if (!callWindowUrl) {
+        showComposerError('Impossible d ouvrir la page d appel pour cette conversation.');
+        return false;
+    }
+
+    const features = 'popup=yes,width=1400,height=860,left=80,top=60,resizable=yes,scrollbars=yes';
+
+    try {
+        if (callViewWindow && !callViewWindow.closed) {
+            if (callViewWindow.location.href !== callWindowUrl) {
+                callViewWindow.location.href = callWindowUrl;
+            }
+            callViewWindow.focus();
+        } else {
+            callViewWindow = window.open(callWindowUrl, `ecoadventure-call-view-${activeCallSession.sessionId || 'live'}`, features);
+            if (!callViewWindow) {
+                showComposerError('Autorisez les popups pour ouvrir la page d appel.');
+                return false;
+            }
+            callViewWindow.focus();
+        }
+
+        minimizingCurrentCall = true;
+        exitBrowserFullscreenForCall();
+        if (jitsiCallModalEl?.classList.contains('show')) {
+            jitsiCallModal?.hide();
+        } else {
+            syncFloatingCallWidget(true);
+        }
+
+        return true;
+    } catch (error) {
+        showComposerError('Impossible d ouvrir la page d appel.');
+        return false;
+    }
+}
+
+window.__ecoAdventureCallBridge = {
+    getSnapshot() {
+        return getActiveCallSnapshot();
+    },
+    async toggleAudio() {
+        await toggleLocalAudioForCall();
+        return getActiveCallSnapshot();
+    },
+    async toggleVideo() {
+        await toggleLocalVideoForCall();
+        return getActiveCallSnapshot();
+    },
+    async hangup() {
+        await requestLocalHangup();
+        return getActiveCallSnapshot();
+    },
+    focusMessenger() {
+        window.focus();
+        return getActiveCallSnapshot();
+    },
+};
 
 function buildCallSessionId() {
     if (window.crypto?.randomUUID) {
@@ -3402,6 +3505,12 @@ async function startOutgoingJitsiCall(callType) {
         return;
     }
 
+    if (isCurrentConversationCallBlocked()) {
+        showComposerError('Les appels audio et video sont bloques pour ce contact.');
+        syncFloatingCallWidget(false);
+        return;
+    }
+
     startingOutgoingCall = true;
     syncCallActionButtons();
 
@@ -3447,6 +3556,7 @@ async function startOutgoingJitsiCall(callType) {
     activeCallSession = {
         sessionId,
         roomName,
+        conversationId: Number(conversationId),
         callType,
         targetUserId,
         targetName,
@@ -3528,6 +3638,7 @@ async function acceptIncomingJitsiCall() {
     activeCallSession = {
         sessionId: acceptedInvite.sessionId,
         roomName: acceptedInvite.roomName,
+        conversationId: Number(acceptedInvite.conversationId || getCurrentConversationId() || 0),
         callType: acceptedInvite.callType,
         targetUserId: acceptedInvite.callerUserId,
         targetName: acceptedInvite.callerName,
@@ -3650,6 +3761,7 @@ async function handleCallSignalEvent(event) {
             incomingCallInvite = {
                 sessionId: event.session_id,
                 roomName: event.payload?.room_name || buildJitsiRoomName(getCurrentConversationId(), event.session_id),
+                conversationId: Number(event.conversation_id || getCurrentConversationId() || 0),
                 callType: event.call_type || 'audio',
                 callerUserId: Number(event.sender_user_id || 0),
                 callerName: event.payload?.caller_name || 'Contact',
@@ -3922,11 +4034,8 @@ async function restoreJitsiCallWindow() {
 
     minimizingCurrentCall = false;
     syncFloatingCallWidget(false);
-    if (isWebRtcCallMode()) {
-        pendingCallFullscreen = true;
-        setCallFullscreenLayout(true);
-        await requestBrowserFullscreenForCall();
-    }
+    pendingCallFullscreen = false;
+    setCallFullscreenLayout(false);
     jitsiCallModal?.show();
 }
 
@@ -4117,85 +4226,6 @@ function appendEmojiToMessage(emojiValue) {
 const emojiPickerCache = new Map();
 let emojiSearchTimeout = null;
 let emojiRequestToken = 0;
-let activeEmojiCategory = 'smileys';
-const emojiMetaLabels = {
-    recent: 'Recents',
-    smileys: 'Smileys et emotions',
-    people: 'Personnes et gestes',
-    nature: 'Animaux et nature',
-    food: 'Nourriture et boisson',
-    travel: 'Voyage et lieux',
-    activities: 'Activites',
-    objects: 'Objets',
-    symbols: 'Symboles et drapeaux',
-};
-
-function normalizeEmojiCategory(groupName = '') {
-    const group = String(groupName || '').trim().toLowerCase();
-    if (!group) {
-        return 'symbols';
-    }
-    if (group.includes('smileys')) return 'smileys';
-    if (group.includes('people') || group.includes('body') || group.includes('component')) return 'people';
-    if (group.includes('animal') || group.includes('nature')) return 'nature';
-    if (group.includes('food') || group.includes('drink')) return 'food';
-    if (group.includes('travel') || group.includes('place')) return 'travel';
-    if (group.includes('activit')) return 'activities';
-    if (group.includes('object')) return 'objects';
-    if (group.includes('symbol') || group.includes('flag')) return 'symbols';
-    return 'symbols';
-}
-
-function loadRecentEmojiItems() {
-    try {
-        const raw = window.localStorage.getItem('messagerie_recent_emojis');
-        const parsed = JSON.parse(raw || '[]');
-        return Array.isArray(parsed) ? parsed.filter(item => item && item.emoji) : [];
-    } catch (error) {
-        return [];
-    }
-}
-
-function saveRecentEmojiItem(item) {
-    if (!item?.emoji) {
-        return;
-    }
-
-    const existing = loadRecentEmojiItems().filter((entry) => entry.emoji !== item.emoji);
-    existing.unshift({
-        emoji: item.emoji,
-        name: item.name || 'emoji',
-        group: item.group || '',
-        sub_group: item.sub_group || '',
-    });
-
-    try {
-        window.localStorage.setItem('messagerie_recent_emojis', JSON.stringify(existing.slice(0, 32)));
-    } catch (error) {
-        // ignore storage issues
-    }
-}
-
-function updateEmojiCategoryUi() {
-    emojiCategoryNav?.querySelectorAll('[data-emoji-category]').forEach((button) => {
-        button.classList.toggle('active', button.getAttribute('data-emoji-category') === activeEmojiCategory);
-    });
-}
-
-function filterEmojiItems(items, query = '') {
-    const normalizedItems = Array.isArray(items) ? items : [];
-    const safeQuery = String(query || '').trim();
-
-    if (safeQuery) {
-        return normalizedItems;
-    }
-
-    if (activeEmojiCategory === 'recent') {
-        return loadRecentEmojiItems();
-    }
-
-    return normalizedItems.filter((item) => normalizeEmojiCategory(item?.group || '') === activeEmojiCategory);
-}
 
 function renderEmojiResults(items, {
     query = '',
@@ -4206,7 +4236,7 @@ function renderEmojiResults(items, {
         return;
     }
 
-    const normalizedItems = filterEmojiItems(items, query);
+    const normalizedItems = Array.isArray(items) ? items : [];
     const safeQuery = query.trim();
 
     if (blocked) {
@@ -4218,14 +4248,14 @@ function renderEmojiResults(items, {
     if (!normalizedItems.length) {
         emojiPickerMeta.textContent = safeQuery
             ? `Aucun emoji trouve pour "${safeQuery}".`
-            : (activeEmojiCategory === 'recent' ? 'Aucun emoji recent.' : `Aucun emoji dans ${emojiMetaLabels[activeEmojiCategory] || 'cette categorie'}.`);
+            : 'Aucun emoji disponible.';
         emojiPickerGrid.innerHTML = '<div class="emoji-picker-empty">Aucun emoji.</div>';
         return;
     }
 
     emojiPickerMeta.textContent = safeQuery
         ? `${normalizedItems.length} emoji(s) pour "${safeQuery}".`
-        : `${emojiMetaLabels[activeEmojiCategory] || 'Emojis'} · ${normalizedItems.length}`;
+        : `Tous les emojis · ${normalizedItems.length}`;
 
     emojiPickerGrid.innerHTML = normalizedItems.map((item) => {
         const emojiValue = escapeHtml(item?.emoji || '');
@@ -4242,9 +4272,8 @@ async function loadEmojiResults(query = '') {
     }
 
     const normalizedQuery = String(query || '').trim();
-    const limit = 10000;
-    const requestedCategory = normalizedQuery ? 'all' : activeEmojiCategory;
-    const cacheKey = `emoji::${requestedCategory}::${normalizedQuery.toLowerCase()}`;
+    const limit = 20000;
+    const cacheKey = `emoji::${normalizedQuery.toLowerCase()}`;
     if (emojiPickerCache.has(cacheKey)) {
         renderEmojiResults(emojiPickerCache.get(cacheKey)?.items || [], emojiPickerCache.get(cacheKey) || {});
         return;
@@ -4257,7 +4286,7 @@ async function loadEmojiResults(query = '') {
 
     const requestToken = ++emojiRequestToken;
     try {
-        const response = await fetch(`/messagerie/emoji/list?query=${encodeURIComponent(normalizedQuery)}&category=${encodeURIComponent(requestedCategory)}&limit=${limit}`, {
+        const response = await fetch(`/messagerie/emoji/list?query=${encodeURIComponent(normalizedQuery)}&limit=${limit}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
 
@@ -4662,7 +4691,7 @@ restoreJitsiCallBtn?.addEventListener('click', function () {
     restoreJitsiCallWindow();
 });
 floatingOpenCallBtn?.addEventListener('click', function () {
-    restoreJitsiCallWindow();
+    openStandaloneCallWindow();
 });
 floatingCallWidget?.addEventListener('click', function (event) {
     if (!activeCallSession) {
@@ -4721,7 +4750,6 @@ composerEmojiBtn?.addEventListener('click', function (event) {
     event.stopPropagation();
     emojiPickerPanel?.classList.toggle('d-none');
     if (emojiPickerPanel && !emojiPickerPanel.classList.contains('d-none')) {
-        updateEmojiCategoryUi();
         emojiSearchInput?.focus();
         loadEmojiResults(emojiSearchInput?.value || '');
     }
@@ -4732,12 +4760,6 @@ emojiPickerPanel?.addEventListener('click', function (event) {
     if (!target) return;
     const emojiValue = target.getAttribute('data-emoji-item');
     if (!emojiValue) return;
-    saveRecentEmojiItem({
-        emoji: emojiValue,
-        name: target.getAttribute('data-emoji-name') || 'emoji',
-        group: target.getAttribute('data-emoji-group') || '',
-        sub_group: target.getAttribute('data-emoji-sub-group') || '',
-    });
     appendEmojiToMessage(emojiValue);
     emojiPickerPanel.classList.add('d-none');
 });
@@ -4745,20 +4767,6 @@ emojiPickerPanel?.addEventListener('click', function (event) {
 emojiSearchInput?.addEventListener('input', function () {
     clearTimeout(emojiSearchTimeout);
     emojiSearchTimeout = setTimeout(() => loadEmojiResults(emojiSearchInput.value || ''), 220);
-});
-
-emojiCategoryNav?.addEventListener('click', function (event) {
-    const button = event.target.closest('[data-emoji-category]');
-    if (!button) return;
-    activeEmojiCategory = button.getAttribute('data-emoji-category') || 'recent';
-    updateEmojiCategoryUi();
-    const cacheKey = `emoji::${(emojiSearchInput?.value || '').trim().toLowerCase()}`;
-    const cachedPayload = emojiPickerCache.get(cacheKey);
-    if (cachedPayload) {
-        renderEmojiResults(cachedPayload.items || [], cachedPayload);
-        return;
-    }
-    loadEmojiResults(emojiSearchInput?.value || '');
 });
 
 document.addEventListener('click', function (event) {
