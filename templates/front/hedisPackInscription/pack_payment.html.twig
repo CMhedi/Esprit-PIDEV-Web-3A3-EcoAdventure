@@ -77,9 +77,16 @@
                                 <span>Paiement confirme</span>
                                 <strong>Votre inscription est validee</strong>
                             </div>
-                            <a href="{{ path('app_pack_inscription_receipt', {'id': inscription.idInscription}) }}" class="btn btn-dark rounded-pill px-4">
-                                Recu PDF
-                            </a>
+                            <div class="d-flex gap-2 flex-wrap justify-content-end">
+                                {% if ticketUrl %}
+                                    <a href="{{ ticketUrl }}" class="btn btn-outline-light rounded-pill px-4">
+                                        Ticket mobile
+                                    </a>
+                                {% endif %}
+                                <a href="{{ path('app_pack_inscription_receipt', {'id': inscription.idInscription}) }}" class="btn btn-dark rounded-pill px-4">
+                                    Recu PDF
+                                </a>
+                            </div>
                         </div>
                     {% endif %}
                 </div>
@@ -350,6 +357,11 @@
                         </a>
 
                         {% if inscription.isPaid %}
+                            {% if ticketUrl %}
+                                <a href="{{ ticketUrl }}" class="btn btn-eco-outline rounded-pill px-4 py-3">
+                                    Ouvrir le ticket mobile
+                                </a>
+                            {% endif %}
                             <a href="{{ path('app_pack_inscription_receipt', {'id': inscription.idInscription}) }}" class="btn btn-dark rounded-pill px-4 py-3">
                                 Telecharger le recu PDF
                             </a>

@@ -1,0 +1,365 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ticket mobile | EcoAdventure{% endblock %}
+
+{% block stylesheets %}
+    <style>
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(245, 158, 11, 0.28), transparent 24rem),
+                radial-gradient(circle at bottom right, rgba(47, 133, 90, 0.20), transparent 22rem),
+                linear-gradient(180deg, #f5faf6 0%, #eef5ef 100%);
+        }
+
+        .mobile-ticket-page {
+            min-height: calc(100vh - 160px);
+            padding: 2.5rem 0 4rem;
+        }
+
+        .mobile-ticket-card {
+            position: relative;
+            max-width: 860px;
+            margin: 0 auto;
+            border: 1px solid rgba(23, 61, 42, 0.10);
+            border-radius: 2rem;
+            overflow: hidden;
+            background: #ffffff;
+            box-shadow: 0 30px 90px rgba(23, 61, 42, 0.14);
+        }
+
+        .mobile-ticket-card::before,
+        .mobile-ticket-card::after {
+            content: "";
+            position: absolute;
+            top: 54%;
+            width: 1.75rem;
+            height: 1.75rem;
+            background: #eef5ef;
+            border-radius: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        .mobile-ticket-card::before {
+            left: -0.875rem;
+        }
+
+        .mobile-ticket-card::after {
+            right: -0.875rem;
+        }
+
+        .ticket-head {
+            background: linear-gradient(135deg, #173d2a 0%, #2f855a 58%, #f59e0b 100%);
+            color: #fff;
+            padding: 2rem;
+        }
+
+        .ticket-head-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .ticket-kicker {
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            font-size: 0.72rem;
+            opacity: 0.84;
+        }
+
+        .ticket-pack {
+            font-size: clamp(1.85rem, 4vw, 2.7rem);
+            font-weight: 800;
+            line-height: 1.06;
+            margin: 0.7rem 0 0.65rem;
+        }
+
+        .ticket-copy {
+            max-width: 36rem;
+            margin: 0;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .ticket-pill {
+            white-space: nowrap;
+            border-radius: 999px;
+            padding: 0.8rem 1rem;
+            background: rgba(255, 255, 255, 0.14);
+            font-size: 0.84rem;
+            letter-spacing: 0.08em;
+        }
+
+        .ticket-holder {
+            margin-top: 1.4rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem 1.25rem;
+            align-items: center;
+        }
+
+        .ticket-holder-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .ticket-holder-meta {
+            color: rgba(255, 255, 255, 0.84);
+        }
+
+        .ticket-body {
+            padding: 1.6rem;
+        }
+
+        .ticket-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.4rem;
+        }
+
+        .ticket-stat {
+            border-radius: 1.3rem;
+            border: 1px solid #e5ece6;
+            background: #f8fbf8;
+            padding: 1rem 1.05rem;
+        }
+
+        .ticket-stat span {
+            display: block;
+            font-size: 0.74rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .ticket-stat strong {
+            display: block;
+            font-size: 1.85rem;
+            line-height: 1;
+            color: #173d2a;
+        }
+
+        .ticket-stat small {
+            display: block;
+            margin-top: 0.45rem;
+            color: #6b7280;
+        }
+
+        .ticket-content {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 280px;
+            gap: 1rem;
+            align-items: start;
+        }
+
+        .ticket-panel,
+        .ticket-code-panel {
+            border: 1px solid #e5e7eb;
+            border-radius: 1.4rem;
+            background: #ffffff;
+            padding: 1.15rem;
+        }
+
+        .ticket-panel h2,
+        .ticket-code-panel h2 {
+            font-size: 1rem;
+            margin: 0 0 1rem;
+            color: #111827;
+        }
+
+        .ticket-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.85rem 1rem;
+        }
+
+        .ticket-item span {
+            display: block;
+            font-size: 0.73rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6b7280;
+            margin-bottom: 0.35rem;
+        }
+
+        .ticket-item strong,
+        .ticket-item p {
+            margin: 0;
+            color: #111827;
+        }
+
+        .ticket-item p {
+            color: #4b5563;
+        }
+
+        .ticket-code-panel {
+            text-align: center;
+            background: linear-gradient(180deg, #fbfdfb 0%, #f6faf7 100%);
+        }
+
+        .ticket-code-panel img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .ticket-qr {
+            width: 180px;
+            margin-bottom: 0.8rem;
+        }
+
+        .ticket-barcode {
+            margin-top: 0.45rem;
+        }
+
+        .ticket-scan-note {
+            margin: 0.9rem 0 0;
+            color: #4b5563;
+            font-size: 0.92rem;
+        }
+
+        .ticket-footer {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px dashed #d1d5db;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        @media (max-width: 767.98px) {
+            .mobile-ticket-page {
+                padding: 1.25rem 0 2.5rem;
+            }
+
+            .ticket-head,
+            .ticket-body {
+                padding: 1.2rem;
+            }
+
+            .ticket-head-top,
+            .ticket-footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .ticket-stats,
+            .ticket-content,
+            .ticket-list {
+                grid-template-columns: 1fr;
+            }
+
+            .ticket-pill {
+                white-space: normal;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <section class="mobile-ticket-page">
+        <div class="container">
+            <div class="mobile-ticket-card">
+                <div class="ticket-head">
+                    <div class="ticket-head-top">
+                        <div>
+                            <div class="ticket-kicker">Ticket mobile EcoAdventure</div>
+                            <h1 class="ticket-pack">{{ packName }}</h1>
+                            <p class="ticket-copy">Ticket ouvert depuis le QR code. Il affiche le participant, le numero d'inscription et l'avancement des inscriptions du pack.</p>
+                        </div>
+                        <div class="ticket-pill">Inscription #{{ inscription.idInscription }}</div>
+                    </div>
+
+                    <div class="ticket-holder">
+                        <div class="ticket-holder-name">{{ holderFirstName }} {{ holderLastName }}</div>
+                        <div class="ticket-holder-meta">
+                            <div>{{ holderPhone }}</div>
+                            <div>{{ holderEmail }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ticket-body">
+                    <div class="ticket-stats">
+                        <div class="ticket-stat">
+                            <span>Inscrits confirmes</span>
+                            <strong>{{ confirmedCount }}</strong>
+                            <small>Participants valides sur le pack</small>
+                        </div>
+                        <div class="ticket-stat">
+                            <span>Restants</span>
+                            <strong>{{ remainingCount is not null ? remainingCount : '-' }}</strong>
+                            <small>{% if capacity is not null %}Quota actuel : {{ capacity }}{% else %}Quota non renseigne{% endif %}</small>
+                        </div>
+                        <div class="ticket-stat">
+                            <span>Montant</span>
+                            <strong>{{ inscription.montantTotal|number_format(2, '.', ' ') }}</strong>
+                            <small>DT</small>
+                        </div>
+                    </div>
+
+                    <div class="ticket-content">
+                        <div class="ticket-panel">
+                            <h2>Details du ticket</h2>
+
+                            <div class="ticket-list">
+                                <div class="ticket-item">
+                                    <span>Prenom</span>
+                                    <strong>{{ holderFirstName }}</strong>
+                                </div>
+                                <div class="ticket-item">
+                                    <span>Nom</span>
+                                    <strong>{{ holderLastName }}</strong>
+                                </div>
+                                <div class="ticket-item">
+                                    <span>Numero</span>
+                                    <strong>{{ holderPhone }}</strong>
+                                </div>
+                                <div class="ticket-item">
+                                    <span>Pack</span>
+                                    <strong>{{ packName }}</strong>
+                                </div>
+                                <div class="ticket-item">
+                                    <span>Statut dossier</span>
+                                    <strong>{{ inscription.statutInscr ? inscription.statutInscr.value : 'INCONNU' }}</strong>
+                                </div>
+                                <div class="ticket-item">
+                                    <span>Paiement</span>
+                                    <strong>{{ inscription.paymentStatus ? inscription.paymentStatus|replace({'_': ' '})|upper : 'CONFIRME' }}</strong>
+                                </div>
+                                <div class="ticket-item">
+                                    <span>Reference paiement</span>
+                                    <p>{{ inscription.paymentReference ?: 'Validation interne' }}</p>
+                                </div>
+                                <div class="ticket-item">
+                                    <span>Date d'inscription</span>
+                                    <p>{{ inscription.dateInscription ? inscription.dateInscription|date('d/m/Y H:i') : '-' }}</p>
+                                </div>
+                            </div>
+
+                            <div class="ticket-footer">
+                                <div class="btn btn-dark rounded-pill px-4">Ticket valide</div>
+                                <div class="text-muted small">Code-barres : {{ barcodeValue }}</div>
+                            </div>
+                        </div>
+
+                        <div class="ticket-code-panel">
+                            <h2>Scan / controle</h2>
+                            <img src="data:image/svg+xml;base64,{{ qrCode }}" alt="QR Code ticket" class="ticket-qr">
+                            <img src="data:image/svg+xml;base64,{{ barcodeSvg }}" alt="Code-barres ticket" class="ticket-barcode">
+                            <p class="ticket-scan-note">
+                                QR pour ouvrir ce ticket.<br>
+                                Code-barres pour l'identifiant {{ barcodeValue }}.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

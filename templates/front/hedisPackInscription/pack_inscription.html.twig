@@ -220,6 +220,11 @@
                             </a>
 
                             {% if latestInscription and latestInscription.isPaid %}
+                                {% if latestTicketUrl %}
+                                    <a href="{{ latestTicketUrl }}" class="btn btn-eco-outline rounded-pill px-4 py-3">
+                                        Ouvrir le ticket mobile
+                                    </a>
+                                {% endif %}
                                 <a href="{{ path('app_pack_inscription_receipt', {'id': latestInscription.idInscription}) }}" class="btn btn-dark rounded-pill px-4 py-3">
                                     Telecharger le recu PDF
                                 </a>

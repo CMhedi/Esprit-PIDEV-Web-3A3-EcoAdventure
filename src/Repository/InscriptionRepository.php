@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Inscription;
+use App\Enum\StatutInscription;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -75,5 +76,22 @@ class InscriptionRepository extends ServiceEntityRepository
             ->setParameter('paymentReference', $paymentReference)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    public function countConfirmedForPack(int $packId): int
+    {
+        return (int) $this->createQueryBuilder('i')
+            ->select('COUNT(i.id_inscription)')
+            ->leftJoin('i.pack', 'p')
+            ->andWhere('p.id_pack = :packId')
+            ->andWhere('(i.statut_inscr IN (:statuses) OR i.payment_status = :paidStatus)')
+            ->setParameter('packId', $packId)
+            ->setParameter('statuses', [
+                StatutInscription::CONFIRMEE->value,
+                StatutInscription::VALIDEE->value,
+            ])
+            ->setParameter('paidStatus', Inscription::PAYMENT_STATUS_PAID)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }

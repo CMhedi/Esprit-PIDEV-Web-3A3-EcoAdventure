@@ -16,6 +16,7 @@ use App\Repository\PackRepository;
 use App\Service\AI\AiPackExplainer;
 use App\Service\Context\HolidayContextProvider;
 use App\Service\Inscription\PackInscriptionReceiptBuilder;
+use App\Service\Inscription\PackInscriptionTicketFactory;
 use App\Service\Pack\PackInsightAssembler;
 use App\Service\Pack\PackRecommendationEngine;
 use App\Service\Payment\KonnectPaymentGateway;
@@ -45,6 +46,7 @@ final class PackInscriptionController extends AbstractController
         PackFeedbackTracker $packFeedbackTracker,
         HolidayContextProvider $holidayContextProvider,
         AiPackExplainer $aiPackExplainer,
+        PackInscriptionTicketFactory $ticketFactory,
     ): Response {
         $user = $this->getAuthenticatedUser();
         $pack = $this->findPackOrFail($id, $entityManager);
@@ -100,6 +102,7 @@ final class PackInscriptionController extends AbstractController
             'packExplanation' => $packExplanation,
             'holidayContext' => $holidayContext,
             'latestInscription' => $latestInscription,
+            'latestTicketUrl' => $this->isTicketAvailable($latestInscription) ? $ticketFactory->generatePublicTicketUrl($latestInscription) : null,
         ]);
     }
 
@@ -108,6 +111,7 @@ final class PackInscriptionController extends AbstractController
         int $id,
         InscriptionRepository $inscriptionRepository,
         StripeCheckoutGateway $stripeCheckoutGateway,
+        PackInscriptionTicketFactory $ticketFactory,
     ): Response {
         $user = $this->getAuthenticatedUser();
         $inscription = $this->findInscriptionOrFail($id, $inscriptionRepository);
@@ -133,6 +137,7 @@ final class PackInscriptionController extends AbstractController
             'stripeCurrency' => $stripeCheckoutGateway->getCurrency(),
             'demoCardPaymentEnabled' => $this->isDemoCardPaymentEnabled(),
             'cardOcrApiUrl' => $this->getParameter('card_ocr_api_url'),
+            'ticketUrl' => $this->isTicketAvailable($inscription) ? $ticketFactory->generatePublicTicketUrl($inscription) : null,
         ]);
     }
 
@@ -506,6 +511,25 @@ final class PackInscriptionController extends AbstractController
         return $response;
     }
 
+    #[Route('/inscriptions/{id}/ticket/{token}', name: 'app_pack_inscription_ticket', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function publicTicket(
+        int $id,
+        string $token,
+        InscriptionRepository $inscriptionRepository,
+        PackInscriptionTicketFactory $ticketFactory,
+    ): Response {
+        $inscription = $inscriptionRepository->find($id);
+        if (!$inscription || !$this->isTicketAvailable($inscription)) {
+            throw $this->createNotFoundException('Ticket introuvable.');
+        }
+
+        if (!$ticketFactory->isValidPublicToken($inscription, $token)) {
+            throw $this->createAccessDeniedException('Ticket invalide.');
+        }
+
+        return $this->render('front/hedisPackInscription/ticket.html.twig', $ticketFactory->buildViewData($inscription));
+    }
+
     private function getAuthenticatedUser(): UserApp
     {
         $this->denyAccessUnlessGranted('ROLE_USER');
@@ -612,5 +636,14 @@ final class PackInscriptionController extends AbstractController
         }
 
         return 'Carte';
+    }
+
+    private function isTicketAvailable(?Inscription $inscription): bool
+    {
+        if (!$inscription) {
+            return false;
+        }
+
+        return $inscription->isPaid() || in_array($inscription->getStatutInscr(), [StatutInscription::CONFIRMEE, StatutInscription::VALIDEE], true);
     }
 }

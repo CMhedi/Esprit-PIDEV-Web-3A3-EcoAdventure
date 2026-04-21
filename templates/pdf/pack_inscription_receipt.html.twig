@@ -2,69 +2,133 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Confirmation d'inscription pack</title>
+    <title>Ticket d'inscription pack</title>
     <style>
-        body { font-family: DejaVu Sans, sans-serif; color: #374151; font-size: 12px; }
-        .shell { padding: 22px; }
-        .hero { background: linear-gradient(135deg, #204d2a, #2f855a, #f28c28); color: #fff; border-radius: 18px; padding: 24px; }
-        .hero h1 { margin: 0 0 8px; font-size: 24px; }
-        .hero p { margin: 0; opacity: 0.95; }
-        .grid { margin-top: 20px; width: 100%; border-collapse: separate; border-spacing: 12px; }
-        .card { border: 1px solid #dbe4dd; border-radius: 16px; padding: 16px; background: #fff; vertical-align: top; }
-        .label { font-size: 10px; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
-        .value { font-size: 16px; font-weight: 700; color: #1f2937; }
-        .muted { color: #6b7280; font-size: 11px; margin-top: 8px; }
-        .section { margin-top: 20px; border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; }
-        .section h2 { margin: 0 0 12px; font-size: 16px; }
-        .qr { text-align: center; margin-top: 16px; }
-        .qr img { width: 150px; height: 150px; }
-        .footer { margin-top: 20px; font-size: 10px; color: #6b7280; text-align: center; }
+        body { margin: 0; padding: 22px; background: #f4f8f3; font-family: DejaVu Sans, sans-serif; color: #1f2937; font-size: 12px; }
+        .ticket-shell { border: 1px solid #d8e3d3; border-radius: 28px; overflow: hidden; background: #ffffff; }
+        .hero { background: linear-gradient(135deg, #173d2a 0%, #2f855a 55%, #f59e0b 100%); color: #ffffff; padding: 28px; }
+        .hero-top { width: 100%; }
+        .hero-left { width: 64%; vertical-align: top; }
+        .hero-right { width: 36%; text-align: right; vertical-align: top; }
+        .eyebrow { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; opacity: 0.85; }
+        .hero h1 { margin: 10px 0 8px; font-size: 28px; }
+        .hero p { margin: 0; font-size: 12px; line-height: 1.5; opacity: 0.95; }
+        .ticket-number { display: inline-block; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,0.18); font-size: 11px; letter-spacing: 1px; }
+        .hero-name { margin-top: 24px; font-size: 22px; font-weight: 700; }
+        .hero-phone { margin-top: 6px; font-size: 12px; opacity: 0.9; }
+        .body { padding: 22px; }
+        .stats { width: 100%; border-collapse: separate; border-spacing: 12px; margin-bottom: 18px; }
+        .stat-card { background: #f8faf8; border: 1px solid #e4ece2; border-radius: 18px; padding: 16px; }
+        .stat-label { font-size: 10px; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
+        .stat-value { font-size: 22px; font-weight: 700; color: #173d2a; }
+        .stat-note { font-size: 11px; color: #6b7280; margin-top: 4px; }
+        .details { width: 100%; border-collapse: separate; border-spacing: 12px; }
+        .detail-card { width: 50%; border: 1px solid #e5e7eb; border-radius: 18px; padding: 16px; vertical-align: top; }
+        .detail-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #111827; }
+        .detail-row { margin-bottom: 12px; }
+        .label { font-size: 10px; text-transform: uppercase; color: #6b7280; margin-bottom: 4px; }
+        .value { font-size: 15px; font-weight: 700; color: #1f2937; }
+        .muted { color: #6b7280; font-size: 11px; margin-top: 4px; }
+        .visual-card { border: 1px solid #e5e7eb; border-radius: 18px; padding: 16px; background: #fcfdfc; }
+        .visual-card img { display: block; margin: 0 auto; }
+        .qr-image { width: 170px; height: 170px; }
+        .barcode-image { width: 100%; height: auto; margin-top: 12px; }
+        .scan-note { margin-top: 12px; font-size: 11px; line-height: 1.5; color: #4b5563; text-align: center; }
+        .footer { padding: 0 22px 22px; text-align: center; font-size: 10px; color: #6b7280; }
     </style>
 </head>
 <body>
-<div class="shell">
+<div class="ticket-shell">
     <div class="hero">
-        <h1>Confirmation d'inscription EcoAdventure</h1>
-        <p>Document genere automatiquement pour le module Pack / Inscription.</p>
+        <table class="hero-top">
+            <tr>
+                <td class="hero-left">
+                    <div class="eyebrow">Ticket mobile + recu PDF</div>
+                    <h1>{{ packName }}</h1>
+                    <p>Scannez le QR code pour ouvrir le ticket sur telephone avec les informations du participant et l'etat des inscriptions.</p>
+                    <div class="hero-name">{{ holderFirstName }} {{ holderLastName }}</div>
+                    <div class="hero-phone">Telephone : {{ holderPhone }}</div>
+                </td>
+                <td class="hero-right">
+                    <div class="ticket-number">INSCRIPTION #{{ inscription.idInscription }}</div>
+                </td>
+            </tr>
+        </table>
     </div>
 
-    <table class="grid">
-        <tr>
-            <td class="card">
-                <div class="label">Utilisateur</div>
-                <div class="value">{{ inscription.nomUser ?: (inscription.userApp ? inscription.userApp.prenom ~ ' ' ~ inscription.userApp.nom : 'Utilisateur') }}</div>
-                <div class="muted">{{ inscription.userApp ? inscription.userApp.email : 'Compte non lie' }}</div>
-            </td>
-            <td class="card">
-                <div class="label">Pack</div>
-                <div class="value">{{ inscription.nomPack ?: (inscription.pack ? inscription.pack.nom : 'Pack') }}</div>
-                <div class="muted">Montant total: {{ inscription.montantTotal }} DT</div>
-            </td>
-        </tr>
-        <tr>
-            <td class="card">
-                <div class="label">Statut</div>
-                <div class="value">{{ inscription.statutInscr ? inscription.statutInscr.value : 'INCONNU' }}</div>
-                <div class="muted">Cree le {{ inscription.dateInscription ? inscription.dateInscription|date('d/m/Y H:i') : '-' }}</div>
-            </td>
-            <td class="card">
-                <div class="label">Paiement</div>
-                <div class="value">{{ inscription.paymentStatus ? inscription.paymentStatus|replace({'_': ' '})|upper : 'CONFIRME' }}</div>
-                <div class="muted">{{ inscription.paymentReference ? 'Ref: ' ~ inscription.paymentReference : 'Validation interne' }}</div>
-            </td>
-        </tr>
-    </table>
+    <div class="body">
+        <table class="stats">
+            <tr>
+                <td class="stat-card">
+                    <div class="stat-label">Inscrits confirmes</div>
+                    <div class="stat-value">{{ confirmedCount }}</div>
+                    <div class="stat-note">Participants valides sur ce pack</div>
+                </td>
+                <td class="stat-card">
+                    <div class="stat-label">Restants</div>
+                    <div class="stat-value">{{ remainingCount is not null ? remainingCount : '-' }}</div>
+                    <div class="stat-note">
+                        {% if capacity is not null %}
+                            Quota actuel : {{ capacity }}
+                        {% else %}
+                            Quota non renseigne
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="stat-card">
+                    <div class="stat-label">Montant</div>
+                    <div class="stat-value">{{ inscription.montantTotal|number_format(2, '.', ' ') }}</div>
+                    <div class="stat-note">DT</div>
+                </td>
+            </tr>
+        </table>
 
-    <div class="section">
-        <h2>Tracabilite</h2>
-        <p>
-            Ce recu confirme une inscription payee ou validee, avec un QR code calcule a partir
-            des donnees de l'inscription et de la reference paiement.
-        </p>
+        <table class="details">
+            <tr>
+                <td class="detail-card">
+                    <div class="detail-title">Informations participant</div>
 
-        <div class="qr">
-            <img src="data:image/svg+xml;base64,{{ qrCode }}" alt="QR Code">
-        </div>
+                    <div class="detail-row">
+                        <div class="label">Prenom</div>
+                        <div class="value">{{ holderFirstName }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Nom</div>
+                        <div class="value">{{ holderLastName }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Telephone</div>
+                        <div class="value">{{ holderPhone }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Email</div>
+                        <div class="muted">{{ holderEmail }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Paiement</div>
+                        <div class="value">{{ inscription.paymentStatus ? inscription.paymentStatus|replace({'_': ' '})|upper : 'CONFIRME' }}</div>
+                        <div class="muted">{{ inscription.paymentReference ? 'Reference : ' ~ inscription.paymentReference : 'Validation interne' }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Date</div>
+                        <div class="muted">{{ inscription.dateInscription ? inscription.dateInscription|date('d/m/Y H:i') : '-' }}</div>
+                    </div>
+                </td>
+
+                <td class="detail-card">
+                    <div class="visual-card">
+                        <div class="detail-title" style="text-align: center;">Acces mobile</div>
+                        <img src="data:image/svg+xml;base64,{{ qrCode }}" alt="QR Code du ticket" class="qr-image">
+                        <img src="data:image/svg+xml;base64,{{ barcodeSvg }}" alt="Code-barres du ticket" class="barcode-image">
+                        <div class="scan-note">
+                            QR : ouvre le ticket sur mobile.<br>
+                            Code-barres : {{ barcodeValue }}<br>
+                            Lien : {{ mobileTicketUrl }}
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
     <div class="footer">
