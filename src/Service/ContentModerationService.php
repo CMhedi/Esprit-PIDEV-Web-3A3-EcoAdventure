@@ -31,6 +31,20 @@ class ContentModerationService
         return $this->detectWithManualLists($normalized);
     }
 
+    /**
+     * Manual bad-word matching only (no remote API call).
+     * Useful for high-volume checks like filtering emoji labels.
+     */
+    public function containsManualProhibitedContent(string $text): bool
+    {
+        $normalized = trim($text);
+        if ($normalized === '') {
+            return false;
+        }
+
+        return $this->detectWithManualLists($normalized);
+    }
+
     private function detectWithProfanityDev(string $text): bool
     {
         try {

@@ -2,6 +2,8 @@
 
 {% block title %}Messagerie - EcoAdventure{% endblock %}
 
+{% set defaultAvatarAsset = asset('image/profil.png') %}
+
 {% block css %}
 <style>
    .chat-container {
@@ -160,6 +162,497 @@
         background: #0d6efd;
         color: #fff;
     }
+    .call-control {
+        cursor: pointer;
+        transition: transform 0.2s ease, opacity 0.2s ease, color 0.2s ease;
+    }
+    .call-control:hover {
+        color: #198754;
+        transform: translateY(-1px);
+    }
+    .call-control.disabled,
+    .call-control.opacity-50 {
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .call-invite-banner {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border-color: #d9e6f7 !important;
+        box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
+    }
+    .call-invite-pulse {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        background: #198754;
+        box-shadow: 0 0 0 rgba(25, 135, 84, 0.4);
+        animation: callPulse 1.4s infinite;
+    }
+    .call-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.8rem;
+        border-radius: 999px;
+        background: #eef5ff;
+        color: #0f172a;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .call-meeting-shell {
+        background: #0f172a;
+        border-radius: 18px;
+        overflow: hidden;
+        min-height: 68vh;
+        position: relative;
+    }
+    .call-meeting-shell.fullscreen-layout {
+        min-height: calc(100vh - 145px);
+        border-radius: 0;
+    }
+    .call-meeting-container {
+        width: 100%;
+        height: 68vh;
+    }
+    .call-meeting-shell.fullscreen-layout .call-meeting-container,
+    .call-meeting-shell.fullscreen-layout .call-stage {
+        height: calc(100vh - 145px);
+    }
+    .call-stage {
+        position: relative;
+        width: 100%;
+        height: 68vh;
+        background: linear-gradient(180deg, #020617 0%, #111827 100%);
+        overflow: hidden;
+    }
+    .call-remote-pane {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background: #020617;
+    }
+    .call-remote-media,
+    .call-local-media {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        background: #020617;
+    }
+    .call-remote-placeholder,
+    .call-local-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 0.75rem;
+        color: #e2e8f0;
+    }
+    .call-avatar-circle {
+        width: 160px;
+        height: 160px;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.2);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+    }
+    .call-local-preview {
+        position: absolute;
+        right: 1rem;
+        bottom: 1rem;
+        width: min(280px, 34vw);
+        height: min(190px, 26vh);
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.34);
+        background: rgba(15, 23, 42, 0.95);
+        z-index: 2;
+    }
+    .call-stage.has-both-video .call-local-preview {
+        border-color: rgba(16, 185, 129, 0.38);
+        box-shadow: 0 20px 48px rgba(15, 23, 42, 0.42);
+    }
+    .call-local-preview .call-local-media,
+    .call-remote-pane .call-remote-media {
+        display: block;
+    }
+    .call-local-preview .call-local-media,
+    .call-local-preview .call-local-placeholder,
+    .call-remote-pane .call-remote-media,
+    .call-remote-pane .call-remote-placeholder {
+        position: absolute;
+        inset: 0;
+    }
+    .call-meeting-shell.fullscreen-layout .call-local-preview {
+        width: min(360px, 28vw);
+        height: min(240px, 26vh);
+        right: 1.5rem;
+        bottom: 1.5rem;
+    }
+    .call-meeting-shell.fullscreen-layout .call-stage.has-both-video {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        padding: 1rem;
+    }
+    .call-meeting-shell.fullscreen-layout .call-stage.has-both-video .call-remote-pane,
+    .call-meeting-shell.fullscreen-layout .call-stage.has-both-video .call-local-preview {
+        position: relative;
+        inset: auto;
+        right: auto;
+        bottom: auto;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        border-radius: 24px;
+        overflow: hidden;
+        background: #020617;
+    }
+    .call-meeting-shell.fullscreen-layout .call-stage.has-both-video .call-local-preview {
+        border-color: rgba(16, 185, 129, 0.45);
+        box-shadow: 0 28px 56px rgba(15, 23, 42, 0.4);
+    }
+    .call-meeting-shell.fullscreen-layout .call-stage.has-both-video .call-participant-label,
+    .call-meeting-shell.fullscreen-layout .call-stage.has-both-video .call-local-label {
+        left: 1rem;
+        bottom: 1rem;
+        font-size: 0.95rem;
+    }
+    .call-stage.audio-call .call-remote-placeholder,
+    .call-stage.audio-call .call-local-placeholder {
+        gap: 1rem;
+    }
+    .call-stage.audio-call .call-avatar-circle {
+        width: 180px;
+        height: 180px;
+        font-size: 4.2rem;
+    }
+    .call-participant-label {
+        position: absolute;
+        left: 1rem;
+        bottom: 1rem;
+        background: rgba(15, 23, 42, 0.72);
+        color: #fff;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.86rem;
+        z-index: 2;
+    }
+    .call-local-label {
+        position: absolute;
+        left: 0.75rem;
+        bottom: 0.6rem;
+        background: rgba(15, 23, 42, 0.72);
+        color: #fff;
+        padding: 0.25rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        z-index: 2;
+    }
+    .call-stage.group-call {
+        overflow-y: auto;
+        padding: 1rem;
+    }
+    .call-group-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        width: 100%;
+        min-height: 100%;
+    }
+    .call-group-tile {
+        position: relative;
+        min-height: 240px;
+        border-radius: 24px;
+        overflow: hidden;
+        background: rgba(15, 23, 42, 0.94);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.28);
+    }
+    .call-group-tile.local {
+        border-color: rgba(16, 185, 129, 0.42);
+    }
+    .call-group-media,
+    .call-group-placeholder {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+    .call-group-media {
+        object-fit: cover;
+        background: #020617;
+    }
+    .call-group-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1.25rem;
+        color: #e2e8f0;
+        text-align: center;
+        background: linear-gradient(180deg, rgba(2, 6, 23, 0.95) 0%, rgba(15, 23, 42, 0.92) 100%);
+    }
+    .call-group-placeholder .call-avatar-circle {
+        width: 120px;
+        height: 120px;
+        font-size: 2.75rem;
+    }
+    .call-group-name {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    .call-group-meta {
+        font-size: 0.82rem;
+        color: rgba(226, 232, 240, 0.78);
+    }
+    .call-group-status {
+        position: absolute;
+        top: 0.85rem;
+        right: 0.85rem;
+        background: rgba(15, 23, 42, 0.72);
+        color: #f8fafc;
+        padding: 0.3rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        z-index: 2;
+    }
+    .call-group-tile.connected .call-group-status {
+        background: rgba(22, 163, 74, 0.85);
+    }
+    .call-group-tile.audio-only .call-group-placeholder {
+        gap: 1rem;
+    }
+    .call-stage.group-call.video-call .call-group-tile {
+        min-height: 220px;
+    }
+    .call-stage.group-call.audio-call .call-group-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+        justify-content: center;
+    }
+    .call-waiting-state {
+        min-height: 68vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #e2e8f0;
+        padding: 2rem;
+    }
+    .call-waiting-icon {
+        width: 84px;
+        height: 84px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        animation: callPulse 1.4s infinite;
+    }
+    .call-help-text {
+        color: #94a3b8;
+        font-size: 0.92rem;
+    }
+    .floating-call-widget {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        width: min(360px, calc(100vw - 1.5rem));
+        background: rgba(15, 23, 42, 0.96);
+        color: #f8fafc;
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        box-shadow: 0 22px 50px rgba(15, 23, 42, 0.38);
+        z-index: 1700;
+        backdrop-filter: blur(14px);
+        overflow: hidden;
+    }
+    .floating-call-widget.can-restore {
+        cursor: pointer;
+    }
+    .floating-call-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1rem 1rem 0.7rem;
+    }
+    .floating-call-restore-btn {
+        width: 42px;
+        height: 42px;
+        border: 0;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #f8fafc;
+        background: rgba(37, 99, 235, 0.92);
+        transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .floating-call-restore-btn:hover {
+        transform: translateY(-1px);
+        opacity: 0.94;
+    }
+    .floating-call-title {
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .floating-call-meta {
+        color: #cbd5e1;
+        font-size: 0.86rem;
+        margin-top: 0.2rem;
+    }
+    .floating-call-submeta {
+        color: #94a3b8;
+        font-size: 0.77rem;
+        margin-top: 0.2rem;
+        line-height: 1.35;
+    }
+    .call-modal-meta-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.18rem;
+    }
+    .call-modal-meta-line {
+        color: #64748b;
+        font-size: 0.83rem;
+        line-height: 1.35;
+    }
+    .floating-call-status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0 1rem 0.9rem;
+        color: #e2e8f0;
+        font-size: 0.92rem;
+    }
+    .floating-call-actions {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.55rem;
+        padding: 0 1rem 1rem;
+    }
+    .floating-call-btn {
+        border: 0;
+        border-radius: 14px;
+        min-height: 52px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        font-size: 0.8rem;
+        color: #f8fafc;
+        background: rgba(255, 255, 255, 0.08);
+        transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+    }
+    .floating-call-btn:hover {
+        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.14);
+    }
+    .floating-call-btn.active {
+        background: #198754;
+    }
+    .floating-call-btn.danger {
+        background: #dc3545;
+    }
+    .floating-call-btn.restore {
+        background: #2563eb;
+    }
+    .floating-call-btn i {
+        font-size: 1rem;
+    }
+    .message-call-summary-wrapper {
+        width: 100%;
+    }
+    .call-summary-message {
+        width: min(100%, 370px);
+        padding: 1rem 1.1rem;
+        border-radius: 22px;
+        text-align: center;
+        background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+    }
+    .call-summary-icon {
+        width: 52px;
+        height: 52px;
+        margin: 0 auto 0.75rem;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        color: #ffffff;
+        background: linear-gradient(135deg, #198754 0%, #16a34a 100%);
+    }
+    .call-summary-icon.video {
+        background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%);
+    }
+    .call-summary-title {
+        font-size: 0.98rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+    .call-summary-meta {
+        margin-top: 0.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        color: #334155;
+        font-size: 0.88rem;
+        font-weight: 600;
+    }
+    .call-summary-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .call-summary-note {
+        margin-top: 0.65rem;
+        color: #64748b;
+        font-size: 0.84rem;
+    }
+    .call-summary-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0.75rem;
+        color: #198754;
+        font-size: 0.84rem;
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .call-summary-link:hover {
+        text-decoration: underline;
+    }
+    @media (max-width: 767.98px) {
+        .floating-call-widget {
+            right: 0.75rem;
+            left: 0.75rem;
+            bottom: 0.75rem;
+            width: auto;
+        }
+    }
+    @keyframes callPulse {
+        0% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.34); }
+        70% { box-shadow: 0 0 0 14px rgba(25, 135, 84, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
+    }
     .message-item {
         transition: all 0.2s ease;
     }
@@ -268,32 +761,113 @@
         position: absolute;
         left: 0;
         bottom: 52px;
-        width: 340px;
-        max-height: 260px;
-        overflow-y: auto;
+        width: min(390px, calc(100vw - 2rem));
         background: #fff;
         border: 1px solid #e1e6ef;
-        border-radius: 10px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-        padding: 0.4rem;
-        display: grid;
-        grid-template-columns: repeat(10, 1fr);
-        gap: 0.2rem;
+        border-radius: 18px;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+        padding: 0.7rem;
         z-index: 1400;
     }
     .emoji-picker-panel.d-none {
         display: none;
     }
+    .emoji-picker-search-row {
+        position: relative;
+        margin-bottom: 0.5rem;
+    }
+    .emoji-picker-search {
+        border-radius: 999px;
+        border: 0;
+        background: #f2f4f8;
+        padding: 0.65rem 2.6rem 0.65rem 1rem;
+        width: 100%;
+        font-size: 0.92rem;
+        color: #0f172a;
+    }
+    .emoji-picker-search:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.16);
+    }
+    .emoji-picker-search-icon {
+        position: absolute;
+        right: 0.95rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        font-size: 1rem;
+    }
+    .emoji-picker-meta {
+        color: #64748b;
+        font-size: 0.78rem;
+        margin-bottom: 0.55rem;
+        min-height: 20px;
+        padding-inline: 0.2rem;
+    }
+    .emoji-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        gap: 0.3rem;
+        max-height: 280px;
+        overflow-y: auto;
+        padding: 0.1rem 0.1rem 0.2rem;
+        margin-bottom: 0.55rem;
+    }
     .emoji-item-btn {
         border: 0;
         background: transparent;
-        font-size: 1.1rem;
-        border-radius: 6px;
+        font-size: 1.55rem;
+        border-radius: 12px;
         line-height: 1;
-        padding: 0.25rem;
+        padding: 0.45rem 0.25rem;
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.18s ease, transform 0.18s ease;
     }
     .emoji-item-btn:hover {
-        background: #f1f4f9;
+        background: #f2f4f8;
+        transform: translateY(-1px);
+    }
+    .emoji-category-nav {
+        display: grid;
+        grid-template-columns: repeat(9, minmax(0, 1fr));
+        gap: 0.25rem;
+        padding-top: 0.4rem;
+        border-top: 1px solid #eef2f7;
+    }
+    .emoji-category-btn {
+        border: 0;
+        background: transparent;
+        color: #64748b;
+        border-radius: 10px;
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        transition: background 0.18s ease, color 0.18s ease;
+    }
+    .emoji-category-btn:hover {
+        background: #f2f4f8;
+        color: #0f172a;
+    }
+    .emoji-category-btn.active {
+        background: #eef5ff;
+        color: #2563eb;
+    }
+    .emoji-picker-empty {
+        color: #64748b;
+        font-size: 0.85rem;
+        padding: 0.55rem 0.2rem;
+        grid-column: 1 / -1;
+    }
+    .emoji-picker-loading {
+        color: #64748b;
+        font-size: 0.85rem;
+        padding: 0.55rem 0.2rem;
+        grid-column: 1 / -1;
     }
     .composer-text-input {
         border: 0 !important;
@@ -316,6 +890,10 @@
     .media-action-btn:hover {
         background: #d8ecff;
         color: #368ed2;
+    }
+    .media-action-btn.correcting {
+        background: #fff4d6;
+        color: #8d6a00;
     }
     .media-action-btn.recording {
         background: #ffebee;
@@ -559,11 +1137,13 @@
                             {% endif %}
                         {% endif %}
                         {% set conversationAvatarUrl = conversationAvatar
-                            ? (conversationAvatar starts with 'http'
-                                ? conversationAvatar
-                                : (conversationAvatar starts with '/'
+                            ? ((conversationAvatar matches '/gravatar\\.com\\/avatar\\//i' and conversationAvatar matches '/[?&]d=404/i')
+                                ? defaultAvatarAsset
+                                : (conversationAvatar starts with 'http'
                                     ? conversationAvatar
-                                    : asset(conversationAvatar)))
+                                    : (conversationAvatar starts with '/'
+                                        ? conversationAvatar
+                                        : asset(conversationAvatar))))
                             : '' %}
                         <a href="{{ path('app_messagerie_selected', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
                            class="card conversation-item mb-1 {% if current_conv is defined and current_conv and current_conv.id_conversation == conversation.id_conversation %}active{% endif %}"
@@ -576,7 +1156,7 @@
                                     <div class="flex-shrink-0">
                                         <div class="rounded-circle bg-eco d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 45px; height: 45px;">
                                             {% if conversationAvatarUrl %}
-                                                <img src="{{ conversationAvatarUrl }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                                                <img src="{{ conversationAvatarUrl }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null;this.src='{{ defaultAvatarAsset }}';">
                                             {% else %}
                                                 <i class="bi {{ conversation.est_groupe ? 'bi-people-fill' : 'bi-person-fill' }}"></i>
                                             {% endif %}
@@ -638,16 +1218,19 @@
                             {% set headerPresence = presence_by_user_id[headerOtherId] %}
                         {% endif %}
                     {% endif %}
+                    {% set callTargetLabel = current_conv_call_target_label|default(headerDisplayTitle) %}
                     {% set headerAvatarUrl = headerAvatar
-                        ? (headerAvatar starts with 'http'
-                            ? headerAvatar
-                            : (headerAvatar starts with '/'
+                        ? ((headerAvatar matches '/gravatar\\.com\\/avatar\\//i' and headerAvatar matches '/[?&]d=404/i')
+                            ? defaultAvatarAsset
+                            : (headerAvatar starts with 'http'
                                 ? headerAvatar
-                                : asset(headerAvatar)))
+                                : (headerAvatar starts with '/'
+                                    ? headerAvatar
+                                    : asset(headerAvatar))))
                         : '' %}
                     <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px;">
                         {% if headerAvatarUrl %}
-                            <img src="{{ headerAvatarUrl }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                            <img src="{{ headerAvatarUrl }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null;this.src='{{ defaultAvatarAsset }}';">
                         {% else %}
                             <i class="bi bi-chat-dots-fill text-success fs-4"></i>
                         {% endif %}
@@ -663,6 +1246,10 @@
                             <small class="text-danger fw-semibold">
                                 <i class="bi bi-slash-circle me-1"></i>Conversation privee bloquee
                             </small>
+                        {% elseif current_conv and current_conv_call_blocked %}
+                            <small class="text-danger fw-semibold">
+                                <i class="bi bi-telephone-x me-1"></i>{{ current_conv.est_groupe ? 'Appels audio et video bloques pour ce groupe' : 'Appels audio et video bloques pour ce contact' }}
+                            </small>
                         {% elseif current_conv and not current_conv.est_groupe and headerPresence %}
                             <small class="{{ headerPresence.online ? 'text-success' : 'text-muted' }} fw-semibold">
                                 <span class="online-dot {{ headerPresence.online ? '' : 'offline' }}"></span>
@@ -673,19 +1260,41 @@
                         {% endif %}
                     </div>
                 </div>
+                {% set canStartConversationCall = current_conv and (current_conv.est_groupe or not current_conv.privateBlocked) and not current_conv_call_blocked and (current_conv_call_target_ids|default([])|length > 0) and ((current_conv_call_target_ids|default([])|length + 1) <= 5) %}
                 <div class="text-muted fs-5 d-flex align-items-center">
                     <i class="bi bi-robot me-3" id="headerGeminiBtn" data-ai-open-url="{{ path('app_messagerie_ai_open', {'id_user': mon_id}) }}" style="cursor:pointer" title="Assistant IA"></i>
-                    <i class="bi bi-telephone-fill me-3" style="cursor:pointer"></i>
-                    <i class="bi bi-camera-video-fill me-3" style="cursor:pointer"></i>
+                    {% if current_conv and not current_conv_call_blocked %}
+                        <i class="bi bi-telephone-fill me-3 call-control {{ canStartConversationCall ? '' : 'opacity-50 disabled' }}" id="startAudioCallBtn" data-call-type="audio" data-target-user-id="{{ (current_conv_call_target_ids|default([]))|first ?: '' }}" data-target-user-ids="{{ current_conv_call_target_ids|default([])|json_encode|e('html_attr') }}" data-target-names="{{ current_conv_call_target_names|default([])|json_encode|e('html_attr') }}" data-target-name="{{ callTargetLabel }}" data-is-group-call="{{ current_conv.est_groupe ? '1' : '0' }}" title="{{ current_conv.est_groupe ? 'Appel audio de groupe (max 5 personnes)' : 'Appel audio' }}"></i>
+                        <i class="bi bi-camera-video-fill me-3 call-control {{ canStartConversationCall ? '' : 'opacity-50 disabled' }}" id="startVideoCallBtn" data-call-type="video" data-target-user-id="{{ (current_conv_call_target_ids|default([]))|first ?: '' }}" data-target-user-ids="{{ current_conv_call_target_ids|default([])|json_encode|e('html_attr') }}" data-target-names="{{ current_conv_call_target_names|default([])|json_encode|e('html_attr') }}" data-target-name="{{ callTargetLabel }}" data-is-group-call="{{ current_conv.est_groupe ? '1' : '0' }}" title="{{ current_conv.est_groupe ? 'Appel video de groupe (max 5 personnes)' : 'Appel video' }}"></i>
+                    {% else %}
+                        <span class="small text-danger fw-semibold me-3">
+                            <i class="bi bi-telephone-x me-1"></i>Appels bloques
+                        </span>
+                    {% endif %}
                     <i class="bi bi-info-circle-fill text-info" style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#infoModal"></i>
                 </div>
             </div>
+
+            {% include 'front/_call_invite_panel.html.twig' %}
 
             <div class="flex-grow-1 p-4 messages-area d-flex flex-column" id="messagesContainer" style="overflow-y:auto"
                  data-my-user-id="{{ mon_id }}"
                  data-current-conversation-id="{{ current_conv ? current_conv.id_conversation : '' }}"
                  data-last-message-id="{{ messages|length > 0 ? messages|last.id_message : 0 }}"
-                 data-current-title="{{ current_conv ? current_conv.titre : '' }}">
+                 data-current-title="{{ current_conv ? current_conv.titre : '' }}"
+                 data-call-target-user-id="{{ headerOtherId ?: '' }}"
+                 data-call-target-user-ids="{{ current_conv_call_target_ids|default([])|json_encode|e('html_attr') }}"
+                 data-call-target-names="{{ current_conv_call_target_names|default([])|json_encode|e('html_attr') }}"
+                 data-call-target-name="{{ callTargetLabel }}"
+                 data-current-conversation-group="{{ current_conv and current_conv.est_groupe ? '1' : '0' }}"
+                 data-call-blocked="{{ current_conv_call_blocked ? '1' : '0' }}"
+                 data-jitsi-domain="{{ jitsi_domain }}"
+                 data-jitsi-room-prefix="{{ jitsi_room_prefix }}"
+                 data-jitsi-popup-mode="{{ jitsi_popup_mode|default('auto') }}"
+                 data-call-provider="{{ call_provider|default('webrtc') }}"
+                 data-webrtc-ice-servers="{{ webrtc_ice_servers|json_encode|e('html_attr') }}"
+                 data-user-display-name="{{ (nom_utilisateur ~ ' ' ~ prenom_utilisateur)|trim }}"
+                 data-user-email="{{ user_email|default('') }}">
                 {% if current_conv %}
                     {% set is_group_admin = current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
                 {% endif %}
@@ -696,10 +1305,51 @@
                     {% set rawContent = message.contenu ?? '' %}
                     {% set hasUrlInText = rawContent matches '/(https?:\\/\\/|www\\.)\\S+/i' %}
                     {% set isTextStyled = msgType == 'TEXTE' and not hasUrlInText %}
+                    {% set attachments = message.attachments|default([]) %}
+                    {% set callMeta = null %}
+                    {% for attachment in attachments %}
+                        {% if attachment.type|default('') == 'CALL_META' %}
+                            {% set callMeta = attachment %}
+                        {% endif %}
+                    {% endfor %}
+                    {% set isCallSummary = msgType in ['APPEL_AUDIO', 'APPEL_VIDEO'] %}
                     <div class="d-flex {{ is_mine ? 'justify-content-end' : 'justify-content-start' }} mb-3 message-item">
-                        <div class="message-bubble {{ (is_mine and isTextStyled) ? 'message-sent shadow' : 'message-received shadow-sm' }}" style="position: relative;">
+                        <div class="{{ isCallSummary ? (is_mine ? 'message-bubble message-sent shadow' : 'message-bubble message-received shadow-sm') : ((is_mine and isTextStyled) ? 'message-bubble message-sent shadow' : 'message-bubble message-received shadow-sm') }}" style="position: relative;">
+                            {% if isCallSummary %}
+                                {% set callLabel = msgType == 'APPEL_VIDEO' ? 'Appel video' : 'Appel audio' %}
+                                {% set callDurationLabel = callMeta.duration_label|default('00:00') %}
+                                <div class="mb-2 fw-bold small text-muted">{{ message.userApp ? (message.userApp.nom ~ ' ' ~ message.userApp.prenom) : 'Utilisateur' }}</div>
+                                <div class="d-flex align-items-center gap-2 {{ is_mine ? 'text-white' : 'text-dark' }}">
+                                    <i class="bi {{ msgType == 'APPEL_VIDEO' ? 'bi-camera-video-fill' : 'bi-telephone-fill' }}"></i>
+                                    <span>{{ callLabel }} - {{ callDurationLabel }}</span>
+                                </div>
+                                <div class="message-reactions" data-message-id="{{ message.id_message }}" data-react-url="{{ path('app_message_react', {'id_message': message.id_message, 'id_user': mon_id}) }}">
+                                    {% for reactionEmoji in reactionOptions %}
+                                        {% set reactionCount = (reactions[reactionEmoji]|default([]))|length %}
+                                        <button type="button" class="reaction-btn {{ userReaction == reactionEmoji ? 'active' : '' }}" data-emoji="{{ reactionEmoji }}">
+                                            {{ reactionEmoji }} <span class="reaction-label">J'adore</span> <span data-count>{{ reactionCount }}</span>
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap">
+                                    <div>
+                                        <span class="time-stamp {{ is_mine ? 'text-white-50' : 'text-muted' }}">
+                                            {{ message.date_envoi ? message.date_envoi|date('H:i') : '' }}
+                                            {% if is_mine %}
+                                                <span class="message-checkmarks">
+                                                    {% if message.date_lecture %}
+                                                        <span class="checkmark read">✓✓</span>
+                                                        <span class="read-time {{ is_mine ? 'text-white-50' : 'text-muted' }}">{{ message.date_lecture|date('H:i') }}</span>
+                                                    {% else %}
+                                                        <span class="checkmark">✓✓</span>
+                                                    {% endif %}
+                                                </span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            {% else %}
                             <div class="mb-2 fw-bold small text-muted">{{ message.userApp ? (message.userApp.nom ~ ' ' ~ message.userApp.prenom) : 'Utilisateur' }}</div>
-                            {% set attachments = message.attachments|default([]) %}
                             {% set contentParts = rawContent ? rawContent|split('|', 2) : [''] %}
                             {% set mediaPath = attachments is empty ? (contentParts[0] ?? '') : '' %}
                             {% set mediaComment = attachments is empty ? (contentParts[1] ?? '') : rawContent %}
@@ -734,6 +1384,7 @@
                                     {% set attachmentName = attachment.name|default(attachmentPath ? (attachmentPath|split('/')|last) : 'fichier') %}
                                     {% set attachmentMime = attachment.mime|default('') %}
                                     {% set attachmentType = attachment.type|default('') %}
+                                    {% if attachmentType != 'CALL_META' %}
                                     <div class="mb-2">
                                         {% if attachmentType in ['AUDIO', 'VOCALE', 'APPEL_AUDIO'] or attachmentMime starts with 'audio/' %}
                                             <div class="voice-message-card js-open-media" data-media-url="{{ attachmentUrl }}" data-media-kind="audio" title="Double-clic pour ouvrir">
@@ -764,6 +1415,7 @@
                                             <a href="{{ attachmentDownloadUrl }}" class="text-decoration-underline" download="{{ attachmentName }}" target="_blank" rel="noopener">{{ attachmentName }}</a>
                                         {% endif %}
                                     </div>
+                                    {% endif %}
                                 {% endfor %}
                                 {% if mediaComment is not empty %}
                                     <div class="mt-2 js-linkify">{{ mediaComment }}</div>
@@ -855,9 +1507,10 @@
                                     </a>
                                 </div>
                             {% endif %}
+                            {% endif %}
                         </div>
                     </div>
-                    {% if is_mine %}
+                    {% if is_mine and not isCallSummary %}
                         <form id="edit-form-{{ message.id_message }}" action="{{ path('app_edit_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation, 'id_message': message.id_message}) }}" method="post" class="mb-3 d-none">
                             <div class="input-group">
                                 <input type="text" name="edited_message" class="form-control" value="{{ message.contenu }}" required>
@@ -880,7 +1533,7 @@
             </div>
 
           <div class="p-3 message-footer">
-    <form id="messageComposerForm" method="post" enctype="multipart/form-data" action="{{ current_conv ? path('app_send_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '#' }}" class="d-flex flex-column gap-2">
+    <form id="messageComposerForm" method="post" enctype="multipart/form-data" action="{{ current_conv ? path('app_send_message', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '#' }}" data-correct-url="{{ current_conv ? path('app_messagerie_correct_text', {'id_user': mon_id, 'id_conversation': current_conv.id_conversation}) : '' }}" class="d-flex flex-column gap-2">
         
         {# Media preview area #}
         <div id="composerError" class="composer-error d-none"></div>
@@ -916,7 +1569,16 @@
                     <button type="button" class="composer-emoji-btn" id="composerEmojiBtn" title="Emoji">
                         <i class="bi bi-emoji-smile"></i>
                     </button>
-                    <div id="emojiPickerPanel" class="emoji-picker-panel d-none" aria-label="Emoji list"></div>
+                    <div id="emojiPickerPanel" class="emoji-picker-panel d-none" aria-label="Emoji list">
+                        <div class="emoji-picker-search-row">
+                            <input type="text" id="emojiSearchInput" class="emoji-picker-search" placeholder="Rechercher un emoji...">
+                            <i class="bi bi-search emoji-picker-search-icon"></i>
+                        </div>
+                        <div id="emojiPickerMeta" class="emoji-picker-meta">Tous les emojis</div>
+                        <div id="emojiPickerGrid" class="emoji-picker-grid">
+                            <div class="emoji-picker-loading">Chargement...</div>
+                        </div>
+                    </div>
                 </div>
                 <input type="text" name="message" id="textMessage" class="form-control composer-text-input text-dark" placeholder="{{ current_conv and current_conv.privateBlocked ? 'Conversation privee bloquee' : 'Type Message...' }}" autocomplete="off" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
             </div>
@@ -936,6 +1598,9 @@
             </button>
             <button type="button" class="media-action-btn" id="attachImageBtn" title="Joindre un fichier" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
                 <i class="bi bi-paperclip"></i>
+            </button>
+            <button type="button" class="media-action-btn" id="correctTextBtn" title="Correction orthographique" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
+                <i class="bi bi-spellcheck"></i>
             </button>
            
             <button type="button" class="media-action-btn" id="resumeBtn" title="Resumer la conversation" {{ current_conv and not current_conv.privateBlocked ? '' : 'disabled' }}>
@@ -1046,17 +1711,19 @@
 
                         {% if private_other_user %}
                             {% set privateAvatar = private_other_user.image_url
-                                ? (private_other_user.image_url starts with 'http'
-                                    ? private_other_user.image_url
-                                    : (private_other_user.image_url starts with '/'
+                                ? ((private_other_user.image_url matches '/gravatar\\.com\\/avatar\\//i' and private_other_user.image_url matches '/[?&]d=404/i')
+                                    ? defaultAvatarAsset
+                                    : (private_other_user.image_url starts with 'http'
                                         ? private_other_user.image_url
-                                        : asset(private_other_user.image_url)))
+                                        : (private_other_user.image_url starts with '/'
+                                            ? private_other_user.image_url
+                                            : asset(private_other_user.image_url))))
                                 : '' %}
                             <div class="border rounded p-3 mb-3">
                                 <div class="d-flex align-items-center mb-3">
                                     <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center me-3" style="width: 52px; height: 52px;">
                                         {% if privateAvatar %}
-                                            <img src="{{ privateAvatar }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                                            <img src="{{ privateAvatar }}" alt="avatar" class="rounded-circle w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null;this.src='{{ defaultAvatarAsset }}';">
                                         {% else %}
                                             <i class="bi bi-person-fill text-success fs-4"></i>
                                         {% endif %}
@@ -1170,6 +1837,92 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="modal fade" id="jitsiCallModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div>
+                    <h5 class="modal-title fw-bold mb-1" id="jitsiCallTitle">Appel</h5>
+                    <div class="call-status-badge">
+                        <i class="bi bi-broadcast-pin"></i>
+                        <span id="jitsiCallStatusText">Preparation de l'appel...</span>
+                    </div>
+                    </div>
+                    <div class="call-status-badge bg-white border" id="jitsiCallTimerText">00:00</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-light border rounded-circle d-inline-flex align-items-center justify-content-center" id="minimizeJitsiCallBtn" title="Reduire l'appel" style="width: 40px; height: 40px;">
+                        <i class="bi bi-dash-lg"></i>
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body pt-3">
+                <div class="call-meeting-shell">
+                    <div id="jitsiWaitingState" class="call-waiting-state">
+                        <div class="call-waiting-icon">
+                            <i class="bi bi-telephone"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2" id="jitsiWaitingTitle">Connexion de l'appel</h4>
+                        <p class="mb-2" id="jitsiWaitingText">Invitation en cours...</p>
+                        <div class="call-help-text">
+                            Si l'iframe ne charge pas, utilisez le lien direct:
+                            <a id="jitsiOpenInNewTab" href="#" target="_blank" rel="noopener">ouvrir la reunion</a>
+                        </div>
+                    </div>
+                    <div id="jitsiMeetingContainer" class="call-meeting-container d-none"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 d-flex justify-content-between">
+                <div class="call-modal-meta-stack">
+                    <small class="text-muted" id="jitsiRoomNameText">Salle: -</small>
+                    <small class="call-modal-meta-line" id="jitsiCallContextText">Conversation: -</small>
+                    <small class="call-modal-meta-line" id="jitsiParticipantsText">Membres: -</small>
+                </div>
+                <button type="button" class="btn btn-danger" id="leaveJitsiCallBtn">
+                    <i class="bi bi-telephone-x-fill me-1"></i>Terminer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="floatingCallWidget" class="floating-call-widget d-none" aria-live="polite">
+    <div class="floating-call-header">
+        <div>
+            <div class="floating-call-title" id="floatingCallTitle">Appel</div>
+            <div class="floating-call-meta" id="floatingCallMeta">Contact</div>
+            <div class="floating-call-submeta" id="floatingCallSubmeta">Conversation et participants</div>
+        </div>
+        <button type="button" class="floating-call-restore-btn" id="restoreJitsiCallBtn" title="Rouvrir l'appel">
+            <i class="bi bi-arrows-angle-expand"></i>
+        </button>
+    </div>
+    <div class="floating-call-status-row">
+        <span id="floatingCallStatusText">Preparation...</span>
+        <span id="floatingCallTimerText">00:00</span>
+    </div>
+    <div class="floating-call-actions">
+        <button type="button" class="floating-call-btn" id="floatingMuteCallBtn">
+            <i class="bi bi-mic-mute-fill"></i>
+            <span>Muet</span>
+        </button>
+        <button type="button" class="floating-call-btn" id="floatingVideoCallBtn">
+            <i class="bi bi-camera-video"></i>
+            <span>Video</span>
+        </button>
+        <button type="button" class="floating-call-btn restore" id="floatingMinimizeCallBtn">
+            <i class="bi bi-window-stack"></i>
+            <span>Grand</span>
+        </button>
+        <button type="button" class="floating-call-btn danger" id="endFloatingCallBtn">
+            <i class="bi bi-telephone-x-fill"></i>
+            <span>Quitter</span>
+        </button>
     </div>
 </div>
 
@@ -1293,7 +2046,11 @@ const previewContentDiv = document.getElementById('mediaPreviewContent');
 const clearMediaBtn = document.getElementById('clearMediaBtn');
 const composerEmojiBtn = document.getElementById('composerEmojiBtn');
 const emojiPickerPanel = document.getElementById('emojiPickerPanel');
+const emojiSearchInput = document.getElementById('emojiSearchInput');
+const emojiPickerGrid = document.getElementById('emojiPickerGrid');
+const emojiPickerMeta = document.getElementById('emojiPickerMeta');
 const attachVocaleBtn = document.getElementById('attachVocaleBtn');
+const correctTextBtn = document.getElementById('correctTextBtn');
 const geminiAskBtn = document.getElementById('geminiAskBtn');
 const resumeBtn = document.getElementById('resumeBtn');
 const longMsgBtn = document.getElementById('longMsgBtn');
@@ -1311,6 +2068,104 @@ const vocalRecordingBar = document.getElementById('vocalRecordingBar');
 const vocalRecordingTimer = document.getElementById('vocalRecordingTimer');
 const vocalStopBtn = document.getElementById('vocalStopBtn');
 const vocalCancelBtn = document.getElementById('vocalCancelBtn');
+const messageComposerForm = document.getElementById('messageComposerForm');
+const isCorrectTextBtnInitiallyDisabled = !!correctTextBtn?.disabled;
+const startAudioCallBtn = document.getElementById('startAudioCallBtn');
+const startVideoCallBtn = document.getElementById('startVideoCallBtn');
+const callIncomingBanner = document.getElementById('callIncomingBanner');
+const callBannerTitle = document.getElementById('callBannerTitle');
+const incomingCallerName = document.getElementById('incomingCallerName');
+const incomingCallMeta = document.getElementById('incomingCallMeta');
+const acceptCallBtn = document.getElementById('acceptCallBtn');
+const rejectCallBtn = document.getElementById('rejectCallBtn');
+const jitsiCallModalEl = document.getElementById('jitsiCallModal');
+const jitsiCallModal = jitsiCallModalEl && typeof bootstrap !== 'undefined' ? new bootstrap.Modal(jitsiCallModalEl) : null;
+const jitsiCallTitle = document.getElementById('jitsiCallTitle');
+const jitsiCallStatusText = document.getElementById('jitsiCallStatusText');
+const jitsiWaitingState = document.getElementById('jitsiWaitingState');
+const jitsiWaitingTitle = document.getElementById('jitsiWaitingTitle');
+const jitsiWaitingText = document.getElementById('jitsiWaitingText');
+const jitsiMeetingContainer = document.getElementById('jitsiMeetingContainer');
+const jitsiOpenInNewTab = document.getElementById('jitsiOpenInNewTab');
+const jitsiHelpText = jitsiOpenInNewTab?.closest('.call-help-text') || null;
+const jitsiRoomNameText = document.getElementById('jitsiRoomNameText');
+const jitsiCallContextText = document.getElementById('jitsiCallContextText');
+const jitsiParticipantsText = document.getElementById('jitsiParticipantsText');
+const jitsiCallTimerText = document.getElementById('jitsiCallTimerText');
+const leaveJitsiCallBtn = document.getElementById('leaveJitsiCallBtn');
+const minimizeJitsiCallBtn = document.getElementById('minimizeJitsiCallBtn');
+const floatingCallWidget = document.getElementById('floatingCallWidget');
+const floatingCallTitle = document.getElementById('floatingCallTitle');
+const floatingCallMeta = document.getElementById('floatingCallMeta');
+const floatingCallSubmeta = document.getElementById('floatingCallSubmeta');
+const floatingCallStatusText = document.getElementById('floatingCallStatusText');
+const floatingCallTimerText = document.getElementById('floatingCallTimerText');
+const restoreJitsiCallBtn = document.getElementById('restoreJitsiCallBtn');
+const floatingOpenCallBtn = document.getElementById('floatingMinimizeCallBtn');
+const floatingMuteCallBtn = document.getElementById('floatingMuteCallBtn');
+const floatingVideoCallBtn = document.getElementById('floatingVideoCallBtn');
+const endFloatingCallBtn = document.getElementById('endFloatingCallBtn');
+const callMessagesContainer = document.getElementById('messagesContainer');
+const jitsiDomain = callMessagesContainer?.getAttribute('data-jitsi-domain') || 'meet.jit.si';
+const jitsiRoomPrefix = callMessagesContainer?.getAttribute('data-jitsi-room-prefix') || 'ecoadventure';
+const jitsiPopupMode = (callMessagesContainer?.getAttribute('data-jitsi-popup-mode') || 'auto').toLowerCase();
+const callProvider = (callMessagesContainer?.getAttribute('data-call-provider') || 'webrtc').toLowerCase();
+const webrtcIceServers = (() => {
+    try {
+        const raw = callMessagesContainer?.getAttribute('data-webrtc-ice-servers') || '[]';
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        return [];
+    }
+})();
+const currentUserDisplayName = callMessagesContainer?.getAttribute('data-user-display-name') || 'EcoAdventure User';
+const currentUserEmail = callMessagesContainer?.getAttribute('data-user-email') || '';
+const isLocalMessengerHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const isPublicJitsiDomain = ['meet.jit.si', '8x8.vc'].includes(jitsiDomain);
+
+let jitsiApi = null;
+let jitsiScriptPromise = null;
+let callMeetingWindow = null;
+let callViewWindow = null;
+let callMeetingWindowMonitor = null;
+let peerConnection = null;
+let localCallStream = null;
+let remoteCallStream = null;
+let pendingRemoteCandidates = [];
+let peerDisconnectTimeout = null;
+let callSignalAfter = 0;
+let callSignalInterval = null;
+let incomingCallInvite = null;
+let activeCallSession = null;
+let acceptingIncomingCall = false;
+let startingOutgoingCall = false;
+let endingCurrentCall = false;
+let activeCallStartedAt = null;
+let activeCallLogged = false;
+let activeCallTimerInterval = null;
+let localAudioMuted = false;
+let localVideoMuted = false;
+let remoteParticipantConnected = false;
+let minimizingCurrentCall = false;
+let incomingCallRingInterval = null;
+let localConferenceJoined = false;
+let pendingCallFullscreen = false;
+let messagePollInFlight = false;
+let callSignalPollInFlight = false;
+let nextMessagePollAt = 0;
+let nextCallSignalPollAt = 0;
+let messagePollFailureCount = 0;
+let callSignalPollFailureCount = 0;
+let serverUnavailableNoticeShown = false;
+const closedCallSessions = new Set();
+const acceptedCallSessions = new Set();
+const MAX_GROUP_WEBRTC_PARTICIPANTS = 5;
+const groupPeerConnections = new Map();
+const groupRemoteStreams = new Map();
+const groupPendingRemoteCandidates = new Map();
+const groupPeerDisconnectTimeouts = new Map();
+const groupRemoteParticipantState = new Map();
 
 let mediaRecorder = null;
 let recordedChunks = [];
@@ -1388,6 +2243,9 @@ function showComposerError(message) {
     const errorBox = document.getElementById('composerError');
     if (!errorBox) return;
     errorBox.textContent = message;
+    errorBox.style.borderColor = '';
+    errorBox.style.background = '';
+    errorBox.style.color = '';
     errorBox.classList.remove('d-none');
 }
 
@@ -1396,6 +2254,3241 @@ function hideComposerError() {
     if (!errorBox) return;
     errorBox.classList.add('d-none');
     errorBox.textContent = '';
+    errorBox.style.borderColor = '';
+    errorBox.style.background = '';
+    errorBox.style.color = '';
+}
+
+function formatCallDuration(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function syncCallTimerDisplays(value) {
+    if (jitsiCallTimerText) jitsiCallTimerText.textContent = value;
+    if (floatingCallTimerText) floatingCallTimerText.textContent = value;
+}
+
+function stopActiveCallTimer() {
+    if (activeCallTimerInterval) {
+        clearInterval(activeCallTimerInterval);
+        activeCallTimerInterval = null;
+    }
+    syncCallTimerDisplays('00:00');
+}
+
+function startActiveCallTimer(startTimestamp = Date.now()) {
+    activeCallStartedAt = startTimestamp;
+
+    const updateTimer = () => {
+        const elapsedSeconds = Math.max(0, Math.floor((Date.now() - activeCallStartedAt) / 1000));
+        syncCallTimerDisplays(formatCallDuration(elapsedSeconds));
+    };
+
+    updateTimer();
+    if (activeCallTimerInterval) {
+        clearInterval(activeCallTimerInterval);
+    }
+
+    activeCallTimerInterval = setInterval(updateTimer, 1000);
+}
+
+function setCurrentCallStatus(statusText) {
+    if (jitsiCallStatusText) jitsiCallStatusText.textContent = statusText;
+    if (floatingCallStatusText) floatingCallStatusText.textContent = statusText;
+}
+
+function clearPeerDisconnectTimeout() {
+    if (!peerDisconnectTimeout) {
+        return;
+    }
+
+    clearTimeout(peerDisconnectTimeout);
+    peerDisconnectTimeout = null;
+}
+
+function getCallMeetingShell() {
+    return document.querySelector('#jitsiCallModal .call-meeting-shell');
+}
+
+function setCallFullscreenLayout(enabled) {
+    const shell = getCallMeetingShell();
+    const dialog = jitsiCallModalEl?.querySelector('.modal-dialog');
+    if (shell) {
+        shell.classList.toggle('fullscreen-layout', !!enabled);
+    }
+    if (dialog) {
+        dialog.classList.toggle('modal-fullscreen', !!enabled);
+        dialog.classList.toggle('modal-xl', !enabled);
+    }
+}
+
+async function requestBrowserFullscreenForCall() {
+    if (!isWebRtcCallMode()) {
+        return false;
+    }
+
+    const target = document.documentElement;
+    if (!target?.requestFullscreen) {
+        return false;
+    }
+
+    if (document.fullscreenElement) {
+        return true;
+    }
+
+    try {
+        await target.requestFullscreen();
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+async function exitBrowserFullscreenForCall() {
+    if (!document.fullscreenElement || !document.exitFullscreen) {
+        return;
+    }
+
+    try {
+        await document.exitFullscreen();
+    } catch (error) {
+        // ignore exit issues
+    }
+}
+
+function getPollingBackoffDelay(failureCount) {
+    return Math.min(30000, 2500 * Math.max(1, failureCount));
+}
+
+function notePollingFailure(kind, errorText = '') {
+    if (kind === 'messages') {
+        messagePollFailureCount += 1;
+        nextMessagePollAt = Date.now() + getPollingBackoffDelay(messagePollFailureCount);
+    } else {
+        callSignalPollFailureCount += 1;
+        nextCallSignalPollAt = Date.now() + getPollingBackoffDelay(callSignalPollFailureCount);
+    }
+
+    if (serverUnavailableNoticeShown) {
+        return;
+    }
+
+    if (messagePollFailureCount < 2 && callSignalPollFailureCount < 2) {
+        return;
+    }
+
+    serverUnavailableNoticeShown = true;
+    showComposerError(
+        errorText && /fastcgi|bad gateway|502|indisponible/i.test(errorText)
+            ? 'Le serveur PHP local est indisponible. Redemarrez le serveur Symfony/PHP.'
+            : 'Connexion au serveur interrompue. Redemarrez le serveur Symfony/PHP si le probleme continue.'
+    );
+}
+
+function notePollingSuccess(kind) {
+    if (kind === 'messages') {
+        messagePollFailureCount = 0;
+        nextMessagePollAt = 0;
+    } else {
+        callSignalPollFailureCount = 0;
+        nextCallSignalPollAt = 0;
+    }
+
+    if (messagePollFailureCount === 0 && callSignalPollFailureCount === 0) {
+        serverUnavailableNoticeShown = false;
+    }
+}
+
+function hasLiveVideoTrack(stream) {
+    return !!stream?.getVideoTracks?.().some(track => track.readyState === 'live' && !track.muted);
+}
+
+function hasEnabledLiveVideoTrack(stream) {
+    return !!stream?.getVideoTracks?.().some(track => track.readyState === 'live' && track.enabled);
+}
+
+function isCallSessionVideoActive(callSession = activeCallSession) {
+    if (!callSession) {
+        return false;
+    }
+
+    return callSession.callType === 'video'
+        || hasEnabledLiveVideoTrack(localCallStream)
+        || hasLiveVideoTrack(remoteCallStream)
+        || Array.from(groupRemoteStreams.values()).some((stream) => hasLiveVideoTrack(stream));
+}
+
+function attachMediaTrackSync(track) {
+    if (!track) {
+        return;
+    }
+
+    track.onunmute = () => syncWebRtcStageStreams();
+    track.onmute = () => syncWebRtcStageStreams();
+    track.onended = () => syncWebRtcStageStreams();
+}
+
+function isWebRtcCallMode(callSession = null) {
+    return callProvider === 'webrtc';
+}
+
+function isPopupMeetingMode() {
+    if (isWebRtcCallMode()) {
+        return false;
+    }
+
+    if (jitsiPopupMode === 'popup') {
+        return true;
+    }
+
+    if (jitsiPopupMode === 'embed') {
+        return false;
+    }
+
+    return isLocalMessengerHost && isPublicJitsiDomain;
+}
+
+function getActiveIceServers() {
+    return webrtcIceServers.length ? webrtcIceServers : [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+    ];
+}
+
+function renderWebRtcCallStage(callSession) {
+    if (!jitsiMeetingContainer || !callSession) {
+        return;
+    }
+
+    if (callSession.isGroupCall) {
+        const isVideoCall = isCallSessionVideoActive(callSession);
+        const remoteParticipants = getOrderedGroupParticipants();
+        jitsiMeetingContainer.innerHTML = `
+            <div class="call-stage group-call ${isVideoCall ? 'video-call' : 'audio-call'}">
+                <div class="call-group-grid">
+                    <article class="call-group-tile local ${isVideoCall ? '' : 'audio-only'}" data-call-group-tile="local">
+                        <video data-call-group-media="local" class="call-group-media d-none" autoplay playsinline muted></video>
+                        <div data-call-group-placeholder="local" class="call-group-placeholder">
+                            <div class="call-avatar-circle">
+                                <i class="bi ${isVideoCall ? 'bi-camera-video-fill' : 'bi-mic-fill'}"></i>
+                            </div>
+                            <div class="call-group-name">${escapeHtml(currentUserDisplayName || 'Vous')}</div>
+                            <div class="call-group-meta">${isVideoCall ? 'Votre camera' : 'Votre micro'}</div>
+                        </div>
+                        <div class="call-group-status">Vous</div>
+                    </article>
+                    ${remoteParticipants.map((participant) => `
+                        <article class="call-group-tile ${participant.connected ? 'connected' : ''} ${isVideoCall ? '' : 'audio-only'}" data-call-group-tile="${participant.userId}">
+                            <video data-call-group-media="${participant.userId}" class="call-group-media d-none" autoplay playsinline></video>
+                            <div data-call-group-placeholder="${participant.userId}" class="call-group-placeholder">
+                                <div class="call-avatar-circle">
+                                    <i class="bi ${isVideoCall ? 'bi-person-video3' : 'bi-mic-fill'}"></i>
+                                </div>
+                                <div class="call-group-name">${escapeHtml(participant.name || 'Participant')}</div>
+                                <div class="call-group-meta">${participant.connected ? 'Connecte' : 'En attente de connexion'}</div>
+                            </div>
+                            <div class="call-group-status">${participant.connected ? 'Connecte' : 'En attente'}</div>
+                        </article>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    const isVideoCall = isCallSessionVideoActive(callSession);
+    const remoteIcon = isVideoCall ? 'bi-person' : 'bi-mic-fill';
+    const localIcon = isVideoCall ? 'bi-person' : 'bi-mic-fill';
+
+    jitsiMeetingContainer.innerHTML = `
+        <div class="call-stage ${isVideoCall ? 'video-call' : 'audio-call'}">
+            <div class="call-remote-pane">
+                <video id="remoteCallVideo" class="call-remote-media d-none" autoplay playsinline></video>
+                <div id="remoteCallPlaceholder" class="call-remote-placeholder">
+                    <div class="call-avatar-circle">
+                        <i class="bi ${remoteIcon}"></i>
+                    </div>
+                    <div class="fs-4 fw-semibold">${escapeHtml(callSession.targetName || 'Contact')}</div>
+                </div>
+                <div class="call-participant-label">${escapeHtml(callSession.targetName || 'Contact')}</div>
+            </div>
+            <div class="call-local-preview">
+                <video id="localCallVideo" class="call-local-media d-none" autoplay playsinline muted></video>
+                <div id="localCallPlaceholder" class="call-local-placeholder">
+                    <div class="call-avatar-circle" style="width:72px;height:72px;font-size:1.8rem;">
+                        <i class="bi ${localIcon}"></i>
+                    </div>
+                </div>
+                <div class="call-local-label">Vous</div>
+            </div>
+        </div>
+    `;
+}
+
+function syncWebRtcStageStreams() {
+    if (!isWebRtcCallMode(activeCallSession) || !jitsiMeetingContainer) {
+        return;
+    }
+
+    if (activeCallSession?.isGroupCall) {
+        const localMedia = jitsiMeetingContainer.querySelector('[data-call-group-media="local"]');
+        const localPlaceholder = jitsiMeetingContainer.querySelector('[data-call-group-placeholder="local"]');
+        const hasLocalVideo = hasEnabledLiveVideoTrack(localCallStream) && !localVideoMuted;
+
+        if (localMedia) {
+            localMedia.srcObject = localCallStream;
+            localMedia.muted = true;
+            localMedia.classList.toggle('d-none', !hasLocalVideo);
+            localMedia.play?.().catch(() => {});
+        }
+        if (localPlaceholder) {
+            localPlaceholder.classList.toggle('d-none', hasLocalVideo);
+        }
+
+        for (const participant of getOrderedGroupParticipants()) {
+            const participantTile = jitsiMeetingContainer.querySelector(`[data-call-group-tile="${participant.userId}"]`);
+            const media = jitsiMeetingContainer.querySelector(`[data-call-group-media="${participant.userId}"]`);
+            const placeholder = jitsiMeetingContainer.querySelector(`[data-call-group-placeholder="${participant.userId}"]`);
+            const stream = groupRemoteStreams.get(participant.userId) || null;
+            const hasRemoteVideo = hasLiveVideoTrack(stream);
+
+            participantTile?.classList.toggle('connected', !!participant.connected);
+            if (media) {
+                media.srcObject = stream;
+                media.muted = false;
+                media.classList.toggle('d-none', !hasRemoteVideo);
+                media.play?.().catch(() => {});
+            }
+            if (placeholder) {
+                placeholder.classList.toggle('d-none', hasRemoteVideo);
+                const meta = placeholder.querySelector('.call-group-meta');
+                if (meta) {
+                    meta.textContent = participant.connected
+                        ? (activeCallSession.callType === 'video' ? 'Video connectee' : 'Audio connecte')
+                        : 'En attente de connexion';
+                }
+            }
+            const status = participantTile?.querySelector('.call-group-status');
+            if (status) {
+                status.textContent = participant.connected ? 'Connecte' : 'En attente';
+            }
+        }
+
+        return;
+    }
+
+    const callStage = jitsiMeetingContainer.querySelector('.call-stage');
+    const localVideo = document.getElementById('localCallVideo');
+    const localPlaceholder = document.getElementById('localCallPlaceholder');
+    const remoteVideo = document.getElementById('remoteCallVideo');
+    const remotePlaceholder = document.getElementById('remoteCallPlaceholder');
+
+    const hasLocalVideo = hasEnabledLiveVideoTrack(localCallStream) && !localVideoMuted;
+    const hasRemoteVideo = hasLiveVideoTrack(remoteCallStream);
+
+    callStage?.classList.toggle('has-both-video', hasLocalVideo && hasRemoteVideo);
+
+    if (localVideo) {
+        localVideo.srcObject = localCallStream;
+        localVideo.muted = true;
+        localVideo.classList.toggle('d-none', !hasLocalVideo);
+        localVideo.play?.().catch(() => {});
+    }
+    if (localPlaceholder) {
+        localPlaceholder.classList.toggle('d-none', hasLocalVideo);
+    }
+
+    if (remoteVideo) {
+        remoteVideo.srcObject = remoteCallStream;
+        remoteVideo.muted = false;
+        remoteVideo.classList.toggle('d-none', !hasRemoteVideo);
+        remoteVideo.play?.().catch(() => {});
+    }
+    if (remotePlaceholder) {
+        remotePlaceholder.classList.toggle('d-none', hasRemoteVideo);
+    }
+}
+
+async function ensureWebRtcLocalStream(callType) {
+    const constraints = callType === 'video'
+        ? { audio: true, video: { facingMode: 'user' } }
+        : { audio: true, video: false };
+
+    if (localCallStream) {
+        localCallStream.getTracks().forEach(track => track.stop());
+        localCallStream = null;
+    }
+
+    localCallStream = await navigator.mediaDevices.getUserMedia(constraints);
+    localCallStream.getTracks().forEach(track => attachMediaTrackSync(track));
+    localConferenceJoined = true;
+    remoteParticipantConnected = false;
+    localAudioMuted = false;
+    localVideoMuted = localCallStream.getVideoTracks().length === 0 || !localCallStream.getVideoTracks().some(track => track.enabled);
+    syncWebRtcStageStreams();
+    syncCallControlsUi();
+    return localCallStream;
+}
+
+async function flushPendingRemoteCandidates() {
+    if (!peerConnection || !peerConnection.remoteDescription) {
+        return;
+    }
+
+    while (pendingRemoteCandidates.length > 0) {
+        const candidate = pendingRemoteCandidates.shift();
+        if (!candidate) {
+            continue;
+        }
+
+        try {
+            await peerConnection.addIceCandidate(candidate);
+        } catch (error) {
+            // ignore invalid late candidates
+        }
+    }
+}
+
+async function queueRemoteIceCandidate(candidatePayload) {
+    if (!candidatePayload) {
+        return;
+    }
+
+    const candidate = new RTCIceCandidate(candidatePayload);
+    if (peerConnection?.remoteDescription) {
+        try {
+            await peerConnection.addIceCandidate(candidate);
+        } catch (error) {
+            // ignore late/duplicate candidates
+        }
+        return;
+    }
+
+    pendingRemoteCandidates.push(candidate);
+}
+
+async function flushGroupRemoteCandidates(peerUserId) {
+    const normalizedUserId = Number(peerUserId || 0);
+    const connection = groupPeerConnections.get(normalizedUserId);
+    if (!connection || !connection.remoteDescription) {
+        return;
+    }
+
+    const queue = groupPendingRemoteCandidates.get(normalizedUserId) || [];
+    while (queue.length > 0) {
+        const candidate = queue.shift();
+        if (!candidate) {
+            continue;
+        }
+
+        try {
+            await connection.addIceCandidate(candidate);
+        } catch (error) {
+            // ignore invalid late candidates
+        }
+    }
+
+    groupPendingRemoteCandidates.set(normalizedUserId, queue);
+}
+
+async function queueGroupRemoteIceCandidate(peerUserId, candidatePayload) {
+    if (!candidatePayload) {
+        return;
+    }
+
+    const normalizedUserId = Number(peerUserId || 0);
+    const connection = groupPeerConnections.get(normalizedUserId);
+    const candidate = new RTCIceCandidate(candidatePayload);
+    if (connection?.remoteDescription) {
+        try {
+            await connection.addIceCandidate(candidate);
+        } catch (error) {
+            // ignore late/duplicate candidates
+        }
+        return;
+    }
+
+    const queue = groupPendingRemoteCandidates.get(normalizedUserId) || [];
+    queue.push(candidate);
+    groupPendingRemoteCandidates.set(normalizedUserId, queue);
+}
+
+async function ensureGroupPeerConnection(peerUserId, peerName = 'Participant') {
+    const normalizedUserId = Number(peerUserId || 0);
+    if (!normalizedUserId) {
+        throw new Error('Participant de groupe invalide.');
+    }
+
+    if (groupPeerConnections.has(normalizedUserId)) {
+        return groupPeerConnections.get(normalizedUserId);
+    }
+
+    upsertGroupRemoteParticipant(normalizedUserId, peerName, false);
+    const connection = new RTCPeerConnection({ iceServers: getActiveIceServers() });
+    groupPeerConnections.set(normalizedUserId, connection);
+    groupRemoteStreams.set(normalizedUserId, new MediaStream());
+    syncWebRtcStageStreams();
+
+    if (localCallStream) {
+        localCallStream.getTracks().forEach((track) => {
+            connection.addTrack(track, localCallStream);
+        });
+    }
+
+    connection.onicecandidate = (event) => {
+        if (!event.candidate || !activeCallSession) {
+            return;
+        }
+
+        sendCallSignal(
+            'candidate',
+            normalizedUserId,
+            activeCallSession.callType,
+            activeCallSession.sessionId,
+            {
+                candidate: event.candidate.toJSON(),
+                participant_name: currentUserDisplayName,
+                is_group_call: true,
+            }
+        ).catch(() => {});
+    };
+
+    connection.ontrack = (event) => {
+        const incomingStream = event.streams?.[0];
+        if (incomingStream) {
+            groupRemoteStreams.set(normalizedUserId, incomingStream);
+            incomingStream.getTracks().forEach((track) => attachMediaTrackSync(track));
+        } else {
+            const stream = groupRemoteStreams.get(normalizedUserId) || new MediaStream();
+            stream.addTrack(event.track);
+            groupRemoteStreams.set(normalizedUserId, stream);
+        }
+        attachMediaTrackSync(event.track);
+
+        clearGroupPeerDisconnectTimeout(normalizedUserId);
+        setGroupParticipantConnectionState(normalizedUserId, true);
+        if (!activeCallStartedAt) {
+            startActiveCallTimer();
+        }
+        setCurrentCallStatus(`${getGroupParticipantName(normalizedUserId, peerName)} a rejoint l appel`);
+        syncWebRtcStageStreams();
+        syncCallControlsUi();
+    };
+
+    const scheduleDisconnectHandling = () => {
+        if (!activeCallSession || endingCurrentCall) {
+            return;
+        }
+
+        clearGroupPeerDisconnectTimeout(normalizedUserId);
+        const timeoutId = window.setTimeout(() => {
+            const currentConnection = groupPeerConnections.get(normalizedUserId);
+            if (!currentConnection || endingCurrentCall) {
+                return;
+            }
+
+            const connectionState = currentConnection.connectionState;
+            const iceState = currentConnection.iceConnectionState;
+            if (!['disconnected', 'failed', 'closed'].includes(connectionState) && !['disconnected', 'failed', 'closed'].includes(iceState)) {
+                return;
+            }
+
+            closeGroupPeerConnection(normalizedUserId, { removeParticipant: true });
+            syncRemoteParticipantConnectedFlag();
+            if (activeCallSession?.isGroupCall) {
+                renderWebRtcCallStage(activeCallSession);
+            }
+            syncWebRtcStageStreams();
+            syncCallControlsUi();
+            if ((activeCallSession?.targetUserIds || []).length === 0) {
+                setCurrentCallStatus('Tous les participants ont quitte l appel');
+            } else {
+                setCurrentCallStatus(`${getGroupParticipantName(normalizedUserId, peerName)} a quitte l appel`);
+            }
+        }, 5000);
+        groupPeerDisconnectTimeouts.set(normalizedUserId, timeoutId);
+    };
+
+    connection.onconnectionstatechange = () => {
+        const state = connection.connectionState;
+        if (state === 'connected') {
+            clearGroupPeerDisconnectTimeout(normalizedUserId);
+            setGroupParticipantConnectionState(normalizedUserId, true);
+            if (!activeCallStartedAt) {
+                startActiveCallTimer();
+            }
+            setCurrentCallStatus('Appel connecte');
+        } else if (state === 'connecting') {
+            clearGroupPeerDisconnectTimeout(normalizedUserId);
+            setCurrentCallStatus(`Connexion a ${getGroupParticipantName(normalizedUserId, peerName)}...`);
+        } else if (state === 'failed') {
+            clearGroupPeerDisconnectTimeout(normalizedUserId);
+            closeGroupPeerConnection(normalizedUserId, { removeParticipant: true });
+            if (activeCallSession?.isGroupCall) {
+                renderWebRtcCallStage(activeCallSession);
+            }
+            setCurrentCallStatus(`Connexion echouee avec ${getGroupParticipantName(normalizedUserId, peerName)}.`);
+        } else if (['disconnected', 'closed'].includes(state)) {
+            scheduleDisconnectHandling();
+        }
+
+        syncWebRtcStageStreams();
+        syncCallControlsUi();
+    };
+
+    connection.oniceconnectionstatechange = () => {
+        const iceState = connection.iceConnectionState;
+        if (['connected', 'completed'].includes(iceState)) {
+            clearGroupPeerDisconnectTimeout(normalizedUserId);
+        } else if (iceState === 'failed') {
+            clearGroupPeerDisconnectTimeout(normalizedUserId);
+            closeGroupPeerConnection(normalizedUserId, { removeParticipant: true });
+            if (activeCallSession?.isGroupCall) {
+                renderWebRtcCallStage(activeCallSession);
+            }
+            setCurrentCallStatus(`Connexion echouee avec ${getGroupParticipantName(normalizedUserId, peerName)}.`);
+        } else if (['disconnected', 'closed'].includes(iceState)) {
+            scheduleDisconnectHandling();
+        }
+
+        syncWebRtcStageStreams();
+        syncCallControlsUi();
+    };
+
+    await flushGroupRemoteCandidates(normalizedUserId);
+    return connection;
+}
+
+async function createGroupOfferForPeer(peerUserId, peerName = 'Participant') {
+    const connection = await ensureGroupPeerConnection(peerUserId, peerName);
+    const offer = await connection.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+    });
+    await connection.setLocalDescription(offer);
+    return sendCallSignal(
+        'offer',
+        Number(peerUserId || 0),
+        activeCallSession?.callType || 'audio',
+        activeCallSession?.sessionId || '',
+        {
+            sdp: connection.localDescription?.toJSON?.() || connection.localDescription,
+            participant_name: currentUserDisplayName,
+            is_group_call: true,
+            call_mode: hasEnabledLiveVideoTrack(localCallStream) ? 'video' : 'audio',
+        }
+    );
+}
+
+async function ensureWebRtcPeerConnection(callSession) {
+    if (peerConnection) {
+        return peerConnection;
+    }
+
+    peerConnection = new RTCPeerConnection({ iceServers: getActiveIceServers() });
+    remoteCallStream = new MediaStream();
+    syncWebRtcStageStreams();
+
+    if (localCallStream) {
+        localCallStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localCallStream);
+        });
+    }
+
+    peerConnection.onicecandidate = (event) => {
+        if (!event.candidate || !activeCallSession) {
+            return;
+        }
+
+        sendCallSignal(
+            'candidate',
+            activeCallSession.targetUserId,
+            activeCallSession.callType,
+            activeCallSession.sessionId,
+            { candidate: event.candidate.toJSON() }
+        ).catch(() => {});
+    };
+
+    peerConnection.ontrack = (event) => {
+        const stream = event.streams?.[0];
+        if (stream) {
+            remoteCallStream = stream;
+            stream.getTracks().forEach(track => attachMediaTrackSync(track));
+        } else if (remoteCallStream) {
+            remoteCallStream.addTrack(event.track);
+        }
+        attachMediaTrackSync(event.track);
+
+        clearPeerDisconnectTimeout();
+        remoteParticipantConnected = true;
+        if (!activeCallStartedAt) {
+            startActiveCallTimer();
+        }
+        setCurrentCallStatus('Appel connecte');
+        syncWebRtcStageStreams();
+        syncCallControlsUi();
+    };
+
+    const handlePeerDisconnectState = () => {
+        if (!activeCallSession || endingCurrentCall) {
+            return;
+        }
+
+        clearPeerDisconnectTimeout();
+        peerDisconnectTimeout = window.setTimeout(() => {
+            if (!peerConnection || endingCurrentCall || !activeCallSession) {
+                return;
+            }
+
+            const connectionState = peerConnection.connectionState;
+            const iceState = peerConnection.iceConnectionState;
+            if (!['disconnected', 'failed', 'closed'].includes(connectionState) && !['disconnected', 'failed', 'closed'].includes(iceState)) {
+                return;
+            }
+
+            setCurrentCallStatus('Le correspondant a quitte l appel');
+            finalizeActiveCall({ notifyRemote: false });
+        }, 5000);
+    };
+
+    peerConnection.onconnectionstatechange = () => {
+        if (!peerConnection) {
+            return;
+        }
+
+        const state = peerConnection.connectionState;
+        if (state === 'connected') {
+            clearPeerDisconnectTimeout();
+            remoteParticipantConnected = true;
+            if (!activeCallStartedAt) {
+                startActiveCallTimer();
+            }
+            setCurrentCallStatus('Appel connecte');
+        } else if (state === 'connecting') {
+            clearPeerDisconnectTimeout();
+            setCurrentCallStatus('Connexion au correspondant...');
+        } else if (state === 'failed') {
+            clearPeerDisconnectTimeout();
+            setCurrentCallStatus('Connexion echouee');
+            finalizeActiveCall({ notifyRemote: false });
+        } else if (['disconnected', 'closed'].includes(state)) {
+            setCurrentCallStatus('Connexion interrompue...');
+            handlePeerDisconnectState();
+        }
+
+        syncCallControlsUi();
+    };
+
+    peerConnection.oniceconnectionstatechange = () => {
+        if (!peerConnection) {
+            return;
+        }
+
+        const iceState = peerConnection.iceConnectionState;
+        if (['connected', 'completed'].includes(iceState)) {
+            clearPeerDisconnectTimeout();
+        } else if (iceState === 'failed') {
+            clearPeerDisconnectTimeout();
+            setCurrentCallStatus('Connexion echouee');
+            finalizeActiveCall({ notifyRemote: false });
+        } else if (['disconnected', 'closed'].includes(iceState)) {
+            setCurrentCallStatus('Connexion interrompue...');
+            handlePeerDisconnectState();
+        }
+    };
+
+    await flushPendingRemoteCandidates();
+
+    return peerConnection;
+}
+
+function syncCallActionButtons() {
+    const shouldDisable = startingOutgoingCall || acceptingIncomingCall || !!incomingCallInvite || !!activeCallSession || isCurrentConversationCallBlocked();
+
+    [startAudioCallBtn, startVideoCallBtn].forEach((button) => {
+        if (!button) {
+            return;
+        }
+
+        button.disabled = shouldDisable;
+        button.classList.toggle('disabled', shouldDisable);
+        button.classList.toggle('opacity-50', shouldDisable);
+    });
+}
+
+function syncFloatingCallWidget(forceVisible = false) {
+    if (!floatingCallWidget) {
+        return;
+    }
+
+    const shouldShow = !!activeCallSession && (forceVisible || isPopupMeetingMode() || !jitsiCallModalEl?.classList.contains('show'));
+    floatingCallWidget.classList.toggle('d-none', !shouldShow);
+    floatingCallWidget.classList.toggle('can-restore', shouldShow);
+}
+
+function syncCallControlsUi() {
+    const muteIcon = localAudioMuted ? 'bi-mic-fill' : 'bi-mic-mute-fill';
+    const muteLabel = localAudioMuted ? 'Activer' : 'Muet';
+    const videoLabel = localVideoMuted ? 'Video' : 'Audio';
+    const videoIcon = localVideoMuted ? 'bi-camera-video' : 'bi-camera-video-off';
+
+    if (floatingMuteCallBtn) {
+        floatingMuteCallBtn.classList.toggle('active', localAudioMuted);
+        floatingMuteCallBtn.innerHTML = `<i class="bi ${muteIcon}"></i><span>${muteLabel}</span>`;
+    }
+
+    if (floatingVideoCallBtn) {
+        floatingVideoCallBtn.classList.toggle('active', !localVideoMuted);
+        floatingVideoCallBtn.innerHTML = `<i class="bi ${videoIcon}"></i><span>${videoLabel}</span>`;
+    }
+
+    if (floatingCallMeta && activeCallSession) {
+        const modeLabel = localVideoMuted ? 'Audio' : 'Video';
+        floatingCallMeta.textContent = activeCallSession.isGroupCall
+            ? `Conversation: ${getCallConversationName(activeCallSession)} - ${modeLabel}`
+            : `${currentUserDisplayName} et ${activeCallSession.targetName} - ${modeLabel}`;
+    }
+
+    if (floatingCallSubmeta && activeCallSession) {
+        floatingCallSubmeta.textContent = activeCallSession.isGroupCall
+            ? `Lance par ${getCallInitiatorName(activeCallSession)} | ${getGroupParticipantsSummary(activeCallSession)}`
+            : `Conversation: ${getCallConversationName(activeCallSession)}`;
+    }
+}
+
+function getCallDisplayTitle(callSession) {
+    if (!callSession) {
+        return 'Appel';
+    }
+
+    const callLabel = isCallSessionVideoActive(callSession) ? 'Appel video' : 'Appel audio';
+    if (callSession.isGroupCall) {
+        return `${callLabel} de groupe - ${callSession.targetName || 'Groupe'}`;
+    }
+
+    return `${callLabel} - ${callSession.targetName || 'Contact'}`;
+}
+
+function getCallConversationName(callSession = activeCallSession) {
+    if (!callSession) {
+        return 'Conversation';
+    }
+
+    return String(callSession.conversationName || callSession.targetName || getCurrentCallTargetName() || 'Conversation').trim() || 'Conversation';
+}
+
+function getCallInitiatorName(callSession = activeCallSession) {
+    if (!callSession) {
+        return currentUserDisplayName;
+    }
+
+    return String(callSession.initiatorName || (callSession.isCaller ? currentUserDisplayName : '') || currentUserDisplayName).trim() || currentUserDisplayName;
+}
+
+function getGroupParticipantNames(callSession = activeCallSession, connectedOnly = false) {
+    if (!callSession?.isGroupCall) {
+        return [];
+    }
+
+    const orderedParticipants = getOrderedGroupParticipants();
+    const sourceParticipants = connectedOnly
+        ? orderedParticipants.filter((participant) => participant.connected)
+        : orderedParticipants;
+    const initiatorName = getCallInitiatorName(callSession);
+
+    return sourceParticipants
+        .map((participant) => String(participant.name || '').trim())
+        .filter((name) => !!name && name !== initiatorName);
+}
+
+function getGroupParticipantsSummary(callSession = activeCallSession) {
+    if (!callSession?.isGroupCall) {
+        return '';
+    }
+
+    const connectedNames = getGroupParticipantNames(callSession, true);
+    if (connectedNames.length) {
+        return `Membres en appel: ${connectedNames.join(', ')}`;
+    }
+
+    const invitedNames = getGroupParticipantNames(callSession, false);
+    if (invitedNames.length) {
+        return `Membres invites: ${invitedNames.join(', ')}`;
+    }
+
+    return 'Membres: en attente de connexion';
+}
+
+function refreshActiveWebRtcCallUi() {
+    if (!activeCallSession || !isWebRtcCallMode(activeCallSession)) {
+        return;
+    }
+
+    const currentStatus = (floatingCallStatusText?.textContent || jitsiCallStatusText?.textContent || 'Connexion en cours...').trim();
+    renderWebRtcCallStage(activeCallSession);
+    syncWebRtcStageStreams();
+    updateActiveCallUi(
+        getCallDisplayTitle(activeCallSession),
+        currentStatus,
+        getCallWaitingText(activeCallSession),
+        activeCallSession.roomName
+    );
+}
+
+function applyIncomingCallMode(callMode) {
+    if (!activeCallSession || !['audio', 'video'].includes(callMode)) {
+        return;
+    }
+
+    activeCallSession.callType = callMode;
+    refreshActiveWebRtcCallUi();
+}
+
+function getPeerConnectionsForNegotiation() {
+    if (!activeCallSession) {
+        return [];
+    }
+
+    if (activeCallSession.isGroupCall) {
+        return Array.from(groupPeerConnections.entries()).map(([peerUserId, connection]) => ({
+            peerUserId,
+            connection,
+        }));
+    }
+
+    if (peerConnection && activeCallSession.targetUserId) {
+        return [{
+            peerUserId: Number(activeCallSession.targetUserId || 0),
+            connection: peerConnection,
+        }];
+    }
+
+    return [];
+}
+
+function resolveVideoSender(connection) {
+    if (!connection) {
+        return null;
+    }
+
+    const transceiver = connection.getTransceivers?.().find((item) => {
+        const senderKind = item.sender?.track?.kind || '';
+        const receiverKind = item.receiver?.track?.kind || '';
+        return senderKind === 'video' || receiverKind === 'video';
+    });
+
+    return transceiver?.sender || connection.getSenders?.().find((sender) => sender.track?.kind === 'video') || null;
+}
+
+async function ensureWebRtcVideoTrackAttached(videoTrack) {
+    if (!localCallStream || !videoTrack) {
+        return;
+    }
+
+    const peers = getPeerConnectionsForNegotiation();
+    for (const { connection } of peers) {
+        const videoSender = resolveVideoSender(connection);
+        if (videoSender) {
+            await videoSender.replaceTrack(videoTrack);
+            continue;
+        }
+
+        connection.addTrack(videoTrack, localCallStream);
+    }
+}
+
+async function clearWebRtcVideoTrackFromPeers() {
+    const peers = getPeerConnectionsForNegotiation();
+    for (const { connection } of peers) {
+        const videoSender = resolveVideoSender(connection);
+        if (!videoSender) {
+            continue;
+        }
+
+        await videoSender.replaceTrack(null);
+    }
+}
+
+async function renegotiateActiveWebRtcPeers() {
+    if (!activeCallSession || !isWebRtcCallMode(activeCallSession)) {
+        return;
+    }
+
+    const peers = getPeerConnectionsForNegotiation();
+    for (const { peerUserId, connection } of peers) {
+        if (!connection || connection.signalingState !== 'stable') {
+            continue;
+        }
+
+        const offer = await connection.createOffer({
+            offerToReceiveAudio: true,
+            offerToReceiveVideo: true,
+        });
+        await connection.setLocalDescription(offer);
+        const payload = {
+            sdp: connection.localDescription?.toJSON?.() || connection.localDescription,
+            call_mode: hasEnabledLiveVideoTrack(localCallStream) ? 'video' : 'audio',
+        };
+
+        if (activeCallSession.isGroupCall) {
+            payload.participant_name = currentUserDisplayName;
+            payload.is_group_call = true;
+        }
+
+        const offerResult = await sendCallSignal(
+            'offer',
+            Number(peerUserId || 0),
+            activeCallSession.callType,
+            activeCallSession.sessionId,
+            payload
+        );
+
+        if (offerResult?.closed) {
+            rememberClosedCallSession(activeCallSession.sessionId);
+            await finalizeActiveCall({ notifyRemote: false });
+            showComposerError('Cet appel est deja termine.');
+            return;
+        }
+    }
+}
+
+function shouldCloseLonelyGroupCall(callSession = activeCallSession) {
+    if (!callSession?.isGroupCall) {
+        return false;
+    }
+
+    return !Array.isArray(callSession.targetUserIds) || callSession.targetUserIds.length === 0;
+}
+
+function updateCallSessionMetaUi(callSession = activeCallSession) {
+    if (!callSession) {
+        return;
+    }
+
+    const conversationName = getCallConversationName(callSession);
+    const initiatorName = getCallInitiatorName(callSession);
+    const participantsSummary = callSession.isGroupCall
+        ? getGroupParticipantsSummary(callSession)
+        : `Correspondant: ${callSession.targetName || 'Contact'}`;
+
+    if (floatingCallMeta) {
+        floatingCallMeta.textContent = callSession.isGroupCall
+            ? `Conversation: ${conversationName}`
+            : `${currentUserDisplayName} et ${callSession.targetName || 'Contact'}`;
+    }
+
+    if (floatingCallSubmeta) {
+        floatingCallSubmeta.textContent = callSession.isGroupCall
+            ? `Lance par ${initiatorName} | ${participantsSummary}`
+            : `Conversation: ${conversationName}`;
+    }
+
+    if (jitsiCallContextText) {
+        jitsiCallContextText.textContent = callSession.isGroupCall
+            ? `Conversation: ${conversationName} | Lance par: ${initiatorName}`
+            : `Conversation: ${conversationName}`;
+    }
+
+    if (jitsiParticipantsText) {
+        jitsiParticipantsText.textContent = participantsSummary;
+    }
+}
+
+function getCallWaitingText(callSession) {
+    if (!callSession) {
+        return 'Connexion en cours...';
+    }
+
+    if (callSession.isGroupCall) {
+        return callSession.isCaller
+            ? `Invitation envoyee dans ${getCallConversationName(callSession)}. En attente des participants...`
+            : `Rejoignez ${getCallConversationName(callSession)}. Appel lance par ${getCallInitiatorName(callSession)}.`;
+    }
+
+    return callSession.isCaller
+        ? `Invitation envoyee a ${callSession.targetName}. En attente de reponse...`
+        : 'Connexion au correspondant...';
+}
+
+function updateActiveCallUi(title, statusText, waitingText, roomName) {
+    if (jitsiCallTitle) jitsiCallTitle.textContent = title;
+    if (jitsiWaitingTitle) jitsiWaitingTitle.textContent = title;
+    if (jitsiWaitingText) jitsiWaitingText.textContent = waitingText;
+    if (jitsiRoomNameText) jitsiRoomNameText.textContent = `Salle: ${roomName || '-'}`;
+    if (jitsiHelpText) {
+        jitsiHelpText.classList.toggle('d-none', isWebRtcCallMode());
+    }
+    if (jitsiOpenInNewTab) {
+        jitsiOpenInNewTab.href = roomName ? buildJitsiMeetingUrl(roomName, activeCallSession?.callType || 'audio') : '#';
+    }
+
+    if (floatingCallTitle) floatingCallTitle.textContent = title;
+    setCurrentCallStatus(statusText);
+    updateCallSessionMetaUi(activeCallSession);
+    syncCallControlsUi();
+}
+
+function closeMeetingWindow() {
+    stopMeetingWindowMonitor();
+
+    if (!callMeetingWindow) {
+        return;
+    }
+
+    try {
+        if (!callMeetingWindow.closed) {
+            callMeetingWindow.close();
+        }
+    } catch (error) {
+        // ignore cross-window close issues
+    }
+
+    callMeetingWindow = null;
+}
+
+function prepareMeetingWindowShell() {
+    if (!isPopupMeetingMode()) {
+        return true;
+    }
+
+    const features = 'popup=yes,width=520,height=820,left=120,top=80,resizable=yes,scrollbars=yes';
+
+    try {
+        if (!callMeetingWindow || callMeetingWindow.closed) {
+            callMeetingWindow = window.open('', 'ecoadventure-call-shell', features);
+        } else {
+            callMeetingWindow.focus();
+        }
+
+        if (!callMeetingWindow) {
+            return false;
+        }
+
+        if (callMeetingWindow.location.href === 'about:blank') {
+            callMeetingWindow.document.title = 'EcoAdventure - Appel';
+            callMeetingWindow.document.body.innerHTML = `
+                <div style="font-family: Arial, sans-serif; padding: 32px; color: #1f2937; background: #f7fafc;">
+                    <h2 style="margin: 0 0 12px;">Connexion de l'appel...</h2>
+                    <p style="margin: 0;">La reunion Jitsi va s'ouvrir dans cette fenetre.</p>
+                </div>
+            `;
+        }
+
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+function openMeetingWindow(callSession, { focus = true } = {}) {
+    if (!callSession?.roomName) {
+        return false;
+    }
+
+    const meetingUrl = buildJitsiMeetingUrl(callSession.roomName, callSession.callType || 'audio');
+    const features = 'popup=yes,width=520,height=820,left=120,top=80,resizable=yes,scrollbars=yes';
+
+    try {
+        if (callMeetingWindow && !callMeetingWindow.closed) {
+            if (focus) {
+                callMeetingWindow.focus();
+            }
+
+            if (callMeetingWindow.location.href !== meetingUrl) {
+                callMeetingWindow.location.href = meetingUrl;
+            }
+
+            startMeetingWindowMonitor(callSession);
+            return true;
+        }
+
+        callMeetingWindow = window.open(meetingUrl, `ecoadventure-call-${callSession.sessionId}`, features);
+        if (callMeetingWindow && focus) {
+            callMeetingWindow.focus();
+        }
+
+        if (callMeetingWindow) {
+            startMeetingWindowMonitor(callSession);
+        }
+
+        return !!callMeetingWindow;
+    } catch (error) {
+        return false;
+    }
+}
+
+async function ensureLocalMediaPermission(callType) {
+    if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error(
+            window.isSecureContext
+                ? 'Votre navigateur ne permet pas d\'ouvrir le micro ou la camera.'
+                : 'Le micro et la camera demandent HTTPS ou localhost.'
+        );
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia(
+        callType === 'video'
+            ? { audio: true, video: { facingMode: 'user' } }
+            : { audio: true }
+    );
+
+    stream.getTracks().forEach(track => track.stop());
+}
+
+function getCurrentConversationId() {
+    return callMessagesContainer?.getAttribute('data-current-conversation-id') || '';
+}
+
+function getCurrentUserId() {
+    return callMessagesContainer?.getAttribute('data-my-user-id') || '';
+}
+
+function readJsonArrayAttribute(...values) {
+    for (const rawValue of values) {
+        if (!rawValue) {
+            continue;
+        }
+
+        try {
+            const parsed = JSON.parse(rawValue);
+            if (Array.isArray(parsed)) {
+                return parsed;
+            }
+        } catch (error) {
+            // ignore malformed inline payloads
+        }
+    }
+
+    return [];
+}
+
+function getCurrentCallTargetUserIds() {
+    const rawIds = readJsonArrayAttribute(
+        startAudioCallBtn?.getAttribute('data-target-user-ids'),
+        startVideoCallBtn?.getAttribute('data-target-user-ids'),
+        callMessagesContainer?.getAttribute('data-call-target-user-ids')
+    );
+
+    return rawIds
+        .map((value) => Number(value || 0))
+        .filter((value) => Number.isInteger(value) && value > 0);
+}
+
+function getCurrentCallTargetUserId() {
+    return getCurrentCallTargetUserIds()[0] || Number(
+        startAudioCallBtn?.getAttribute('data-target-user-id')
+        || startVideoCallBtn?.getAttribute('data-target-user-id')
+        || callMessagesContainer?.getAttribute('data-call-target-user-id')
+        || 0
+    );
+}
+
+function getCurrentCallTargetNames() {
+    return readJsonArrayAttribute(
+        startAudioCallBtn?.getAttribute('data-target-names'),
+        startVideoCallBtn?.getAttribute('data-target-names'),
+        callMessagesContainer?.getAttribute('data-call-target-names')
+    ).map((value) => String(value || '').trim()).filter(Boolean);
+}
+
+function getCurrentCallTargetName() {
+    return startAudioCallBtn?.getAttribute('data-target-name')
+        || startVideoCallBtn?.getAttribute('data-target-name')
+        || callMessagesContainer?.getAttribute('data-call-target-name')
+        || 'Contact';
+}
+
+function isCurrentConversationGroupCall() {
+    return (startAudioCallBtn?.getAttribute('data-is-group-call')
+        || startVideoCallBtn?.getAttribute('data-is-group-call')
+        || callMessagesContainer?.getAttribute('data-current-conversation-group')
+        || '0') === '1';
+}
+
+function isCurrentConversationCallBlocked() {
+    return (callMessagesContainer?.getAttribute('data-call-blocked') || '0') === '1';
+}
+
+function getCurrentUserIdNumber() {
+    return Number(getCurrentUserId() || 0);
+}
+
+function getCurrentConversationParticipantCount() {
+    return 1 + getCurrentCallTargetUserIds().length;
+}
+
+function getGroupParticipantName(peerUserId, fallbackName = 'Participant') {
+    if (!peerUserId) {
+        return fallbackName;
+    }
+
+    const participantState = groupRemoteParticipantState.get(Number(peerUserId));
+    if (participantState?.name) {
+        return participantState.name;
+    }
+
+    if (!activeCallSession) {
+        return fallbackName;
+    }
+
+    const ids = Array.isArray(activeCallSession.targetUserIds) ? activeCallSession.targetUserIds : [];
+    const names = Array.isArray(activeCallSession.targetNames) ? activeCallSession.targetNames : [];
+    const index = ids.findIndex((value) => Number(value) === Number(peerUserId));
+    if (index >= 0 && names[index]) {
+        return names[index];
+    }
+
+    return fallbackName;
+}
+
+function upsertActiveCallPeer(peerUserId, peerName = 'Participant') {
+    if (!activeCallSession) {
+        return;
+    }
+
+    const normalizedUserId = Number(peerUserId || 0);
+    if (!normalizedUserId || normalizedUserId === getCurrentUserIdNumber()) {
+        return;
+    }
+
+    const ids = Array.isArray(activeCallSession.targetUserIds) ? [...activeCallSession.targetUserIds] : [];
+    const names = Array.isArray(activeCallSession.targetNames) ? [...activeCallSession.targetNames] : [];
+    const index = ids.findIndex((value) => Number(value) === normalizedUserId);
+    const resolvedName = String(peerName || getGroupParticipantName(normalizedUserId, 'Participant')).trim() || 'Participant';
+
+    if (index >= 0) {
+        names[index] = resolvedName;
+    } else {
+        ids.push(normalizedUserId);
+        names.push(resolvedName);
+    }
+
+    activeCallSession.targetUserIds = ids;
+    activeCallSession.targetNames = names;
+}
+
+function removeActiveCallPeer(peerUserId) {
+    if (!activeCallSession) {
+        return;
+    }
+
+    const normalizedUserId = Number(peerUserId || 0);
+    const ids = Array.isArray(activeCallSession.targetUserIds) ? [...activeCallSession.targetUserIds] : [];
+    const names = Array.isArray(activeCallSession.targetNames) ? [...activeCallSession.targetNames] : [];
+    const index = ids.findIndex((value) => Number(value) === normalizedUserId);
+    if (index < 0) {
+        return;
+    }
+
+    ids.splice(index, 1);
+    names.splice(index, 1);
+    activeCallSession.targetUserIds = ids;
+    activeCallSession.targetNames = names;
+
+    if (Number(activeCallSession.targetUserId || 0) === normalizedUserId) {
+        activeCallSession.targetUserId = ids[0] || 0;
+    }
+}
+
+function syncRemoteParticipantConnectedFlag() {
+    if (activeCallSession?.isGroupCall) {
+        remoteParticipantConnected = Array.from(groupRemoteParticipantState.values()).some((participant) => !!participant.connected);
+        return;
+    }
+
+    remoteParticipantConnected = !!remoteCallStream;
+}
+
+function upsertGroupRemoteParticipant(peerUserId, peerName = 'Participant', connected = false) {
+    const normalizedUserId = Number(peerUserId || 0);
+    if (!normalizedUserId || normalizedUserId === getCurrentUserIdNumber()) {
+        return;
+    }
+
+    const existing = groupRemoteParticipantState.get(normalizedUserId) || {};
+    groupRemoteParticipantState.set(normalizedUserId, {
+        name: String(peerName || existing.name || 'Participant').trim() || 'Participant',
+        connected: connected || !!existing.connected,
+    });
+    upsertActiveCallPeer(normalizedUserId, String(peerName || existing.name || 'Participant'));
+}
+
+function setGroupParticipantConnectionState(peerUserId, connected) {
+    const normalizedUserId = Number(peerUserId || 0);
+    if (!normalizedUserId) {
+        return;
+    }
+
+    const existing = groupRemoteParticipantState.get(normalizedUserId) || { name: getGroupParticipantName(normalizedUserId) };
+    groupRemoteParticipantState.set(normalizedUserId, {
+        name: existing.name || getGroupParticipantName(normalizedUserId),
+        connected: !!connected,
+    });
+    syncRemoteParticipantConnectedFlag();
+}
+
+function getOrderedGroupParticipants() {
+    const ids = Array.isArray(activeCallSession?.targetUserIds) ? activeCallSession.targetUserIds : [];
+    return ids.map((userId) => {
+        const normalizedUserId = Number(userId || 0);
+        const participantState = groupRemoteParticipantState.get(normalizedUserId);
+        return {
+            userId: normalizedUserId,
+            name: participantState?.name || getGroupParticipantName(normalizedUserId),
+            connected: !!participantState?.connected,
+            stream: groupRemoteStreams.get(normalizedUserId) || null,
+        };
+    }).filter((participant) => participant.userId > 0);
+}
+
+function clearGroupPeerDisconnectTimeout(peerUserId) {
+    const timeoutId = groupPeerDisconnectTimeouts.get(Number(peerUserId || 0));
+    if (timeoutId) {
+        window.clearTimeout(timeoutId);
+        groupPeerDisconnectTimeouts.delete(Number(peerUserId || 0));
+    }
+}
+
+function closeGroupPeerConnection(peerUserId, { removeParticipant = false } = {}) {
+    const normalizedUserId = Number(peerUserId || 0);
+    clearGroupPeerDisconnectTimeout(normalizedUserId);
+
+    const connection = groupPeerConnections.get(normalizedUserId);
+    if (connection) {
+        try {
+            connection.onicecandidate = null;
+            connection.ontrack = null;
+            connection.onconnectionstatechange = null;
+            connection.oniceconnectionstatechange = null;
+            connection.close();
+        } catch (error) {
+            // keep teardown resilient
+        }
+        groupPeerConnections.delete(normalizedUserId);
+    }
+
+    const stream = groupRemoteStreams.get(normalizedUserId);
+    if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        groupRemoteStreams.delete(normalizedUserId);
+    }
+
+    groupPendingRemoteCandidates.delete(normalizedUserId);
+    if (removeParticipant) {
+        groupRemoteParticipantState.delete(normalizedUserId);
+        removeActiveCallPeer(normalizedUserId);
+    } else {
+        setGroupParticipantConnectionState(normalizedUserId, false);
+    }
+}
+
+function resetGroupCallState() {
+    Array.from(groupPeerConnections.keys()).forEach((peerUserId) => closeGroupPeerConnection(peerUserId, { removeParticipant: true }));
+    groupRemoteParticipantState.clear();
+    groupPendingRemoteCandidates.clear();
+    groupPeerDisconnectTimeouts.clear();
+}
+
+function buildCallWindowUrl(callSession = activeCallSession) {
+    const userId = getCurrentUserId();
+    const conversationId = callSession?.conversationId || getCurrentConversationId();
+    return userId && conversationId ? `/messagerie/${userId}/${conversationId}/call-window` : '';
+}
+
+function buildCallSignalUrl() {
+    const userId = getCurrentUserId();
+    const conversationId = getCurrentConversationId();
+    return userId && conversationId ? `/messagerie/call/signal/${userId}/${conversationId}` : '';
+}
+
+function buildCallLogUrl() {
+    const userId = getCurrentUserId();
+    const conversationId = getCurrentConversationId();
+    return userId && conversationId ? `/call-log/${userId}/${conversationId}` : '';
+}
+
+function getActiveCallSnapshot() {
+    if (!activeCallSession) {
+        return { hasActiveCall: false };
+    }
+
+    const statusText = (floatingCallStatusText?.textContent || jitsiCallStatusText?.textContent || 'Connexion en cours...').trim();
+    const timerText = (floatingCallTimerText?.textContent || jitsiCallTimerText?.textContent || '00:00').trim();
+    const orderedGroupParticipants = activeCallSession.isGroupCall ? getOrderedGroupParticipants() : [];
+    const primaryGroupParticipant = orderedGroupParticipants.find((participant) => participant.connected && participant.stream) || orderedGroupParticipants[0] || null;
+
+    return {
+        hasActiveCall: true,
+        sessionId: activeCallSession.sessionId,
+        conversationId: activeCallSession.conversationId || getCurrentConversationId(),
+        callType: activeCallSession.callType || 'audio',
+        isVideoPresentation: isCallSessionVideoActive(activeCallSession),
+        targetName: activeCallSession.targetName || getCurrentCallTargetName(),
+        conversationName: getCallConversationName(activeCallSession),
+        initiatorName: getCallInitiatorName(activeCallSession),
+        isGroupCall: !!activeCallSession.isGroupCall,
+        currentUserDisplayName,
+        statusText,
+        timerText,
+        roomName: activeCallSession.roomName || '',
+        isCaller: !!activeCallSession.isCaller,
+        localAudioMuted,
+        localVideoMuted,
+        remoteParticipantConnected,
+        localStream: localCallStream || null,
+        remoteStream: activeCallSession.isGroupCall
+            ? (primaryGroupParticipant?.stream || null)
+            : (remoteCallStream || null),
+        groupParticipants: orderedGroupParticipants.map((participant) => ({
+            userId: participant.userId,
+            name: participant.name,
+            connected: participant.connected,
+            stream: participant.stream || null,
+        })),
+        groupParticipantsSummary: activeCallSession.isGroupCall ? getGroupParticipantsSummary(activeCallSession) : '',
+    };
+}
+
+function openStandaloneCallWindow() {
+    if (!activeCallSession) {
+        return false;
+    }
+
+    if (!isWebRtcCallMode(activeCallSession)) {
+        restoreJitsiCallWindow();
+        return true;
+    }
+
+    const callWindowUrl = buildCallWindowUrl(activeCallSession);
+    if (!callWindowUrl) {
+        showComposerError('Impossible d ouvrir la page d appel pour cette conversation.');
+        return false;
+    }
+
+    const features = 'popup=yes,width=1400,height=860,left=80,top=60,resizable=yes,scrollbars=yes';
+
+    try {
+        if (callViewWindow && !callViewWindow.closed) {
+            if (callViewWindow.location.href !== callWindowUrl) {
+                callViewWindow.location.href = callWindowUrl;
+            }
+            callViewWindow.focus();
+        } else {
+            callViewWindow = window.open(callWindowUrl, `ecoadventure-call-view-${activeCallSession.sessionId || 'live'}`, features);
+            if (!callViewWindow) {
+                showComposerError('Autorisez les popups pour ouvrir la page d appel.');
+                return false;
+            }
+            callViewWindow.focus();
+        }
+
+        minimizingCurrentCall = true;
+        exitBrowserFullscreenForCall();
+        if (jitsiCallModalEl?.classList.contains('show')) {
+            jitsiCallModal?.hide();
+        } else {
+            syncFloatingCallWidget(true);
+        }
+
+        return true;
+    } catch (error) {
+        showComposerError('Impossible d ouvrir la page d appel.');
+        return false;
+    }
+}
+
+window.__ecoAdventureCallBridge = {
+    getSnapshot() {
+        return getActiveCallSnapshot();
+    },
+    async toggleAudio() {
+        await toggleLocalAudioForCall();
+        return getActiveCallSnapshot();
+    },
+    async toggleVideo() {
+        await toggleLocalVideoForCall();
+        return getActiveCallSnapshot();
+    },
+    async hangup() {
+        await requestLocalHangup();
+        return getActiveCallSnapshot();
+    },
+    focusMessenger() {
+        window.focus();
+        return getActiveCallSnapshot();
+    },
+};
+
+function buildCallSessionId() {
+    if (window.crypto?.randomUUID) {
+        return window.crypto.randomUUID().replace(/[^A-Za-z0-9-]/g, '');
+    }
+
+    return `${Date.now()}-${Math.random().toString(16).slice(2, 10)}`.replace(/[^A-Za-z0-9-]/g, '');
+}
+
+function buildJitsiRoomName(conversationId, sessionId) {
+    return `${jitsiRoomPrefix}-${conversationId}-${sessionId}`.replace(/[^A-Za-z0-9-_]/g, '-');
+}
+
+function buildJitsiMeetingUrl(roomName, callType = 'audio') {
+    const configParams = new URLSearchParams({
+        'config.prejoinConfig.enabled': 'false',
+        'config.disableThirdPartyRequests': 'true',
+        'config.useHostPageLocalStorage': 'true',
+        'config.startWithAudioMuted': 'false',
+        'config.startWithVideoMuted': callType === 'video' ? 'false' : 'true',
+        'config.startAudioOnly': callType === 'audio' ? 'true' : 'false',
+        'config.defaultLanguage': 'fr',
+    });
+
+    return `https://${jitsiDomain}/${encodeURIComponent(roomName)}#${configParams.toString()}`;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function appendLocalCallLogMessage({ callType, durationLabel, sentAtLabel, messageId = null }) {
+    if (!callMessagesContainer || !activeCallSession) {
+        return;
+    }
+
+    if (messageId) {
+        const existingMessage = callMessagesContainer.querySelector(`[data-message-id="${String(messageId)}"]`);
+        if (existingMessage) {
+            return;
+        }
+    }
+
+    const callLabel = callType === 'video' ? 'Appel video' : 'Appel audio';
+    const iconClass = callType === 'video' ? 'bi-camera-video-fill' : 'bi-telephone-fill';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'd-flex justify-content-end mb-3 message-item';
+    if (messageId) {
+        wrapper.setAttribute('data-message-id', String(messageId));
+    }
+    wrapper.innerHTML = `
+        <div class="message-bubble message-sent shadow" style="position: relative;">
+            <div class="mb-2 fw-bold small text-white-50">${escapeHtml(currentUserDisplayName)}</div>
+            <div class="d-flex align-items-center gap-2 text-white">
+                <i class="bi ${iconClass}"></i>
+                <span>${escapeHtml(callLabel)} - ${escapeHtml(durationLabel || '00:00')}</span>
+            </div>
+            <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <span class="time-stamp text-white-50">
+                        ${escapeHtml(sentAtLabel || '')}
+                        <span class="message-checkmarks">
+                            <span class="checkmark">&#10003;&#10003;</span>
+                        </span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    callMessagesContainer.appendChild(wrapper);
+    if (messageId) {
+        const currentLastMessageId = Number(callMessagesContainer.getAttribute('data-last-message-id') || '0');
+        if (Number(messageId) > currentLastMessageId) {
+            callMessagesContainer.setAttribute('data-last-message-id', String(messageId));
+        }
+    }
+    callMessagesContainer.scrollTop = callMessagesContainer.scrollHeight;
+}
+
+function setCallBannerState(title, callerName, metaText) {
+    if (!callIncomingBanner) return;
+    if (callBannerTitle) callBannerTitle.textContent = title;
+    if (incomingCallerName) incomingCallerName.textContent = callerName;
+    if (incomingCallMeta) incomingCallMeta.textContent = metaText;
+    if (acceptCallBtn) acceptCallBtn.disabled = false;
+    if (rejectCallBtn) rejectCallBtn.disabled = false;
+    callIncomingBanner.classList.remove('d-none');
+    startIncomingCallRingtone();
+    syncCallActionButtons();
+}
+
+function hideCallBanner() {
+    if (acceptCallBtn) acceptCallBtn.disabled = false;
+    if (rejectCallBtn) rejectCallBtn.disabled = false;
+    callIncomingBanner?.classList.add('d-none');
+    stopIncomingCallRingtone();
+    syncCallActionButtons();
+}
+
+function rememberClosedCallSession(sessionId) {
+    if (!sessionId) {
+        return;
+    }
+
+    closedCallSessions.add(sessionId);
+    window.setTimeout(() => closedCallSessions.delete(sessionId), 10 * 60 * 1000);
+}
+
+function isCallSessionClosed(sessionId) {
+    return !!sessionId && closedCallSessions.has(sessionId);
+}
+
+function rememberAcceptedCallSession(sessionId) {
+    if (!sessionId) {
+        return;
+    }
+
+    acceptedCallSessions.add(sessionId);
+    window.setTimeout(() => acceptedCallSessions.delete(sessionId), 10 * 60 * 1000);
+}
+
+function isCallSessionAccepted(sessionId) {
+    return !!sessionId && acceptedCallSessions.has(sessionId);
+}
+
+function stopMeetingWindowMonitor() {
+    if (!callMeetingWindowMonitor) {
+        return;
+    }
+
+    clearInterval(callMeetingWindowMonitor);
+    callMeetingWindowMonitor = null;
+}
+
+function startMeetingWindowMonitor(callSession) {
+    if (!isPopupMeetingMode() || !callSession?.sessionId) {
+        return;
+    }
+
+    stopMeetingWindowMonitor();
+
+    callMeetingWindowMonitor = window.setInterval(() => {
+        if (!activeCallSession || activeCallSession.sessionId !== callSession.sessionId || endingCurrentCall) {
+            stopMeetingWindowMonitor();
+            return;
+        }
+
+        if (callMeetingWindow && !callMeetingWindow.closed) {
+            return;
+        }
+
+        stopMeetingWindowMonitor();
+        requestLocalHangup();
+    }, 1200);
+}
+
+function setHangupButtonsBusy(isBusy) {
+    [leaveJitsiCallBtn, endFloatingCallBtn].forEach((button) => {
+        if (!button) {
+            return;
+        }
+
+        button.disabled = isBusy;
+        button.classList.toggle('opacity-75', isBusy);
+    });
+}
+
+function startIncomingCallRingtone() {
+    stopIncomingCallRingtone();
+    playIncomingNotificationSound();
+
+    incomingCallRingInterval = window.setInterval(() => {
+        playIncomingNotificationSound();
+    }, 1800);
+}
+
+function stopIncomingCallRingtone() {
+    if (!incomingCallRingInterval) {
+        return;
+    }
+
+    clearInterval(incomingCallRingInterval);
+    incomingCallRingInterval = null;
+}
+
+function updateJitsiModalText(title, statusText, waitingText, roomName) {
+    updateActiveCallUi(title, statusText, waitingText, roomName);
+}
+
+function showJitsiWaitingState(title, waitingText, roomName) {
+    updateJitsiModalText(title, 'En attente de connexion...', waitingText, roomName);
+    jitsiWaitingState?.classList.remove('d-none');
+    jitsiMeetingContainer?.classList.add('d-none');
+    if (isPopupMeetingMode()) {
+        syncFloatingCallWidget(true);
+        return;
+    }
+
+    syncFloatingCallWidget(false);
+    jitsiCallModal?.show();
+}
+
+function showJitsiMeetingState(title, statusText, roomName) {
+    updateJitsiModalText(title, statusText, 'Connexion a la reunion...', roomName);
+    jitsiWaitingState?.classList.add('d-none');
+    jitsiMeetingContainer?.classList.remove('d-none');
+    if (isPopupMeetingMode()) {
+        syncFloatingCallWidget(true);
+        return;
+    }
+
+    syncFloatingCallWidget(false);
+    jitsiCallModal?.show();
+}
+
+function disposeJitsiMeeting() {
+    clearPeerDisconnectTimeout();
+    resetGroupCallState();
+
+    if (peerConnection) {
+        try {
+            peerConnection.onicecandidate = null;
+            peerConnection.ontrack = null;
+            peerConnection.onconnectionstatechange = null;
+            peerConnection.oniceconnectionstatechange = null;
+            peerConnection.close();
+        } catch (error) {
+            // keep UI stable on close errors
+        }
+    }
+
+    if (localCallStream) {
+        localCallStream.getTracks().forEach(track => track.stop());
+    }
+
+    if (remoteCallStream) {
+        remoteCallStream.getTracks().forEach(track => track.stop());
+    }
+
+    peerConnection = null;
+    localCallStream = null;
+    remoteCallStream = null;
+    pendingRemoteCandidates = [];
+
+    if (jitsiApi && typeof jitsiApi.dispose === 'function') {
+        try {
+            jitsiApi.dispose();
+        } catch (error) {
+            // keep UI stable on dispose errors
+        }
+    }
+
+    jitsiApi = null;
+    activeCallStartedAt = null;
+    remoteParticipantConnected = false;
+    localConferenceJoined = false;
+    localAudioMuted = false;
+    localVideoMuted = false;
+    stopActiveCallTimer();
+
+    if (jitsiMeetingContainer) {
+        jitsiMeetingContainer.innerHTML = '';
+        jitsiMeetingContainer.classList.add('d-none');
+    }
+
+    jitsiWaitingState?.classList.remove('d-none');
+    syncFloatingCallWidget(false);
+    syncCallActionButtons();
+}
+
+function loadJitsiExternalApi() {
+    if (window.JitsiMeetExternalAPI) {
+        return Promise.resolve(window.JitsiMeetExternalAPI);
+    }
+
+    if (jitsiScriptPromise) {
+        return jitsiScriptPromise;
+    }
+
+    jitsiScriptPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `https://${jitsiDomain}/external_api.js`;
+        script.async = true;
+        script.onload = () => resolve(window.JitsiMeetExternalAPI);
+        script.onerror = () => reject(new Error('Impossible de charger Jitsi. Verifiez Internet, l acces a meet.jit.si, ou ouvrez la reunion dans un nouvel onglet.'));
+        document.head.appendChild(script);
+    });
+
+    return jitsiScriptPromise;
+}
+
+async function sendCallSignal(signalType, targetUserId, callType, sessionId, payload = {}) {
+    const signalUrl = buildCallSignalUrl();
+    if (!signalUrl) {
+        throw new Error('Conversation indisponible pour la signalisation.');
+    }
+
+    const response = await fetch(signalUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            target_user_id: targetUserId,
+            signal_type: signalType,
+            call_type: callType,
+            session_id: sessionId,
+            payload,
+        }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (data.closed) {
+        return {
+            success: false,
+            closed: true,
+            session_state: data.session_state || 'closed',
+            error: data.error || 'Call session is already closed',
+        };
+    }
+
+    if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Signal d\'appel impossible.');
+    }
+
+    return data;
+}
+
+async function postCallLogForActiveSession() {
+    if (!activeCallSession || activeCallLogged || !activeCallSession.isCaller || !activeCallStartedAt) {
+        return;
+    }
+
+    const logUrl = buildCallLogUrl();
+    if (!logUrl) {
+        return;
+    }
+
+    activeCallLogged = true;
+    const endedAt = new Date();
+    const durationSeconds = Math.max(1, Math.round((Date.now() - activeCallStartedAt) / 1000));
+
+    const response = await fetch(logUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            type: activeCallSession.callType,
+            duration: String(durationSeconds),
+            provider: isWebRtcCallMode(activeCallSession) ? 'webrtc' : 'jitsi',
+            room_name: activeCallSession.roomName || '',
+            meeting_url: isWebRtcCallMode(activeCallSession) ? '' : buildJitsiMeetingUrl(activeCallSession.roomName || '', activeCallSession.callType || 'audio'),
+            started_at: new Date(activeCallStartedAt).toISOString(),
+            ended_at: endedAt.toISOString(),
+        }).toString(),
+    }).catch(() => null);
+
+    if (!response?.ok) {
+        return;
+    }
+
+    const data = await response.json().catch(() => ({}));
+    if (!data.success) {
+        return;
+    }
+
+    appendLocalCallLogMessage({
+        callType: activeCallSession.callType,
+        durationLabel: data.duration_label || formatCallDuration(durationSeconds),
+        sentAtLabel: endedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        messageId: data.message_id || null,
+    });
+}
+
+async function finalizeActiveCall({ notifyRemote = false } = {}) {
+    if (endingCurrentCall) {
+        return;
+    }
+
+    const callSession = activeCallSession;
+    endingCurrentCall = true;
+    setHangupButtonsBusy(true);
+    stopIncomingCallRingtone();
+    if (callSession?.sessionId) {
+        rememberClosedCallSession(callSession.sessionId);
+    }
+
+    if (notifyRemote && callSession) {
+        const groupRecipients = Array.isArray(callSession.targetUserIds) ? callSession.targetUserIds : [];
+        const shouldCloseGroupSession = !(activeCallStartedAt || remoteParticipantConnected);
+        if (callSession.isGroupCall && groupRecipients.length > 0) {
+            await Promise.allSettled(groupRecipients.map((recipientUserId) => sendCallSignal(
+                'end',
+                recipientUserId,
+                callSession.callType,
+                callSession.sessionId,
+                {
+                    room_name: callSession.roomName,
+                    is_group_call: true,
+                    participant_name: currentUserDisplayName,
+                    close_session: shouldCloseGroupSession,
+                }
+            )));
+        } else if (callSession.targetUserId) {
+            await sendCallSignal(
+                'end',
+                callSession.targetUserId,
+                callSession.callType,
+                callSession.sessionId,
+                { room_name: callSession.roomName }
+            ).catch(() => {});
+        }
+    }
+
+    await postCallLogForActiveSession();
+
+    closeMeetingWindow();
+    disposeJitsiMeeting();
+    hideCallBanner();
+    incomingCallInvite = null;
+    activeCallSession = null;
+    minimizingCurrentCall = false;
+
+    if (jitsiCallModalEl?.classList.contains('show')) {
+        jitsiCallModal?.hide();
+    }
+
+    setTimeout(() => {
+        endingCurrentCall = false;
+        setHangupButtonsBusy(false);
+        syncCallActionButtons();
+    }, 150);
+}
+
+async function mountJitsiMeeting(callSession) {
+    if (!callSession || !jitsiMeetingContainer) {
+        return;
+    }
+
+    if (isWebRtcCallMode(callSession)) {
+        disposeJitsiMeeting();
+
+        if (callSession.isGroupCall) {
+            const seedUserIds = Array.isArray(callSession.targetUserIds) ? callSession.targetUserIds : [];
+            const seedNames = Array.isArray(callSession.targetNames) ? callSession.targetNames : [];
+            seedUserIds.forEach((peerUserId, index) => {
+                const peerName = seedNames[index] || getGroupParticipantName(peerUserId, 'Participant');
+                upsertGroupRemoteParticipant(peerUserId, peerName, false);
+            });
+
+            renderWebRtcCallStage(callSession);
+            await ensureWebRtcLocalStream(callSession.callType);
+
+            showJitsiMeetingState(
+                getCallDisplayTitle(callSession),
+                callSession.isCaller ? 'En attente des participants...' : 'Connexion au groupe...',
+                callSession.roomName
+            );
+
+            setCurrentCallStatus(callSession.isCaller ? 'En attente des participants...' : 'Connexion au groupe...');
+            syncRemoteParticipantConnectedFlag();
+            syncWebRtcStageStreams();
+            syncFloatingCallWidget(false);
+            jitsiCallModal?.show();
+            return true;
+        }
+
+        renderWebRtcCallStage(callSession);
+        await ensureWebRtcLocalStream(callSession.callType);
+        await ensureWebRtcPeerConnection(callSession);
+
+        showJitsiMeetingState(
+            getCallDisplayTitle(callSession),
+            callSession.isCaller ? 'En attente de reponse...' : 'Connexion au correspondant...',
+            callSession.roomName
+        );
+
+        setCurrentCallStatus(callSession.isCaller ? 'En attente de reponse...' : 'Connexion au correspondant...');
+        syncWebRtcStageStreams();
+        syncFloatingCallWidget(false);
+        jitsiCallModal?.show();
+        return true;
+    }
+
+    if (isPopupMeetingMode()) {
+        disposeJitsiMeeting();
+        remoteParticipantConnected = !callSession.isCaller;
+        localConferenceJoined = true;
+        localAudioMuted = false;
+        localVideoMuted = callSession.callType !== 'video';
+
+        showJitsiMeetingState(
+            getCallDisplayTitle(callSession),
+            callSession.isCaller ? 'Fenetre d appel ouverte. En attente...' : 'Reunion ouverte dans une nouvelle fenetre.',
+            callSession.roomName
+        );
+
+        const popupOpened = openMeetingWindow(callSession, { focus: true });
+        if (!popupOpened) {
+            throw new Error('Le navigateur a bloque la fenetre Jitsi. Autorisez les popups ou cliquez sur "Grand".');
+        }
+
+        if (jitsiCallModalEl?.classList.contains('show')) {
+            jitsiCallModal?.hide();
+        }
+
+        syncFloatingCallWidget(true);
+        syncCallControlsUi();
+        return true;
+    }
+
+    await loadJitsiExternalApi();
+    disposeJitsiMeeting();
+    remoteParticipantConnected = false;
+    localAudioMuted = false;
+    localVideoMuted = callSession.callType !== 'video';
+    showJitsiMeetingState(
+        getCallDisplayTitle(callSession),
+        callSession.isCaller ? 'Sonnerie en cours...' : 'Connexion a la reunion...',
+        callSession.roomName
+    );
+
+    let resolveJoined = null;
+    let rejectJoined = null;
+    let joinSettled = false;
+    let joinTimeoutId = null;
+    const joinedPromise = new Promise((resolve, reject) => {
+        resolveJoined = resolve;
+        rejectJoined = reject;
+    });
+
+    const settleJoin = (type, value) => {
+        if (joinSettled) {
+            return;
+        }
+
+        joinSettled = true;
+        if (joinTimeoutId) {
+            clearTimeout(joinTimeoutId);
+            joinTimeoutId = null;
+        }
+
+        if (type === 'resolve') {
+            resolveJoined?.(value);
+            return;
+        }
+
+        rejectJoined?.(value);
+    };
+
+    const options = {
+        roomName: callSession.roomName,
+        width: '100%',
+        height: '100%',
+        parentNode: jitsiMeetingContainer,
+        lang: 'fr',
+        userInfo: {
+            displayName: currentUserDisplayName,
+            email: currentUserEmail,
+        },
+        configOverwrite: {
+            prejoinPageEnabled: false,
+            prejoinConfig: {
+                enabled: false,
+            },
+            disableDeepLinking: true,
+            disableThirdPartyRequests: true,
+            useHostPageLocalStorage: true,
+            defaultLanguage: 'fr',
+            startAudioOnly: callSession.callType === 'audio',
+            startSilent: false,
+            startWithAudioMuted: false,
+            startWithVideoMuted: localVideoMuted,
+        },
+        interfaceConfigOverwrite: {
+            TILE_VIEW_MAX_COLUMNS: 2,
+        },
+    };
+
+    jitsiApi = new window.JitsiMeetExternalAPI(jitsiDomain, options);
+    window.setTimeout(() => {
+        const iframe = jitsiMeetingContainer.querySelector('iframe');
+        if (!iframe) {
+            return;
+        }
+
+        iframe.setAttribute('allow', 'camera; microphone; fullscreen; display-capture; autoplay; clipboard-read; clipboard-write');
+        iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    }, 0);
+
+    joinTimeoutId = window.setTimeout(() => {
+        settleJoin('reject', new Error('La reunion integree ne repond pas. Cliquez sur "Grand" ou ouvrez le lien direct de reunion.'));
+    }, 20000);
+
+    jitsiApi.addListener('videoConferenceJoined', () => {
+        localConferenceJoined = true;
+        try {
+            jitsiApi.executeCommand('displayName', currentUserDisplayName);
+        } catch (error) {
+            // keep the conference usable if the display name command is unavailable
+        }
+
+        if (callSession.callType === 'audio') {
+            try {
+                jitsiApi.executeCommand('setAudioOnly', true);
+            } catch (error) {
+                // keep audio call usable even if the command is unavailable
+            }
+        }
+
+        setCurrentCallStatus(callSession.isCaller ? 'Salle ouverte, en attente...' : 'Connexion au correspondant...');
+        syncCallControlsUi();
+        settleJoin('resolve', true);
+    });
+
+    jitsiApi.addListener('participantJoined', () => {
+        remoteParticipantConnected = true;
+        if (!activeCallStartedAt) {
+            startActiveCallTimer();
+        }
+        setCurrentCallStatus('Appel connecte');
+        syncCallControlsUi();
+    });
+
+    jitsiApi.addListener('participantLeft', () => {
+        remoteParticipantConnected = false;
+        setCurrentCallStatus(callSession.isGroupCall ? 'Un participant a quitte l appel' : 'Le correspondant a quitte l appel');
+        syncCallControlsUi();
+    });
+
+    jitsiApi.addListener('audioMuteStatusChanged', (event) => {
+        localAudioMuted = !!event?.muted;
+        syncCallControlsUi();
+    });
+
+    jitsiApi.addListener('videoMuteStatusChanged', (event) => {
+        localVideoMuted = !!event?.muted;
+        syncCallControlsUi();
+    });
+
+    jitsiApi.addListener('readyToClose', () => {
+        if (endingCurrentCall) {
+            return;
+        }
+
+        settleJoin('reject', new Error('La reunion integree s est fermee avant le demarrage complet de l appel.'));
+        finalizeActiveCall({ notifyRemote: false });
+    });
+
+    jitsiApi.addListener('cameraError', (event) => {
+        showComposerError(event?.message || 'Camera inaccessible pour l\'appel video.');
+    });
+
+    syncFloatingCallWidget(false);
+    return joinedPromise;
+}
+
+async function startOutgoingJitsiCall(callType) {
+    if (activeCallSession || incomingCallInvite || startingOutgoingCall) {
+        showComposerError('Un appel est deja en cours ou en attente.');
+        return;
+    }
+
+    if (isCurrentConversationCallBlocked()) {
+        showComposerError(isCurrentConversationGroupCall()
+            ? 'Les appels audio et video sont bloques pour ce groupe.'
+            : 'Les appels audio et video sont bloques pour ce contact.');
+        syncFloatingCallWidget(false);
+        return;
+    }
+
+    startingOutgoingCall = true;
+    syncCallActionButtons();
+
+    const conversationId = getCurrentConversationId();
+    const targetUserIds = getCurrentCallTargetUserIds();
+    const targetUserId = targetUserIds[0] || 0;
+    const targetNames = getCurrentCallTargetNames();
+    const targetName = getCurrentCallTargetName();
+    const isGroupCall = isCurrentConversationGroupCall();
+
+    if (!conversationId || !targetUserIds.length) {
+        startingOutgoingCall = false;
+        syncCallActionButtons();
+        if (!isWebRtcCallMode({ isGroupCall })) {
+            closeMeetingWindow();
+        }
+        showComposerError(isGroupCall ? 'Selectionnez un groupe avec au moins un membre appelable.' : 'Selectionnez une conversation privee avant de lancer un appel.');
+        return;
+    }
+
+    if (isGroupCall && getCurrentConversationParticipantCount() > MAX_GROUP_WEBRTC_PARTICIPANTS) {
+        startingOutgoingCall = false;
+        syncCallActionButtons();
+        showComposerError(`Les appels WebRTC de groupe sont limites a ${MAX_GROUP_WEBRTC_PARTICIPANTS} personnes.`);
+        return;
+    }
+
+    if (!isWebRtcCallMode({ isGroupCall }) && !prepareMeetingWindowShell()) {
+        startingOutgoingCall = false;
+        syncCallActionButtons();
+        showComposerError('Autorisez les popups pour ouvrir la reunion Jitsi.');
+        return;
+    }
+
+    if (!isWebRtcCallMode({ isGroupCall })) {
+        try {
+            await ensureLocalMediaPermission(callType);
+        } catch (error) {
+            startingOutgoingCall = false;
+            syncCallActionButtons();
+            closeMeetingWindow();
+            showComposerError(error.message || 'Autorisez le micro et la camera pour demarrer l appel.');
+            return;
+        }
+    }
+
+    const sessionId = buildCallSessionId();
+    const roomName = buildJitsiRoomName(conversationId, sessionId);
+
+    activeCallLogged = false;
+    localAudioMuted = false;
+    localVideoMuted = callType !== 'video';
+    activeCallSession = {
+        sessionId,
+        roomName,
+        conversationId: Number(conversationId),
+        callType,
+        targetUserId,
+        targetUserIds,
+        targetNames,
+        targetName,
+        conversationName: targetName,
+        initiatorName: currentUserDisplayName,
+        isCaller: true,
+        isGroupCall,
+    };
+    startingOutgoingCall = false;
+    syncCallActionButtons();
+
+    showJitsiWaitingState(
+        getCallDisplayTitle(activeCallSession),
+        getCallWaitingText(activeCallSession),
+        roomName
+    );
+
+    try {
+        await mountJitsiMeeting(activeCallSession);
+        const invitePayload = {
+            room_name: roomName,
+            caller_name: currentUserDisplayName,
+            meeting_url: isWebRtcCallMode(activeCallSession) ? '' : buildJitsiMeetingUrl(roomName, callType),
+            is_group_call: isGroupCall,
+            conversation_title: targetName,
+        };
+
+        if (isGroupCall) {
+            const inviteResults = await Promise.allSettled(
+                targetUserIds.map((recipientUserId) => sendCallSignal('invite', recipientUserId, callType, sessionId, invitePayload))
+            );
+
+            if (inviteResults.every((result) => result.status === 'rejected')) {
+                const firstFailure = inviteResults.find((result) => result.status === 'rejected');
+                throw new Error(firstFailure?.reason?.message || 'Impossible d inviter les membres du groupe.');
+            }
+        } else {
+            await sendCallSignal('invite', targetUserId, callType, sessionId, invitePayload);
+        }
+    } catch (error) {
+        startingOutgoingCall = false;
+        showComposerError(error.message || 'Impossible de demarrer l\'appel.');
+        await finalizeActiveCall({ notifyRemote: true });
+    }
+}
+
+async function acceptIncomingJitsiCall() {
+    if (!incomingCallInvite || activeCallSession || acceptingIncomingCall) {
+        return;
+    }
+
+    if (isCallSessionClosed(incomingCallInvite.sessionId) || isCallSessionAccepted(incomingCallInvite.sessionId)) {
+        hideCallBanner();
+        incomingCallInvite = null;
+        showComposerError('Cet appel a deja ete traite.');
+        return;
+    }
+
+    acceptingIncomingCall = true;
+    if (acceptCallBtn) acceptCallBtn.disabled = true;
+    if (rejectCallBtn) rejectCallBtn.disabled = true;
+
+    if (!isWebRtcCallMode() && !prepareMeetingWindowShell()) {
+        acceptingIncomingCall = false;
+        if (acceptCallBtn) acceptCallBtn.disabled = false;
+        if (rejectCallBtn) rejectCallBtn.disabled = false;
+        showComposerError('Autorisez les popups pour ouvrir la reunion Jitsi.');
+        return;
+    }
+
+    if (!isWebRtcCallMode()) {
+        try {
+            await ensureLocalMediaPermission(incomingCallInvite.callType);
+        } catch (error) {
+            acceptingIncomingCall = false;
+            if (acceptCallBtn) acceptCallBtn.disabled = false;
+            if (rejectCallBtn) rejectCallBtn.disabled = false;
+            closeMeetingWindow();
+            showComposerError(error.message || 'Autorisez le micro et la camera pour rejoindre l appel.');
+            return;
+        }
+    }
+
+    if (!incomingCallInvite || isCallSessionClosed(incomingCallInvite.sessionId) || isCallSessionAccepted(incomingCallInvite.sessionId)) {
+        acceptingIncomingCall = false;
+        hideCallBanner();
+        incomingCallInvite = null;
+        showComposerError('Cet appel a deja ete traite.');
+        return;
+    }
+
+    const acceptedInvite = incomingCallInvite;
+
+    activeCallLogged = false;
+    localAudioMuted = false;
+    localVideoMuted = acceptedInvite.callType !== 'video';
+    activeCallSession = {
+        sessionId: acceptedInvite.sessionId,
+        roomName: acceptedInvite.roomName,
+        conversationId: Number(acceptedInvite.conversationId || getCurrentConversationId() || 0),
+        callType: acceptedInvite.callType,
+        targetUserId: acceptedInvite.callerUserId,
+        targetUserIds: [acceptedInvite.callerUserId],
+        targetNames: [acceptedInvite.callerName],
+        targetName: acceptedInvite.targetName || acceptedInvite.callerName,
+        conversationName: acceptedInvite.targetName || acceptedInvite.callerName,
+        initiatorName: acceptedInvite.callerName,
+        isCaller: false,
+        isGroupCall: !!acceptedInvite.isGroupCall,
+    };
+
+    hideCallBanner();
+    incomingCallInvite = null;
+    syncCallActionButtons();
+
+    try {
+        await mountJitsiMeeting(activeCallSession);
+        const acceptResult = await sendCallSignal('accept', acceptedInvite.callerUserId, acceptedInvite.callType, acceptedInvite.sessionId, {
+            room_name: acceptedInvite.roomName,
+            participant_name: currentUserDisplayName,
+            is_group_call: !!acceptedInvite.isGroupCall,
+        });
+
+        if (acceptResult?.closed) {
+            acceptingIncomingCall = false;
+            rememberClosedCallSession(acceptedInvite.sessionId);
+            await finalizeActiveCall({ notifyRemote: false });
+            showComposerError('Cet appel est deja termine.');
+            return;
+        }
+
+        rememberAcceptedCallSession(acceptedInvite.sessionId);
+
+        if (acceptedInvite.isGroupCall) {
+            const groupPeers = Array.isArray(acceptResult?.group_peers) ? acceptResult.group_peers : [];
+            let connectedPeerOffers = 0;
+            for (const peer of groupPeers) {
+                const peerUserId = Number(peer?.user_id || 0);
+                if (!peerUserId || peerUserId === getCurrentUserIdNumber()) {
+                    continue;
+                }
+
+                const peerName = String(peer?.name || getGroupParticipantName(peerUserId, 'Participant')).trim() || 'Participant';
+                upsertGroupRemoteParticipant(peerUserId, peerName, false);
+            }
+
+            renderWebRtcCallStage(activeCallSession);
+            syncWebRtcStageStreams();
+
+            for (const peer of groupPeers) {
+                const peerUserId = Number(peer?.user_id || 0);
+                if (!peerUserId || peerUserId === getCurrentUserIdNumber()) {
+                    continue;
+                }
+
+                const peerName = String(peer?.name || getGroupParticipantName(peerUserId, 'Participant')).trim() || 'Participant';
+                try {
+                    const offerResult = await createGroupOfferForPeer(peerUserId, peerName);
+                    if (offerResult?.closed) {
+                        acceptingIncomingCall = false;
+                        rememberClosedCallSession(acceptedInvite.sessionId);
+                        await finalizeActiveCall({ notifyRemote: false });
+                        showComposerError('Cet appel est deja termine.');
+                        return;
+                    }
+                    connectedPeerOffers += 1;
+                } catch (error) {
+                    setCurrentCallStatus(`Connexion impossible avec ${peerName}. En attente des autres participants...`);
+                }
+            }
+
+            setCurrentCallStatus(connectedPeerOffers > 0 ? 'Connexion aux participants du groupe...' : 'En attente des participants...');
+            syncCallControlsUi();
+        } else if (isPopupMeetingMode()) {
+            remoteParticipantConnected = true;
+            if (!activeCallStartedAt) {
+                startActiveCallTimer();
+            }
+            setCurrentCallStatus('Appel connecte');
+            syncCallControlsUi();
+        }
+
+    } catch (error) {
+        acceptingIncomingCall = false;
+        const errorMessage = error?.message || 'Impossible de rejoindre l\'appel.';
+        const closedByRemote = /already closed|deja termine|session.*closed/i.test(errorMessage);
+
+        if (closedByRemote) {
+            rememberClosedCallSession(acceptedInvite.sessionId || activeCallSession?.sessionId || '');
+            await finalizeActiveCall({ notifyRemote: false });
+            showComposerError('Cet appel est deja termine.');
+            return;
+        }
+
+        showComposerError(errorMessage);
+        disposeJitsiMeeting();
+        minimizingCurrentCall = false;
+        if (jitsiCallModalEl?.classList.contains('show')) {
+            jitsiCallModal?.hide();
+        }
+        activeCallSession = null;
+        incomingCallInvite = acceptedInvite;
+        if (!isCallSessionClosed(incomingCallInvite.sessionId)) {
+            setCallBannerState(
+                incomingCallInvite.isGroupCall
+                    ? (incomingCallInvite.callType === 'video' ? 'Appel video de groupe entrant' : 'Appel audio de groupe entrant')
+                    : (incomingCallInvite.callType === 'video' ? 'Appel video entrant' : 'Appel audio entrant'),
+                incomingCallInvite.callerName,
+                incomingCallInvite.isGroupCall
+                    ? `${incomingCallInvite.callerName} vous invite dans ${incomingCallInvite.targetName || 'le groupe'}.`
+                    : (incomingCallInvite.callType === 'video' ? 'Touchez accepter pour rejoindre la video.' : 'Touchez accepter pour rejoindre l\'appel audio.')
+            );
+        } else {
+            hideCallBanner();
+            incomingCallInvite = null;
+        }
+        return;
+    }
+
+    acceptingIncomingCall = false;
+    syncCallActionButtons();
+}
+
+async function rejectIncomingJitsiCall() {
+    if (!incomingCallInvite) {
+        return;
+    }
+
+    rememberClosedCallSession(incomingCallInvite.sessionId);
+
+    await sendCallSignal(
+        'reject',
+        incomingCallInvite.callerUserId,
+        incomingCallInvite.callType,
+        incomingCallInvite.sessionId,
+        {
+            reason: 'declined',
+            participant_name: currentUserDisplayName,
+            is_group_call: !!incomingCallInvite.isGroupCall,
+        }
+    ).catch(() => {});
+
+    hideCallBanner();
+    incomingCallInvite = null;
+    showComposerError('Appel refuse.');
+}
+
+async function handleCallSignalEvent(event) {
+    if (!event || typeof event !== 'object') {
+        return;
+    }
+
+    callSignalAfter = Math.max(callSignalAfter, Number(event.id || 0));
+
+    switch (event.signal_type) {
+        case 'invite': {
+            const isGroupCall = !!event.payload?.is_group_call;
+            if (isCallSessionClosed(event.session_id) || (!isGroupCall && isCallSessionAccepted(event.session_id))) {
+                return;
+            }
+
+            if (activeCallSession && activeCallSession.sessionId === event.session_id) {
+                hideCallBanner();
+                incomingCallInvite = null;
+                syncCallActionButtons();
+                return;
+            }
+
+            if (activeCallSession && activeCallSession.sessionId !== event.session_id) {
+                await sendCallSignal('reject', Number(event.sender_user_id || 0), event.call_type || 'audio', event.session_id, {
+                    reason: 'busy',
+                    is_group_call: !!event.payload?.is_group_call,
+                    participant_name: currentUserDisplayName,
+                }).catch(() => {});
+                return;
+            }
+
+            incomingCallInvite = {
+                sessionId: event.session_id,
+                roomName: event.payload?.room_name || buildJitsiRoomName(getCurrentConversationId(), event.session_id),
+                conversationId: Number(event.conversation_id || getCurrentConversationId() || 0),
+                callType: event.call_type || 'audio',
+                callerUserId: Number(event.sender_user_id || 0),
+                callerName: event.payload?.caller_name || 'Contact',
+                isGroupCall,
+                targetName: event.payload?.conversation_title || (isGroupCall ? 'Groupe' : (event.payload?.caller_name || 'Contact')),
+                initiatorName: event.payload?.caller_name || 'Contact',
+            };
+
+            setCallBannerState(
+                incomingCallInvite.isGroupCall
+                    ? (incomingCallInvite.callType === 'video' ? 'Appel video de groupe entrant' : 'Appel audio de groupe entrant')
+                    : (incomingCallInvite.callType === 'video' ? 'Appel video entrant' : 'Appel audio entrant'),
+                incomingCallInvite.callerName,
+                incomingCallInvite.isGroupCall
+                    ? `${incomingCallInvite.callerName} vous invite dans ${incomingCallInvite.targetName || 'le groupe'}.`
+                    : (incomingCallInvite.callType === 'video' ? 'Touchez accepter pour rejoindre la video.' : 'Touchez accepter pour rejoindre l\'appel audio.')
+            );
+            break;
+        }
+
+        case 'accept': {
+            if (!activeCallSession || !activeCallSession.isCaller || activeCallSession.sessionId !== event.session_id) {
+                return;
+            }
+
+            rememberAcceptedCallSession(event.session_id);
+            if (activeCallSession.isGroupCall) {
+                const joiningParticipantId = Number(event.sender_user_id || 0);
+                const joiningParticipantName = event.payload?.participant_name || getGroupParticipantName(joiningParticipantId, 'Un participant');
+                upsertGroupRemoteParticipant(joiningParticipantId, joiningParticipantName, false);
+                renderWebRtcCallStage(activeCallSession);
+                syncWebRtcStageStreams();
+                setCurrentCallStatus(`${joiningParticipantName} rejoint l appel. Connexion WebRTC...`);
+                syncCallControlsUi();
+                break;
+            }
+
+            if (isWebRtcCallMode(activeCallSession)) {
+                const connection = await ensureWebRtcPeerConnection(activeCallSession);
+                const offer = await connection.createOffer({
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: true,
+                });
+                await connection.setLocalDescription(offer);
+                const offerResult = await sendCallSignal(
+                    'offer',
+                    activeCallSession.targetUserId,
+                    activeCallSession.callType,
+                    activeCallSession.sessionId,
+                    {
+                        sdp: connection.localDescription?.toJSON?.() || connection.localDescription,
+                        call_mode: hasEnabledLiveVideoTrack(localCallStream) ? 'video' : 'audio',
+                    }
+                );
+                if (offerResult?.closed) {
+                    rememberClosedCallSession(event.session_id);
+                    await finalizeActiveCall({ notifyRemote: false });
+                    showComposerError('Cet appel est deja termine.');
+                    return;
+                }
+                setCurrentCallStatus(`${activeCallSession.targetName} rejoint l appel...`);
+                syncCallControlsUi();
+                break;
+            }
+
+            remoteParticipantConnected = true;
+            if (!activeCallStartedAt) {
+                startActiveCallTimer();
+            }
+            setCurrentCallStatus(isPopupMeetingMode() ? 'Appel connecte' : `${activeCallSession.targetName} rejoint l appel...`);
+            syncCallControlsUi();
+            break;
+        }
+
+        case 'offer': {
+            if (!isWebRtcCallMode(activeCallSession) || !activeCallSession || activeCallSession.sessionId !== event.session_id) {
+                return;
+            }
+
+            applyIncomingCallMode((event.payload?.call_mode || '').toLowerCase());
+            const remoteDescription = event.payload?.sdp;
+            if (!remoteDescription) {
+                return;
+            }
+
+            if (activeCallSession.isGroupCall) {
+                const senderUserId = Number(event.sender_user_id || 0);
+                if (!senderUserId || senderUserId === getCurrentUserIdNumber()) {
+                    return;
+                }
+
+                const senderName = event.payload?.participant_name || getGroupParticipantName(senderUserId, 'Participant');
+                upsertGroupRemoteParticipant(senderUserId, senderName, false);
+                renderWebRtcCallStage(activeCallSession);
+                const connection = await ensureGroupPeerConnection(senderUserId, senderName);
+                await connection.setRemoteDescription(new RTCSessionDescription(remoteDescription));
+                await flushGroupRemoteCandidates(senderUserId);
+                const answer = await connection.createAnswer();
+                await connection.setLocalDescription(answer);
+                const answerResult = await sendCallSignal(
+                    'answer',
+                    senderUserId,
+                    activeCallSession.callType,
+                    activeCallSession.sessionId,
+                    {
+                        sdp: connection.localDescription?.toJSON?.() || connection.localDescription,
+                        participant_name: currentUserDisplayName,
+                        is_group_call: true,
+                        call_mode: hasEnabledLiveVideoTrack(localCallStream) ? 'video' : 'audio',
+                    }
+                );
+                if (answerResult?.closed) {
+                    rememberClosedCallSession(event.session_id);
+                    await finalizeActiveCall({ notifyRemote: false });
+                    showComposerError('Cet appel est deja termine.');
+                    return;
+                }
+                setCurrentCallStatus(`Connexion a ${senderName}...`);
+                syncWebRtcStageStreams();
+                break;
+            }
+
+            const connection = await ensureWebRtcPeerConnection(activeCallSession);
+            await connection.setRemoteDescription(new RTCSessionDescription(remoteDescription));
+            await flushPendingRemoteCandidates();
+            const answer = await connection.createAnswer();
+            await connection.setLocalDescription(answer);
+            const answerResult = await sendCallSignal(
+                'answer',
+                activeCallSession.targetUserId,
+                activeCallSession.callType,
+                activeCallSession.sessionId,
+                {
+                    sdp: connection.localDescription?.toJSON?.() || connection.localDescription,
+                    call_mode: hasEnabledLiveVideoTrack(localCallStream) ? 'video' : 'audio',
+                }
+            );
+            if (answerResult?.closed) {
+                rememberClosedCallSession(event.session_id);
+                await finalizeActiveCall({ notifyRemote: false });
+                showComposerError('Cet appel est deja termine.');
+                return;
+            }
+            setCurrentCallStatus('Connexion au correspondant...');
+            break;
+        }
+
+        case 'answer': {
+            if (!isWebRtcCallMode(activeCallSession) || !activeCallSession || activeCallSession.sessionId !== event.session_id) {
+                return;
+            }
+
+            applyIncomingCallMode((event.payload?.call_mode || '').toLowerCase());
+            const remoteDescription = event.payload?.sdp;
+            if (!remoteDescription) {
+                return;
+            }
+
+            if (activeCallSession.isGroupCall) {
+                const senderUserId = Number(event.sender_user_id || 0);
+                if (!senderUserId) {
+                    return;
+                }
+
+                const connection = groupPeerConnections.get(senderUserId);
+                if (!connection) {
+                    return;
+                }
+
+                await connection.setRemoteDescription(new RTCSessionDescription(remoteDescription));
+                await flushGroupRemoteCandidates(senderUserId);
+                setCurrentCallStatus(`Connexion a ${getGroupParticipantName(senderUserId)}...`);
+                break;
+            }
+
+            if (!peerConnection) {
+                return;
+            }
+
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(remoteDescription));
+            await flushPendingRemoteCandidates();
+            setCurrentCallStatus('Connexion au correspondant...');
+            break;
+        }
+
+        case 'candidate': {
+            if (!isWebRtcCallMode(activeCallSession) || !activeCallSession || activeCallSession.sessionId !== event.session_id) {
+                return;
+            }
+
+            if (activeCallSession.isGroupCall) {
+                await queueGroupRemoteIceCandidate(Number(event.sender_user_id || 0), event.payload?.candidate || null);
+                break;
+            }
+
+            await queueRemoteIceCandidate(event.payload?.candidate || null);
+            break;
+        }
+
+        case 'reject': {
+            if (!event.payload?.is_group_call) {
+                rememberClosedCallSession(event.session_id);
+            }
+            if (!activeCallSession || !activeCallSession.isCaller || activeCallSession.sessionId !== event.session_id) {
+                return;
+            }
+
+            const rejectReason = event.payload?.reason || '';
+            if (activeCallSession.isGroupCall) {
+                const decliningParticipantId = Number(event.sender_user_id || 0);
+                const decliningParticipantName = event.payload?.participant_name || getGroupParticipantName(decliningParticipantId, 'Un participant');
+                closeGroupPeerConnection(decliningParticipantId, { removeParticipant: true });
+                renderWebRtcCallStage(activeCallSession);
+                syncRemoteParticipantConnectedFlag();
+                syncWebRtcStageStreams();
+                syncCallControlsUi();
+                if (shouldCloseLonelyGroupCall(activeCallSession) && !remoteParticipantConnected) {
+                    await finalizeActiveCall({ notifyRemote: false });
+                    showComposerError(`${decliningParticipantName} n a pas rejoint l appel. Aucun participant ne reste dans l appel de groupe.`);
+                    break;
+                }
+                showComposerError(
+                    rejectReason === 'busy'
+                        ? `${decliningParticipantName} est deja en appel.`
+                        : `${decliningParticipantName} n a pas rejoint l appel de groupe.`
+                );
+                if ((activeCallSession.targetUserIds || []).length === 0 && !remoteParticipantConnected) {
+                    setCurrentCallStatus('En attente d un participant...');
+                }
+                break;
+            }
+            showComposerError(
+                rejectReason === 'busy'
+                    ? `${activeCallSession.targetName} est deja en appel.`
+                    : `${activeCallSession.targetName} a refuse l'appel.`
+            );
+            await finalizeActiveCall({ notifyRemote: false });
+            break;
+        }
+
+        case 'end': {
+            const isGroupCall = !!event.payload?.is_group_call;
+            const closeGroupSession = !!event.payload?.close_session;
+            if (!isGroupCall || closeGroupSession) {
+                rememberClosedCallSession(event.session_id);
+            }
+            if (incomingCallInvite && incomingCallInvite.sessionId === event.session_id && (!isGroupCall || closeGroupSession)) {
+                const cancelMessage = Number(event.sender_user_id || 0) === Number(getCurrentCallTargetUserId() || 0)
+                    ? 'L appel a ete annule.'
+                    : 'Appel termine.';
+                hideCallBanner();
+                incomingCallInvite = null;
+                syncCallActionButtons();
+                showComposerError(cancelMessage);
+            }
+
+            if (activeCallSession && activeCallSession.sessionId === event.session_id) {
+                if (activeCallSession.isGroupCall && !closeGroupSession) {
+                    const leavingParticipantId = Number(event.sender_user_id || 0);
+                    const leavingParticipantName = event.payload?.participant_name || getGroupParticipantName(leavingParticipantId, 'Un participant');
+                    closeGroupPeerConnection(leavingParticipantId, { removeParticipant: true });
+                    renderWebRtcCallStage(activeCallSession);
+                    syncRemoteParticipantConnectedFlag();
+                    syncWebRtcStageStreams();
+                    syncCallControlsUi();
+                    if (shouldCloseLonelyGroupCall(activeCallSession) && !remoteParticipantConnected) {
+                        await finalizeActiveCall({ notifyRemote: false });
+                        showComposerError('Tous les autres participants ont quitte l appel.');
+                        break;
+                    }
+                    setCurrentCallStatus(
+                        (activeCallSession.targetUserIds || []).length > 0 || remoteParticipantConnected
+                            ? `${leavingParticipantName} a quitte l appel`
+                            : 'En attente d un participant...'
+                    );
+                    break;
+                }
+                const wasConnected = !!activeCallStartedAt || remoteParticipantConnected;
+                const endMessage = wasConnected
+                    ? (activeCallSession.isGroupCall ? 'L appel de groupe a ete ferme.' : 'Le correspondant a quitte l appel.')
+                    : 'L appel a ete annule.';
+                await finalizeActiveCall({ notifyRemote: false });
+                showComposerError(endMessage);
+            }
+            break;
+        }
+    }
+}
+
+async function pollCallSignals() {
+    const signalUrl = buildCallSignalUrl();
+    if (!signalUrl || callSignalPollInFlight || Date.now() < nextCallSignalPollAt) {
+        return;
+    }
+
+    callSignalPollInFlight = true;
+    try {
+        const response = await fetch(`${signalUrl}?after=${callSignalAfter}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        if (!response.ok) {
+            notePollingFailure('signals', `${response.status} ${response.statusText}`);
+            return;
+        }
+
+        const data = await response.json();
+        notePollingSuccess('signals');
+        const events = Array.isArray(data.events) ? data.events : [];
+        for (const event of events) {
+            await handleCallSignalEvent(event);
+        }
+    } catch (error) {
+        notePollingFailure('signals', error?.message || '');
+    } finally {
+        callSignalPollInFlight = false;
+    }
+}
+
+async function requestLocalHangup() {
+    if (!activeCallSession) {
+        setHangupButtonsBusy(false);
+        syncFloatingCallWidget(false);
+        exitBrowserFullscreenForCall();
+        jitsiCallModal?.hide();
+        return;
+    }
+
+    setHangupButtonsBusy(true);
+    minimizingCurrentCall = false;
+    syncFloatingCallWidget(false);
+    exitBrowserFullscreenForCall();
+
+    if (jitsiCallModalEl?.classList.contains('show')) {
+        jitsiCallModalEl.dataset.skipAutoHangup = '1';
+        jitsiCallModal?.hide();
+    }
+
+    if (jitsiApi) {
+        try {
+            jitsiApi.executeCommand('hangup');
+        } catch (error) {
+            // If Jitsi rejects the command, we still close the local UI and notify the peer.
+        }
+    }
+
+    const shouldNotifyRemote = activeCallSession.isGroupCall
+        ? Array.isArray(activeCallSession.targetUserIds) && activeCallSession.targetUserIds.length > 0
+        : true;
+    await finalizeActiveCall({ notifyRemote: shouldNotifyRemote });
+}
+
+function notifyRemoteCallEndedOnUnload() {
+    if (!activeCallSession || endingCurrentCall) {
+        return;
+    }
+
+    const signalUrl = buildCallSignalUrl();
+    if (!signalUrl) {
+        return;
+    }
+
+    const targetUserIds = activeCallSession.isGroupCall
+        ? (Array.isArray(activeCallSession.targetUserIds) ? activeCallSession.targetUserIds : [])
+        : [activeCallSession.targetUserId].filter(Boolean);
+
+    if (!targetUserIds.length) {
+        return;
+    }
+
+    const shouldCloseGroupSession = activeCallSession.isGroupCall && !(activeCallStartedAt || remoteParticipantConnected);
+    targetUserIds.forEach((targetUserId) => {
+        const payload = JSON.stringify({
+            target_user_id: targetUserId,
+            signal_type: 'end',
+            call_type: activeCallSession.callType,
+            session_id: activeCallSession.sessionId,
+            payload: activeCallSession.isGroupCall
+                ? {
+                    room_name: activeCallSession.roomName || '',
+                    is_group_call: true,
+                    participant_name: currentUserDisplayName,
+                    close_session: shouldCloseGroupSession,
+                }
+                : { room_name: activeCallSession.roomName || '' },
+        });
+
+        try {
+            if (navigator.sendBeacon) {
+                const blob = new Blob([payload], { type: 'application/json' });
+                navigator.sendBeacon(signalUrl, blob);
+                return;
+            }
+        } catch (error) {
+            // fallback below
+        }
+
+        fetch(signalUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload,
+            keepalive: true,
+        }).catch(() => {});
+    });
+}
+
+function minimizeJitsiCallWindow() {
+    if (!activeCallSession || !jitsiCallModalEl?.classList.contains('show')) {
+        syncFloatingCallWidget(!!activeCallSession);
+        return;
+    }
+
+    minimizingCurrentCall = true;
+    exitBrowserFullscreenForCall();
+    jitsiCallModal?.hide();
+}
+
+async function restoreJitsiCallWindow() {
+    if (!activeCallSession) {
+        return;
+    }
+
+    if (isPopupMeetingMode()) {
+        if (!openMeetingWindow(activeCallSession, { focus: true })) {
+            showComposerError('Impossible d ouvrir la fenetre Jitsi. Autorisez les popups du navigateur.');
+            return;
+        }
+
+        syncFloatingCallWidget(true);
+        return;
+    }
+
+    minimizingCurrentCall = false;
+    syncFloatingCallWidget(false);
+    pendingCallFullscreen = false;
+    setCallFullscreenLayout(false);
+    jitsiCallModal?.show();
+}
+
+async function toggleLocalAudioForCall() {
+    if (isWebRtcCallMode()) {
+        if (!localCallStream) {
+            showComposerError('Le micro n est pas pret.');
+            return;
+        }
+
+        const audioTracks = localCallStream.getAudioTracks();
+        if (!audioTracks.length) {
+            showComposerError('Aucun micro detecte pour cet appel.');
+            return;
+        }
+
+        audioTracks.forEach(track => {
+            track.enabled = !track.enabled;
+        });
+        localAudioMuted = !audioTracks[0].enabled;
+        syncCallControlsUi();
+        return;
+    }
+
+    if (isPopupMeetingMode()) {
+        if (!openMeetingWindow(activeCallSession, { focus: true })) {
+            showComposerError('Utilisez la fenetre Jitsi pour gerer le micro.');
+            return;
+        }
+
+        showComposerError('Utilisez la fenetre Jitsi pour couper ou activer le micro.');
+        return;
+    }
+
+    if (!jitsiApi) {
+        showComposerError('La reunion nest pas encore prete.');
+        return;
+    }
+
+    try {
+        jitsiApi.executeCommand('toggleAudio');
+    } catch (error) {
+        showComposerError('Impossible de changer le micro.');
+    }
+}
+
+async function toggleLocalVideoForCall() {
+    if (isWebRtcCallMode()) {
+        if (!localCallStream) {
+            showComposerError('La camera n est pas prete.');
+            return;
+        }
+
+        const currentVideoTrack = localCallStream.getVideoTracks().find((track) => track.readyState === 'live') || null;
+        const enablingVideo = !currentVideoTrack || localVideoMuted;
+
+        if (enablingVideo) {
+            let activeVideoTrack = currentVideoTrack;
+            if (!activeVideoTrack) {
+                try {
+                    const extraVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                    activeVideoTrack = extraVideoStream.getVideoTracks()[0] || null;
+                } catch (error) {
+                    showComposerError('Autorisez la camera pour passer en video.');
+                    return;
+                }
+
+                if (!activeVideoTrack) {
+                    showComposerError('Aucune camera detectee pour cet appel.');
+                    return;
+                }
+
+                attachMediaTrackSync(activeVideoTrack);
+                localCallStream.addTrack(activeVideoTrack);
+            }
+
+            activeVideoTrack.enabled = true;
+            localVideoMuted = false;
+            if (activeCallSession) {
+                activeCallSession.callType = 'video';
+            }
+            await ensureWebRtcVideoTrackAttached(activeVideoTrack);
+            await renegotiateActiveWebRtcPeers();
+            refreshActiveWebRtcCallUi();
+            return;
+        }
+
+        const videoTracks = localCallStream.getVideoTracks();
+        if (!videoTracks.length) {
+            localVideoMuted = true;
+            if (activeCallSession) {
+                activeCallSession.callType = 'audio';
+            }
+            refreshActiveWebRtcCallUi();
+            return;
+        }
+
+        await clearWebRtcVideoTrackFromPeers();
+        videoTracks.forEach((track) => {
+            track.stop();
+            localCallStream.removeTrack(track);
+        });
+        localVideoMuted = true;
+        if (activeCallSession) {
+            activeCallSession.callType = 'audio';
+        }
+        await renegotiateActiveWebRtcPeers();
+        refreshActiveWebRtcCallUi();
+        return;
+    }
+
+    if (isPopupMeetingMode()) {
+        if (!openMeetingWindow(activeCallSession, { focus: true })) {
+            showComposerError('Utilisez la fenetre Jitsi pour gerer la camera.');
+            return;
+        }
+
+        showComposerError('Utilisez la fenetre Jitsi pour activer ou couper la camera.');
+        return;
+    }
+
+    if (!activeCallSession || !jitsiApi) {
+        showComposerError('La reunion nest pas encore prete.');
+        return;
+    }
+
+    const enablingVideo = localVideoMuted;
+
+    if (enablingVideo) {
+        try {
+            await ensureLocalMediaPermission('video');
+        } catch (error) {
+            showComposerError(error.message || 'Autorisez la camera pour passer en video.');
+            return;
+        }
+    }
+
+    try {
+        if (activeCallSession.callType === 'audio' && enablingVideo) {
+            jitsiApi.executeCommand('setAudioOnly', false);
+        }
+
+        jitsiApi.executeCommand('toggleVideo');
+        localVideoMuted = !enablingVideo;
+
+        if (activeCallSession.callType === 'audio' && !enablingVideo) {
+            jitsiApi.executeCommand('setAudioOnly', true);
+        }
+
+        syncCallControlsUi();
+    } catch (error) {
+        showComposerError('Impossible de changer la camera.');
+    }
+}
+
+async function correctCurrentMessage() {
+    const correctUrl = messageComposerForm?.getAttribute('data-correct-url') || '';
+    const currentText = (textInput?.value || '').trim();
+
+    if (!correctUrl) {
+        showComposerError('Aucune conversation selectionnee pour la correction.');
+        return;
+    }
+    if (!currentText) {
+        showComposerError('Veuillez saisir un texte a corriger.');
+        textInput?.focus();
+        return;
+    }
+
+    hideComposerError();
+    correctTextBtn?.classList.add('correcting');
+    if (correctTextBtn) correctTextBtn.disabled = true;
+
+    try {
+        const payload = new URLSearchParams({ text: currentText });
+        const response = await fetch(correctUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: payload.toString()
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            showComposerError(data.message || 'Correction impossible pour le moment.');
+            return;
+        }
+
+        if (textInput) {
+            textInput.value = data.corrected_text || currentText;
+            textInput.focus();
+        }
+
+        if (data.changed) {
+            showComposerError('Texte corrige avec succes.');
+            const errorBox = document.getElementById('composerError');
+            errorBox?.classList.remove('d-none');
+            if (errorBox) {
+                errorBox.style.borderColor = '#badbcc';
+                errorBox.style.background = '#d1e7dd';
+                errorBox.style.color = '#0f5132';
+            }
+            setTimeout(() => {
+                hideComposerError();
+                if (errorBox) {
+                    errorBox.style.borderColor = '';
+                    errorBox.style.background = '';
+                    errorBox.style.color = '';
+                }
+            }, 2200);
+            return;
+        }
+
+        showComposerError('Aucune correction necessaire.');
+    } catch (error) {
+        showComposerError('Erreur reseau pendant la correction.');
+    } finally {
+        correctTextBtn?.classList.remove('correcting');
+        if (correctTextBtn) {
+            correctTextBtn.disabled = isCorrectTextBtnInitiallyDisabled;
+        }
+    }
 }
 
 function appendEmojiToMessage(emojiValue) {
@@ -1405,34 +5498,103 @@ function appendEmojiToMessage(emojiValue) {
     textInput.focus();
 }
 
-function buildLargeEmojiList(limit = 500) {
-    const ranges = [
-        [0x1F600, 0x1F64F], // emoticons
-        [0x1F300, 0x1F5FF], // symbols & pictographs
-        [0x1F680, 0x1F6FF], // transport & map
-        [0x1F700, 0x1F77F], // alchemical
-        [0x1F780, 0x1F7FF], // geometric extended
-        [0x1F800, 0x1F8FF], // arrows-c
-        [0x1F900, 0x1F9FF], // supplemental symbols
-        [0x1FA70, 0x1FAFF], // symbols & pictographs extended-a
-        [0x2600, 0x26FF],   // misc symbols
-        [0x2700, 0x27BF],   // dingbats
-    ];
+const emojiPickerCache = new Map();
+let emojiSearchTimeout = null;
+let emojiRequestToken = 0;
 
-    const emojis = [];
-    const seen = new Set();
-    for (const [start, end] of ranges) {
-        for (let cp = start; cp <= end && emojis.length < limit; cp++) {
-            const char = String.fromCodePoint(cp);
-            // Keep only likely emoji pictographs to avoid too many plain symbols
-            if (!/\p{Extended_Pictographic}/u.test(char)) continue;
-            if (seen.has(char)) continue;
-            seen.add(char);
-            emojis.push(char);
-        }
-        if (emojis.length >= limit) break;
+function renderEmojiResults(items, {
+    query = '',
+    blocked = false,
+    message = '',
+} = {}) {
+    if (!emojiPickerGrid || !emojiPickerMeta) {
+        return;
     }
-    return emojis;
+
+    const normalizedItems = Array.isArray(items) ? items : [];
+    const safeQuery = query.trim();
+
+    if (blocked) {
+        emojiPickerMeta.textContent = message || 'Recherche bloquee.';
+        emojiPickerGrid.innerHTML = '<div class="emoji-picker-empty">Recherche bloquee.</div>';
+        return;
+    }
+
+    if (!normalizedItems.length) {
+        emojiPickerMeta.textContent = safeQuery
+            ? `Aucun emoji trouve pour "${safeQuery}".`
+            : 'Aucun emoji disponible.';
+        emojiPickerGrid.innerHTML = '<div class="emoji-picker-empty">Aucun emoji.</div>';
+        return;
+    }
+
+    emojiPickerMeta.textContent = safeQuery
+        ? `${normalizedItems.length} emoji(s) pour "${safeQuery}".`
+        : `Tous les emojis · ${normalizedItems.length}`;
+
+    emojiPickerGrid.innerHTML = normalizedItems.map((item) => {
+        const emojiValue = escapeHtml(item?.emoji || '');
+        const emojiName = escapeHtml(item?.name || 'emoji');
+        const emojiGroup = escapeHtml(item?.group || '');
+        const emojiSubGroup = escapeHtml(item?.sub_group || '');
+        return `<button type="button" class="emoji-item-btn" data-emoji-item="${emojiValue}" data-emoji-name="${emojiName}" data-emoji-group="${emojiGroup}" data-emoji-sub-group="${emojiSubGroup}" title="${emojiName}" aria-label="${emojiName}">${emojiValue}</button>`;
+    }).join('');
+}
+
+async function loadEmojiResults(query = '') {
+    if (!emojiPickerGrid || !emojiPickerMeta) {
+        return;
+    }
+
+    const normalizedQuery = String(query || '').trim();
+    const limit = 20000;
+    const cacheKey = `emoji::${normalizedQuery.toLowerCase()}`;
+    if (emojiPickerCache.has(cacheKey)) {
+        renderEmojiResults(emojiPickerCache.get(cacheKey)?.items || [], emojiPickerCache.get(cacheKey) || {});
+        return;
+    }
+
+    emojiPickerMeta.textContent = normalizedQuery
+        ? `Recherche de "${normalizedQuery}"...`
+        : `Chargement des emojis...`;
+    emojiPickerGrid.innerHTML = '<div class="emoji-picker-loading">Chargement...</div>';
+
+    const requestToken = ++emojiRequestToken;
+    try {
+        const response = await fetch(`/messagerie/emoji/list?query=${encodeURIComponent(normalizedQuery)}&limit=${limit}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        if (!response.ok) {
+            if (requestToken !== emojiRequestToken) {
+                return;
+            }
+            emojiPickerMeta.textContent = 'Erreur emoji.';
+            emojiPickerGrid.innerHTML = '<div class="emoji-picker-empty text-danger">Erreur emoji.</div>';
+            return;
+        }
+
+        const data = await response.json();
+        if (requestToken !== emojiRequestToken) {
+            return;
+        }
+
+        const payload = {
+            query: normalizedQuery,
+            limit,
+            blocked: !!data.blocked,
+            message: data.message || '',
+            items: Array.isArray(data.items) ? data.items : [],
+        };
+        emojiPickerCache.set(cacheKey, payload);
+        renderEmojiResults(payload.items, payload);
+    } catch (error) {
+        if (requestToken !== emojiRequestToken) {
+            return;
+        }
+        emojiPickerMeta.textContent = 'Erreur reseau.';
+        emojiPickerGrid.innerHTML = '<div class="emoji-picker-empty text-danger">Erreur reseau.</div>';
+    }
 }
 
 function linkifyElementContent(element) {
@@ -1782,6 +5944,53 @@ function showPreview(file) {
 }
 
 clearMediaBtn?.addEventListener('click', clearSelectedMedia);
+startAudioCallBtn?.addEventListener('click', function () {
+    startOutgoingJitsiCall('audio');
+});
+startVideoCallBtn?.addEventListener('click', function () {
+    startOutgoingJitsiCall('video');
+});
+acceptCallBtn?.addEventListener('click', function () {
+    acceptIncomingJitsiCall();
+});
+rejectCallBtn?.addEventListener('click', function () {
+    rejectIncomingJitsiCall();
+});
+leaveJitsiCallBtn?.addEventListener('click', function () {
+    requestLocalHangup();
+});
+minimizeJitsiCallBtn?.addEventListener('click', function () {
+    minimizeJitsiCallWindow();
+});
+restoreJitsiCallBtn?.addEventListener('click', function () {
+    restoreJitsiCallWindow();
+});
+floatingOpenCallBtn?.addEventListener('click', function () {
+    openStandaloneCallWindow();
+});
+floatingCallWidget?.addEventListener('click', function (event) {
+    if (!activeCallSession) {
+        return;
+    }
+
+    if (event.target.closest('button, a, input, select, textarea, label')) {
+        return;
+    }
+
+    restoreJitsiCallWindow();
+});
+floatingMuteCallBtn?.addEventListener('click', function () {
+    toggleLocalAudioForCall();
+});
+floatingVideoCallBtn?.addEventListener('click', function () {
+    toggleLocalVideoForCall();
+});
+endFloatingCallBtn?.addEventListener('click', function () {
+    requestLocalHangup();
+});
+correctTextBtn?.addEventListener('click', function () {
+    correctCurrentMessage();
+});
 geminiAskBtn?.addEventListener('click', function () {
     const value = (textInput?.value || '').trim();
     textInput.value = value ? `/ai ${value}` : '/ai ';
@@ -1815,23 +6024,25 @@ gifQuickBtn?.addEventListener('click', function () {
 composerEmojiBtn?.addEventListener('click', function (event) {
     event.stopPropagation();
     emojiPickerPanel?.classList.toggle('d-none');
+    if (emojiPickerPanel && !emojiPickerPanel.classList.contains('d-none')) {
+        emojiSearchInput?.focus();
+        loadEmojiResults(emojiSearchInput?.value || '');
+    }
 });
 
-if (emojiPickerPanel) {
-    const largeEmojiList = buildLargeEmojiList(500);
-    emojiPickerPanel.innerHTML = largeEmojiList
-        .map(emojiChar => `<button type="button" class="emoji-item-btn" data-emoji-item="${emojiChar}">${emojiChar}</button>`)
-        .join('');
+emojiPickerPanel?.addEventListener('click', function (event) {
+    const target = event.target.closest('[data-emoji-item]');
+    if (!target) return;
+    const emojiValue = target.getAttribute('data-emoji-item');
+    if (!emojiValue) return;
+    appendEmojiToMessage(emojiValue);
+    emojiPickerPanel.classList.add('d-none');
+});
 
-    emojiPickerPanel.addEventListener('click', function (event) {
-        const target = event.target.closest('[data-emoji-item]');
-        if (!target) return;
-        const emojiValue = target.getAttribute('data-emoji-item');
-        if (!emojiValue) return;
-        appendEmojiToMessage(emojiValue);
-        emojiPickerPanel.classList.add('d-none');
-    });
-}
+emojiSearchInput?.addEventListener('input', function () {
+    clearTimeout(emojiSearchTimeout);
+    emojiSearchTimeout = setTimeout(() => loadEmojiResults(emojiSearchInput.value || ''), 220);
+});
 
 document.addEventListener('click', function (event) {
     if (!emojiPickerPanel || emojiPickerPanel.classList.contains('d-none')) return;
@@ -2236,17 +6447,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function pollIncomingMessages() {
-        if (!pollingActive || !messagesContainer) return;
+        if (!pollingActive || !messagesContainer || messagePollInFlight || Date.now() < nextMessagePollAt) return;
         const userId = messagesContainer.getAttribute('data-my-user-id');
         const conversationId = messagesContainer.getAttribute('data-current-conversation-id');
         let lastSeenId = Number(messagesContainer.getAttribute('data-last-message-id') || '0');
         if (!userId || !conversationId) return;
 
+        messagePollInFlight = true;
         try {
             const url = `/messagerie/poll/${userId}/${conversationId}?last_seen_id=${lastSeenId}`;
             const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-            if (!response.ok) return;
+            if (!response.ok) {
+                notePollingFailure('messages', `${response.status} ${response.statusText}`);
+                return;
+            }
             const data = await response.json();
+            notePollingSuccess('messages');
             const incomingCount = Number(data.incoming_count || 0);
             const latestId = Number(data.latest_id || lastSeenId);
 
@@ -2271,21 +6487,64 @@ document.addEventListener('DOMContentLoaded', function () {
                 messagesContainer.setAttribute('data-last-message-id', String(latestId));
             }
         } catch (error) {
-            // keep silent; polling continues
+            notePollingFailure('messages', error?.message || '');
+        } finally {
+            messagePollInFlight = false;
         }
     }
 
     const pollInterval = setInterval(pollIncomingMessages, 4000);
+    callSignalInterval = setInterval(pollCallSignals, 2500);
     messagesContainer?.addEventListener('scroll', syncConversationReadState, { passive: true });
     window.addEventListener('beforeunload', () => {
+        notifyRemoteCallEndedOnUnload();
         pollingActive = false;
         clearInterval(pollInterval);
+        if (callSignalInterval) {
+            clearInterval(callSignalInterval);
+        }
     });
+    window.addEventListener('pagehide', notifyRemoteCallEndedOnUnload);
 
     filterConversations();
+    pollCallSignals();
 });
 
 // ✅ Scroll quand l'utilisateur revient sur l'onglet
+jitsiCallModalEl?.addEventListener('hide.bs.modal', function (event) {
+    if (jitsiCallModalEl?.dataset.skipAutoHangup === '1') {
+        delete jitsiCallModalEl.dataset.skipAutoHangup;
+        return;
+    }
+
+    if (activeCallSession && !endingCurrentCall && !minimizingCurrentCall) {
+        event.preventDefault();
+        requestLocalHangup();
+    }
+});
+
+jitsiCallModalEl?.addEventListener('hidden.bs.modal', function () {
+    if (activeCallSession && minimizingCurrentCall) {
+        syncFloatingCallWidget(true);
+    } else {
+        syncFloatingCallWidget(false);
+    }
+
+    minimizingCurrentCall = false;
+    if (!activeCallSession) {
+        pendingCallFullscreen = false;
+        setCallFullscreenLayout(false);
+    }
+});
+
+jitsiCallModalEl?.addEventListener('shown.bs.modal', function () {
+    syncFloatingCallWidget(false);
+    if (pendingCallFullscreen) {
+        pendingCallFullscreen = false;
+        setCallFullscreenLayout(true);
+    }
+});
+
 document.addEventListener('visibilitychange', function () {
     if (!document.hidden) {
         const messagesContainer = document.getElementById('messagesContainer');
@@ -2297,6 +6556,8 @@ document.addEventListener('visibilitychange', function () {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             }).catch(() => {});
         }
+
+        pollCallSignals();
     }
 });
 </script>
