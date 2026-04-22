@@ -5,6 +5,9 @@ parameters:
     messages_upload_directory: '%env(default:default_messages_upload_directory:MESSAGES_UPLOAD_DIRECTORY)%'
     activite_resv_image_directory: '%kernel.project_dir%/public/ActivieResvImage'
     activite_resv_image_public_path: 'ActivieResvImage'
+    groq_default_model: 'llama-3.3-70b-versatile'
+    groq_default_vision_model: 'llama-3.2-11b-vision-preview'
+    groq_default_audio_model: 'whisper-large-v3'
 
 services:
     _defaults:
@@ -17,3 +20,17 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+
+    App\Service\GeminiGifChatService:
+        arguments:
+            $groqApiKey: '%env(default::GROQ_API_KEY)%'
+            $groqModel: '%env(default:groq_default_model:GROQ_MODEL)%'
+            $giphyApiKey: '%env(default::GIPHY_API_KEY)%'
+            $groqVisionModel: '%env(default:groq_default_vision_model:GROQ_VISION_MODEL)%'
+            $groqAudioModel: '%env(default:groq_default_audio_model:GROQ_AUDIO_MODEL)%'
+
+    App\Service\ContentModerationService:
+        arguments:
+            $manualBadWordsEn: '%env(default::BAD_WORDS_EN)%'
+            $manualBadWordsFr: '%env(default::BAD_WORDS_FR)%'
+            $manualBadWordsAr: '%env(default::BAD_WORDS_AR)%'

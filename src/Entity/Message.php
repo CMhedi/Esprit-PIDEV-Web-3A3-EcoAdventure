@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\PrioriteMessage;
 use App\Enum\StatutMessage;
 use App\Enum\TypeMessage;
 use App\Repository\MessageRepository;
@@ -21,7 +22,7 @@ class Message
     #[Assert\NotNull(message: "Le type de message est obligatoire.")]
     private ?TypeMessage $type_message = null;
 
-    #[ORM\Column(type: 'string', length: 2000, nullable: true)]
+    #[ORM\Column(type: 'string', length: 10000, nullable: true)]
     #[Assert\Length(
         max: 2000,
         maxMessage: "Le contenu ne peut pas dépasser {{ limit }} caractères."
@@ -47,6 +48,9 @@ class Message
         message: "La date de modification ne peut pas être antérieure à la date d'envoi."
     )]
     private ?\DateTimeInterface $date_modifier = null;
+
+    #[ORM\Column(enumType: PrioriteMessage::class, options: ['default' => 'NORMAL'])]
+    private ?PrioriteMessage $priorite_message = PrioriteMessage::NORMAL;
 
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $reactions = [];
@@ -144,6 +148,17 @@ class Message
     public function setDate_modifier(?\DateTimeInterface $date_modifier): self
     {
         $this->date_modifier = $date_modifier;
+        return $this;
+    }
+
+    public function getPrioriteMessage(): PrioriteMessage
+    {
+        return $this->priorite_message ?? PrioriteMessage::NORMAL;
+    }
+
+    public function setPrioriteMessage(PrioriteMessage $priorite_message): self
+    {
+        $this->priorite_message = $priorite_message;
         return $this;
     }
 

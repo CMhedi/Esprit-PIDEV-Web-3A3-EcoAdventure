@@ -98,6 +98,7 @@ class AdminMessagerieController extends AbstractController
         Conversation $conversation,
         MessageRepository $messageRepo
     ): Response {
+        $currentUser = $this->getUser();
         $messages = $messageRepo->findBy(
             ['conversation' => $conversation],
             ['date_envoi' => 'ASC']
@@ -107,6 +108,7 @@ class AdminMessagerieController extends AbstractController
             'conversation' => $conversation,
             'messages' => $messages,
             'participants' => $conversation->getParticipants(),
+            'mon_id' => $currentUser instanceof UserApp ? $currentUser->getId_user() : null,
         ]);
     }
 

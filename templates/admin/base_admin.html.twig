@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <title>{% block title %}Dashboard Admin{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ asset('img/Hero.png') }}">
+    <link href="{{ asset('vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/ecoadventure.css') }}">
-    {#<link rel="stylesheet" href="{{ asset('css/ecoadventure.css') }}">#}
+    <link rel="stylesheet" href="{{ asset('css/ecoadventure.css') }}?v=20260415">
 </head>
 <body class="admin-body {% block body_class %}{% endblock %}">
 
@@ -23,19 +22,19 @@
             <li><a href="{{ path('app_admin_dashboard') }}" class="{{ app.request.get('_route') == 'app_admin_dashboard' ? 'active' : '' }}"><i class="bi bi-grid"></i> Tableau de bord</a></li>
             <li>
                 <a href="{{ app.user ? path('app_user_app_show', {'id_user': app.user.id_user}) : '#' }}" class="{{ app.request.get('_route') == 'app_user_app_show' ? 'active' : '' }} {{ app.user ? '' : 'disabled' }}">
-                    <i class="bi bi-person-circle"></i> Mon Profil
+                    <i class="bi bi-person-circle"></i> Mon profil
                 </a>
             </li>
             <li>
                 <a href="{{ path('app_admin_reclamation_index') }}" class="{{ app.request.get('_route') starts with 'app_reclamation' or app.request.get('_route') == 'app_admin_reclamation_index' ? 'active' : '' }}">
-                    <i class="bi bi-exclamation-octagon"></i> Réclamations
+                    <i class="bi bi-exclamation-octagon"></i> Reclamations
                 </a>
             </li>
-            <li><a href="{{ path('app_admin_activites') }}" class="{{ app.request.get('_route') starts with 'app_admin_activites' ? 'active' : '' }}"><i class="bi bi-tree"></i> Activités</a></li>
-            <li><a href="{{ path('app_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_admin_reservations' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Réservations Activités</a></li>
+            <li><a href="{{ path('app_admin_activites') }}" class="{{ app.request.get('_route') starts with 'app_admin_activites' ? 'active' : '' }}"><i class="bi bi-tree"></i> Activites</a></li>
+            <li><a href="{{ path('app_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_admin_reservations' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Reservations activites</a></li>
             <li><a href="{{ path('app_admin_planning') }}" class="{{ app.request.get('_route') starts with 'app_admin_planning' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Planning</a></li>
-            <li><a href="{{ path('app_event_admin_index') }}" class="{{ app.request.get('_route') starts with 'app_event_admin' and app.request.get('_route') != 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-calendar-event"></i> Événements</a></li>
-            <li><a href="{{ path('app_event_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-ticket-detailed"></i> Réservations Événements</a></li>
+            <li><a href="{{ path('app_event_admin_index') }}" class="{{ app.request.get('_route') starts with 'app_event_admin' and app.request.get('_route') != 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-calendar-event"></i> Evenements</a></li>
+            <li><a href="{{ path('app_event_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-ticket-detailed"></i> Reservations evenements</a></li>
             <li><a href="{{ path('admin_messagerie_index') }}" class="{{ app.request.get('_route') starts with 'admin_messagerie' ? 'active' : '' }}"><i class="bi bi-chat-dots"></i> Messagerie</a></li>
             <li>
                 <a href="{{ path('app_user_app_index') }}" class="{{ app.request.get('_route') == 'app_user_app_index' ? 'active' : '' }}">
@@ -52,21 +51,16 @@
                     <i class="bi bi-journal-check"></i> Inscriptions
                 </a>
             </li>
-
-
-
-            <a href="{{ path('admin_ai_dashboard') }}"
-       class="{{ app.request.get('_route') starts with 'admin_ai' ? 'active' : '' }}">
-        <i class="bi bi-robot"></i> AI Agent Activite-Res
-    </a>
-            
             <li>
-                <a href="{{ path('app_logout') }}" class="text-danger fw-bold">
-                    <i class="bi bi-box-arrow-right"></i> Déconnexion
+                <a href="{{ path('admin_ai_dashboard') }}" class="{{ app.request.get('_route') starts with 'admin_ai' ? 'active' : '' }}">
+                    <i class="bi bi-robot"></i> AI Agent Activite-Res
                 </a>
             </li>
-
-      
+            <li>
+                <a href="{{ path('app_logout') }}" class="text-danger fw-bold">
+                    <i class="bi bi-box-arrow-right"></i> Deconnexion
+                </a>
+            </li>
         </ul>
     </aside>
     {% endblock %}
@@ -79,6 +73,11 @@
                 <small class="text-muted">Gestion de l'agence sportive</small>
             </div>
             <div class="admin-user">
+                {% if app.user and app.user.role.value == 'ADMIN' %}
+                    <a href="{{ path('app_home') }}" class="btn btn-outline-success btn-sm rounded-pill me-2">
+                        <i class="bi bi-globe2 me-1"></i> Aller au Front
+                    </a>
+                {% endif %}
                 <span class="badge text-bg-light px-3 py-2 rounded-pill">Admin</span>
             </div>
         </div>
@@ -143,7 +142,7 @@
     }
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ asset('vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
