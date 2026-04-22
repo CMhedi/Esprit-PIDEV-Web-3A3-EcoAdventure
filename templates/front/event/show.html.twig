@@ -222,7 +222,7 @@
                         <i class="bi bi-gift-fill fs-3 text-info me-3"></i>
                         <div>
                             <h6 class="fw-bold text-info mb-0">Remise de Groupe</h6>
-                            <span class="small text-muted">-{{ promo_discount * 100 }}% applicables à partir de {{ promo_threshold }} billets.</span>
+                            <span class="small text-muted">-{{ promo_discount * 100 }}% dès {{ promo_threshold }} billets, puis <span class="text-primary fw-bold">+1%</span> tous les 5 billets (max 50), puis <span class="text-primary fw-bold">+1%</span> tous les 10 billets.</span>
                         </div>
                     </div>
                     {% endif %}
@@ -240,7 +240,7 @@
                             <span class="fw-bold text-dark">Total</span>
                             <div class="text-end">
                                 <h4 class="fw-bold text-success mb-0" id="total-price">{{ evenement.prix|number_format(2, ',', ' ') }} DT</h4>
-                                <small class="text-danger fw-bold d-none" id="promo-info">Promo appliquée !</small>
+                                <small class="fw-bold d-none px-2 py-1 rounded-pill bg-primary bg-opacity-10 text-primary" id="promo-info" style="font-size: 0.7rem;"><i class="bi bi-stars me-1"></i>Promo appliquée !</small>
                             </div>
                         </div>
 
@@ -343,8 +343,16 @@ if (inputBillets) {
         let isPromo = false;
 
         if (nb >= promoThreshold) {
-            sousTotal = sousTotal * (1 - promoDiscount);
+            let disc = promoDiscount;
+            if (nb <= 50) {
+                disc += Math.floor((nb - promoThreshold) / 5) * 0.01;
+            } else {
+                disc = 0.18 + Math.floor((nb - 50) / 10) * 0.01;
+            }
+            
+            sousTotal = sousTotal * (1 - disc);
             isPromo = true;
+            promoInfoEl.innerHTML = `<i class="bi bi-stars me-1"></i>Promo ${Math.round(disc * 100)}% appliquée !`;
         }
 
         totalPriceEl.textContent = sousTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DT';
@@ -352,10 +360,10 @@ if (inputBillets) {
         if (isPromo) {
             promoInfoEl.classList.remove('d-none');
             totalPriceEl.classList.remove('text-success');
-            totalPriceEl.classList.add('text-danger');
+            totalPriceEl.classList.add('text-primary');
         } else {
             promoInfoEl.classList.add('d-none');
-            totalPriceEl.classList.remove('text-danger');
+            totalPriceEl.classList.remove('text-primary');
             totalPriceEl.classList.add('text-success');
         }
     });

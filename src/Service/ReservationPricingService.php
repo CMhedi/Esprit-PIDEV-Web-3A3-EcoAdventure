@@ -29,10 +29,24 @@ class ReservationPricingService
         
         $remise = 0.0;
         $appliquePromo = false;
+        $currentDiscount = 0.0;
 
         if ($nbBillets >= $this->promoThreshold) {
-            $remise = $sousTotal * $this->promoDiscount;
             $appliquePromo = true;
+            $currentDiscount = $this->promoDiscount; // Base 10%
+            
+            if ($nbBillets <= 50) {
+                // 📈 Phase 1 : +1% tous les 5 billets supplémentaires (jusqu'à 50)
+                $extra = $nbBillets - $this->promoThreshold;
+                $currentDiscount += floor($extra / 5) * 0.01;
+            } else {
+                // 📈 Phase 2 : On atteint 18% à 50 billets, puis +1% tous les 10 billets
+                $currentDiscount = 0.18; 
+                $extraAfter50 = $nbBillets - 50;
+                $currentDiscount += floor($extraAfter50 / 10) * 0.01;
+            }
+            
+            $remise = $sousTotal * $currentDiscount;
         }
 
         $totalFinal = $sousTotal - $remise;
@@ -42,7 +56,7 @@ class ReservationPricingService
             'remise' => $remise,
             'totalFinal' => $totalFinal,
             'appliquePromo' => $appliquePromo,
-            'tauxRemise' => $this->promoDiscount * 100, // ex: 10 pour 10%
+            'tauxRemise' => round($currentDiscount * 100, 2),
             'threshold' => $this->promoThreshold
         ];
     }

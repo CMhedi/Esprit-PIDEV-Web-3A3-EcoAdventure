@@ -248,140 +248,151 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const notifBadge = document.getElementById('notifBadge');
-        const notifContainer = document.getElementById('notifContainer');
-        const markAllRead = document.getElementById('markAllRead');
-        const toastContainer = document.getElementById('toastContainer');
+        const EcoAgent = {
+            knownIds: new Set(),
+            isFirstLoad: true,
+            elements: {
+                badge: document.getElementById('notifBadge'),
+                container: document.getElementById('notifContainer'),
+                markAllRead: document.getElementById('markAllRead'),
+                toastContainer: document.getElementById('toastContainer'),
+                stats: {
+                    confirmee: document.getElementById('statConfirmee'),
+                    attente: document.getElementById('statAttente'),
+                    annulee: document.getElementById('statAnnulee')
+                }
+            },
 
-        // Only initialize JS if notification elements exist (i.e. we are on the Reservations page)
-        if (notifBadge && notifContainer) {
-            let knownNotifIds = new Set();
-            let isFirstLoad = true;
+            init() {
+                if (!this.elements.badge || !this.elements.container) return;
 
-            const showToast = (notif) => {
+                // Mark all read listener
+                if (this.elements.markAllRead) {
+                    this.elements.markAllRead.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.markAllAsRead();
+                    });
+                }
+
+                // Initial fetch and polling
+                this.fetch();
+                setInterval(() => this.fetch(), 5000);
+            },
+
+            async fetch() {
+                try {
+                    const response = await fetch('{{ path('app_admin_notifications_unread') }}');
+                    const data = await response.json();
+                    
+                    this.renderNotifications(data.notifications, data.unreadCount);
+                    this.updateStats(data.stats);
+                    this.processNewNotifications(data.notifications);
+                    
+                    this.isFirstLoad = false;
+                } catch (error) {
+                    console.error('EcoAgent Fetch Error:', error);
+                }
+            },
+
+            renderNotifications(notifications, unreadCount) {
+                // Update badge
+                if (unreadCount > 0) {
+                    this.elements.badge.textContent = unreadCount;
+                    this.elements.badge.classList.remove('d-none');
+                } else {
+                    this.elements.badge.classList.add('d-none');
+                }
+
+                // Render list
+                if (notifications.length === 0) {
+                    this.elements.container.innerHTML = '<li class="p-5 text-center text-muted small"><i class="bi bi-check-circle-fill fs-1 text-success d-block mb-2 opacity-50"></i> Vous êtes à jour !</li>';
+                    return;
+                }
+
+                this.elements.container.innerHTML = notifications.map(n => this.getNotificationTemplate(n)).join('');
+            },
+
+            getNotificationTemplate(n) {
+                let iconClass = "bi-info-circle-fill";
+                let colorClass = "primary";
+                if(n.title.includes("PRIX DYNAMIQUE") || n.type === "yield") { iconClass = "bi-lightning-charge-fill"; colorClass = "warning"; }
+                if(n.title.includes("RECOMMENDATION") || n.type === "recommendation") { iconClass = "bi-stars"; colorClass = "info"; }
+                if(n.title.includes("ATTENTE") || n.type === "waitlist") { iconClass = "bi-people-fill"; colorClass = "success"; }
+                
+                return `
+                <li class="p-4 border-bottom notification-item ${n.isRead ? 'opacity-75 bg-light' : 'bg-white unread'}" data-id="${n.id}">
+                    <div class="d-flex gap-3 align-items-start">
+                        <div class="position-relative">
+                            <div class="bg-${colorClass} bg-opacity-10 text-${colorClass} p-2 rounded-4 shadow-sm d-flex justify-content-center align-items-center flex-shrink-0" style="width: 48px; height: 48px; border: 1px solid rgba(0,0,0,0.05);">
+                                <i class="bi ${iconClass} fs-4"></i>
+                            </div>
+                            ${!n.isRead ? '<span class="position-absolute bottom-0 end-0 p-1 bg-primary border border-white rounded-circle"></span>' : ''}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold" style="font-size: 0.9rem; color: #10233f; letter-spacing: -0.3px;">${n.title}</span>
+                            </div>
+                            <div class="text-muted mb-3" style="font-size: 0.85rem; line-height: 1.6; font-weight: 400;">${n.message}</div>
+                            <div class="text-secondary d-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                                <i class="bi bi-clock-history"></i>
+                                <span>${n.createdAt}</span>
+                            </div>
+                        </div>
+                    </div>
+                </li>`;
+            },
+
+            updateStats(stats) {
+                if (!stats) return;
+                if (this.elements.stats.confirmee) this.elements.stats.confirmee.textContent = stats.confirmee;
+                if (this.elements.stats.attente) this.elements.stats.attente.textContent = stats.attente;
+                if (this.elements.stats.annulee) this.elements.stats.annulee.textContent = stats.annulee;
+            },
+
+            processNewNotifications(notifications) {
+                notifications.forEach(n => {
+                    if (!this.knownIds.has(n.id)) {
+                        this.knownIds.add(n.id);
+                        if (!this.isFirstLoad && !n.isRead) {
+                            this.showToast(n);
+                        }
+                    }
+                });
+            },
+
+            showToast(notif) {
                 const toastId = `toast-${notif.id}`;
                 const toastHtml = `
                     <div id="${toastId}" class="toast border-0 shadow-lg rounded-4" role="alert" aria-live="assertive" aria-atomic="true">
                         <div class="toast-header border-0 rounded-top-4 bg-danger text-white">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
                             <strong class="me-auto">${notif.title}</strong>
-                            <small class="text-white-50">À l'instant</small>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
                         </div>
                         <div class="toast-body p-3">
                             ${notif.message}
                             <div class="mt-2 pt-2 border-top">
-                                <a href="{{ path('app_event_admin_reservations') }}" class="btn btn-sm btn-outline-danger rounded-pill">Voir les réservations</a>
+                                <a href="{{ path('app_event_admin_reservations') }}" class="btn btn-sm btn-outline-danger rounded-pill">Gérer</a>
                             </div>
                         </div>
-                    </div>
-                `;
-                toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+                    </div>`;
+                
+                this.elements.toastContainer.insertAdjacentHTML('beforeend', toastHtml);
                 const toastElement = document.getElementById(toastId);
-                const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 10000 });
-                toast.show();
-            };
+                new bootstrap.Toast(toastElement, { autohide: true, delay: 10000 }).show();
+            },
 
-            const fetchNotifications = async () => {
+            async markAllAsRead() {
                 try {
-                    const response = await fetch('{{ path('app_admin_notifications_unread') }}');
-                    const data = await response.json();
-                    const notifications = data.notifications;
-                    const unreadCount = data.unreadCount;
-                    
-                    // Update badge
-                    if (unreadCount > 0) {
-                        notifBadge.textContent = unreadCount;
-                        notifBadge.classList.remove('d-none');
-                    } else {
-                        notifBadge.classList.add('d-none');
-                    }
-
-                    // Render list
-                    if (notifications.length === 0) {
-                        notifContainer.innerHTML = '<li class="p-5 text-center text-muted small"><i class="bi bi-check-circle-fill fs-1 text-success d-block mb-2 opacity-50"></i> Vous êtes à jour !</li>';
-                    } else {
-                        notifContainer.innerHTML = notifications.map(n => {
-                            // Détermination du style selon le type
-                            let iconClass = "bi-info-circle-fill";
-                            let colorClass = "primary";
-                            if(n.title.includes("PRIX DYNAMIQUE") || n.type === "yield") { iconClass = "bi-lightning-charge-fill"; colorClass = "warning"; }
-                            if(n.title.includes("RECOMMENDATION") || n.type === "recommendation") { iconClass = "bi-stars"; colorClass = "info"; }
-                            if(n.title.includes("ATTENTE") || n.type === "waitlist") { iconClass = "bi-people-fill"; colorClass = "success"; }
-                            
-                            return `
-                            <li class="p-4 border-bottom notification-item ${n.isRead ? 'opacity-75 bg-light' : 'bg-white unread'}" data-id="${n.id}">
-                                <div class="d-flex gap-3 align-items-start">
-                                    <div class="position-relative">
-                                        <div class="bg-${colorClass} bg-opacity-10 text-${colorClass} p-2 rounded-4 shadow-sm d-flex justify-content-center align-items-center flex-shrink-0" style="width: 48px; height: 48px; border: 1px solid rgba(0,0,0,0.05);">
-                                            <i class="bi ${iconClass} fs-4"></i>
-                                        </div>
-                                        ${!n.isRead ? '<span class="position-absolute bottom-0 end-0 p-1 bg-primary border border-white rounded-circle"></span>' : ''}
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <span class="fw-bold" style="font-size: 0.9rem; color: #10233f; letter-spacing: -0.3px;">${n.title}</span>
-                                        </div>
-                                        <div class="text-muted mb-3" style="font-size: 0.85rem; line-height: 1.6; font-weight: 400;">${n.message}</div>
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <div class="text-secondary d-flex align-items-center gap-1" style="font-size: 0.75rem;">
-                                                <i class="bi bi-clock-history"></i>
-                                                <span>${n.createdAt}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </li>
-                            `;
-                        }).join('');
-                    }
-
-                    // Update Topbar Stats
-                    if (data.stats) {
-                        const sConfirmee = document.getElementById('statConfirmee');
-                        const sAttente = document.getElementById('statAttente');
-                        const sAnnulee = document.getElementById('statAnnulee');
-                        
-                        if (sConfirmee) sConfirmee.textContent = data.stats.confirmee;
-                        if (sAttente) sAttente.textContent = data.stats.attente;
-                        if (sAnnulee) sAnnulee.textContent = data.stats.annulee;
-                    }
-
-                    // Show Toasts only for new UNREAD notifications
-                    notifications.forEach(n => {
-                        if (!n.isRead && !knownNotifIds.has(n.id)) {
-                            knownNotifIds.add(n.id);
-                            if (!isFirstLoad) {
-                                showToast(n);
-                            }
-                        } else if (n.isRead) {
-                            knownNotifIds.add(n.id);
-                        }
-                    });
-
-                    isFirstLoad = false;
+                    await fetch('{{ path('app_admin_notifications_read_all') }}', { method: 'POST' });
+                    this.fetch();
                 } catch (error) {
-                    console.error('Error fetching notifications:', error);
+                    console.error('Mark All Read Error:', error);
                 }
-            };
-
-            // Mark all as read
-            if (markAllRead) {
-                markAllRead.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    try {
-                        await fetch('{{ path('app_admin_notifications_read_all') }}', { method: 'POST' });
-                        fetchNotifications();
-                    } catch (error) {
-                        console.error('Error marking all read:', error);
-                    }
-                });
             }
+        };
 
-            // Polling every 5 seconds for real-time feel
-            setInterval(fetchNotifications, 5000);
-            fetchNotifications();
-        }
+        EcoAgent.init();
 
         // Admin confirmation modal logic (pre-existing)
         const modalElement = document.getElementById('adminConfirmModal');
