@@ -1,0 +1,94 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block body %}
+
+<div class="container-fluid py-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">🧠 AI Dashboard</h2>
+            <p class="text-muted mb-0">Analyse intelligente des activités</p>
+        </div>
+        <span class="badge bg-dark px-3 py-2">Groq AI</span>
+    </div>
+
+    <!-- TOP STATS -->
+    <div class="row g-3 mb-4">
+
+        {% for a in topActivities %}
+            <div class="col-md-4 col-lg-2">
+                <div class="card shadow-sm border-0 rounded-4 h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted mb-2">Activité</h6>
+                        <h5 class="fw-bold">{{ a.nom }}</h5>
+                        <span class="badge bg-primary mt-2">
+                            {{ a.total }} réservations
+                        </span>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
+        {% if topActivities is empty %}
+            <div class="col-12">
+                <div class="alert alert-warning rounded-4">
+                    Aucune activité disponible
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+
+    <!-- AI ANALYSIS -->
+    <div class="row g-4">
+
+        <!-- ANALYSE IA -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">📊 Analyse IA</h5>
+                </div>
+                <div class="card-body">
+                    {% if analysis %}
+                        <p class="text-dark" style="white-space: pre-line;">
+                            {{ analysis }}
+                        </p>
+                    {% else %}
+                        <p class="text-muted">Aucune analyse disponible</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- PREDICTION IA -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">📈 Prédiction IA</h5>
+                </div>
+                <div class="card-body">
+                    {% if prediction %}
+                        <p class="text-dark" style="white-space: pre-line;">
+                            {{ prediction }}
+                        </p>
+                    {% else %}
+                        <p class="text-muted">Aucune prédiction disponible</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FOOTER INSIGHT -->
+    <div class="mt-4">
+        <div class="alert alert-info rounded-4 shadow-sm">
+            💡 <strong>Insight :</strong>
+            L’IA analyse automatiquement les tendances des activités pour optimiser les réservations.
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

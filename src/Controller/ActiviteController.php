@@ -308,5 +308,47 @@ class ActiviteController extends AbstractController
             'activites' => $activites
         ]);
     }
+    #[Route('/activities/discover', name: 'app_activities_discover')]
+public function discover(ActiviteRepository $repo): Response
+{
+    $activities = $repo->findAll();
+
+    return $this->render('front/discover.html.twig', [
+        'activities' => $activities
+    ]);
+}
+#[Route('/activities/trending', name: 'app_activities_trending')]
+public function trending(ActiviteRepository $repo): Response
+{
+    $qb = $repo->createQueryBuilder('a')
+        ->leftJoin('a.reservationActivites', 'r')
+        ->addSelect('COUNT(r.id_res_act) AS HIDDEN total')
+        ->groupBy('a.id_activite')
+        ->orderBy('total', 'DESC')
+        ->setMaxResults(10);
+
+    $activities = $qb->getQuery()->getResult();
+
+    return $this->render('front/trending.html.twig', [
+        'activities' => $activities
+    ]);
+}
+#[Route('/activities/insight', name: 'app_activities_insight')]
+public function insight(ActiviteRepository $repo): Response
+{
+    $activities = $repo->findAll();
+
+    $insight = "Analyse automatique : ";
+
+    if (count($activities) > 5) {
+        $insight .= "Bonne diversité d'activités. Augmenter la promotion des plus populaires.";
+    } else {
+        $insight .= "Ajouter plus d'activités pour améliorer l'offre.";
+    }
+
+    return $this->render('front/insight.html.twig', [
+        'insight' => $insight
+    ]);
+}
 }
 

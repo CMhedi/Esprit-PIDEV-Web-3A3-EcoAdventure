@@ -1,0 +1,191 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Transport Intelligent{% endblock %}
+
+{% block body %}
+
+<style>
+body {
+    background: #f4f6f9;
+}
+
+.transport-card {
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.transport-header {
+    background: linear-gradient(135deg, #0d6efd, #20c997);
+    color: white;
+    padding: 18px 22px;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.transport-body {
+    padding: 22px;
+}
+
+.label {
+    font-weight: 600;
+    margin-top: 12px;
+    margin-bottom: 6px;
+    color: #333;
+}
+
+.form-control {
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.btn-calc {
+    width: 100%;
+    margin-top: 15px;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(135deg, #198754, #20c997);
+    transition: 0.3s;
+}
+
+.btn-calc:hover {
+    transform: translateY(-2px);
+}
+
+.result-box {
+    margin-top: 18px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 14px;
+    border-left: 5px solid #0d6efd;
+}
+
+.badge-custom {
+    background: #0d6efd;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+}
+
+#map {
+    height: 500px;
+    border-radius: 16px;
+    margin-top: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+</style>
+
+<div class="container my-4">
+
+<div class="transport-card">
+
+    <!-- HEADER -->
+    <div class="transport-header">
+        🚀 Transport Intelligent
+    </div>
+
+    <div class="transport-body">
+
+        <h5>📍 Activité : <strong>{{ reservation.activite.nom }}</strong></h5>
+
+        <form method="get">
+
+            <!-- Gouvernorat -->
+            <div class="label">Gouvernorat</div>
+            <select name="gouvernorat" class="form-control" onchange="this.form.submit()">
+                <option value="">-- choisir gouvernorat --</option>
+                {% for g in gouvernorats %}
+                    <option value="{{ g.gouvernorat }}" {{ gouvernorat == g.gouvernorat ? 'selected' : '' }}>
+                        {{ g.gouvernorat }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <!-- Délégation -->
+            <div class="label">Délégation</div>
+            <select name="delegation" class="form-control">
+                <option value="">-- choisir délégation --</option>
+                {% for d in delegations %}
+                    <option value="{{ d.delegation }}" {{ delegation == d.delegation ? 'selected' : '' }}>
+                        {{ d.delegation }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <!-- Mode -->
+            <div class="label">Mode transport</div>
+            <select name="mode" class="form-control">
+                <option value="car" {{ mode == 'car' ? 'selected' : '' }}>🚗 Voiture</option>
+                <option value="moto" {{ mode == 'moto' ? 'selected' : '' }}>🏍 Moto</option>
+                <option value="bus" {{ mode == 'bus' ? 'selected' : '' }}>🚌 Bus</option>
+            </select>
+
+            <!-- BUTTON -->
+            <button class="btn-calc" name="submit" value="1">
+                🧭 Calculer itinéraire
+            </button>
+
+        </form>
+
+        <!-- ERROR -->
+        {% if error %}
+            <div class="alert alert-danger mt-3">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <!-- RESULT -->
+        {% if distance %}
+            <div class="result-box">
+                <span class="badge-custom">Résultat</span><br><br>
+
+                📏 Distance :
+                <strong>{{ distance|number_format(2) }} km</strong><br>
+
+                ⏱ Durée :
+                <strong>{{ hours }} h {{ minutes }} min</strong>
+            </div>
+        {% endif %}
+
+        <!-- MAP -->
+        <div id="map"></div>
+
+    </div>
+</div>
+
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    let map = L.map('map').setView([36.8, 10.18], 7);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+    }).addTo(map);
+
+    {% if geoJson %}
+
+    let route = L.geoJSON({{ geoJson|json_encode|raw }}, {
+        style: {
+            color: "#0d6efd",
+            weight: 5
+        }
+    }).addTo(map);
+
+    map.fitBounds(route.getBounds());
+
+    {% endif %}
+
+});
+</script>
+
+{% endblock %}
