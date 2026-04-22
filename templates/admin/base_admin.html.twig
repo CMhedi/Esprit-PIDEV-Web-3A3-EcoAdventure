@@ -72,30 +72,48 @@
             </div>
             
             <div class="d-flex align-items-center gap-3">
-                <!-- Notification Center (Show only on Reservations page) -->
+                <!-- Reservation Stats (Live updatable via JS) -->
                 {% if app.request.get('_route') == 'app_event_admin_reservations' %}
+                <div class="d-flex gap-2 me-3 d-none d-md-flex">
+                    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success d-flex align-items-center gap-1 px-3 py-2">
+                        <i class="bi bi-check-circle-fill"></i> Confirmées: <strong id="statConfirmee">0</strong>
+                    </span>
+                    <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning d-flex align-items-center gap-1 px-3 py-2">
+                        <i class="bi bi-hourglass-split"></i> En Attente: <strong id="statAttente">0</strong>
+                    </span>
+                    <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center gap-1 px-3 py-2">
+                        <i class="bi bi-x-circle-fill"></i> Annulées: <strong id="statAnnulee">0</strong>
+                    </span>
+                </div>
+                
+                <!-- Notification Center -->
                 <div class="dropdown" id="notificationCenter">
-                    <button class="btn btn-light position-relative rounded-pill p-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notifBtn">
-                        <i class="bi bi-bell fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifBadge">
+                    <button class="btn btn-light position-relative rounded-circle p-2 shadow-sm d-flex justify-content-center align-items-center" style="width: 45px; height: 45px;" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notifBtn">
+                        <i class="bi bi-bell-fill fs-5 text-dark"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow border border-2 border-white d-none" id="notifBadge">
                             0
                         </span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 p-0 overflow-hidden" style="width: 320px;" id="notifList">
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-3 p-0 overflow-hidden" style="width: 380px;" id="notifList">
                         <li class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
-                            <h6 class="mb-0 fw-bold">Notifications</h6>
-                            <button class="btn btn-sm btn-link text-decoration-none p-0" id="markAllRead">Tout marquer comme lu</button>
+                            <h6 class="mb-0 fw-bold d-flex align-items-center gap-2"><i class="bi bi-bell-fill text-primary"></i> Notifications d'IA</h6>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill py-1 px-3" id="markAllRead" style="font-size: 0.75rem; font-weight: 600;">Tout lire</button>
                         </li>
-                        <div id="notifContainer" style="max-height: 400px; overflow-y: auto;">
+                        <div id="notifContainer" style="max-height: 420px; overflow-y: auto;">
                             <!-- Notifications injectées par JS -->
-                            <li class="p-4 text-center text-muted small">Aucune notification</li>
+                            <li class="p-5 text-center text-muted small"><i class="bi bi-inbox fs-1 d-block mb-2 text-primary opacity-50"></i> Aucune notification</li>
                         </div>
                     </ul>
                 </div>
                 {% endif %}
 
-                <div class="admin-user">
-                    <span class="badge text-bg-light px-3 py-2 rounded-pill">Admin</span>
+                <div class="admin-user ms-2">
+                    <div class="d-flex align-items-center bg-white rounded-pill shadow-sm pe-3 ps-1 py-1 border">
+                        <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-2" style="width: 35px; height: 35px;">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <span class="fw-bold text-dark small">Admin</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -234,25 +252,45 @@
 
                     // Render list
                     if (notifications.length === 0) {
-                        notifContainer.innerHTML = '<li class="p-4 text-center text-muted small">Aucune notification</li>';
+                        notifContainer.innerHTML = '<li class="p-5 text-center text-muted small"><i class="bi bi-check-circle-fill fs-1 text-success d-block mb-2 opacity-50"></i> Vous êtes à jour !</li>';
                     } else {
-                        notifContainer.innerHTML = notifications.map(n => `
-                            <li class="p-3 border-bottom notification-item ${n.isRead ? 'opacity-50 bg-light' : ''}" data-id="${n.id}">
+                        notifContainer.innerHTML = notifications.map(n => {
+                            // Détermination du style selon le type
+                            let iconClass = "bi-info-circle-fill";
+                            let colorClass = "primary";
+                            if(n.title.includes("PRIX DYNAMIQUE") || n.type === "yield") { iconClass = "bi-lightning-charge-fill"; colorClass = "warning"; }
+                            if(n.title.includes("RECOMMENDATION") || n.type === "recommendation") { iconClass = "bi-stars"; colorClass = "info"; }
+                            if(n.title.includes("ATTENTE") || n.type === "waitlist") { iconClass = "bi-people-fill"; colorClass = "success"; }
+                            
+                            return `
+                            <li class="p-3 border-bottom notification-item ${n.isRead ? 'opacity-75 bg-light' : 'bg-white'}" data-id="${n.id}">
                                 <div class="d-flex gap-3 align-items-start">
-                                    <div class="bg-danger bg-opacity-10 text-danger p-2 rounded-circle">
-                                        <i class="bi bi-x-circle"></i>
+                                    <div class="bg-${colorClass} bg-opacity-10 text-${colorClass} p-2 rounded-3 shadow-sm d-flex justify-content-center align-items-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                        <i class="bi ${iconClass} fs-5"></i>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <div class="fw-bold small d-flex justify-content-between">
+                                        <div class="fw-bold d-flex justify-content-between align-items-center mb-1" style="font-size: 0.85rem; color: #1a4731;">
                                             ${n.title}
-                                            ${!n.isRead ? '<span class="badge bg-primary rounded-pill" style="font-size: 0.5rem;">New</span>' : ''}
+                                            ${!n.isRead ? '<span class="badge bg-danger rounded-pill shadow-sm" style="font-size: 0.55rem; padding: 0.35em 0.6em;">NOUVEAU</span>' : ''}
                                         </div>
-                                        <div class="text-muted small mb-1">${n.message}</div>
-                                        <div class="text-end" style="font-size: 0.7rem;">${n.createdAt}</div>
+                                        <div class="text-muted mb-2" style="font-size: 0.85rem; line-height: 1.4;">${n.message}</div>
+                                        <div class="text-secondary fw-semibold" style="font-size: 0.7rem;"><i class="bi bi-clock me-1"></i> ${n.createdAt}</div>
                                     </div>
                                 </div>
                             </li>
-                        `).join('');
+                            `;
+                        }).join('');
+                    }
+
+                    // Update Topbar Stats
+                    if (data.stats) {
+                        const sConfirmee = document.getElementById('statConfirmee');
+                        const sAttente = document.getElementById('statAttente');
+                        const sAnnulee = document.getElementById('statAnnulee');
+                        
+                        if (sConfirmee) sConfirmee.textContent = data.stats.confirmee;
+                        if (sAttente) sAttente.textContent = data.stats.attente;
+                        if (sAnnulee) sAnnulee.textContent = data.stats.annulee;
                     }
 
                     // Show Toasts only for new UNREAD notifications

@@ -14,7 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class NotificationAdminController extends AbstractController
 {
     #[Route('/unread', name: 'app_admin_notifications_unread', methods: ['GET'])]
-    public function getUnread(NotificationRepository $repository): JsonResponse
+    public function getUnread(NotificationRepository $repository, \App\Repository\ReservationEvenementRepository $resRepo): JsonResponse
     {
         $allRecent = $repository->findRecent(15);
         $unreadCount = count($repository->findUnread());
@@ -30,9 +30,17 @@ class NotificationAdminController extends AbstractController
             ];
         }, $allRecent);
 
+        // Calculate Stats for Topbar
+        $stats = [
+            'confirmee' => $resRepo->count(['statut_res' => \App\Enum\StatutReservationEvenement::CONFIRMEE]),
+            'annulee' => $resRepo->count(['statut_res' => \App\Enum\StatutReservationEvenement::ANNULEE]),
+            'attente' => $resRepo->count(['statut_res' => \App\Enum\StatutReservationEvenement::EN_ATTENTE]) + $resRepo->count(['statut_res' => \App\Enum\StatutReservationEvenement::LISTE_ATTENTE])
+        ];
+
         return $this->json([
             'notifications' => $data,
-            'unreadCount' => $unreadCount
+            'unreadCount' => $unreadCount,
+            'stats' => $stats
         ]);
     }
 
