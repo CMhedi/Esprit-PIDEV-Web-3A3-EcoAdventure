@@ -81,7 +81,7 @@ class AiEventOptimizerService
                 $rec = $this->getSimilarAvailableEvent($evenement);
                 if ($rec) {
                     return [
-                        'message' => "🌟 L'IA ECOADVENTURE vous informe : Vos chances sont faibles d'avoir une place ici. Nous vous recommandons cet événement très similaire :",
+                        'message' => "🌟 L'Agent IA ECOADVENTURE vous informe : Vos chances sont faibles d'avoir une place ici. Nous vous recommandons cet événement très similaire :",
                         'event' => $rec
                     ];
                 }

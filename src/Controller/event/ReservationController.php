@@ -328,7 +328,7 @@ class ReservationController extends AbstractController
             $dynamicWaitlistLimit = $aiOptimizer->optimizeWaitlistLimit($evenement);
 
             if ($placesEnAttente + $nbBillets > $dynamicWaitlistLimit) {
-                $this->addFlash('error', sprintf('Désolé, liste d\'attente fermée. Notre IA a calculé une limite maximale optimale de %d place(s) afin d\'éviter de vous frustrer.', $dynamicWaitlistLimit));
+                $this->addFlash('error', sprintf('Désolé, liste d\'attente fermée. Notre Agent IA a calculé une limite maximale optimale de %d place(s) afin d\'éviter de vous frustrer.', $dynamicWaitlistLimit));
                 return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
             }
 
@@ -348,7 +348,7 @@ class ReservationController extends AbstractController
                 $fullMessage = $aiData['message'] . " 👉 " . $aiData['event']->getTitre();
                 $this->addFlash('info', $fullMessage);
             } else {
-                $this->addFlash('warning', 'Plus de places disponibles. Vous avez été ajouté à la liste d\'attente, vous serez notifié si une place se libère.');
+                $this->addFlash('warning', 'Plus de places disponibles. Vous avez été ajouté à la liste d\'attente par notre Agent IA, vous serez notifié si une place se libère.');
             }
             
             return $this->redirectToRoute('app_mes_reservations');
@@ -374,9 +374,9 @@ class ReservationController extends AbstractController
         $yieldData = $aiOptimizer->analyzeYieldManagement($evenement, 1.5);
         if (isset($yieldData['admin_alert']) && strpos($yieldData['admin_alert'], 'FORTE') !== false) {
             $notifYield = new Notification();
-            $notifYield->setTitle('⚡ PRIX DYNAMIQUE IA')
+            $notifYield->setTitle('⚡ PRIX DYNAMIQUE AGENT IA')
                 ->setMessage(sprintf(
-                    "L'événement '%s' est ultra-populaire ! L'IA suggère d'augmenter le prix à %s DT (Actuel: %s DT) pour les prochaines éditions.", 
+                    "L'événement '%s' est ultra-populaire ! L'Agent IA suggère d'augmenter le prix à %s DT (Actuel: %s DT) pour les prochaines éditions.", 
                     $evenement->getTitre(), 
                     number_format($yieldData['suggested_price'], 2, ',', ' '), 
                     number_format($evenement->getPrix(), 2, ',', ' ')
@@ -416,7 +416,7 @@ class ReservationController extends AbstractController
         }
 
         foreach ($reservations as $reservation) {
-            $entityManager->remove($reservation);
+            $reservation->setStatut_res(StatutReservationEvenement::ANNULEE);
         }
 
         // Création d'une notification pour l'admin

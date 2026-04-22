@@ -160,9 +160,9 @@
                         <div>
                             <h6 class="fw-bold text-{{ weather_ai_alert.type }} mb-1">
                                 {% if weather_ai_alert.type == 'success' %}
-                                    <i class="bi bi-check-circle-fill me-1"></i>Avis Météo Favorable (IA)
+                                    <i class="bi bi-check-circle-fill me-1"></i>Avis Météo Favorable (Agent IA)
                                 {% else %}
-                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Alerte Météo Intelligente
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Alerte Météo Intelligente (Agent IA)
                                 {% endif %}
                             </h6>
                             <p class="mb-0 text-dark fw-bold" style="font-size: 0.95rem;">{{ weather_ai_alert.message }}</p>
@@ -227,7 +227,7 @@
                     </div>
                     {% endif %}
 
-                    <form action="{{ path('app_reservation_event', {'id_evenement': evenement.id_evenement}) }}" method="POST">
+                    <form action="{{ path('app_reservation_event', {'id_evenement': evenement.id_evenement}) }}" method="POST" id="booking-form">
                         <div class="mb-4">
                             <label for="nb_billets" class="form-label fw-bold small text-muted text-uppercase">Participants</label>
                             <div class="input-group input-group-lg">
@@ -266,9 +266,9 @@
                             <div class="icon-box bg-info bg-opacity-25 text-info me-3" style="width: 40px; height: 40px;">
                                 <i class="bi bi-robot fs-5"></i>
                             </div>
-                            <h6 class="fw-bold text-white mb-0">IA EcoAdventure</h6>
+                            <h6 class="fw-bold text-white mb-0">Agent IA EcoAdventure</h6>
                         </div>
-                        <p class="text-light opacity-75 small mb-3">Puls de places ? L'IA a trouvé une aventure alternative similaire juste pour vous :</p>
+                        <p class="text-light opacity-75 small mb-3">Plus de places ? Notre Agent IA a trouvé une aventure alternative similaire juste pour vous :</p>
                         
                         <div class="bg-white bg-opacity-10 rounded-3 p-3 mb-4 d-flex align-items-center">
                             {% if ai_recommendation.image_url %}
@@ -357,6 +357,18 @@ if (inputBillets) {
             promoInfoEl.classList.add('d-none');
             totalPriceEl.classList.remove('text-danger');
             totalPriceEl.classList.add('text-success');
+        }
+    });
+}
+
+// Prevent double submission
+const bookingForm = document.getElementById('booking-form');
+if (bookingForm) {
+    bookingForm.addEventListener('submit', function() {
+        const btn = this.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Traitement...';
         }
     });
 }
