@@ -2147,6 +2147,8 @@ let activeCallTimerInterval = null;
 let localAudioMuted = false;
 let localVideoMuted = false;
 let remoteParticipantConnected = false;
+let makingPrivateOffer = false;
+let ignoringIncomingPrivateOffer = false;
 let minimizingCurrentCall = false;
 let incomingCallRingInterval = null;
 let localConferenceJoined = false;
@@ -2510,9 +2512,9 @@ function renderWebRtcCallStage(callSession) {
                     <div class="call-avatar-circle">
                         <i class="bi ${remoteIcon}"></i>
                     </div>
-                    <div class="fs-4 fw-semibold">${escapeHtml(callSession.targetName || 'Contact')}</div>
+                    <div class="fs-4 fw-semibold">${escapeHtml(getPrivateCallPeerName(callSession))}</div>
                 </div>
-                <div class="call-participant-label">${escapeHtml(callSession.targetName || 'Contact')}</div>
+                <div class="call-participant-label">${escapeHtml(getPrivateCallPeerName(callSession))}</div>
             </div>
             <div class="call-local-preview">
                 <video id="localCallVideo" class="call-local-media d-none" autoplay playsinline muted></video>
@@ -3048,7 +3050,7 @@ function syncCallControlsUi() {
         const modeLabel = localVideoMuted ? 'Audio' : 'Video';
         floatingCallMeta.textContent = activeCallSession.isGroupCall
             ? `Conversation: ${getCallConversationName(activeCallSession)} - ${modeLabel}`
-            : `${currentUserDisplayName} et ${activeCallSession.targetName} - ${modeLabel}`;
+            : `${currentUserDisplayName} et ${getPrivateCallPeerName(activeCallSession)} - ${modeLabel}`;
     }
 
     if (floatingCallSubmeta && activeCallSession) {
@@ -3068,12 +3070,16 @@ function getCallDisplayTitle(callSession) {
         return `${callLabel} de groupe - ${callSession.targetName || 'Groupe'}`;
     }
 
-    return `${callLabel} - ${callSession.targetName || 'Contact'}`;
+    return `${callLabel} - ${getPrivateCallPeerName(callSession)}`;
 }
 
 function getCallConversationName(callSession = activeCallSession) {
     if (!callSession) {
         return 'Conversation';
+    }
+
+    if (!callSession.isGroupCall) {
+        return getPrivateCallPeerName(callSession);
     }
 
     return String(callSession.conversationName || callSession.targetName || getCurrentCallTargetName() || 'Conversation').trim() || 'Conversation';
@@ -3085,6 +3091,38 @@ function getCallInitiatorName(callSession = activeCallSession) {
     }
 
     return String(callSession.initiatorName || (callSession.isCaller ? currentUserDisplayName : '') || currentUserDisplayName).trim() || currentUserDisplayName;
+}
+
+function getPrivateCallPeerName(callSession = activeCallSession) {
+    if (!callSession) {
+        return 'Contact';
+    }
+
+    const targetUserId = Number(callSession.targetUserId || 0);
+    const targetUserIds = Array.isArray(callSession.targetUserIds)
+        ? callSession.targetUserIds.map((value) => Number(value || 0))
+        : [];
+    const targetNames = Array.isArray(callSession.targetNames) ? callSession.targetNames : [];
+    const targetIndex = targetUserId > 0 ? targetUserIds.findIndex((value) => value === targetUserId) : -1;
+    const targetNameById = targetIndex >= 0 ? String(targetNames[targetIndex] || '').trim() : '';
+
+    if (targetNameById !== '') {
+        return targetNameById;
+    }
+
+    const fallbacks = [
+        String(callSession.targetName || '').trim(),
+        String(getCurrentCallTargetName() || '').trim(),
+        String(callSession.initiatorName || '').trim(),
+    ];
+
+    for (const fallback of fallbacks) {
+        if (fallback !== '') {
+            return fallback;
+        }
+    }
+
+    return 'Contact';
 }
 
 function getGroupParticipantNames(callSession = activeCallSession, connectedOnly = false) {
@@ -3182,6 +3220,72 @@ function resolveVideoSender(connection) {
     return transceiver?.sender || connection.getSenders?.().find((sender) => sender.track?.kind === 'video') || null;
 }
 
+function resolveAudioSender(connection) {
+    if (!connection) {
+        return null;
+    }
+
+    const transceiver = connection.getTransceivers?.().find((item) => {
+        const senderKind = item.sender?.track?.kind || '';
+        const receiverKind = item.receiver?.track?.kind || '';
+        return senderKind === 'audio' || receiverKind === 'audio';
+    });
+
+    return transceiver?.sender || connection.getSenders?.().find((sender) => sender.track?.kind === 'audio') || null;
+}
+
+function isPolitePrivatePeer(callSession = activeCallSession) {
+    if (!callSession || callSession.isGroupCall) {
+        return true;
+    }
+
+    const currentUserId = getCurrentUserIdNumber();
+    const targetUserId = Number(callSession.targetUserId || 0);
+    if (!currentUserId || !targetUserId) {
+        return true;
+    }
+
+    return currentUserId > targetUserId;
+}
+
+async function createPrivateOfferDescription(connection) {
+    makingPrivateOffer = true;
+    try {
+        const offer = await connection.createOffer({
+            offerToReceiveAudio: true,
+            offerToReceiveVideo: true,
+        });
+        if (!connection || connection.signalingState !== 'stable') {
+            return null;
+        }
+        await connection.setLocalDescription(offer);
+        return connection.localDescription?.toJSON?.() || connection.localDescription;
+    } finally {
+        makingPrivateOffer = false;
+    }
+}
+
+async function ensureWebRtcAudioTrackAttached(audioTrack) {
+    if (!localCallStream || !audioTrack) {
+        return false;
+    }
+
+    let trackAttached = false;
+    const peers = getPeerConnectionsForNegotiation();
+    for (const { connection } of peers) {
+        const audioSender = resolveAudioSender(connection);
+        if (audioSender) {
+            await audioSender.replaceTrack(audioTrack);
+            continue;
+        }
+
+        connection.addTrack(audioTrack, localCallStream);
+        trackAttached = true;
+    }
+
+    return trackAttached;
+}
+
 async function ensureWebRtcVideoTrackAttached(videoTrack) {
     if (!localCallStream || !videoTrack) {
         return;
@@ -3222,13 +3326,23 @@ async function renegotiateActiveWebRtcPeers() {
             continue;
         }
 
-        const offer = await connection.createOffer({
-            offerToReceiveAudio: true,
-            offerToReceiveVideo: true,
-        });
-        await connection.setLocalDescription(offer);
+        let offerDescription = null;
+        if (activeCallSession.isGroupCall) {
+            const offer = await connection.createOffer({
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: true,
+            });
+            await connection.setLocalDescription(offer);
+            offerDescription = connection.localDescription?.toJSON?.() || connection.localDescription;
+        } else {
+            offerDescription = await createPrivateOfferDescription(connection);
+            if (!offerDescription) {
+                continue;
+            }
+        }
+
         const payload = {
-            sdp: connection.localDescription?.toJSON?.() || connection.localDescription,
+            sdp: offerDescription,
             call_mode: hasEnabledLiveVideoTrack(localCallStream) ? 'video' : 'audio',
         };
 
@@ -3271,12 +3385,12 @@ function updateCallSessionMetaUi(callSession = activeCallSession) {
     const initiatorName = getCallInitiatorName(callSession);
     const participantsSummary = callSession.isGroupCall
         ? getGroupParticipantsSummary(callSession)
-        : `Correspondant: ${callSession.targetName || 'Contact'}`;
+        : `Correspondant: ${getPrivateCallPeerName(callSession)}`;
 
     if (floatingCallMeta) {
         floatingCallMeta.textContent = callSession.isGroupCall
             ? `Conversation: ${conversationName}`
-            : `${currentUserDisplayName} et ${callSession.targetName || 'Contact'}`;
+            : `${currentUserDisplayName} et ${getPrivateCallPeerName(callSession)}`;
     }
 
     if (floatingCallSubmeta) {
@@ -3308,7 +3422,7 @@ function getCallWaitingText(callSession) {
     }
 
     return callSession.isCaller
-        ? `Invitation envoyee a ${callSession.targetName}. En attente de reponse...`
+        ? `Invitation envoyee a ${getPrivateCallPeerName(callSession)}. En attente de reponse...`
         : 'Connexion au correspondant...';
 }
 
@@ -3725,7 +3839,9 @@ function getActiveCallSnapshot() {
         conversationId: activeCallSession.conversationId || getCurrentConversationId(),
         callType: activeCallSession.callType || 'audio',
         isVideoPresentation: isCallSessionVideoActive(activeCallSession),
-        targetName: activeCallSession.targetName || getCurrentCallTargetName(),
+        targetName: activeCallSession.isGroupCall
+            ? (activeCallSession.targetName || getCurrentCallTargetName())
+            : getPrivateCallPeerName(activeCallSession),
         conversationName: getCallConversationName(activeCallSession),
         initiatorName: getCallInitiatorName(activeCallSession),
         isGroupCall: !!activeCallSession.isGroupCall,
@@ -4069,6 +4185,8 @@ function disposeJitsiMeeting() {
     localCallStream = null;
     remoteCallStream = null;
     pendingRemoteCandidates = [];
+    makingPrivateOffer = false;
+    ignoringIncomingPrivateOffer = false;
 
     if (jitsiApi && typeof jitsiApi.dispose === 'function') {
         try {
@@ -4501,8 +4619,8 @@ async function startOutgoingJitsiCall(callType) {
     const targetUserIds = getCurrentCallTargetUserIds();
     const targetUserId = targetUserIds[0] || 0;
     const targetNames = getCurrentCallTargetNames();
-    const targetName = getCurrentCallTargetName();
     const isGroupCall = isCurrentConversationGroupCall();
+    const targetName = (!isGroupCall && targetNames[0]) ? targetNames[0] : getCurrentCallTargetName();
 
     if (!conversationId || !targetUserIds.length) {
         startingOutgoingCall = false;
@@ -4576,7 +4694,7 @@ async function startOutgoingJitsiCall(callType) {
             caller_name: currentUserDisplayName,
             meeting_url: isWebRtcCallMode(activeCallSession) ? '' : buildJitsiMeetingUrl(roomName, callType),
             is_group_call: isGroupCall,
-            conversation_title: targetName,
+            conversation_title: isGroupCall ? targetName : '',
         };
 
         if (isGroupCall) {
@@ -4837,7 +4955,9 @@ async function handleCallSignalEvent(event) {
                 callerUserId: Number(event.sender_user_id || 0),
                 callerName: event.payload?.caller_name || 'Contact',
                 isGroupCall,
-                targetName: event.payload?.conversation_title || (isGroupCall ? 'Groupe' : (event.payload?.caller_name || 'Contact')),
+                targetName: isGroupCall
+                    ? (event.payload?.conversation_title || 'Groupe')
+                    : (event.payload?.caller_name || 'Contact'),
                 initiatorName: event.payload?.caller_name || 'Contact',
             };
 
@@ -4872,18 +4992,17 @@ async function handleCallSignalEvent(event) {
 
             if (isWebRtcCallMode(activeCallSession)) {
                 const connection = await ensureWebRtcPeerConnection(activeCallSession);
-                const offer = await connection.createOffer({
-                    offerToReceiveAudio: true,
-                    offerToReceiveVideo: true,
-                });
-                await connection.setLocalDescription(offer);
+                const offerDescription = await createPrivateOfferDescription(connection);
+                if (!offerDescription) {
+                    break;
+                }
                 const offerResult = await sendCallSignal(
                     'offer',
                     activeCallSession.targetUserId,
                     activeCallSession.callType,
                     activeCallSession.sessionId,
                     {
-                        sdp: connection.localDescription?.toJSON?.() || connection.localDescription,
+                        sdp: offerDescription,
                         call_mode: hasEnabledLiveVideoTrack(localCallStream) ? 'video' : 'audio',
                     }
                 );
@@ -4893,7 +5012,7 @@ async function handleCallSignalEvent(event) {
                     showComposerError('Cet appel est deja termine.');
                     return;
                 }
-                setCurrentCallStatus(`${activeCallSession.targetName} rejoint l appel...`);
+                setCurrentCallStatus(`${getPrivateCallPeerName(activeCallSession)} rejoint l appel...`);
                 syncCallControlsUi();
                 break;
             }
@@ -4902,7 +5021,7 @@ async function handleCallSignalEvent(event) {
             if (!activeCallStartedAt) {
                 startActiveCallTimer();
             }
-            setCurrentCallStatus(isPopupMeetingMode() ? 'Appel connecte' : `${activeCallSession.targetName} rejoint l appel...`);
+            setCurrentCallStatus(isPopupMeetingMode() ? 'Appel connecte' : `${getPrivateCallPeerName(activeCallSession)} rejoint l appel...`);
             syncCallControlsUi();
             break;
         }
@@ -4956,7 +5075,22 @@ async function handleCallSignalEvent(event) {
             }
 
             const connection = await ensureWebRtcPeerConnection(activeCallSession);
-            await connection.setRemoteDescription(new RTCSessionDescription(remoteDescription));
+            const remoteSessionDescription = new RTCSessionDescription(remoteDescription);
+            const offerCollision = makingPrivateOffer || connection.signalingState !== 'stable';
+            ignoringIncomingPrivateOffer = !isPolitePrivatePeer(activeCallSession) && offerCollision;
+            if (ignoringIncomingPrivateOffer) {
+                return;
+            }
+
+            if (offerCollision && connection.signalingState !== 'stable') {
+                await Promise.all([
+                    connection.setLocalDescription({ type: 'rollback' }),
+                    connection.setRemoteDescription(remoteSessionDescription),
+                ]);
+            } else {
+                await connection.setRemoteDescription(remoteSessionDescription);
+            }
+            ignoringIncomingPrivateOffer = false;
             await flushPendingRemoteCandidates();
             const answer = await connection.createAnswer();
             await connection.setLocalDescription(answer);
@@ -5012,6 +5146,7 @@ async function handleCallSignalEvent(event) {
                 return;
             }
 
+            ignoringIncomingPrivateOffer = false;
             await peerConnection.setRemoteDescription(new RTCSessionDescription(remoteDescription));
             await flushPendingRemoteCandidates();
             setCurrentCallStatus('Connexion au correspondant...');
@@ -5026,6 +5161,10 @@ async function handleCallSignalEvent(event) {
             if (activeCallSession.isGroupCall) {
                 await queueGroupRemoteIceCandidate(Number(event.sender_user_id || 0), event.payload?.candidate || null);
                 break;
+            }
+
+            if (ignoringIncomingPrivateOffer) {
+                return;
             }
 
             await queueRemoteIceCandidate(event.payload?.candidate || null);
@@ -5066,8 +5205,8 @@ async function handleCallSignalEvent(event) {
             }
             showComposerError(
                 rejectReason === 'busy'
-                    ? `${activeCallSession.targetName} est deja en appel.`
-                    : `${activeCallSession.targetName} a refuse l'appel.`
+                    ? `${getPrivateCallPeerName(activeCallSession)} est deja en appel.`
+                    : `${getPrivateCallPeerName(activeCallSession)} a refuse l'appel.`
             );
             await finalizeActiveCall({ notifyRemote: false });
             break;
@@ -5278,17 +5417,54 @@ async function toggleLocalAudioForCall() {
             return;
         }
 
-        const audioTracks = localCallStream.getAudioTracks();
-        if (!audioTracks.length) {
-            showComposerError('Aucun micro detecte pour cet appel.');
+        const currentAudioTrack = localCallStream.getAudioTracks().find((track) => track.readyState === 'live') || null;
+        const enablingAudio = !currentAudioTrack || localAudioMuted || !currentAudioTrack.enabled;
+
+        if (enablingAudio) {
+            let activeAudioTrack = currentAudioTrack;
+            let requiresRenegotiation = false;
+
+            if (!activeAudioTrack) {
+                try {
+                    const extraAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    activeAudioTrack = extraAudioStream.getAudioTracks()[0] || null;
+                } catch (error) {
+                    showComposerError('Autorisez le micro pour le reactiver.');
+                    return;
+                }
+
+                if (!activeAudioTrack) {
+                    showComposerError('Aucun micro detecte pour cet appel.');
+                    return;
+                }
+
+                attachMediaTrackSync(activeAudioTrack);
+                localCallStream.addTrack(activeAudioTrack);
+                requiresRenegotiation = true;
+            }
+
+            activeAudioTrack.enabled = true;
+            localAudioMuted = false;
+            requiresRenegotiation = await ensureWebRtcAudioTrackAttached(activeAudioTrack) || requiresRenegotiation;
+            if (requiresRenegotiation) {
+                await renegotiateActiveWebRtcPeers();
+            }
+            refreshActiveWebRtcCallUi();
             return;
         }
 
-        audioTracks.forEach(track => {
-            track.enabled = !track.enabled;
+        const audioTracks = localCallStream.getAudioTracks();
+        if (!audioTracks.length) {
+            localAudioMuted = true;
+            refreshActiveWebRtcCallUi();
+            return;
+        }
+
+        audioTracks.forEach((track) => {
+            track.enabled = false;
         });
-        localAudioMuted = !audioTracks[0].enabled;
-        syncCallControlsUi();
+        localAudioMuted = true;
+        refreshActiveWebRtcCallUi();
         return;
     }
 

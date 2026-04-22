@@ -1879,11 +1879,15 @@ public function callLog(
         $items = $this->getEmojiPickerItems($query, $limit, $httpClient);
         $items = array_values(array_filter($items, function (array $item) use ($moderationService, $blockedMeaningHints): bool {
             $name = trim((string) ($item['name'] ?? ''));
+            $emoji = trim((string) ($item['emoji'] ?? ''));
             if ($name === '') {
-                return true;
+                return $emoji === '' || !$moderationService->containsManualProhibitedContent($emoji);
             }
 
-            if ($moderationService->containsManualProhibitedContent($name)) {
+            if (
+                $moderationService->containsManualProhibitedContent($name)
+                || ($emoji !== '' && $moderationService->containsManualProhibitedContent($emoji))
+            ) {
                 return false;
             }
 

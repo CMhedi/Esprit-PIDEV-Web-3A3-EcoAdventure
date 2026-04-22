@@ -91,7 +91,7 @@ class ContentModerationService
             $this->parseCsvTerms((string) ($this->manualBadWordsEn ?? '')),
             $this->parseCsvTerms((string) ($this->manualBadWordsFr ?? '')),
             $this->parseCsvTerms((string) ($this->manualBadWordsAr ?? '')),
-            ['shit', 'bastard', 'fuck', 'asshole', 'dick', 'salope', 'putain', 'connard', 'zebi', '???', '???', '?????']
+            ['shit', 'bastard', 'fuck', 'asshole', 'dick', 'salope', 'putain', 'connard', 'zebi', '???', '???', '?????', '😁']
         );
 
         if ($terms === []) {
