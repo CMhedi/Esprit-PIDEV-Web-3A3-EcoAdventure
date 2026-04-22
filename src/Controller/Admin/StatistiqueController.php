@@ -137,7 +137,8 @@ class StatistiqueController extends AbstractController
             'mostPopularType' => $mostPopularType,
             'estimatedRevenue' => $estimatedRevenue,
             'totalEvents' => count($events),
-            'totalReservations' => count($reservations)
+            'totalReservations' => count($reservations),
+            'resStats' => $resStats
         ]);
     }
 

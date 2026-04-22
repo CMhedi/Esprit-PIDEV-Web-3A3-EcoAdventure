@@ -32,10 +32,18 @@ class EventWorkflowService
             $reservation->setStatut_res(StatutReservationEvenement::ANNULEE);
         }
 
-        // Notification Admin
+        // Notification Admin avec temps réel
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('Africa/Tunis'));
         $notif = new Notification();
         $notif->setTitle('Annulation de Réservation')
-            ->setMessage(sprintf('Le client %s %s a annulé sa participation à l\'événement %s.', $user->getNom(), $user->getPrenom(), $evenement->getTitre()))
+            ->setMessage(sprintf(
+                'Le client %s %s a annulé sa participation à l\'événement %s à %s.', 
+                $user->getNom(), 
+                $user->getPrenom(), 
+                $evenement->getTitre(),
+                $now->format('H:i:s')
+            ))
+            ->setCreatedAt($now)
             ->setType('cancellation');
         $this->entityManager->persist($notif);
 

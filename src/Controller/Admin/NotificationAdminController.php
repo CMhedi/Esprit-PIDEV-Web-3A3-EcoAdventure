@@ -20,11 +20,18 @@ class NotificationAdminController extends AbstractController
         $unreadCount = count($repository->findUnread());
         
         $data = array_map(function(Notification $n) {
+            // Force timezone to Africa/Tunis for real-time consistency with user location
+            $date = $n->getCreatedAt();
+            if ($date instanceof \DateTimeImmutable) {
+                $date = \DateTime::createFromImmutable($date);
+            }
+            $date->setTimezone(new \DateTimeZone('Africa/Tunis'));
+
             return [
                 'id' => $n->getId(),
                 'title' => $n->getTitle(),
                 'message' => $n->getMessage(),
-                'createdAt' => $n->getCreatedAt()->format('d/m/Y H:i'),
+                'createdAt' => $date->format('d/m/Y H:i:s'),
                 'type' => $n->getType(),
                 'isRead' => $n->isRead(),
             ];
