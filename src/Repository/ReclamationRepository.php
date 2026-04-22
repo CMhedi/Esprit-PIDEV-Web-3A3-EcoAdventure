@@ -34,7 +34,17 @@ class ReclamationRepository extends ServiceEntityRepository
             ->orderBy('r.date_creation', 'DESC')
             ->getQuery()
             ->getResult();
-}
+    }
+
+    public function countByTypeAndMonth(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->select('r.type, SUBSTRING(r.date_creation, 1, 7) as month, COUNT(r.id_reclamation) as total')
+            ->groupBy('r.type, month')
+            ->orderBy('month', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 
 //    /**
 //     * @return Reclamation[] Returns an array of Reclamation objects
