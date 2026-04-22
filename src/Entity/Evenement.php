@@ -45,13 +45,11 @@ class Evenement
     #[Assert\Positive(message: "Le nombre de places doit être positif.")]
     private ?int $nb_places = null;
 
-    #[ORM\Column(type: 'float', options: ["default" => 0.0])]
-    #[Assert\NotBlank(message: "Le prix est obligatoire.")]
-    #[Assert\PositiveOrZero(message: "Le prix doit être positif.")]
-    private float $prix = 0.0;
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
+    private ?string $prix = null;
 
-    public function getPrix(): float { return $this->prix; }
-    public function setPrix(float $prix): self { $this->prix = $prix; return $this; }
+    public function getPrix(): ?string { return $this->prix; }
+    public function setPrix(?string $prix): self { $this->prix = $prix; return $this; }
 
     public function getId_evenement(): ?int { return $this->id_evenement; }
     public function setId_evenement(int $id): self { $this->id_evenement = $id; return $this; }

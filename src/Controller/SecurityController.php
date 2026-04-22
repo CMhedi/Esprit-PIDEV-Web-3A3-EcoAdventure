@@ -37,7 +37,7 @@ class SecurityController extends AbstractController
     private function redirectAfterLogin(UserApp $user): Response
     {
         return $user->getRole() === RoleUser::ADMIN
-            ? $this->redirectToRoute('admin_dashboard')
+            ? $this->redirectToRoute('app_admin_dashboard')
             : $this->redirectToRoute('app_messagerie_root');
     }
 }

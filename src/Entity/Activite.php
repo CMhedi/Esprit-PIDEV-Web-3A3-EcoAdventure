@@ -76,7 +76,7 @@ class Activite
         message: 'Le prix doit etre un nombre valide.'
     )]
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private ?float $prix = null;
+    private ?string $prix = null;
 
     // ===================== LATITUDE =====================
     #[Assert\Range(

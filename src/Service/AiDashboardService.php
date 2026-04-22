@@ -6,16 +6,12 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class AiDashboardService
 {
-    private EntityManagerInterface $em;
-    private AiService $ai;
-
-    public function __construct(EntityManagerInterface $em, AiService $ai)
-    {
-        $this->em = $em;
-        $this->ai = $ai;
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly GroqAiService $ai
+    ) {
     }
 
-    // 🔥 TOP ACTIVITES
     public function getTopActivities(): array
     {
         $conn = $this->em->getConnection();
@@ -23,8 +19,8 @@ class AiDashboardService
         $sql = "
             SELECT a.nom AS nom, COUNT(r.id_res_act) AS total
             FROM activite a
-            LEFT JOIN reservation_activite r 
-            ON r.id_activite = a.id_activite
+            LEFT JOIN reservation_activite r
+                ON r.id_activite = a.id_activite
             GROUP BY a.id_activite, a.nom
             ORDER BY total DESC
             LIMIT 5
@@ -33,21 +29,29 @@ class AiDashboardService
         return $conn->executeQuery($sql)->fetchAllAssociative();
     }
 
-    // 🤖 ANALYSE IA
-    public function generateAIInsight(): string
+    public function generateAIInsight(array $topActivities = []): string
     {
-        $top = $this->getTopActivities();
-
-        if (empty($top)) {
-            return "Aucune donnée disponible.";
+        if ($topActivities === []) {
+            $topActivities = $this->getTopActivities();
         }
 
-        $prompt = "Analyse ces activités et donne des recommandations:\n";
-
-        foreach ($top as $a) {
-            $prompt .= "- {$a['nom']} : {$a['total']} réservations\n";
+        if ($topActivities === []) {
+            return 'Aucune donnee disponible.';
         }
 
-        return $this->ai->generateInsight($prompt);
+        return $this->ai->analyzeActivities($topActivities);
+    }
+
+    public function generatePrediction(array $topActivities = []): string
+    {
+        if ($topActivities === []) {
+            $topActivities = $this->getTopActivities();
+        }
+
+        if ($topActivities === []) {
+            return 'Pas assez de donnees pour predire.';
+        }
+
+        return $this->ai->predict($topActivities);
     }
 }

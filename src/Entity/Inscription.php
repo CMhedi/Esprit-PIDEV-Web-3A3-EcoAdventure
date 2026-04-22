@@ -34,7 +34,7 @@ class Inscription
     #[ORM\Column(name: 'nom_pack', type: 'string', length: 255, nullable: true)]
     private ?string $nom_pack = null;
 
-    #[ORM\ManyToOne(targetEntity: Pack::class)]
+    #[ORM\ManyToOne(targetEntity: Pack::class, inversedBy: 'inscriptions')]
     #[ORM\JoinColumn(name: 'id_pack', referencedColumnName: 'id_pack', nullable: true)]
     private ?Pack $pack = null;
 

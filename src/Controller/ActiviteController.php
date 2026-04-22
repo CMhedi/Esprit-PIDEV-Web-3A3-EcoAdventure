@@ -302,16 +302,16 @@ class ActiviteController extends AbstractController
     #[Route('/activites/map', name: 'app_activite_map')]
     public function map(ActiviteRepository $repo): Response
     {
-        $activites = $repo->findAll();
+        $activites = $repo->findAllValid();
 
         return $this->render('front/map.html.twig', [
             'activites' => $activites
         ]);
     }
-    #[Route('/activities/discover', name: 'app_activities_discover')]
+#[Route('/activities/discover', name: 'app_activities_discover')]
 public function discover(ActiviteRepository $repo): Response
 {
-    $activities = $repo->findAll();
+    $activities = $repo->findAllValid();
 
     return $this->render('front/discover.html.twig', [
         'activities' => $activities
@@ -320,14 +320,7 @@ public function discover(ActiviteRepository $repo): Response
 #[Route('/activities/trending', name: 'app_activities_trending')]
 public function trending(ActiviteRepository $repo): Response
 {
-    $qb = $repo->createQueryBuilder('a')
-        ->leftJoin('a.reservationActivites', 'r')
-        ->addSelect('COUNT(r.id_res_act) AS HIDDEN total')
-        ->groupBy('a.id_activite')
-        ->orderBy('total', 'DESC')
-        ->setMaxResults(10);
-
-    $activities = $qb->getQuery()->getResult();
+    $activities = $repo->findTrendingValid();
 
     return $this->render('front/trending.html.twig', [
         'activities' => $activities
@@ -336,7 +329,7 @@ public function trending(ActiviteRepository $repo): Response
 #[Route('/activities/insight', name: 'app_activities_insight')]
 public function insight(ActiviteRepository $repo): Response
 {
-    $activities = $repo->findAll();
+    $activities = $repo->findAllValid();
 
     $insight = "Analyse automatique : ";
 
