@@ -20,7 +20,7 @@ class Evenement
 
     #[ORM\Column(type: 'string', length: 150)]
     #[Assert\NotBlank(message: "Le titre est obligatoire.")]
-    #[Assert\Length(min: 5, minMessage: "Le titre doit faire au moins {{ limit }} caractères.")]
+    #[Assert\Length(min: 5, minMessage: "Le titre doit faire au moins {{ limit }} caracteres.")]
     private ?string $titre = null;
 
     #[ORM\Column(type: 'string', length: 1000, nullable: true)]
@@ -28,12 +28,12 @@ class Evenement
     private ?string $description = null;
 
     #[ORM\Column(enumType: CategorieEvenement::class)]
-    #[Assert\NotNull(message: "Veuillez choisir une catégorie.")]
+    #[Assert\NotNull(message: "Veuillez choisir une categorie.")]
     private ?CategorieEvenement $categorie_evt = null;
 
     #[ORM\Column(type: 'datetime', nullable: false)]
     #[Assert\NotBlank(message: "La date est obligatoire.")]
-    #[Assert\GreaterThan("today", message: "La date de l'événement doit être dans le futur.")]
+    #[Assert\GreaterThan("today", message: "La date de l'evenement doit etre dans le futur.")]
     private ?\DateTimeInterface $date_event = null;
 
     #[ORM\Column(type: 'string', length: 150)]
@@ -42,8 +42,12 @@ class Evenement
 
     #[ORM\Column(type: 'integer')]
     #[Assert\NotBlank(message: "Le nombre de places est obligatoire.")]
-    #[Assert\Positive(message: "Le nombre de places doit être positif.")]
+    #[Assert\Positive(message: "Le nombre de places doit etre positif.")]
     private ?int $nb_places = null;
+
+    #[ORM\Column(type: 'integer', options: ["default" => 10])]
+    #[Assert\PositiveOrZero(message: "La limite de la liste d'attente doit etre positive ou zero.")]
+    private int $limite_attente = 10;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     private ?string $prix = null;
@@ -85,6 +89,28 @@ class Evenement
     public function setNb_places(int $nb_places): self
     {
         $this->nb_places = $nb_places;
+        return $this;
+    }
+
+    public function getLimite_attente(): int
+    {
+        return $this->limite_attente;
+    }
+
+    public function setLimite_attente(int $limite): self
+    {
+        $this->limite_attente = $limite;
+        return $this;
+    }
+
+    public function getLimiteAttente(): int
+    {
+        return $this->limite_attente;
+    }
+
+    public function setLimiteAttente(int $limite): self
+    {
+        $this->limite_attente = $limite;
         return $this;
     }
 
@@ -178,4 +204,15 @@ class Evenement
         return $this;
     }
 
+    public function getPlacesRestantes(): int
+    {
+        $nbReservationsExistantes = 0;
+        foreach ($this->reservationEvenements as $res) {
+            $statut = $res->getStatut_res();
+            if ($statut !== \App\Enum\StatutReservationEvenement::ANNULEE && $statut !== \App\Enum\StatutReservationEvenement::LISTE_ATTENTE) {
+                $nbReservationsExistantes += $res->getNb_billets();
+            }
+        }
+        return max(0, $this->nb_places - $nbReservationsExistantes);
+    }
 }

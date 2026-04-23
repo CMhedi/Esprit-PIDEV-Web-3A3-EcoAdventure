@@ -14,7 +14,7 @@ class EvenementRepository extends ServiceEntityRepository
     }
 
     // 🔍 FILTRE
-    public function findByFilters(?string $search, ?string $categorie, ?string $lieu, ?string $sortBy = 'date_desc', bool $onlyAvailable = false)
+    public function findByFilters(?string $search, ?string $categorie, ?string $lieu, ?string $sortBy = 'date_desc', bool $onlyAvailable = false, int $page = 1, int $limit = 6)
     {
         $qb = $this->createQueryBuilder('e');
 
@@ -61,7 +61,10 @@ class EvenementRepository extends ServiceEntityRepository
                 break;
         }
 
-        return $qb->getQuery()->getResult();
+        $qb->setFirstResult(($page - 1) * $limit)
+           ->setMaxResults($limit);
+
+        return new \Doctrine\ORM\Tools\Pagination\Paginator($qb);
     }
 
     // 📍 LIEUX DISTINCTS

@@ -369,4 +369,34 @@ public function setGoalNotified(bool $goalNotified): self
     $this->goalNotified = $goalNotified;
     return $this;
 }
+
+    public function getReclamations(): Collection
+    {
+        return $this->reclamations;
+    }
+
+    public function getReservationActivites(): Collection
+    {
+        return $this->reservationActivites;
+    }
+
+    public function getReservationEvenements(): Collection
+    {
+        return $this->reservationEvenements;
+    }
+
+    public function getReservationSeances(): Collection
+    {
+        return $this->reservationSeances;
+    }
+
+    public function getSeances(): Collection
+    {
+        return $this->seances;
+    }
+
+    public function getConversations(): Collection
+    {
+        return $this->conversations;
+    }
 }

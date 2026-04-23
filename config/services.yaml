@@ -34,6 +34,8 @@ parameters:
     groq_default_vision_model: 'llama-3.2-11b-vision-preview'
     groq_default_audio_model: 'whisper-large-v3'
     giphy_default_api_key: ''
+    app.promo_group_threshold: 11
+    app.promo_group_discount: 0.10
 
 services:
     _defaults:

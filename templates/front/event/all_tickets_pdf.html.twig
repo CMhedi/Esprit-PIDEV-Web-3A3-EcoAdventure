@@ -110,8 +110,10 @@
                     </table>
                     
                     <div class="price-box">
-                        {% set price = ticket.totalBillets * ticket.evenement.prix %}
-                        {{ price|number_format(2, ',', ' ') }} DT
+                        {% if ticket.pricing is defined and ticket.pricing.appliquePromo %}
+                            <div style="font-size: 14px; text-decoration: line-through; color: #7f8c8d;">{{ ticket.pricing.sousTotal|number_format(2, ',', ' ') }} DT</div>
+                        {% endif %}
+                        {{ ticket.pricing is defined ? ticket.pricing.totalFinal|number_format(2, ',', ' ') : (ticket.totalBillets * ticket.evenement.prix)|number_format(2, ',', ' ') }} DT
                     </div>
                 </div>
                 

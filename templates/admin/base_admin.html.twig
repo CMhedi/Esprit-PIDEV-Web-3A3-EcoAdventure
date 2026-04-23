@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <title>{% block title %}Dashboard Admin{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="{{ asset('img/Hero.png') }}">
-    <link href="{{ asset('vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/ecoadventure.css') }}?v=20260423">
-    {% block css %}{% endblock %}
+    <link rel="stylesheet" href="{{ asset('css/ecoadventure.css') }}">
+    {#<link rel="stylesheet" href="{{ asset('css/ecoadventure.css') }}">#}
 </head>
 <body class="admin-body {% block body_class %}{% endblock %}">
 
@@ -23,19 +23,20 @@
             <li><a href="{{ path('app_admin_dashboard') }}" class="{{ app.request.get('_route') == 'app_admin_dashboard' ? 'active' : '' }}"><i class="bi bi-grid"></i> Tableau de bord</a></li>
             <li>
                 <a href="{{ app.user ? path('app_user_app_show', {'id_user': app.user.id_user}) : '#' }}" class="{{ app.request.get('_route') == 'app_user_app_show' ? 'active' : '' }} {{ app.user ? '' : 'disabled' }}">
-                    <i class="bi bi-person-circle"></i> Mon profil
+                    <i class="bi bi-person-circle"></i> Mon Profil
                 </a>
             </li>
             <li>
                 <a href="{{ path('app_admin_reclamation_index') }}" class="{{ app.request.get('_route') starts with 'app_reclamation' or app.request.get('_route') == 'app_admin_reclamation_index' ? 'active' : '' }}">
-                    <i class="bi bi-exclamation-octagon"></i> Reclamations
+                    <i class="bi bi-exclamation-octagon"></i> Réclamations
                 </a>
             </li>
-            <li><a href="{{ path('app_admin_activites') }}" class="{{ app.request.get('_route') starts with 'app_admin_activites' ? 'active' : '' }}"><i class="bi bi-tree"></i> Activites</a></li>
-            <li><a href="{{ path('app_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_admin_reservations' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Reservations activites</a></li>
+            <li><a href="{{ path('app_admin_activites') }}" class="{{ app.request.get('_route') starts with 'app_admin_activites' ? 'active' : '' }}"><i class="bi bi-tree"></i> Activités</a></li>
+            <li><a href="{{ path('app_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_admin_reservations' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Réservations Activités</a></li>
             <li><a href="{{ path('app_admin_planning') }}" class="{{ app.request.get('_route') starts with 'app_admin_planning' ? 'active' : '' }}"><i class="bi bi-journal-check"></i> Planning</a></li>
-            <li><a href="{{ path('app_event_admin_index') }}" class="{{ app.request.get('_route') starts with 'app_event_admin' and app.request.get('_route') != 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-calendar-event"></i> Evenements</a></li>
-            <li><a href="{{ path('app_event_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-ticket-detailed"></i> Reservations evenements</a></li>
+            <li><a href="{{ path('app_event_admin_index') }}" class="{{ app.request.get('_route') starts with 'app_event_admin' and app.request.get('_route') != 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-calendar-event"></i> Événements</a></li>
+            <li><a href="{{ path('app_event_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-ticket-detailed"></i> Réservations Événements</a></li>
+            <li><a href="{{ path('app_admin_statistiques_event') }}" class="{{ app.request.get('_route') == 'app_admin_statistiques_event' ? 'active' : '' }}"><i class="bi bi-bar-chart"></i> Statistiques Event</a></li>
             <li><a href="{{ path('admin_messagerie_index') }}" class="{{ app.request.get('_route') starts with 'admin_messagerie' ? 'active' : '' }}"><i class="bi bi-chat-dots"></i> Messagerie</a></li>
             <li>
                 <a href="{{ path('app_user_app_index') }}" class="{{ app.request.get('_route') == 'app_user_app_index' ? 'active' : '' }}">
@@ -52,14 +53,10 @@
                     <i class="bi bi-journal-check"></i> Inscriptions
                 </a>
             </li>
-            <li>
-                <a href="{{ path('admin_ai_dashboard') }}" class="{{ app.request.get('_route') starts with 'admin_ai' ? 'active' : '' }}">
-                    <i class="bi bi-robot"></i> AI Agent Activite-Res
-                </a>
-            </li>
+            
             <li>
                 <a href="{{ path('app_logout') }}" class="text-danger fw-bold">
-                    <i class="bi bi-box-arrow-right"></i> Deconnexion
+                    <i class="bi bi-box-arrow-right"></i> Déconnexion
                 </a>
             </li>
         </ul>
@@ -73,15 +70,74 @@
                 <h2 class="fw-bold mb-0">{% block page_title %}Dashboard{% endblock %}</h2>
                 <small class="text-muted">Gestion de l'agence sportive</small>
             </div>
-            <div class="admin-user">
+            
+            <div class="d-flex align-items-center gap-3">
                 {% if app.user and app.user.role.value == 'ADMIN' %}
                     <a href="{{ path('app_home') }}" class="btn btn-outline-success btn-sm rounded-pill me-2">
                         <i class="bi bi-globe2 me-1"></i> Aller au Front
                     </a>
                 {% endif %}
-                <span class="badge text-bg-light px-3 py-2 rounded-pill">Admin</span>
+                <!-- Reservation Stats (Live updatable via JS) -->
+                {% if app.request.get('_route') == 'app_event_admin_reservations' %}
+                <div class="d-flex gap-2 me-3 d-none d-md-flex">
+                    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success d-flex align-items-center gap-1 px-3 py-2">
+                        <i class="bi bi-check-circle-fill"></i> Confirmées: <strong id="statConfirmee">0</strong>
+                    </span>
+                    <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning d-flex align-items-center gap-1 px-3 py-2">
+                        <i class="bi bi-hourglass-split"></i> En Attente: <strong id="statAttente">0</strong>
+                    </span>
+                    <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center gap-1 px-3 py-2">
+                        <i class="bi bi-x-circle-fill"></i> Annulées: <strong id="statAnnulee">0</strong>
+                    </span>
+                </div>
+                
+                <!-- Notification Center -->
+                <div class="dropdown" id="notificationCenter">
+                    <button class="btn btn-light position-relative rounded-circle p-2 shadow-sm d-flex justify-content-center align-items-center" style="width: 45px; height: 45px;" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notifBtn">
+                        <i class="bi bi-bell-fill fs-5 text-dark"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow border border-2 border-white d-none" id="notifBadge">
+                            0
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-3 p-0 overflow-hidden" style="width: 400px; backdrop-filter: blur(15px); background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(26, 71, 49, 0.1) !important;" id="notifList">
+                        <li class="p-4 border-bottom d-flex justify-content-between align-items-center bg-transparent">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-primary bg-opacity-10 p-2 rounded-3" style="background: linear-gradient(135deg, rgba(26, 71, 49, 0.1) 0%, rgba(46, 125, 50, 0.1) 100%);">
+                                    <i class="bi bi-robot text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold" style="color: #1a4731; letter-spacing: -0.5px;">Agent IA Intelligence</h6>
+                                    <small class="text-muted" style="font-size: 0.7rem;">Analyses prédictives en temps réel</small>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-link text-decoration-none fw-bold p-0" id="markAllRead" style="font-size: 0.75rem; color: #1a4731;">Tout lire</button>
+                        </li>
+                        <div id="notifContainer" style="max-height: 480px; overflow-y: auto; scrollbar-width: thin;">
+                            <!-- Notifications injectées par JS -->
+                            <div class="p-5 text-center text-muted">
+                                <div class="spinner-border spinner-border-sm text-primary mb-3" role="status"></div>
+                                <p class="small mb-0">Synchronisation des données...</p>
+                            </div>
+                        </div>
+                        <li class="p-3 border-top text-center bg-light bg-opacity-50">
+                            <a href="{{ path('app_admin_statistiques_event') }}" class="text-primary text-decoration-none fw-bold small">Consulter le rapport complet <i class="bi bi-arrow-right ms-1"></i></a>
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+
+                <div class="admin-user ms-2">
+                    <div class="d-flex align-items-center bg-white rounded-circle shadow-sm p-1 border border-light" style="width: 42px; height: 42px;">
+                        <div class="rounded-circle w-100 h-100 text-white d-flex justify-content-center align-items-center shadow-sm" style="background: linear-gradient(135deg, #1a4731 0%, #2e7d32 100%) !important;">
+                            <i class="bi bi-person-fill fs-5"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Notification Toasts Container -->
+        <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer" style="z-index: 9999"></div>
         {% endblock %}
 
         <div class="row">
@@ -141,12 +197,209 @@
         border-radius: 999px;
         padding-inline: 1.25rem;
     }
+
+    /* Notifications Styling */
+    .notification-item {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        border-left: 4px solid transparent;
+        position: relative;
+    }
+    .notification-item:hover {
+        background-color: rgba(26, 71, 49, 0.03) !important;
+        border-left-color: #1a4731;
+        transform: translateX(4px);
+    }
+    .notification-item.unread::after {
+        content: '';
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 8px;
+        height: 8px;
+        background-color: #0d6efd;
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(13, 110, 253, 0.5);
+    }
+    #notifBadge {
+        font-size: 0.65rem;
+        padding: 0.35em 0.5em;
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red {
+        0% { transform: translate(100%, -50%) scale(1); }
+        50% { transform: translate(100%, -50%) scale(1.1); box-shadow: 0 0 15px rgba(220, 53, 69, 0.6); }
+        100% { transform: translate(100%, -50%) scale(1); }
+    }
+    #notifContainer::-webkit-scrollbar {
+        width: 4px;
+    }
+    #notifContainer::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    #notifContainer::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.1);
+        border-radius: 10px;
+    }
+    .toast {
+        min-width: 320px;
+        border: none !important;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+    }
 </style>
 
-<script src="{{ asset('vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const EcoAgent = {
+            knownIds: new Set(),
+            isFirstLoad: true,
+            elements: {
+                badge: document.getElementById('notifBadge'),
+                container: document.getElementById('notifContainer'),
+                markAllRead: document.getElementById('markAllRead'),
+                toastContainer: document.getElementById('toastContainer'),
+                stats: {
+                    confirmee: document.getElementById('statConfirmee'),
+                    attente: document.getElementById('statAttente'),
+                    annulee: document.getElementById('statAnnulee')
+                }
+            },
+
+            init() {
+                if (!this.elements.badge || !this.elements.container) return;
+
+                // Mark all read listener
+                if (this.elements.markAllRead) {
+                    this.elements.markAllRead.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.markAllAsRead();
+                    });
+                }
+
+                // Initial fetch and polling
+                this.fetch();
+                setInterval(() => this.fetch(), 5000);
+            },
+
+            async fetch() {
+                try {
+                    const response = await fetch('{{ path('app_admin_notifications_unread') }}');
+                    const data = await response.json();
+                    
+                    this.renderNotifications(data.notifications, data.unreadCount);
+                    this.updateStats(data.stats);
+                    this.processNewNotifications(data.notifications);
+                    
+                    this.isFirstLoad = false;
+                } catch (error) {
+                    console.error('EcoAgent Fetch Error:', error);
+                }
+            },
+
+            renderNotifications(notifications, unreadCount) {
+                // Update badge
+                if (unreadCount > 0) {
+                    this.elements.badge.textContent = unreadCount;
+                    this.elements.badge.classList.remove('d-none');
+                } else {
+                    this.elements.badge.classList.add('d-none');
+                }
+
+                // Render list
+                if (notifications.length === 0) {
+                    this.elements.container.innerHTML = '<li class="p-5 text-center text-muted small"><i class="bi bi-check-circle-fill fs-1 text-success d-block mb-2 opacity-50"></i> Vous êtes à jour !</li>';
+                    return;
+                }
+
+                this.elements.container.innerHTML = notifications.map(n => this.getNotificationTemplate(n)).join('');
+            },
+
+            getNotificationTemplate(n) {
+                let iconClass = "bi-info-circle-fill";
+                let colorClass = "primary";
+                if(n.title.includes("PRIX DYNAMIQUE") || n.type === "yield") { iconClass = "bi-lightning-charge-fill"; colorClass = "warning"; }
+                if(n.title.includes("RECOMMENDATION") || n.type === "recommendation") { iconClass = "bi-stars"; colorClass = "info"; }
+                if(n.title.includes("ATTENTE") || n.type === "waitlist") { iconClass = "bi-people-fill"; colorClass = "success"; }
+                
+                return `
+                <li class="p-4 border-bottom notification-item ${n.isRead ? 'opacity-75 bg-light' : 'bg-white unread'}" data-id="${n.id}">
+                    <div class="d-flex gap-3 align-items-start">
+                        <div class="position-relative">
+                            <div class="bg-${colorClass} bg-opacity-10 text-${colorClass} p-2 rounded-4 shadow-sm d-flex justify-content-center align-items-center flex-shrink-0" style="width: 48px; height: 48px; border: 1px solid rgba(0,0,0,0.05);">
+                                <i class="bi ${iconClass} fs-4"></i>
+                            </div>
+                            ${!n.isRead ? '<span class="position-absolute bottom-0 end-0 p-1 bg-primary border border-white rounded-circle"></span>' : ''}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold" style="font-size: 0.9rem; color: #10233f; letter-spacing: -0.3px;">${n.title}</span>
+                            </div>
+                            <div class="text-muted mb-3" style="font-size: 0.85rem; line-height: 1.6; font-weight: 400;">${n.message}</div>
+                            <div class="text-secondary d-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                                <i class="bi bi-clock-history"></i>
+                                <span>${n.createdAt}</span>
+                            </div>
+                        </div>
+                    </div>
+                </li>`;
+            },
+
+            updateStats(stats) {
+                if (!stats) return;
+                if (this.elements.stats.confirmee) this.elements.stats.confirmee.textContent = stats.confirmee;
+                if (this.elements.stats.attente) this.elements.stats.attente.textContent = stats.attente;
+                if (this.elements.stats.annulee) this.elements.stats.annulee.textContent = stats.annulee;
+            },
+
+            processNewNotifications(notifications) {
+                notifications.forEach(n => {
+                    if (!this.knownIds.has(n.id)) {
+                        this.knownIds.add(n.id);
+                        if (!this.isFirstLoad && !n.isRead) {
+                            this.showToast(n);
+                        }
+                    }
+                });
+            },
+
+            showToast(notif) {
+                const toastId = `toast-${notif.id}`;
+                const toastHtml = `
+                    <div id="${toastId}" class="toast border-0 shadow-lg rounded-4" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header border-0 rounded-top-4 bg-danger text-white">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong class="me-auto">${notif.title}</strong>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="toast-body p-3">
+                            ${notif.message}
+                            <div class="mt-2 pt-2 border-top">
+                                <a href="{{ path('app_event_admin_reservations') }}" class="btn btn-sm btn-outline-danger rounded-pill">Gérer</a>
+                            </div>
+                        </div>
+                    </div>`;
+                
+                this.elements.toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+                const toastElement = document.getElementById(toastId);
+                new bootstrap.Toast(toastElement, { autohide: true, delay: 10000 }).show();
+            },
+
+            async markAllAsRead() {
+                try {
+                    await fetch('{{ path('app_admin_notifications_read_all') }}', { method: 'POST' });
+                    this.fetch();
+                } catch (error) {
+                    console.error('Mark All Read Error:', error);
+                }
+            }
+        };
+
+        EcoAgent.init();
+
+        // Admin confirmation modal logic (pre-existing)
         const modalElement = document.getElementById('adminConfirmModal');
         if (!modalElement || typeof bootstrap === 'undefined') {
             return;
