@@ -19,6 +19,9 @@ public function index(
     PlanningRepository $planningRepository
 ): Response
 {
+    // 🔐 sécurité admin
+    $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
     // 🔍 FILTRES
     $search = $request->query->get('search');
     $annee  = $request->query->get('annee');

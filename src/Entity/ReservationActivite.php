@@ -35,6 +35,10 @@ class ReservationActivite
     )]
     private ?int $nb_personnes = null;
 
+    // 👉 AJOUT IMPORTANT POUR TRANSPORT
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $villeUser = null;
+
     #[ORM\ManyToOne(targetEntity: UserApp::class, inversedBy: 'reservationActivites')]
     #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user', nullable: false)]
     private ?UserApp $userApp = null;
@@ -78,6 +82,18 @@ class ReservationActivite
     public function setNbPersonnes(?int $nb_personnes): self
     {
         $this->nb_personnes = $nb_personnes;
+        return $this;
+    }
+
+    // 👉 GETTER + SETTER VILLE USER (IMPORTANT TRANSPORT)
+    public function getVilleUser(): ?string
+    {
+        return $this->villeUser;
+    }
+
+    public function setVilleUser(?string $villeUser): self
+    {
+        $this->villeUser = $villeUser;
         return $this;
     }
 

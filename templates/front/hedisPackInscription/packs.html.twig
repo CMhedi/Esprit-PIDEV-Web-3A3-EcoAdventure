@@ -3,7 +3,7 @@
 {% block title %}Nos Packs | EcoAdventure{% endblock %}
 
 {% block css %}
-    <link rel="stylesheet" href="{{ asset('assets/css/packs.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/packs.css') }}">
 {% endblock %}
 
 {% block body %}
@@ -14,7 +14,8 @@
     'prix_desc': 'Prix décroissant',
     'reduction_desc': 'Réduction maximale',
     'activites_desc': 'Activités maximales',
-    'popular_desc': 'Popularité'
+    'popular_desc': 'Popularité',
+    'smart_desc': 'Classement intelligent'
 } %}
 {% set currentSortLabel = sortLabels[currentSort]|default('Nom A-Z') %}
 {% set activeFiltersCount = (currentSearch ? 1 : 0) + (currentType ? 1 : 0) + (currentStatut ? 1 : 0) + (currentSort ? 1 : 0) %}
@@ -55,6 +56,10 @@
                 </div>
             </div>
         </div>
+
+        {% include 'front/hedisPackInscription/_smart_recommendations.html.twig' with {
+            topRecommendations: topRecommendations|default([])
+        } only %}
 
         <div class="packs-filter-card mt-4" data-reveal="filters" data-reveal-delay="120">
             <div class="packs-filter-header">
@@ -131,6 +136,7 @@
                             <option value="reduction_desc" {{ currentSort == 'reduction_desc' ? 'selected' : '' }}>Réduction maximale</option>
                             <option value="activites_desc" {{ currentSort == 'activites_desc' ? 'selected' : '' }}>Plus d’activités</option>
                             <option value="popular_desc" {{ currentSort == 'popular_desc' ? 'selected' : '' }}>Popularité</option>
+                            <option value="smart_desc" {{ currentSort == 'smart_desc' ? 'selected' : '' }}>Classement intelligent</option>
                         </select>
                     </div>
 
@@ -279,6 +285,7 @@
         {% else %}
             <div class="row g-4">
                 {% for pack in packs %}
+                    {% set insight = packInsights[pack.idPack] ?? null %}
                     <div class="col-xl-4 col-md-6 pack-card-column" style="--card-delay: {{ loop.index0 * 90 }}ms;">
                         <div class="pack-advanced-card h-100" data-reveal="card" data-reveal-delay="{{ 120 + (loop.index0 * 70) }}" data-tilt-card>
                             <div class="pack-card-top">
@@ -289,6 +296,16 @@
                                         <p class="pack-card-caption mb-0">
                                             Une formule claire, structurée et prête à être comparée selon vos critères.
                                         </p>
+                                        {% if insight %}
+                                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                                <span class="badge rounded-pill text-bg-dark">
+                                                    Score {{ insight.score|number_format(1, '.', ' ') }}/100
+                                                </span>
+                                                {% for badge in insight.badges %}
+                                                    <span class="badge rounded-pill text-bg-light border">{{ badge }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
                                     </div>
 
                                     <span class="pack-status-badge {{ pack.statutPack|lower == 'actif' ? 'status-active' : 'status-inactive' }}">
@@ -339,6 +356,17 @@
                                     <span><i class="bi bi-list-check me-2"></i>Activités liées</span>
                                     <strong>{{ pack.activites|length }}</strong>
                                 </div>
+
+                                {% if insight %}
+                                    <div class="mt-3 pt-3 border-top">
+                                        <div class="small text-uppercase text-muted mb-2">Lecture métier</div>
+                                        <ul class="small text-muted mb-0 ps-3">
+                                            {% for reason in insight.reasons %}
+                                                <li>{{ reason|capitalize }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
                             </div>
 
                             <div class="pack-card-footer">

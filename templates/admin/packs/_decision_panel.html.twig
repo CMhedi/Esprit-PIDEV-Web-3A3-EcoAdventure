@@ -1,0 +1,37 @@
+{% if topPromising is not empty %}
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-uppercase text-muted mb-2">Score moyen</div>
+                    <div class="display-6 fw-bold">{{ averagePackScore|number_format(1, '.', ' ') }}</div>
+                    <p class="text-muted mb-0">Indice moyen d’attractivité calculé à la volée.</p>
+                </div>
+            </div>
+        </div>
+
+        {% for insight in topPromising %}
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                            <div>
+                                <div class="small text-uppercase text-muted mb-1">Pack prometteur #{{ insight.rank }}</div>
+                                <h3 class="h5 mb-2">{{ insight.pack.nom }}</h3>
+                            </div>
+                            <span class="badge rounded-pill text-bg-dark">{{ insight.score|number_format(1, '.', ' ') }}/100</span>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            {% for badge in insight.badges %}
+                                <span class="badge rounded-pill text-bg-light border">{{ badge }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <p class="text-muted small mb-0">{{ insight.reasons|join(', ')|capitalize }}.</p>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

@@ -1,0 +1,2 @@
+# Optional Nucleos Dompdf bundle config.
+# The application uses Dompdf directly when the wrapper bundle is not installed locally.

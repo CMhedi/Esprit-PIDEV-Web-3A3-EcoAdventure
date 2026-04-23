@@ -4,7 +4,7 @@
 {% block page_title %}Ajout d’un Pack{% endblock %}
 
 {% block body %}
-<link rel="stylesheet" href="{{ asset('assets/css/ajout-pack-admin.css') }}">
+<link rel="stylesheet" href="{{ asset('css/ajout-pack-admin.css') }}">
 
 <div class="pack-add-page">
     <div class="pack-add-hero">
@@ -44,7 +44,7 @@
             </a>
         </div>
 
-        {{ form_start(form, {'attr': {'class': 'pack-form-grid'}}) }}
+        {{ form_start(form, {'attr': {'class': 'pack-form-grid', 'novalidate': 'novalidate'}}) }}
 
             <div class="form-block">
                 {{ form_label(form.nom) }}

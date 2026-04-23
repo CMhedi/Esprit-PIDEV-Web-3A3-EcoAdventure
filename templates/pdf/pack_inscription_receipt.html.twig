@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Pass Premium Pack</title>
+    <style>
+        body { margin: 0; padding: 22px; background: #f4f8f3; font-family: DejaVu Sans, sans-serif; color: #1f2937; font-size: 12px; }
+        .ticket-shell { border: 1px solid #d8e3d3; border-radius: 28px; overflow: hidden; background: #ffffff; }
+        .hero { background: linear-gradient(135deg, #173d2a 0%, #2f855a 55%, #f59e0b 100%); color: #ffffff; padding: 28px; }
+        .hero-top { width: 100%; }
+        .hero-left { width: 64%; vertical-align: top; }
+        .hero-right { width: 36%; text-align: right; vertical-align: top; }
+        .eyebrow { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; opacity: 0.85; }
+        .hero h1 { margin: 10px 0 8px; font-size: 28px; }
+        .hero p { margin: 0; font-size: 12px; line-height: 1.5; opacity: 0.95; }
+        .ticket-number { display: inline-block; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,0.18); font-size: 11px; letter-spacing: 1px; }
+        .hero-name { margin-top: 24px; font-size: 22px; font-weight: 700; }
+        .hero-phone { margin-top: 6px; font-size: 12px; opacity: 0.9; }
+        .body { padding: 22px; }
+        .stats { width: 100%; border-collapse: separate; border-spacing: 12px; margin-bottom: 18px; }
+        .stat-card { background: #f8faf8; border: 1px solid #e4ece2; border-radius: 18px; padding: 16px; }
+        .stat-label { font-size: 10px; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
+        .stat-value { font-size: 22px; font-weight: 700; color: #173d2a; }
+        .stat-note { font-size: 11px; color: #6b7280; margin-top: 4px; }
+        .details { width: 100%; border-collapse: separate; border-spacing: 12px; }
+        .detail-card { width: 50%; border: 1px solid #e5e7eb; border-radius: 18px; padding: 16px; vertical-align: top; }
+        .detail-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #111827; }
+        .detail-row { margin-bottom: 12px; }
+        .label { font-size: 10px; text-transform: uppercase; color: #6b7280; margin-bottom: 4px; }
+        .value { font-size: 15px; font-weight: 700; color: #1f2937; }
+        .muted { color: #6b7280; font-size: 11px; margin-top: 4px; }
+        .visual-card { border: 1px solid #e5e7eb; border-radius: 18px; padding: 16px; background: #fcfdfc; }
+        .visual-card img { display: block; margin: 0 auto; }
+        .qr-image { width: 170px; height: 170px; }
+        .barcode-image { width: 100%; height: auto; margin-top: 12px; }
+        .scan-note { margin-top: 12px; font-size: 11px; line-height: 1.5; color: #4b5563; text-align: center; }
+        .footer { padding: 0 22px 22px; text-align: center; font-size: 10px; color: #6b7280; }
+    </style>
+</head>
+<body>
+<div class="ticket-shell">
+    <div class="hero">
+        <table class="hero-top">
+            <tr>
+                <td class="hero-left">
+                    <div class="eyebrow">Pass Premium officiel</div>
+                    <h1>{{ packName }}</h1>
+                    <p>Document officiel genere automatiquement apres l inscription. Il centralise le client, le pack, le statut du dossier et le code de verification.</p>
+                    <div class="hero-name">{{ holderFirstName }} {{ holderLastName }}</div>
+                    <div class="hero-phone">Telephone : {{ holderPhone }}</div>
+                </td>
+                <td class="hero-right">
+                    <div class="ticket-number">PASS #{{ inscription.idInscription }}</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="body">
+        <table class="stats">
+            <tr>
+                <td class="stat-card">
+                    <div class="stat-label">Inscrits confirmes</div>
+                    <div class="stat-value">{{ confirmedCount }}</div>
+                    <div class="stat-note">Participants valides sur ce pack</div>
+                </td>
+                <td class="stat-card">
+                    <div class="stat-label">Restants</div>
+                    <div class="stat-value">{{ remainingCount is not null ? remainingCount : '-' }}</div>
+                    <div class="stat-note">
+                        {% if capacity is not null %}
+                            Quota actuel : {{ capacity }}
+                        {% else %}
+                            Quota non renseigne
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="stat-card">
+                    <div class="stat-label">Montant</div>
+                    <div class="stat-value">{{ inscription.montantTotal|number_format(2, '.', ' ') }}</div>
+                    <div class="stat-note">DT</div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="details">
+            <tr>
+                <td class="detail-card">
+                    <div class="detail-title">Informations officielles</div>
+
+                    <div class="detail-row">
+                        <div class="label">Nom du client</div>
+                        <div class="value">{{ holderFullName }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Nom du pack</div>
+                        <div class="value">{{ packName }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Numero de telephone</div>
+                        <div class="value">{{ holderPhone }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Date d inscription</div>
+                        <div class="muted">{{ inscription.dateInscription ? inscription.dateInscription|date('d/m/Y H:i') : '-' }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Montant</div>
+                        <div class="value">{{ inscription.montantTotal|number_format(2, '.', ' ') }} DT</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Statut de l inscription</div>
+                        <div class="value">{{ inscription.statutInscr ? inscription.statutInscr.value : 'EN_ATTENTE' }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Email client</div>
+                        <div class="muted">{{ holderEmail }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Statut paiement</div>
+                        <div class="value">{{ inscription.paymentStatus ? inscription.paymentStatus|replace({'_': ' '})|upper : 'CONFIRME' }}</div>
+                        <div class="muted">{{ inscription.paymentReference ? 'Reference : ' ~ inscription.paymentReference : 'Validation interne' }}</div>
+                    </div>
+                </td>
+
+                <td class="detail-card">
+                    <div class="visual-card">
+                        <div class="detail-title" style="text-align: center;">Verification & acces mobile</div>
+                        <img src="data:image/svg+xml;base64,{{ qrCode }}" alt="QR Code du pass premium" class="qr-image">
+                        <img src="data:image/svg+xml;base64,{{ barcodeSvg }}" alt="Code-barres du pass premium" class="barcode-image">
+                        <div class="scan-note">
+                            QR : ouvre le ticket sur mobile.<br>
+                            Code-barres : {{ barcodeValue }}<br>
+                            Lien : {{ mobileTicketUrl }}
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        Pass Premium genere le {{ generatedAt|date('d/m/Y H:i') }} - EcoAdventure
+    </div>
+</div>
+</body>
+</html>

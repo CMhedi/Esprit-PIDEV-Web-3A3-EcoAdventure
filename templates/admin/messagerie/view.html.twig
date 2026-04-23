@@ -129,8 +129,9 @@
                                 {% set mediaPath = attachments is empty ? (contentParts[0] ?? '') : '' %}
                                 {% set mediaComment = attachments is empty ? (contentParts[1] ?? '') : rawContent %}
                                 {% set mediaRelative = mediaPath starts with '/uploads/' ? mediaPath|slice(9) : '' %}
-                                {% set mediaUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative}) : '' %}
-                                {% set mediaDownloadUrl = mediaRelative ? path('app_media_file', {'file': mediaRelative, 'download': 1}) : '' %}
+                                {% set mediaRemoteUrl = mediaPath starts with 'http' ? mediaPath : '' %}
+                                {% set mediaUrl = mediaRemoteUrl ?: (mediaRelative ? path('app_media_by_path', {'path': mediaPath}) : '') %}
+                                {% set mediaDownloadUrl = mediaRemoteUrl ?: (mediaRelative ? path('app_media_by_path', {'path': mediaPath, 'download': 1}) : '') %}
                                 {% set mediaFileName = mediaPath ? (mediaPath|split('/')|last) : 'fichier' %}
                                 {% set mediaExt = mediaPath ? (mediaPath|split('.')|last|lower) : '' %}
                                 {% set mediaParts = mediaPath ? mediaPath|split('/') : [] %}
@@ -145,8 +146,9 @@
                                         {% for attachment in attachments %}
                                             {% set attachmentPath = attachment.path|default('') %}
                                             {% set attachmentRelative = attachmentPath starts with '/uploads/' ? attachmentPath|slice(9) : '' %}
-                                            {% set attachmentUrl = attachmentRelative ? path('app_media_file', {'file': attachmentRelative}) : '' %}
-                                            {% set attachmentDownloadUrl = attachmentRelative ? path('app_media_file', {'file': attachmentRelative, 'download': 1}) : '' %}
+                                            {% set attachmentRemoteUrl = attachmentPath starts with 'http' ? attachmentPath : '' %}
+                                            {% set attachmentUrl = attachmentRemoteUrl ?: (attachmentRelative ? path('app_media_by_path', {'path': attachmentPath}) : '') %}
+                                            {% set attachmentDownloadUrl = attachmentRemoteUrl ?: (attachmentRelative ? path('app_media_by_path', {'path': attachmentPath, 'download': 1}) : '') %}
                                             {% set attachmentName = attachment.name|default(attachmentPath ? (attachmentPath|split('/')|last) : 'fichier') %}
                                             {% set attachmentMime = attachment.mime|default('') %}
                                             {% set attachmentType = attachment.type|default('') %}
@@ -323,6 +325,63 @@
         </div>
     </div>
 </div>
+
+{% if mon_id %}
+<div class="admin-card mt-4">
+    <h5 class="fw-bold mb-3">
+        <i class="bi bi-send me-2"></i>
+        Actions Admin
+    </h5>
+    <form id="adminMessageComposerForm"
+          method="post"
+          action="{{ path('app_send_message', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
+          data-correct-url="{{ path('app_messagerie_correct_text', {'id_user': mon_id, 'id_conversation': conversation.id_conversation}) }}"
+          class="d-flex flex-column gap-3">
+        {% for flashError in app.flashes('error') %}
+            <div class="admin-composer-alert admin-composer-alert-error">{{ flashError }}</div>
+        {% endfor %}
+        {% for flashSuccess in app.flashes('success') %}
+            <div class="admin-composer-alert admin-composer-alert-success">{{ flashSuccess }}</div>
+        {% endfor %}
+
+        <div id="adminComposerFeedback" class="admin-composer-alert d-none"></div>
+
+        <div class="admin-composer-toolbar">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="adminCorrectBtn">
+                <i class="bi bi-spellcheck me-1"></i>Corriger
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="adminAiBtn">
+                <i class="bi bi-robot me-1"></i>IA
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="adminResumeBtn">
+                <i class="bi bi-card-text me-1"></i>Resume
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="adminLongBtn">
+                <i class="bi bi-text-paragraph me-1"></i>Long
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="adminGifBtn">
+                <i class="bi bi-filetype-gif me-1"></i>GIF
+            </button>
+        </div>
+
+        <div>
+            <label for="adminTextMessage" class="form-label fw-semibold">Message admin</label>
+            <input type="text"
+                   name="message"
+                   id="adminTextMessage"
+                   class="form-control"
+                   placeholder="Ecrivez un message ou utilisez les actions IA...">
+            <div class="form-text">Commandes rapides: `/ai`, `/resume`, `/long`, `/gif mot-cle`.</div>
+        </div>
+
+        <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-eco">
+                <i class="bi bi-send me-1"></i>Envoyer
+            </button>
+        </div>
+    </form>
+</div>
+{% endif %}
 
 <style>
 .participant-card {
@@ -571,6 +630,32 @@
     padding: 15px;
 }
 
+.admin-composer-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.admin-composer-alert {
+    border-radius: 8px;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid #d7dee8;
+    background: #f8f9fa;
+    color: #334155;
+}
+
+.admin-composer-alert-error {
+    border-color: #f5c2c7;
+    background: #f8d7da;
+    color: #842029;
+}
+
+.admin-composer-alert-success {
+    border-color: #badbcc;
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .media-container {
@@ -604,6 +689,103 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 2000);
         }
     }
+
+    const adminComposerForm = document.getElementById('adminMessageComposerForm');
+    const adminTextMessage = document.getElementById('adminTextMessage');
+    const adminFeedback = document.getElementById('adminComposerFeedback');
+    const adminCorrectBtn = document.getElementById('adminCorrectBtn');
+    const adminAiBtn = document.getElementById('adminAiBtn');
+    const adminResumeBtn = document.getElementById('adminResumeBtn');
+    const adminLongBtn = document.getElementById('adminLongBtn');
+    const adminGifBtn = document.getElementById('adminGifBtn');
+
+    function showAdminFeedback(message, type = 'neutral') {
+        if (!adminFeedback) return;
+        adminFeedback.textContent = message;
+        adminFeedback.className = 'admin-composer-alert';
+        if (type === 'error') {
+            adminFeedback.classList.add('admin-composer-alert-error');
+        } else if (type === 'success') {
+            adminFeedback.classList.add('admin-composer-alert-success');
+        }
+        adminFeedback.classList.remove('d-none');
+    }
+
+    function hideAdminFeedback() {
+        if (!adminFeedback) return;
+        adminFeedback.className = 'admin-composer-alert d-none';
+        adminFeedback.textContent = '';
+    }
+
+    async function correctAdminMessage() {
+        const correctUrl = adminComposerForm?.getAttribute('data-correct-url') || '';
+        const currentText = (adminTextMessage?.value || '').trim();
+
+        if (!correctUrl) {
+            showAdminFeedback('Correction indisponible sur cette conversation.', 'error');
+            return;
+        }
+        if (!currentText) {
+            showAdminFeedback('Veuillez saisir un texte a corriger.', 'error');
+            adminTextMessage?.focus();
+            return;
+        }
+
+        hideAdminFeedback();
+        adminCorrectBtn?.setAttribute('disabled', 'disabled');
+
+        try {
+            const payload = new URLSearchParams({ text: currentText });
+            const response = await fetch(correctUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: payload.toString()
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                showAdminFeedback(data.message || 'Correction impossible.', 'error');
+                return;
+            }
+
+            if (adminTextMessage) {
+                adminTextMessage.value = data.corrected_text || currentText;
+                adminTextMessage.focus();
+            }
+
+            showAdminFeedback(data.changed ? 'Texte corrige avec succes.' : 'Aucune correction necessaire.', data.changed ? 'success' : 'neutral');
+        } catch (error) {
+            showAdminFeedback('Erreur reseau pendant la correction.', 'error');
+        } finally {
+            adminCorrectBtn?.removeAttribute('disabled');
+        }
+    }
+
+    adminCorrectBtn?.addEventListener('click', correctAdminMessage);
+    adminAiBtn?.addEventListener('click', function () {
+        const value = (adminTextMessage?.value || '').trim();
+        if (adminTextMessage) {
+            adminTextMessage.value = value ? `/ai ${value}` : '/ai ';
+            adminTextMessage.focus();
+        }
+    });
+    adminResumeBtn?.addEventListener('click', function () {
+        if (adminTextMessage) {
+            adminTextMessage.value = '/resume';
+            adminTextMessage.focus();
+        }
+    });
+    adminLongBtn?.addEventListener('click', function () {
+        if (adminTextMessage) {
+            adminTextMessage.value = '/long ';
+            adminTextMessage.focus();
+        }
+    });
+    adminGifBtn?.addEventListener('click', function () {
+        const query = window.prompt('Mot-cle du GIF ?');
+        if (!query || !adminTextMessage) return;
+        adminTextMessage.value = `/gif ${query.trim()}`;
+        adminTextMessage.focus();
+    });
 });
 </script>
 {% endblock %}

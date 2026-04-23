@@ -16,28 +16,36 @@ class FeedbackEventRepository extends ServiceEntityRepository
         parent::__construct($registry, FeedbackEvent::class);
     }
 
-//    /**
-//     * @return FeedbackEvent[] Returns an array of FeedbackEvent objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('f')
-//            ->andWhere('f.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('f.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /**
+     * @param int[] $packIds
+     * @return array<int, array<string, int>>
+     */
+    public function getPackActionCounts(array $packIds, ?\DateTimeImmutable $since = null): array
+    {
+        if ($packIds === []) {
+            return [];
+        }
 
-//    public function findOneBySomeField($value): ?FeedbackEvent
-//    {
-//        return $this->createQueryBuilder('f')
-//            ->andWhere('f.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        $qb = $this->createQueryBuilder('f')
+            ->select('IDENTITY(f.pack) AS pack_id, f.action AS action_name, COUNT(f.id) AS action_count')
+            ->andWhere('IDENTITY(f.pack) IN (:packIds)')
+            ->setParameter('packIds', $packIds)
+            ->groupBy('f.pack, f.action');
+
+        if ($since instanceof \DateTimeImmutable) {
+            $qb->andWhere('f.created_at >= :since')
+                ->setParameter('since', $since);
+        }
+
+        $rows = $qb->getQuery()->getArrayResult();
+        $matrix = [];
+
+        foreach ($rows as $row) {
+            $packId = (int) ($row['pack_id'] ?? 0);
+            $actionName = (string) ($row['action_name'] ?? 'unknown');
+            $matrix[$packId][$actionName] = (int) ($row['action_count'] ?? 0);
+        }
+
+        return $matrix;
+    }
 }

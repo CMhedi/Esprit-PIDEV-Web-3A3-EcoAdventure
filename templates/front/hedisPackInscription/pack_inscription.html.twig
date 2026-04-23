@@ -3,31 +3,65 @@
 {% block title %}Inscription Pack | EcoAdventure{% endblock %}
 
 {% block css %}
-    <link rel="stylesheet" href="{{ asset('assets/css/packs.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/packs.css') }}">
 {% endblock %}
 
 {% block body %}
 <section class="pack-inscription-section py-5">
     <div class="container">
-        {% for message in app.flashes('success') %}
-            <div class="alert alert-success rounded-4 shadow-sm mb-4">
-                {{ message }}
-            </div>
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ type == 'danger' ? 'danger' : (type == 'warning' ? 'warning' : 'success') }} rounded-4 shadow-sm mb-4">
+                    {{ message }}
+                </div>
+            {% endfor %}
         {% endfor %}
+
+        <div class="process-hero mb-4">
+            <div>
+                <span class="process-kicker">Inscription Pack</span>
+                <h1 class="process-title">Valider l inscription avant le paiement</h1>
+                <p class="process-text">
+                    Cette etape enregistre votre demande avec votre compte EcoAdventure. Le paiement se fait ensuite sur une page dediee et securisee.
+                </p>
+            </div>
+            <div class="process-steps">
+                <div class="process-step is-active">
+                    <span>1</span>
+                    <strong>Inscription</strong>
+                </div>
+                <div class="process-step">
+                    <span>2</span>
+                    <strong>Paiement</strong>
+                </div>
+            </div>
+        </div>
 
         <div class="row g-4 align-items-start">
             <div class="col-lg-5">
                 <div class="pack-detail-card">
                     <span class="pack-type-chip">{{ pack.typePack }}</span>
-                    <h1 class="pack-title mt-3">{{ pack.nom }}</h1>
+                    <h2 class="pack-title mt-3">{{ pack.nom }}</h2>
+
+                    {% if packInsight %}
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <span class="badge rounded-pill text-bg-dark">
+                                Score {{ packInsight.score|number_format(1, '.', ' ') }}/100
+                            </span>
+                            {% for badge in packInsight.badges %}
+                                <span class="badge rounded-pill text-bg-light border">{{ badge }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
 
                     <div class="pack-price-zone mt-4">
+                        <span class="pack-price-label">Montant</span>
                         <div class="pack-price-main">
-                            {{ pack.prixBase|number_format(2, '.', ' ') }} DT
+                            {{ pack.prixFinal|number_format(2, '.', ' ') }} DT
                         </div>
                         <div class="pack-price-sub">
-                            Prix final :
-                            <strong>{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</strong>
+                            Prix de base :
+                            <strong>{{ pack.prixBase|number_format(2, '.', ' ') }} DT</strong>
                         </div>
                     </div>
 
@@ -36,72 +70,180 @@
                             <span><i class="bi bi-percent me-2"></i>Reduction</span>
                             <strong>{{ pack.reduction|number_format(2, '.', ' ') }} DT</strong>
                         </div>
-
                         <div class="pack-feature-row">
                             <span><i class="bi bi-grid-1x2-fill me-2"></i>Type</span>
                             <strong>{{ pack.typePack }}</strong>
                         </div>
-
                         <div class="pack-feature-row">
                             <span><i class="bi bi-lightning-charge-fill me-2"></i>Activites max</span>
                             <strong>{{ pack.nbActivitesMax }}</strong>
                         </div>
-
                         <div class="pack-feature-row">
                             <span><i class="bi bi-check-circle me-2"></i>Statut</span>
                             <strong>{{ pack.statutPack }}</strong>
                         </div>
+
+                        {% if packInsight %}
+                            <div class="mt-3 pt-3 border-top">
+                                <div class="small text-uppercase text-muted mb-2">Pourquoi ce pack ressort</div>
+                                <ul class="small text-muted mb-0 ps-3">
+                                    {% for reason in packInsight.reasons %}
+                                        <li>{{ reason|capitalize }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
 
             <div class="col-lg-7">
                 <div class="pack-form-card">
-                    <h2 class="form-title">Formulaire d'inscription</h2>
+                    <div class="section-card-head">
+                        <div>
+                            <span class="section-overline">Etape 1</span>
+                            <h2 class="form-title">Formulaire d inscription</h2>
+                        </div>
+                        <div class="section-pill">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Dossier reserve</span>
+                        </div>
+                    </div>
+
                     <p class="form-subtitle">
-                        Votre compte connecte sera utilise automatiquement pour cette inscription.
+                        Votre compte connecte sera utilise automatiquement. Une fois le dossier cree, vous serez redirige vers un formulaire de paiement separe.
                     </p>
 
-                    {{ form_start(form) }}
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Compte connecte</label>
-                                <input type="text"
-                                       class="form-control"
-                                       value="{{ currentUser.prenom }} {{ currentUser.nom }}"
-                                       disabled>
-                            </div>
+                    {% if packExplanation %}
+                        <div class="alert alert-info rounded-4 shadow-sm">
+                            <strong>Analyse intelligente :</strong> {{ packExplanation }}
+                        </div>
+                    {% endif %}
 
-                            <div class="col-md-6">
-                                <label class="form-label">Email</label>
-                                <input type="text"
-                                       class="form-control"
-                                       value="{{ currentUser.email }}"
-                                       disabled>
+                    {% if holidayContext.available %}
+                        <div class="alert alert-warning rounded-4 shadow-sm">
+                            <strong>Contexte calendrier :</strong>
+                            {{ holidayContext.name }} dans {{ holidayContext.daysUntil }} jour{{ holidayContext.daysUntil > 1 ? 's' : '' }}.
+                            {{ holidayContext.message }}
+                        </div>
+                    {% endif %}
+
+                    {% if alternativePack %}
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body">
+                                <div class="small text-uppercase text-muted mb-2">Alternative recommandee</div>
+                                <h3 class="h5 mb-2">{{ alternativePack.pack.nom }}</h3>
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <span class="badge rounded-pill text-bg-dark">
+                                        {{ alternativePack.recommendationScore|number_format(1, '.', ' ') }}/100
+                                    </span>
+                                    {% for badge in alternativePack.badges %}
+                                        <span class="badge rounded-pill text-bg-light border">{{ badge }}</span>
+                                    {% endfor %}
+                                </div>
+                                <p class="text-muted small mb-3">{{ alternativePack.reasons|join(', ')|capitalize }}.</p>
+                                <a href="{{ path('app_pack_inscription', {'id': alternativePack.pack.idPack}) }}" class="btn btn-sm btn-dark rounded-pill">
+                                    Consulter cette alternative
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="inscription-summary-grid mb-4">
+                        <div class="summary-field">
+                            <span>Compte connecte</span>
+                            <strong>{{ currentUser.prenom }} {{ currentUser.nom }}</strong>
+                        </div>
+                        <div class="summary-field">
+                            <span>Email</span>
+                            <strong>{{ currentUser.email }}</strong>
+                        </div>
+                        <div class="summary-field">
+                            <span>Pack selectionne</span>
+                            <strong>{{ pack.nom }}</strong>
+                        </div>
+                        <div class="summary-field">
+                            <span>Montant a regler</span>
+                            <strong>{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</strong>
+                        </div>
+                    </div>
+
+                    {% if latestInscription %}
+                        <div class="latest-payment-status mb-4">
+                            <div>
+                                <span>Derniere inscription</span>
+                                <strong>{{ latestInscription.dateInscription ? latestInscription.dateInscription|date('d/m/Y H:i') : '-' }}</strong>
+                            </div>
+                            <div>
+                                <span>Statut dossier</span>
+                                <strong>{{ latestInscription.statutInscr ? latestInscription.statutInscr.value : 'EN_ATTENTE' }}</strong>
+                            </div>
+                            <div>
+                                <span>Paiement</span>
+                                <strong>{{ latestInscription.paymentStatus ? latestInscription.paymentStatus|replace({'_': ' '})|upper : 'NON LANCE' }}</strong>
                             </div>
                         </div>
 
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Pack selectionne</label>
-                                <input type="text" class="form-control" value="{{ pack.nom }}" disabled>
-                            </div>
+                        <div class="d-flex gap-3 flex-wrap mb-4">
+                            {% if latestPremiumPassUrl %}
+                                <a href="{{ latestPremiumPassUrl }}" class="btn btn-dark rounded-pill px-4">
+                                    Pass Premium PDF
+                                </a>
+                            {% endif %}
+                            {% if latestTicketUrl %}
+                                <a href="{{ latestTicketUrl }}" class="btn btn-eco-outline rounded-pill px-4">
+                                    Ticket mobile
+                                </a>
+                            {% endif %}
+                        </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Montant a payer</label>
-                                <input type="text"
-                                       class="form-control"
-                                       value="{{ pack.prixFinal|number_format(2, '.', ' ') }} DT"
-                                       disabled>
+                        {% if not latestInscription.isPaid %}
+                            <div class="resume-payment-banner mb-4">
+                                <div>
+                                    <span>Paiement en attente</span>
+                                    <strong>Vous pouvez reprendre votre dossier existant</strong>
+                                </div>
+                                <a href="{{ path('app_pack_inscription_payment', {'id': latestInscription.idInscription}) }}" class="btn btn-dark rounded-pill px-4">
+                                    Ouvrir le paiement
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {{ form_start(form, {'attr': {'novalidate': 'novalidate', 'class': 'stacked-form'}}) }}
+                        <div class="confirmation-checks">
+                            <div class="check-card">
+                                {{ form_row(form.confirmPackSelection) }}
+                            </div>
+                            <div class="check-card">
+                                {{ form_row(form.acceptPaymentStep) }}
                             </div>
                         </div>
 
-                        <div class="mt-4 d-flex gap-3 flex-wrap">
+                        <div class="form-note mt-4">
+                            <i class="bi bi-info-circle"></i>
+                            <span>Le paiement Stripe ou carte demo sera effectue sur l etape suivante. Aucune donnee bancaire n est demandee ici.</span>
+                        </div>
+
+                        <div class="mt-4 d-flex gap-3 flex-wrap align-items-center">
                             {{ form_widget(form.save) }}
 
-                            <a href="{{ path('app_packs') }}" class="btn btn-eco-outline rounded-pill px-4 py-2">
+                            <a href="{{ path('app_packs') }}" class="btn btn-eco-outline rounded-pill px-4 py-3">
                                 Retour aux packs
                             </a>
+
+                            {% if latestInscription %}
+                                {% if latestTicketUrl %}
+                                    <a href="{{ latestTicketUrl }}" class="btn btn-eco-outline rounded-pill px-4 py-3">
+                                        Ouvrir le ticket mobile
+                                    </a>
+                                {% endif %}
+                                {% if latestPremiumPassUrl %}
+                                    <a href="{{ latestPremiumPassUrl }}" class="btn btn-dark rounded-pill px-4 py-3">
+                                        Telecharger le Pass Premium PDF
+                                    </a>
+                                {% endif %}
+                            {% endif %}
                         </div>
                     {{ form_end(form) }}
                 </div>

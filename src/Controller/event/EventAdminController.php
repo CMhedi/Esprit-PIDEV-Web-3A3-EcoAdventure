@@ -199,3 +199,4 @@ class EventAdminController extends AbstractController
         return $this->redirectToRoute('app_event_admin_index', [], Response::HTTP_SEE_OTHER);
     }
 }
+

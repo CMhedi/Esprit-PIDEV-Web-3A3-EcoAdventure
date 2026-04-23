@@ -1,0 +1,95 @@
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="small text-uppercase text-muted mb-2">Revenu theorique</div>
+                <div class="h3 fw-bold mb-1">{{ analyticsSummary.revenue_total|number_format(2, '.', ' ') }} DT</div>
+                <p class="text-muted small mb-0">Total calcule a partir des montants existants.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="small text-uppercase text-muted mb-2">En attente</div>
+                <div class="h3 fw-bold mb-1">{{ analyticsSummary.pending_count }}</div>
+                <p class="text-muted small mb-0">{{ analyticsSummary.pending_revenue|number_format(2, '.', ' ') }} DT encore a traiter.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="small text-uppercase text-muted mb-2">Prioritaires</div>
+                <div class="h3 fw-bold mb-1">{{ analyticsSummary.high_priority_count }}</div>
+                <p class="text-muted small mb-0">Dossiers a actionner en premier.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="small text-uppercase text-muted mb-2">Tendance</div>
+                <div class="h5 fw-bold mb-1">{{ analyticsSummary.trend_label }}</div>
+                <p class="text-muted small mb-0">Pack moteur: {{ analyticsSummary.top_pack }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="small text-uppercase text-muted mb-2">Synthese analytique</div>
+        <p class="mb-2">{{ summaryNarrative }}</p>
+
+        <div class="d-flex flex-wrap gap-2">
+            {% for label, count in analyticsSegments %}
+                <span class="badge rounded-pill text-bg-light border">{{ label }}: {{ count }}</span>
+            {% endfor %}
+            {% if holidayContext.available %}
+                <span class="badge rounded-pill text-bg-warning-subtle text-dark border">
+                    {{ holidayContext.name }} dans {{ holidayContext.daysUntil }} jour{{ holidayContext.daysUntil > 1 ? 's' : '' }}
+                </span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if riskOverview is defined %}
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-uppercase text-muted mb-2">Risque moyen inscriptions</div>
+                    <div class="h3 fw-bold mb-1">{{ riskOverview.inscription_average|number_format(1, '.', ' ') }}/100</div>
+                    <p class="text-muted small mb-0">{{ riskOverview.priority_inscriptions }} dossier(s) a prioriser.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-uppercase text-muted mb-2">Critiques</div>
+                    <div class="h3 fw-bold mb-1">{{ riskOverview.critical_inscriptions }}</div>
+                    <p class="text-muted small mb-0">Signalements critiques sur les dossiers en cours.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-uppercase text-muted mb-2">Synthese risque admin</div>
+                    <p class="mb-3">{{ riskSummaryNarrative|default('Lecture risque indisponible.') }}</p>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for action in riskOverview.recommended_actions|default([]) %}
+                            <span class="badge rounded-pill text-bg-light border">{{ action }}</span>
+                        {% else %}
+                            <span class="badge rounded-pill text-bg-light border">surveiller les dossiers sensibles</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
