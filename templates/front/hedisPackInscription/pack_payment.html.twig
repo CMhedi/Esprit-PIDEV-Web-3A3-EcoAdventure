@@ -1,0 +1,380 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Paiement Inscription | EcoAdventure{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{{ asset('assets/css/packs.css') }}">
+{% endblock %}
+
+{% block body %}
+<section class="pack-inscription-section py-5">
+    <div class="container">
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ type == 'danger' ? 'danger' : (type == 'warning' ? 'warning' : 'success') }} rounded-4 shadow-sm mb-4">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="process-hero mb-4">
+            <div>
+                <span class="process-kicker">Paiement securise</span>
+                <h1 class="process-title">Finaliser l inscription au pack</h1>
+                <p class="process-text">
+                    Votre inscription est enregistree sous le numero #{{ inscription.idInscription }}. Choisissez maintenant votre mode de paiement.
+                </p>
+            </div>
+            <div class="process-steps">
+                <div class="process-step is-complete">
+                    <span><i class="bi bi-check-lg"></i></span>
+                    <strong>Inscription</strong>
+                </div>
+                <div class="process-step is-active">
+                    <span>2</span>
+                    <strong>Paiement</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-5">
+                <div class="pack-detail-card payment-summary-card">
+                    <span class="pack-type-chip">{{ pack.typePack }}</span>
+                    <h2 class="pack-title mt-3">{{ pack.nom }}</h2>
+
+                    <div class="pack-price-zone mt-4">
+                        <span class="pack-price-label">Total catalogue</span>
+                        <div class="pack-price-main">{{ inscription.montantTotal|number_format(2, '.', ' ') }} DT</div>
+                        <div class="pack-price-sub">
+                            Dossier :
+                            <strong>#{{ inscription.idInscription }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="pack-card-body mt-4">
+                        <div class="pack-feature-row">
+                            <span><i class="bi bi-person-badge me-2"></i>Client</span>
+                            <strong>{{ currentUser.prenom }} {{ currentUser.nom }}</strong>
+                        </div>
+                        <div class="pack-feature-row">
+                            <span><i class="bi bi-envelope me-2"></i>Email</span>
+                            <strong>{{ currentUser.email }}</strong>
+                        </div>
+                        <div class="pack-feature-row">
+                            <span><i class="bi bi-hourglass-split me-2"></i>Statut dossier</span>
+                            <strong>{{ inscription.statutInscr ? inscription.statutInscr.value : 'EN_ATTENTE' }}</strong>
+                        </div>
+                        <div class="pack-feature-row">
+                            <span><i class="bi bi-credit-card-2-front me-2"></i>Statut paiement</span>
+                            <strong>{{ inscription.paymentStatus ? inscription.paymentStatus|replace({'_': ' '})|upper : 'INITIATED' }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="resume-payment-banner mt-3">
+                        <div>
+                            <span>{{ inscription.isPaid ? 'Paiement confirme' : 'Pass Premium genere' }}</span>
+                            <strong>{{ inscription.isPaid ? 'Votre inscription est validee' : 'Votre document officiel est deja disponible' }}</strong>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap justify-content-end">
+                            {% if ticketUrl %}
+                                <a href="{{ ticketUrl }}" class="btn btn-outline-light rounded-pill px-4">
+                                    Ticket mobile
+                                </a>
+                            {% endif %}
+                            <a href="{{ premiumPassUrl }}" class="btn btn-dark rounded-pill px-4">
+                                Pass Premium PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="pack-form-card">
+                    <div class="section-card-head">
+                        <div>
+                            <span class="section-overline">Etape 2</span>
+                            <h2 class="form-title">Choisir le mode de paiement</h2>
+                        </div>
+                        <div class="section-pill">
+                            <i class="bi bi-lock"></i>
+                            <span>Checkout separe</span>
+                        </div>
+                    </div>
+
+                    <div class="payment-method-card mb-4">
+                        <div class="payment-method-top">
+                            <div class="payment-method-icon is-stripe">
+                                <i class="bi bi-credit-card-2-front"></i>
+                            </div>
+                            <div>
+                                <span class="payment-method-label">Stripe Checkout</span>
+                                <h3>Paiement en ligne securise</h3>
+                                <p>
+                                    Vous serez redirige vers une page Stripe hebergee pour saisir la carte en dehors d EcoAdventure.
+                                </p>
+                            </div>
+                        </div>
+
+                        {% if not stripeConfigured %}
+                            <div class="alert alert-warning rounded-4 shadow-sm mb-3">
+                                <strong>Stripe non configure :</strong>
+                                renseignez
+                                {% for setting in stripeMissingSettings %}
+                                    <code>{{ setting }}</code>{{ not loop.last ? ', ' : '' }}
+                                {% endfor %}
+                                dans <code>.env.local</code>.
+                            </div>
+                        {% endif %}
+
+                        <div class="payment-gateway-note mb-3">
+                            <div>
+                                <span>Devise Stripe</span>
+                                <strong>{{ stripeCurrency|upper }}</strong>
+                            </div>
+                            <div>
+                                <span>Montant envoye a Stripe</span>
+                                <strong>{{ inscription.montantTotal|number_format(2, '.', ' ') }} {{ stripeCurrency|upper }}</strong>
+                            </div>
+                            <div>
+                                <span>Cle publishable</span>
+                                <strong>{{ stripePublishableKey ? stripePublishableKey|slice(0, 12) ~ '...' : 'Non renseignee' }}</strong>
+                            </div>
+                        </div>
+
+                        {% if stripeCurrency|lower != 'tnd' %}
+                            <div class="form-note mb-3">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span>Le prix catalogue du pack est affiche en DT, mais le test Stripe suit actuellement la devise configuree dans <code>STRIPE_CURRENCY</code>.</span>
+                            </div>
+                        {% endif %}
+
+                        {{ form_start(stripeForm, {'attr': {'novalidate': 'novalidate', 'class': 'stacked-form'}}) }}
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    {{ form_row(stripeForm.customerName) }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form_row(stripeForm.customerEmail) }}
+                                </div>
+                            </div>
+
+                            <div class="check-card mt-3">
+                                {{ form_row(stripeForm.acceptSecurePayment) }}
+                            </div>
+
+                            <div class="mt-4">
+                                {{ form_widget(stripeForm.save, stripeConfigured ? {} : {'attr': {'disabled': 'disabled', 'class': 'btn btn-eco rounded-pill px-4 py-3 w-100'}}) }}
+                            </div>
+                        {{ form_end(stripeForm) }}
+                    </div>
+
+                    <div class="card-demo-divider">
+                        <span>Ou</span>
+                    </div>
+
+                    <form
+                        method="post"
+                        action="{{ path('app_pack_inscription_card_demo', {'id': inscription.idInscription}) }}"
+                        class="card-payment-form"
+                        data-card-demo-form
+                        data-card-ocr-endpoint="{{ cardOcrApiUrl }}"
+                        novalidate
+                    >
+                        <input type="hidden" name="_token" value="{{ csrf_token('card_payment_' ~ inscription.idInscription) }}">
+                        <input type="hidden" name="card_token" data-card-token>
+                        <input type="hidden" name="card_last4" data-card-last4>
+                        <input type="hidden" name="card_brand" data-card-brand>
+
+                        <div class="card-payment-header">
+                            <div>
+                                <span>Carte bancaire</span>
+                                <h3>Paiement demo separe</h3>
+                                <p>Mode de test pour la soutenance. Il confirme le meme dossier sans recreer une nouvelle inscription.</p>
+                            </div>
+                            <div class="card-payment-total">
+                                <span>Total</span>
+                                <strong>{{ inscription.montantTotal|number_format(2, '.', ' ') }} DT</strong>
+                            </div>
+                        </div>
+
+                        <div class="card-demo-error d-none" data-card-error role="alert"></div>
+
+                        <div class="card-ocr-panel">
+                            <div>
+                                <label class="form-label" for="demo_card_ocr">Scanner la carte par OCR</label>
+
+                                <div class="card-ocr-upload-area mb-3" data-card-ocr-upload-area>
+                                    <div class="card-ocr-placeholder" data-card-ocr-placeholder>
+                                        <i class="bi bi-camera-fill fs-1 text-muted mb-2"></i>
+                                        <p class="mb-1">Cliquez ici ou glissez une image de carte</p>
+                                        <small class="text-muted">PNG, JPG, JPEG jusqu a 5 Mo</small>
+                                    </div>
+                                    <img
+                                        class="card-ocr-preview d-none"
+                                        data-card-ocr-preview
+                                        alt="Apercu de la carte"
+                                        style="max-width: 100%; height: auto; border-radius: 8px;"
+                                    >
+                                </div>
+
+                                <div class="card-ocr-file-actions mb-3">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-card-ocr-select {{ not demoCardPaymentEnabled ? 'disabled' : '' }}>
+                                        Choisir une image
+                                    </button>
+                                    <span class="card-ocr-file-name text-muted ms-3" data-card-ocr-filename>Aucun fichier choisi</span>
+                                </div>
+
+                                <input
+                                    id="demo_card_ocr"
+                                    type="file"
+                                    class="d-none"
+                                    accept="image/*"
+                                    {{ not demoCardPaymentEnabled ? 'disabled' : '' }}
+                                    data-card-ocr-file
+                                >
+
+                                <small class="card-ocr-help">
+                                    L OCR remplit le nom, le numero de carte detecte, l expiration et la marque si disponibles. Le CVC reste a saisir manuellement.
+                                </small>
+                            </div>
+
+                            <button type="button" class="btn btn-eco-outline rounded-pill px-4" {{ not demoCardPaymentEnabled ? 'disabled' : '' }} data-card-ocr-button>
+                                <i class="bi bi-camera me-2"></i>Lire l image
+                            </button>
+                        </div>
+
+                        <div class="card-ocr-result d-none" data-card-ocr-result></div>
+
+                        <div class="card-ocr-card-preview d-none mt-4" data-card-preview>
+                            <div class="card-preview-card">
+                                <div class="card-preview-brand" data-card-preview-brand>Carte</div>
+                                <div class="card-preview-number" data-card-preview-number>**** **** **** ****</div>
+                                <div class="card-preview-meta">
+                                    <div>
+                                        <span>Nom</span>
+                                        <div data-card-preview-name>Nom du titulaire</div>
+                                    </div>
+                                    <div>
+                                        <span>Expiration</span>
+                                        <div data-card-preview-expiry>MM/AA</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label" for="demo_card_holder">Nom sur la carte</label>
+                                <input
+                                    id="demo_card_holder"
+                                    name="card_holder"
+                                    type="text"
+                                    class="form-control"
+                                    autocomplete="cc-name"
+                                    placeholder="Nom et prenom"
+                                    {{ not demoCardPaymentEnabled ? 'disabled' : '' }}
+                                    required
+                                    data-card-holder
+                                >
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label" for="demo_card_number">Numero de carte</label>
+                                <input
+                                    id="demo_card_number"
+                                    name="card_number_demo"
+                                    type="text"
+                                    class="form-control"
+                                    inputmode="numeric"
+                                    autocomplete="cc-number"
+                                    placeholder="4242 4242 4242 4242"
+                                    maxlength="23"
+                                    {{ not demoCardPaymentEnabled ? 'disabled' : '' }}
+                                    required
+                                    data-card-number
+                                >
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label" for="demo_card_expiry">Expiration</label>
+                                <input
+                                    id="demo_card_expiry"
+                                    name="card_expiry_demo"
+                                    type="text"
+                                    class="form-control"
+                                    inputmode="numeric"
+                                    autocomplete="cc-exp"
+                                    placeholder="MM/AA"
+                                    maxlength="7"
+                                    {{ not demoCardPaymentEnabled ? 'disabled' : '' }}
+                                    required
+                                    data-card-expiry
+                                >
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label" for="demo_card_brand_visible">Marque detectee</label>
+                                <input
+                                    id="demo_card_brand_visible"
+                                    type="text"
+                                    class="form-control"
+                                    placeholder="Visa / Mastercard"
+                                    readonly
+                                    data-card-brand-visible
+                                >
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label" for="demo_card_cvc">CVC</label>
+                                <input
+                                    id="demo_card_cvc"
+                                    name="card_cvc_demo"
+                                    type="password"
+                                    class="form-control"
+                                    inputmode="numeric"
+                                    autocomplete="cc-csc"
+                                    placeholder="123"
+                                    maxlength="4"
+                                    {{ not demoCardPaymentEnabled ? 'disabled' : '' }}
+                                    required
+                                    data-card-cvc
+                                >
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-dark rounded-pill px-4 py-3 mt-4 w-100" {{ not demoCardPaymentEnabled ? 'disabled' : '' }}>
+                            <i class="bi bi-credit-card me-2"></i>Payer par carte demo
+                        </button>
+                    </form>
+
+                    <div class="mt-4 d-flex gap-3 flex-wrap">
+                        <a href="{{ path('app_pack_inscription', {'id': pack.idPack}) }}" class="btn btn-eco-outline rounded-pill px-4 py-3">
+                            Retour a l inscription
+                        </a>
+
+                        {% if ticketUrl %}
+                            <a href="{{ ticketUrl }}" class="btn btn-eco-outline rounded-pill px-4 py-3">
+                                Ouvrir le ticket mobile
+                            </a>
+                        {% endif %}
+                        <a href="{{ premiumPassUrl }}" class="btn btn-dark rounded-pill px-4 py-3">
+                            Telecharger le Pass Premium PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if autoOpenPremiumPass %}
+    <iframe src="{{ premiumPassUrl }}" class="d-none" title="Pass Premium PDF"></iframe>
+{% endif %}
+{% endblock %}
+
+{% block js %}
+    {{ parent() }}
+    <script src="{{ asset('assets/js/pack-payment.js') }}"></script>
+{% endblock %}

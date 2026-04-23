@@ -35,6 +35,11 @@
     </div>
 </div>
 
+{% include 'admin/risk/_dashboard_panel.html.twig' with {
+    riskDashboard: riskDashboard|default({}),
+    riskNarrative: riskNarrative|default('')
+} only %}
+
 <div class="admin-card mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="fw-bold mb-0">Gestion des événements</h4>

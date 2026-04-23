@@ -9,4 +9,5 @@ enum TypePack: string
     case INDIVIDUEL = 'INDIVIDUEL';
     case GROUPE = 'GROUPE';
     case ENTREPRISE = 'ENTREPRISE';
+    case FAMILLE = 'Famille';
 }
