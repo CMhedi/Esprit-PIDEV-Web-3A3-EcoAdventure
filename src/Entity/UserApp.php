@@ -128,8 +128,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
                     ->atPath('disponibilite')
                     ->addViolation();
             }
-            
-            if ($this->age && $this->experience && ($this->age - (int)$this->experience < 16)) {
+
+            if ($this->age && $this->experience && ($this->age - (int) $this->experience < 16)) {
                 $context->buildViolation("L'expérience est incohérente avec votre âge.")
                     ->atPath('experience')
                     ->addViolation();
@@ -179,45 +179,181 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
 
     // ========== GETTERS & SETTERS ==========
 
-    public function getId(): ?int { return $this->id_user; }
-    public function getId_user(): ?int { return $this->id_user; }
-    public function getNom(): ?string { return $this->nom; }
-    public function setNom(string $nom): self { $this->nom = $nom; return $this; }
-    public function getPrenom(): ?string { return $this->prenom; }
-    public function setPrenom(string $prenom): self { $this->prenom = $prenom; return $this; }
-    public function getEmail(): ?string { return $this->email; }
-    public function setEmail(string $email): self { $this->email = $email; return $this; }
-    public function getTelephone(): ?string { return $this->telephone; }
-    public function setTelephone(?string $telephone): self { $this->telephone = $telephone; return $this; }
-    public function getRole(): ?RoleUser { return $this->role; }
-    public function setRole(RoleUser $role): self { $this->role = $role; return $this; }
-    public function getMot_de_passe(): ?string { return $this->mot_de_passe; }
-    public function setMot_de_passe(string $mot_de_passe): self { $this->mot_de_passe = $mot_de_passe; return $this; }
-    public function getDate_creation(): ?\DateTimeInterface { return $this->date_creation; }
-    public function setDate_creation(\DateTimeInterface $date_creation): self { $this->date_creation = $date_creation; return $this; }
-    public function getLast_seen(): ?\DateTimeInterface { return $this->last_seen; }
-    public function setLast_seen(?\DateTimeInterface $last_seen): self { $this->last_seen = $last_seen; return $this; }
-    public function getAge(): ?int { return $this->age; }
-    public function setAge(?int $age): self { $this->age = $age; return $this; }
-    public function getExperience(): ?string { return $this->experience; }
-    public function setExperience(?string $experience): self { $this->experience = $experience; return $this; }
-    public function getSpecialite(): ?Specialite { return $this->specialite; }
-    public function setSpecialite(?Specialite $specialite): self { $this->specialite = $specialite; return $this; }
-    public function getBioCertifs(): ?string { return $this->bio_certifs; }
-    public function setBioCertifs(?string $bio_certifs): self { $this->bio_certifs = $bio_certifs; return $this; }
-    public function getBio_certifs(): ?string { return $this->bio_certifs; }
-    public function setBio_certifs(?string $bio_certifs): self { $this->bio_certifs = $bio_certifs; return $this; }
-    public function getImageUrl(): ?string { return $this->image_url; }
-    public function setImageUrl(?string $image_url): self { $this->image_url = $image_url; return $this; }
-    public function getImage_url(): ?string { return $this->image_url; }
-    public function setImage_url(?string $image_url): self { $this->image_url = $image_url; return $this; }
-    public function getDisponibilite(): ?Disponibilite { return $this->disponibilite; }
-    public function setDisponibilite(?Disponibilite $disponibilite): self { $this->disponibilite = $disponibilite; return $this; }
-    public function getReferralCode(): ?string { return $this->referralCode; }
-    public function setReferralCode(?string $code): self { $this->referralCode = $code; return $this; }
-    public function getLoyaltyPoints(): int { return $this->loyaltyPoints; }
-    public function setLoyaltyPoints(int $points): self { $this->loyaltyPoints = $points; return $this; }
-    public function addLoyaltyPoints(int $points): self { $this->loyaltyPoints += $points; return $this; }
+    public function getId(): ?int
+    {
+        return $this->id_user;
+    }
+    public function getId_user(): ?int
+    {
+        return $this->id_user;
+    }
+    public function getNom(): ?string
+    {
+        return $this->nom;
+    }
+    public function setNom(string $nom): self
+    {
+        $this->nom = $nom;
+        return $this;
+    }
+    public function getPrenom(): ?string
+    {
+        return $this->prenom;
+    }
+    public function setPrenom(string $prenom): self
+    {
+        $this->prenom = $prenom;
+        return $this;
+    }
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+    public function setEmail(string $email): self
+    {
+        $this->email = $email;
+        return $this;
+    }
+    public function getTelephone(): ?string
+    {
+        return $this->telephone;
+    }
+    public function setTelephone(?string $telephone): self
+    {
+        $this->telephone = $telephone;
+        return $this;
+    }
+    public function getRole(): ?RoleUser
+    {
+        return $this->role;
+    }
+    public function setRole(RoleUser $role): self
+    {
+        $this->role = $role;
+        return $this;
+    }
+    public function getMot_de_passe(): ?string
+    {
+        return $this->mot_de_passe;
+    }
+    public function setMot_de_passe(string $mot_de_passe): self
+    {
+        $this->mot_de_passe = $mot_de_passe;
+        return $this;
+    }
+    public function getDate_creation(): ?\DateTimeInterface
+    {
+        return $this->date_creation;
+    }
+    public function setDate_creation(\DateTimeInterface $date_creation): self
+    {
+        $this->date_creation = $date_creation;
+        return $this;
+    }
+    public function getLast_seen(): ?\DateTimeInterface
+    {
+        return $this->last_seen;
+    }
+    public function setLast_seen(?\DateTimeInterface $last_seen): self
+    {
+        $this->last_seen = $last_seen;
+        return $this;
+    }
+    public function getAge(): ?int
+    {
+        return $this->age;
+    }
+    public function setAge(?int $age): self
+    {
+        $this->age = $age;
+        return $this;
+    }
+    public function getExperience(): ?string
+    {
+        return $this->experience;
+    }
+    public function setExperience(?string $experience): self
+    {
+        $this->experience = $experience;
+        return $this;
+    }
+    public function getSpecialite(): ?Specialite
+    {
+        return $this->specialite;
+    }
+    public function setSpecialite(?Specialite $specialite): self
+    {
+        $this->specialite = $specialite;
+        return $this;
+    }
+    public function getBioCertifs(): ?string
+    {
+        return $this->bio_certifs;
+    }
+    public function setBioCertifs(?string $bio_certifs): self
+    {
+        $this->bio_certifs = $bio_certifs;
+        return $this;
+    }
+    public function getBio_certifs(): ?string
+    {
+        return $this->bio_certifs;
+    }
+    public function setBio_certifs(?string $bio_certifs): self
+    {
+        $this->bio_certifs = $bio_certifs;
+        return $this;
+    }
+    public function getImageUrl(): ?string
+    {
+        return $this->image_url;
+    }
+    public function setImageUrl(?string $image_url): self
+    {
+        $this->image_url = $image_url;
+        return $this;
+    }
+    public function getImage_url(): ?string
+    {
+        return $this->image_url;
+    }
+    public function setImage_url(?string $image_url): self
+    {
+        $this->image_url = $image_url;
+        return $this;
+    }
+    public function getDisponibilite(): ?Disponibilite
+    {
+        return $this->disponibilite;
+    }
+    public function setDisponibilite(?Disponibilite $disponibilite): self
+    {
+        $this->disponibilite = $disponibilite;
+        return $this;
+    }
+    public function getReferralCode(): ?string
+    {
+        return $this->referralCode;
+    }
+    public function setReferralCode(?string $code): self
+    {
+        $this->referralCode = $code;
+        return $this;
+    }
+    public function getLoyaltyPoints(): int
+    {
+        return $this->loyaltyPoints;
+    }
+    public function setLoyaltyPoints(int $points): self
+    {
+        $this->loyaltyPoints = $points;
+        return $this;
+    }
+    public function addLoyaltyPoints(int $points): self
+    {
+        $this->loyaltyPoints += $points;
+        return $this;
+    }
 
     /**
      * @return Collection<int, Inscription>
@@ -244,11 +380,32 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getMessages(): Collection { return $this->messages; }
-    public function getReclamations(): Collection { return $this->reclamations; }
-    public function getReservationActivites(): Collection { return $this->reservationActivites; }
-    public function getReservationEvenements(): Collection { return $this->reservationEvenements; }
-    public function getReservationSeances(): Collection { return $this->reservationSeances; }
-    public function getSeances(): Collection { return $this->seances; }
-    public function getConversations(): Collection { return $this->conversations; }
+    public function getMessages(): Collection
+    {
+        return $this->messages;
+    }
+    public function getReclamations(): Collection
+    {
+        return $this->reclamations;
+    }
+    public function getReservationActivites(): Collection
+    {
+        return $this->reservationActivites;
+    }
+    public function getReservationEvenements(): Collection
+    {
+        return $this->reservationEvenements;
+    }
+    public function getReservationSeances(): Collection
+    {
+        return $this->reservationSeances;
+    }
+    public function getSeances(): Collection
+    {
+        return $this->seances;
+    }
+    public function getConversations(): Collection
+    {
+        return $this->conversations;
+    }
 }

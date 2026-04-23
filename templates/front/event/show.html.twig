@@ -174,20 +174,65 @@
             {% endif %}
 
             <section class="mt-5">
-                <h3 class="section-title">Noter cette aventure</h3>
-                <div class="card border-0 shadow-sm rounded-4">
-                    <div class="card-body p-4 text-center">
-                        <form action="{{ path('app_event_rate', {'id_evenement': evenement.id_evenement}) }}" method="POST" id="rating-form">
-                            <div class="rating-stars mb-4 fs-1 text-warning d-flex justify-content-center gap-2">
-                                {% for i in 1..5 %}
-                                    <i class="bi bi-star rating-star" data-value="{{ i }}" style="cursor: pointer; transition: transform 0.2s;"></i>
-                                {% endfor %}
-                            </div>
-                            <input type="hidden" name="note" id="note-input" value="5">
-                            <button type="submit" class="btn btn-outline-warning btn-lg fw-bold px-5 rounded-pill">Soumettre mon avis</button>
-                        </form>
-                    </div>
+                {% set reviews_with_comments = evenement.ratings|filter(r => r.commentaire is not empty) %}
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="section-title mb-0">Avis des Aventuriers</h3>
+                    <span class="badge bg-warning text-dark fs-6 rounded-pill"><i class="bi bi-chat-left-text-fill me-1"></i> {{ reviews_with_comments|length }} avis</span>
                 </div>
+
+                {% if reviews_with_comments|length > 0 %}
+                    <div class="d-flex flex-column gap-3 mb-5">
+                        {% for rating in reviews_with_comments %}
+                            <div class="card border-0 shadow-sm rounded-4">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="fw-bold text-dark"><i class="bi bi-person-circle me-2 text-muted"></i>{{ rating.user.nom }} {{ rating.user.prenom }}</div>
+                                        
+                                        {% if app.user and rating.user.id_user == app.user.id_user %}
+                                            <form action="{{ path('app_event_rate_delete', {'id': rating.id}) }}" method="POST" onsubmit="return confirm('Supprimer ce commentaire ?');" class="m-0 p-0">
+                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0 m-0 border-0" title="Supprimer cet avis">
+                                                    <i class="bi bi-trash-fill fs-5"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted d-block mb-2">{{ rating.createdAt|date('d/m/Y') }}</small>
+                                    <p class="mb-0 text-dark" style="font-size: 0.95rem;">"{{ rating.commentaire }}"</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center mb-5">Soyez le premier à donner votre avis après l'événement !</p>
+                {% endif %}
+
+                {% if app.user %}
+                    <h4 class="section-title fs-5 mt-4">Ajouter un avis</h4>
+                    <div class="card border-0 shadow-sm rounded-4 bg-light border border-warning border-opacity-25">
+                        <div class="card-body p-4 text-center">
+                            <form action="{{ path('app_event_rate', {'id_evenement': evenement.id_evenement}) }}" method="POST" id="rating-form">
+                                <div class="rating-stars mb-3 fs-1 text-warning d-flex justify-content-center gap-2">
+                                    {% for i in 1..5 %}
+                                        <i class="bi bi-star rating-star" data-value="{{ i }}" style="cursor: pointer; transition: transform 0.2s;"></i>
+                                    {% endfor %}
+                                </div>
+                                <input type="hidden" name="note" id="note-input" value="5">
+                                
+                                <div class="mb-4 text-start">
+                                    <label for="commentaire" class="form-label fw-bold small text-muted">Votre commentaire</label>
+                                    <textarea name="commentaire" id="commentaire" class="form-control rounded-3" rows="3" placeholder="Qu'avez-vous pensé de cet événement ?" required></textarea>
+                                </div>
+
+                                <button type="submit" class="btn btn-warning btn-lg fw-bold px-5 rounded-pill shadow-sm">Soumettre mon avis</button>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning text-center mt-4 border-0 rounded-4 shadow-sm">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> Vous devez être connecté pour laisser un avis.
+                    </div>
+                {% endif %}
             </section>
 
         </div>
@@ -383,3 +428,4 @@ if (bookingForm) {
 </script>
 {% endblock %}
 {% endblock %}
+

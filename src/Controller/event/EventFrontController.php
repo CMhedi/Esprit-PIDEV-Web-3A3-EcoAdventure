@@ -37,27 +37,42 @@ class EventFrontController extends AbstractController
             return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
         }
 
-        // Check if already rated
-        $existingRating = $entityManager->getRepository(EventRating::class)->findOneBy([
-            'user' => $user,
-            'evenement' => $evenement
-        ]);
 
-        if ($existingRating) {
-            $existingRating->setNote($note);
-            $existingRating->setCreatedAt(new \DateTime());
-        } else {
-            $rating = new EventRating();
-            $rating->setUser($user);
-            $rating->setEvenement($evenement);
-            $rating->setNote($note);
-            $entityManager->persist($rating);
-        }
 
+        $commentaire = $request->request->get('commentaire');
+
+        $rating = new EventRating();
+        $rating->setUser($user);
+        $rating->setEvenement($evenement);
+        $rating->setNote($note);
+        $rating->setCommentaire($commentaire);
+        $entityManager->persist($rating);
         $entityManager->flush();
 
-        $this->addFlash('success', 'Merci pour votre note !');
+        $this->addFlash('success', 'Merci pour votre avis !');
         return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
+    }
+
+    #[Route('/rate/delete/{id}', name: 'app_event_rate_delete', methods: ['POST'])]
+    public function deleteRating(EventRating $rating, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            $this->addFlash('error', 'Vous devez être connecté.');
+            return $this->redirectToRoute('app_event_front_index');
+        }
+
+        $eventId = $rating->getEvenement()->getId_evenement();
+
+        if ($rating->getUser() === $user) {
+            $entityManager->remove($rating);
+            $entityManager->flush();
+            $this->addFlash('success', 'Votre avis a été supprimé avec succès.');
+        } else {
+            $this->addFlash('error', 'Vous n\'êtes pas autorisé à supprimer cet avis.');
+        }
+
+        return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $eventId]);
     }
 
     #[Route('/', name: 'app_event_front_index', methods: ['GET'])]
@@ -127,6 +142,17 @@ class EventFrontController extends AbstractController
             $aiRecommendation = $aiOptimizer->getSimilarAvailableEvent($evenement);
         }
 
+        // Vérifier si l'utilisateur peut noter l'événement
+        $userRating = null;
+        if ($this->getUser()) {
+            foreach ($evenement->getRatings() as $r) {
+                if ($r->getUser() === $this->getUser()) {
+                    $userRating = $r;
+                    break;
+                }
+            }
+        }
+
         return $this->render('front/event/show.html.twig', [
             'evenement' => $evenement,
             'places_dispo' => $placesDispo,
@@ -135,7 +161,8 @@ class EventFrontController extends AbstractController
             'weather_ai_alert' => $weatherAiAlert,
             'promo_threshold' => $pricingService->getPromoThreshold(),
             'promo_discount' => $pricingService->getPromoDiscount(),
-            'ai_recommendation' => $aiRecommendation
+            'ai_recommendation' => $aiRecommendation,
+            'user_rating' => $userRating
         ]);
     }
 }
