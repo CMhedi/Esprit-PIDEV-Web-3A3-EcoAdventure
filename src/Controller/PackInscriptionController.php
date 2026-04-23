@@ -88,9 +88,12 @@ final class PackInscriptionController extends AbstractController
                 'payment_status' => $inscription->getPaymentStatus(),
             ]);
 
-            $this->addFlash('success', 'Inscription enregistree. Passez maintenant au paiement securise.');
+            $this->addFlash('success', 'Inscription enregistree. Votre Pass Premium PDF est genere et le paiement reste disponible sur l etape suivante.');
 
-            return $this->redirectToRoute('app_pack_inscription_payment', ['id' => $inscription->getIdInscription()]);
+            return $this->redirectToRoute('app_pack_inscription_payment', [
+                'id' => $inscription->getIdInscription(),
+                'pass' => 1,
+            ]);
         }
 
         return $this->render('front/hedisPackInscription/pack_inscription.html.twig', [
@@ -103,12 +106,14 @@ final class PackInscriptionController extends AbstractController
             'holidayContext' => $holidayContext,
             'latestInscription' => $latestInscription,
             'latestTicketUrl' => $this->isTicketAvailable($latestInscription) ? $ticketFactory->generatePublicTicketUrl($latestInscription) : null,
+            'latestPremiumPassUrl' => $latestInscription ? $this->generateUrl('app_pack_inscription_premium_pass', ['id' => $latestInscription->getIdInscription()]) : null,
         ]);
     }
 
     #[Route('/inscriptions/{id}/payment', name: 'app_pack_inscription_payment', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function payment(
         int $id,
+        Request $request,
         InscriptionRepository $inscriptionRepository,
         StripeCheckoutGateway $stripeCheckoutGateway,
         PackInscriptionTicketFactory $ticketFactory,
@@ -138,6 +143,8 @@ final class PackInscriptionController extends AbstractController
             'demoCardPaymentEnabled' => $this->isDemoCardPaymentEnabled(),
             'cardOcrApiUrl' => $this->getParameter('card_ocr_api_url'),
             'ticketUrl' => $this->isTicketAvailable($inscription) ? $ticketFactory->generatePublicTicketUrl($inscription) : null,
+            'premiumPassUrl' => $this->generateUrl('app_pack_inscription_premium_pass', ['id' => $inscription->getIdInscription()]),
+            'autoOpenPremiumPass' => $request->query->getBoolean('pass'),
         ]);
     }
 
@@ -477,6 +484,7 @@ final class PackInscriptionController extends AbstractController
         return new Response(sprintf('Paiement %s.', $inscription->getPaymentStatus() ?? 'mis a jour'), Response::HTTP_OK);
     }
 
+    #[Route('/inscriptions/{id}/premium-pass.pdf', name: 'app_pack_inscription_premium_pass', requirements: ['id' => '\d+'], methods: ['GET'])]
     #[Route('/inscriptions/{id}/receipt.pdf', name: 'app_pack_inscription_receipt', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function receipt(
         int $id,
@@ -495,14 +503,10 @@ final class PackInscriptionController extends AbstractController
             throw $this->createAccessDeniedException('Acces refuse a ce recu.');
         }
 
-        if (!$inscription->isPaid() && !in_array($inscription->getStatutInscr(), [StatutInscription::CONFIRMEE, StatutInscription::VALIDEE], true)) {
-            throw $this->createAccessDeniedException('Le recu est disponible apres confirmation du paiement.');
-        }
-
         $response = new Response($receiptBuilder->buildPdf($inscription));
         $disposition = $response->headers->makeDisposition(
             ResponseHeaderBag::DISPOSITION_ATTACHMENT,
-            sprintf('inscription-pack-%d.pdf', $inscription->getIdInscription())
+            sprintf('pass-premium-pack-%d.pdf', $inscription->getIdInscription())
         );
 
         $response->headers->set('Content-Type', 'application/pdf');
@@ -640,10 +644,6 @@ final class PackInscriptionController extends AbstractController
 
     private function isTicketAvailable(?Inscription $inscription): bool
     {
-        if (!$inscription) {
-            return false;
-        }
-
-        return $inscription->isPaid() || in_array($inscription->getStatutInscr(), [StatutInscription::CONFIRMEE, StatutInscription::VALIDEE], true);
+        return $inscription instanceof Inscription;
     }
 }

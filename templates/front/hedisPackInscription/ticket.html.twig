@@ -343,7 +343,9 @@
                             </div>
 
                             <div class="ticket-footer">
-                                <div class="btn btn-dark rounded-pill px-4">Ticket valide</div>
+                                <div class="btn btn-dark rounded-pill px-4">
+                                    {{ inscription.statutInscr ? inscription.statutInscr.value : 'EN_ATTENTE' }}
+                                </div>
                                 <div class="text-muted small">Code-barres : {{ barcodeValue }}</div>
                             </div>
                         </div>

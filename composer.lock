@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8eba4443f9076032cb68baa341bc5656",
+    "content-hash": "0d4285868680220089261fe6afc5b0b6",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1828,6 +1828,87 @@
                 }
             ],
             "time": "2026-01-02T08:56:05+00:00"
+        },
+        {
+            "name": "nucleos/dompdf-bundle",
+            "version": "4.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nucleos/NucleosDompdfBundle.git",
+                "reference": "08abdd70b9b1ca2319d8e66f8840b6a82c0d0e0a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nucleos/NucleosDompdfBundle/zipball/08abdd70b9b1ca2319d8e66f8840b6a82c0d0e0a",
+                "reference": "08abdd70b9b1ca2319d8e66f8840b6a82c0d0e0a",
+                "shasum": ""
+            },
+            "require": {
+                "dompdf/dompdf": "^1.0.0 || ^2.0.0 || ^3.0.0",
+                "php": "^8.1",
+                "symfony/config": "^6.4 || ^7.0",
+                "symfony/dependency-injection": "^6.4 || ^7.0",
+                "symfony/event-dispatcher-contracts": "^1.1 || ^2.0 || ^3.0",
+                "symfony/expression-language": "^6.4 || ^7.0",
+                "symfony/framework-bundle": "^6.4 || ^7.0",
+                "symfony/http-foundation": "^6.4 || ^7.0",
+                "symfony/http-kernel": "^6.4 || ^7.0"
+            },
+            "require-dev": {
+                "ergebnis/composer-normalize": "^2.0.1",
+                "symfony/browser-kit": "^6.4 || ^7.0"
+            },
+            "suggest": {
+                "symfony/event-dispatcher": "If you need to modify the PDF rendering"
+            },
+            "type": "symfony-bundle",
+            "autoload": {
+                "psr-4": {
+                    "Nucleos\\DompdfBundle\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Christian Gripp",
+                    "email": "mail@core23.de"
+                }
+            ],
+            "description": "This bundle provides a wrapper for using dompdf inside symfony.",
+            "homepage": "https://nucleos.rocks",
+            "keywords": [
+                "bundle",
+                "dompdf",
+                "pdf",
+                "symfony",
+                "wrapper"
+            ],
+            "support": {
+                "issues": "https://github.com/nucleos/NucleosDompdfBundle/issues",
+                "source": "https://github.com/nucleos/NucleosDompdfBundle/tree/4.2.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/core23",
+                    "type": "github"
+                },
+                {
+                    "url": "https://ko-fi.com/core23",
+                    "type": "ko-fi"
+                },
+                {
+                    "url": "https://opencollective.com/core23",
+                    "type": "opencollective"
+                },
+                {
+                    "url": "https://donate.core23.de",
+                    "type": "other"
+                }
+            ],
+            "time": "2024-05-22T12:37:10+00:00"
         },
         {
             "name": "phpdocumentor/reflection-common",
@@ -5737,16 +5818,16 @@
         },
         {
             "name": "symfony/polyfill-mbstring",
-            "version": "v1.33.0",
+            "version": "v1.36.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-mbstring.git",
-                "reference": "6d857f4d76bd4b343eac26d6b539585d2bc56493"
+                "reference": "6a21eb99c6973357967f6ce3708cd55a6bec6315"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/6d857f4d76bd4b343eac26d6b539585d2bc56493",
-                "reference": "6d857f4d76bd4b343eac26d6b539585d2bc56493",
+                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/6a21eb99c6973357967f6ce3708cd55a6bec6315",
+                "reference": "6a21eb99c6973357967f6ce3708cd55a6bec6315",
                 "shasum": ""
             },
             "require": {
@@ -5798,7 +5879,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.33.0"
+                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.36.0"
             },
             "funding": [
                 {
@@ -5818,20 +5899,20 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-12-23T08:48:59+00:00"
+            "time": "2026-04-10T17:25:58+00:00"
         },
         {
             "name": "symfony/polyfill-php83",
-            "version": "v1.33.0",
+            "version": "v1.36.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-php83.git",
-                "reference": "17f6f9a6b1735c0f163024d959f700cfbc5155e5"
+                "reference": "3600c2cb22399e25bb226e4a135ce91eeb2a6149"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-php83/zipball/17f6f9a6b1735c0f163024d959f700cfbc5155e5",
-                "reference": "17f6f9a6b1735c0f163024d959f700cfbc5155e5",
+                "url": "https://api.github.com/repos/symfony/polyfill-php83/zipball/3600c2cb22399e25bb226e4a135ce91eeb2a6149",
+                "reference": "3600c2cb22399e25bb226e4a135ce91eeb2a6149",
                 "shasum": ""
             },
             "require": {
@@ -5878,7 +5959,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-php83/tree/v1.33.0"
+                "source": "https://github.com/symfony/polyfill-php83/tree/v1.36.0"
             },
             "funding": [
                 {
@@ -5898,7 +5979,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-07-08T02:45:35+00:00"
+            "time": "2026-04-10T17:25:58+00:00"
         },
         {
             "name": "symfony/polyfill-php84",

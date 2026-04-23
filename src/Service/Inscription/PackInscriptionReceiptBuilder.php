@@ -3,8 +3,7 @@
 namespace App\Service\Inscription;
 
 use App\Entity\Inscription;
-use Dompdf\Dompdf;
-use Dompdf\Options;
+use Nucleos\DompdfBundle\Factory\DompdfFactoryInterface;
 use Twig\Environment;
 
 final class PackInscriptionReceiptBuilder
@@ -12,6 +11,7 @@ final class PackInscriptionReceiptBuilder
     public function __construct(
         private readonly Environment $twig,
         private readonly PackInscriptionTicketFactory $ticketFactory,
+        private readonly DompdfFactoryInterface $dompdfFactory,
     ) {
     }
 
@@ -22,10 +22,12 @@ final class PackInscriptionReceiptBuilder
             ['generatedAt' => new \DateTimeImmutable()]
         ));
 
-        $options = new Options();
-        $options->set('defaultFont', 'DejaVu Sans');
+        $dompdf = $this->dompdfFactory->create([
+            'defaultFont' => 'DejaVu Sans',
+            'isRemoteEnabled' => true,
+            'chroot' => dirname(__DIR__, 3),
+        ]);
 
-        $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html, 'UTF-8');
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();

@@ -184,6 +184,19 @@
                             </div>
                         </div>
 
+                        <div class="d-flex gap-3 flex-wrap mb-4">
+                            {% if latestPremiumPassUrl %}
+                                <a href="{{ latestPremiumPassUrl }}" class="btn btn-dark rounded-pill px-4">
+                                    Pass Premium PDF
+                                </a>
+                            {% endif %}
+                            {% if latestTicketUrl %}
+                                <a href="{{ latestTicketUrl }}" class="btn btn-eco-outline rounded-pill px-4">
+                                    Ticket mobile
+                                </a>
+                            {% endif %}
+                        </div>
+
                         {% if not latestInscription.isPaid %}
                             <div class="resume-payment-banner mb-4">
                                 <div>
@@ -219,15 +232,17 @@
                                 Retour aux packs
                             </a>
 
-                            {% if latestInscription and latestInscription.isPaid %}
+                            {% if latestInscription %}
                                 {% if latestTicketUrl %}
                                     <a href="{{ latestTicketUrl }}" class="btn btn-eco-outline rounded-pill px-4 py-3">
                                         Ouvrir le ticket mobile
                                     </a>
                                 {% endif %}
-                                <a href="{{ path('app_pack_inscription_receipt', {'id': latestInscription.idInscription}) }}" class="btn btn-dark rounded-pill px-4 py-3">
-                                    Telecharger le recu PDF
-                                </a>
+                                {% if latestPremiumPassUrl %}
+                                    <a href="{{ latestPremiumPassUrl }}" class="btn btn-dark rounded-pill px-4 py-3">
+                                        Telecharger le Pass Premium PDF
+                                    </a>
+                                {% endif %}
                             {% endif %}
                         </div>
                     {{ form_end(form) }}

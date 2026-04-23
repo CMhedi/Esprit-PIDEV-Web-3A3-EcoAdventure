@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Ticket d'inscription pack</title>
+    <title>Pass Premium Pack</title>
     <style>
         body { margin: 0; padding: 22px; background: #f4f8f3; font-family: DejaVu Sans, sans-serif; color: #1f2937; font-size: 12px; }
         .ticket-shell { border: 1px solid #d8e3d3; border-radius: 28px; overflow: hidden; background: #ffffff; }
@@ -43,14 +43,14 @@
         <table class="hero-top">
             <tr>
                 <td class="hero-left">
-                    <div class="eyebrow">Ticket mobile + recu PDF</div>
+                    <div class="eyebrow">Pass Premium officiel</div>
                     <h1>{{ packName }}</h1>
-                    <p>Scannez le QR code pour ouvrir le ticket sur telephone avec les informations du participant et l'etat des inscriptions.</p>
+                    <p>Document officiel genere automatiquement apres l inscription. Il centralise le client, le pack, le statut du dossier et le code de verification.</p>
                     <div class="hero-name">{{ holderFirstName }} {{ holderLastName }}</div>
                     <div class="hero-phone">Telephone : {{ holderPhone }}</div>
                 </td>
                 <td class="hero-right">
-                    <div class="ticket-number">INSCRIPTION #{{ inscription.idInscription }}</div>
+                    <div class="ticket-number">PASS #{{ inscription.idInscription }}</div>
                 </td>
             </tr>
         </table>
@@ -86,40 +86,48 @@
         <table class="details">
             <tr>
                 <td class="detail-card">
-                    <div class="detail-title">Informations participant</div>
+                    <div class="detail-title">Informations officielles</div>
 
                     <div class="detail-row">
-                        <div class="label">Prenom</div>
-                        <div class="value">{{ holderFirstName }}</div>
+                        <div class="label">Nom du client</div>
+                        <div class="value">{{ holderFullName }}</div>
                     </div>
                     <div class="detail-row">
-                        <div class="label">Nom</div>
-                        <div class="value">{{ holderLastName }}</div>
+                        <div class="label">Nom du pack</div>
+                        <div class="value">{{ packName }}</div>
                     </div>
                     <div class="detail-row">
-                        <div class="label">Telephone</div>
+                        <div class="label">Numero de telephone</div>
                         <div class="value">{{ holderPhone }}</div>
                     </div>
                     <div class="detail-row">
-                        <div class="label">Email</div>
+                        <div class="label">Date d inscription</div>
+                        <div class="muted">{{ inscription.dateInscription ? inscription.dateInscription|date('d/m/Y H:i') : '-' }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Montant</div>
+                        <div class="value">{{ inscription.montantTotal|number_format(2, '.', ' ') }} DT</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Statut de l inscription</div>
+                        <div class="value">{{ inscription.statutInscr ? inscription.statutInscr.value : 'EN_ATTENTE' }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="label">Email client</div>
                         <div class="muted">{{ holderEmail }}</div>
                     </div>
                     <div class="detail-row">
-                        <div class="label">Paiement</div>
+                        <div class="label">Statut paiement</div>
                         <div class="value">{{ inscription.paymentStatus ? inscription.paymentStatus|replace({'_': ' '})|upper : 'CONFIRME' }}</div>
                         <div class="muted">{{ inscription.paymentReference ? 'Reference : ' ~ inscription.paymentReference : 'Validation interne' }}</div>
-                    </div>
-                    <div class="detail-row">
-                        <div class="label">Date</div>
-                        <div class="muted">{{ inscription.dateInscription ? inscription.dateInscription|date('d/m/Y H:i') : '-' }}</div>
                     </div>
                 </td>
 
                 <td class="detail-card">
                     <div class="visual-card">
-                        <div class="detail-title" style="text-align: center;">Acces mobile</div>
-                        <img src="data:image/svg+xml;base64,{{ qrCode }}" alt="QR Code du ticket" class="qr-image">
-                        <img src="data:image/svg+xml;base64,{{ barcodeSvg }}" alt="Code-barres du ticket" class="barcode-image">
+                        <div class="detail-title" style="text-align: center;">Verification & acces mobile</div>
+                        <img src="data:image/svg+xml;base64,{{ qrCode }}" alt="QR Code du pass premium" class="qr-image">
+                        <img src="data:image/svg+xml;base64,{{ barcodeSvg }}" alt="Code-barres du pass premium" class="barcode-image">
                         <div class="scan-note">
                             QR : ouvre le ticket sur mobile.<br>
                             Code-barres : {{ barcodeValue }}<br>
@@ -132,7 +140,7 @@
     </div>
 
     <div class="footer">
-        Genere le {{ generatedAt|date('d/m/Y H:i') }} - EcoAdventure
+        Pass Premium genere le {{ generatedAt|date('d/m/Y H:i') }} - EcoAdventure
     </div>
 </div>
 </body>
