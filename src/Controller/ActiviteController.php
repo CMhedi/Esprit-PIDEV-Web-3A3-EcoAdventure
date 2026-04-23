@@ -302,11 +302,46 @@ class ActiviteController extends AbstractController
     #[Route('/activites/map', name: 'app_activite_map')]
     public function map(ActiviteRepository $repo): Response
     {
-        $activites = $repo->findAll();
+        $activites = $repo->findAllValid();
 
         return $this->render('front/map.html.twig', [
             'activites' => $activites
         ]);
     }
+#[Route('/activities/discover', name: 'app_activities_discover')]
+public function discover(ActiviteRepository $repo): Response
+{
+    $activities = $repo->findAllValid();
+
+    return $this->render('front/discover.html.twig', [
+        'activities' => $activities
+    ]);
+}
+#[Route('/activities/trending', name: 'app_activities_trending')]
+public function trending(ActiviteRepository $repo): Response
+{
+    $activities = $repo->findTrendingValid();
+
+    return $this->render('front/trending.html.twig', [
+        'activities' => $activities
+    ]);
+}
+#[Route('/activities/insight', name: 'app_activities_insight')]
+public function insight(ActiviteRepository $repo): Response
+{
+    $activities = $repo->findAllValid();
+
+    $insight = "Analyse automatique : ";
+
+    if (count($activities) > 5) {
+        $insight .= "Bonne diversité d'activités. Augmenter la promotion des plus populaires.";
+    } else {
+        $insight .= "Ajouter plus d'activités pour améliorer l'offre.";
+    }
+
+    return $this->render('front/insight.html.twig', [
+        'insight' => $insight
+    ]);
+}
 }
 

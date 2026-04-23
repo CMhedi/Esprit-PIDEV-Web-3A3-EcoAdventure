@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+
+<div class="container py-4">
+
+    <div class="text-center mb-4">
+        <h2>🌍 Discover Activities</h2>
+        <p class="text-muted">Explore and find your next adventure</p>
+    </div>
+
+    <div class="row g-4">
+
+        {% for activity in activities %}
+
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 rounded-4 h-100">
+
+                    <img src="{{ asset('uploads/' ~ activity.imageUrl) }}"
+                         class="card-img-top"
+                         style="height:200px; object-fit:cover;">
+
+                    <div class="card-body">
+
+                        <h5 class="fw-bold">{{ activity.nom }}</h5>
+
+                        <p class="text-muted small">
+                            {{ activity.typeActivite }}
+                        </p>
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            <span class="badge bg-primary">
+                                {{ activity.prix }} DT
+                            </span>
+
+                            <a href="#" class="btn btn-dark btn-sm rounded-pill">
+                                View
+                            </a>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}

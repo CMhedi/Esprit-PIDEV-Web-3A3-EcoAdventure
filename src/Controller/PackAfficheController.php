@@ -51,4 +51,10 @@ final class PackAfficheController extends AbstractController
             'statutsDisponibles' => $packRepository->findDistinctStatuts(),
         ]);
     }
+
+    #[Route('/portfolio-packs', name: 'app_portfolio_packs', methods: ['GET'])]
+    public function portfolio(): Response
+    {
+        return $this->render('front/hedisPackInscription/portfolio.html.twig');
+    }
 }

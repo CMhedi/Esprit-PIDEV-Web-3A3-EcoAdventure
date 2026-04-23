@@ -2,6 +2,13 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Mon Profil - EcoAdventure{% endblock %}
+{% set profileAvatar = user.imageUrl
+    ? ((user.imageUrl matches '/gravatar\\.com\\/avatar\\//i' and user.imageUrl matches '/[?&]d=404/i')
+        ? asset('image/profil.png')
+        : (user.imageUrl starts with 'http'
+            ? user.imageUrl
+            : asset('uploads/' ~ user.imageUrl)))
+    : asset('image/profil.png') %}
 
 {% block css %}
     <style>
@@ -40,7 +47,7 @@
 <div class="profile-wrapper">
     <div class="profile-card">
         {# Avatar #}
-        <img src="{{ user.imageUrl ? asset('uploads/' ~ user.imageUrl) : asset('image/profil.png') }}" class="avatar" alt="Avatar"> 
+        <img src="{{ profileAvatar }}" class="avatar" alt="Avatar" onerror="this.onerror=null;this.src='{{ asset('image/profil.png') }}';">
         
         <h2 class="fw-bold mb-1">{{ user.prenom|capitalize }} {{ user.nom|upper }}</h2>
         
