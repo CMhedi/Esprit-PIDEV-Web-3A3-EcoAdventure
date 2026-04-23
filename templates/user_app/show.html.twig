@@ -1,169 +1,172 @@
 {# templates/user_app/show.html.twig #}
-
 {% extends is_granted('ROLE_ADMIN') ? 'admin/base_admin.html.twig' : 'base.html.twig' %}
 
-{% block title %}Profil de {{ user_app.nom }}{% endblock %}
-{% block page_title %}Détails de l'utilisateur{% endblock %}
+{% block title %}Détails Utilisateur - EcoAdventure{% endblock %}
+{% block page_title %}{% endblock %}
+{% block topbar_search %}{% endblock %}
 
 {% block body %}
 <style>
-    /* Container el kbir */
-    .admin-profile-wrapper {
-        padding: 20px;
-        background-color: #f4f7f6; /* Background gris dh'rif */
-        min-height: 100vh;
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
+
+    .show-main-container {
+        font-family: 'Outfit', sans-serif !important;
+        padding: 40px 20px;
+        animation: fadeIn 0.5s ease;
     }
 
-    /* Card el Profil */
-    .profile-card {
-        background: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-        border: none;
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .premium-show-card {
+        background: white !important;
+        border-radius: 45px;
+        box-shadow: 0 50px 120px rgba(0, 0, 0, 0.06);
+        border: 1px solid #f1f5f9;
+        max-width: 850px;
+        margin: 0 auto;
         overflow: hidden;
-        transition: transform 0.3s ease;
     }
 
-    /* Header el Card (El blassa el zarqa) */
-    .profile-header-bg {
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-        height: 120px;
+    .show-header-pro {
+        background: linear-gradient(135deg, #2d5a27 0%, #4a7c44 100%);
+        padding: 60px 40px;
+        text-align: center;
         position: relative;
     }
 
-    /* Avatar circle */
-    .avatar-wrapper {
-        width: 120px;
-        height: 120px;
-        background: #fff;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: -60px auto 15px auto;
-        position: relative;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        z-index: 2;
+    .avatar-circle-pro {
+        width: 120px; height: 120px;
+        background: white;
+        border-radius: 40px;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 20px auto;
+        font-size: 3.5rem; font-weight: 900; color: #2d5a27;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        border: 4px solid rgba(255,255,255,0.3);
     }
 
-    .avatar-circle {
-        width: 108px;
-        height: 108px;
-        background: #f0f7ff;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .show-name-pro {
+        color: white;
         font-size: 2.5rem;
         font-weight: 800;
-        color: #1e3a8a;
+        margin-bottom: 10px;
+        letter-spacing: -1px;
     }
 
-    /* Info sections */
-    .info-label {
-        font-size: 0.75rem;
+    .role-tag-pro {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        padding: 8px 25px;
+        border-radius: 99px;
+        font-weight: 800;
+        font-size: 0.85rem;
+        backdrop-filter: blur(10px);
         text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #94a3b8;
-        font-weight: 600;
-        margin-bottom: 5px;
+        display: inline-block;
     }
 
-    .info-value {
-        font-size: 1rem;
-        color: #1e293b;
-        font-weight: 500;
-        margin-bottom: 20px;
+    .show-body-pro {
+        padding: 50px;
     }
 
-    .bio-section {
+    .info-section-eco {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 30px;
         background: #f8fafc;
-        border-radius: 12px;
-        padding: 20px;
-        border: 1px solid #e2e8f0;
+        padding: 40px;
+        border-radius: 35px;
+        border: 1px solid #edf2f7;
     }
 
-    .status-badge {
-        font-size: 0.8rem;
-        padding: 6px 16px;
-        border-radius: 50px;
-        font-weight: 600;
+    .info-box-pro {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
+
+    .info-label-pro {
+        font-weight: 800; font-size: 0.8rem; color: #94a3b8;
+        text-transform: uppercase; letter-spacing: 1.5px;
+    }
+
+    .info-val-pro {
+        font-weight: 700; font-size: 1.1rem; color: #1e293b;
+        display: flex; align-items: center; gap: 12px;
+    }
+
+    .info-val-pro i {
+        color: #2d5a27;
+        font-size: 1.3rem;
+    }
+
+    .show-footer-pro {
+        padding: 30px 50px;
+        background: #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn-eco-pro {
+        padding: 15px 35px;
+        border-radius: 20px;
+        font-weight: 800;
+        text-decoration: none;
+        display: flex; align-items: center; gap: 12px;
+        transition: 0.3s;
+        border: none;
+    }
+
+    .btn-eco-secondary { background: white; color: #64748b !important; border: 1px solid #e2e8f0; }
+    .btn-eco-secondary:hover { background: #e2e8f0; color: #1e293b !important; }
+
+    .btn-eco-primary { background: #f39237; color: white !important; box-shadow: 0 10px 25px rgba(243, 146, 55, 0.25); }
+    .btn-eco-primary:hover { transform: translateY(-4px); box-shadow: 0 15px 35px rgba(243, 146, 55, 0.4); }
+
 </style>
 
-<div class="admin-profile-wrapper">
-    <div class="container-fluid">
-        <div class="row justify-content-center">
-            <div class="col-xl-8 col-lg-10">
-                <div class="profile-card">
-                    <div class="profile-header-bg"></div>
+<div class="show-main-container">
+    <div class="premium-show-card">
+        <div class="show-header-pro">
+            <div class="avatar-circle-pro">
+                {{ user_app.prenom|first|upper }}{{ user_app.nom|first|upper }}
+            </div>
+            <h1 class="show-name-pro">{{ user_app.prenom }} {{ user_app.nom }}</h1>
+            <div class="role-tag-pro">
+                <i class="bi bi-shield-check me-2"></i> {{ user_app.role.value|default('Membre') }}
+            </div>
+        </div>
 
-                    <div class="avatar-wrapper">
-                        <div class="avatar-circle">
-                            {{ user_app.nom|first|upper }}
-                        </div>
-                    </div>
-
-                    <div class="p-4 text-center">
-                        <h2 class="fw-bold mb-1">{{ user_app.nom }} {{ user_app.prenom }}</h2>
-                        <span class="badge bg-soft-primary text-primary status-badge mb-4" style="background: #e0e7ff;">
-                            {{ user_app.role ? user_app.role.value : 'Membre' }}
-                        </span>
-
-                        <hr class="my-4 opacity-50">
-
-                        <div class="row text-start mt-4">
-                            <div class="col-md-6 border-end">
-                                <div class="px-3">
-                                    <div class="info-label"><i class="bi bi-envelope me-2"></i>Email</div>
-                                    <div class="info-value">{{ user_app.email }}</div>
-
-                                    <div class="info-label"><i class="bi bi-telephone me-2"></i>Téléphone</div>
-                                    <div class="info-value">{{ user_app.telephone ?: 'Non renseigné' }}</div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="px-3">
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <div class="info-label">Âge</div>
-                                            <div class="info-value">{{ user_app.age ?: '--' }} ans</div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="info-label">Expérience</div>
-                                            <div class="info-value text-primary fw-bold">{{ user_app.experience ?: '0' }} ans</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="info-label">Spécialité</div>
-                                    <div class="info-value">
-                                        <span class="text-info"><i class="bi bi-star-fill me-1"></i> {{ user_app.specialite ? user_app.specialite.value : 'Général' }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="text-start mt-4">
-                            <div class="info-label">Bio & Certifications</div>
-                            <div class="bio-section">
-                                <p class="mb-0 text-secondary italic">
-                                    {{ user_app.bioCertifs ?: 'Aucune information supplémentaire n\'a été fournie.' }}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="mt-5 d-flex gap-3 justify-content-center">
-                            <a href="{{ path('app_user_app_index') }}" class="btn btn-outline-secondary px-4 rounded-pill">
-                                <i class="bi bi-arrow-left me-2"></i>Retour à la liste
-                            </a>
-                            <a href="{{ path('app_user_app_edit', {'id_user': user_app.id_user}) }}" class="btn btn-warning px-4 rounded-pill fw-bold">
-                                <i class="bi bi-pencil-square me-2"></i>Modifier le profil
-                            </a>
-                        </div>
-                    </div>
+        <div class="show-body-pro">
+            <div class="info-section-eco">
+                <div class="info-box-pro">
+                    <span class="info-label-pro">Email Professionnel</span>
+                    <div class="info-val-pro"><i class="bi bi-envelope-heart"></i> {{ user_app.email }}</div>
+                </div>
+                <div class="info-box-pro">
+                    <span class="info-label-pro">Téléphone</span>
+                    <div class="info-val-pro"><i class="bi bi-phone-vibrate"></i> {{ user_app.telephone|default('---') }}</div>
+                </div>
+                <div class="info-box-pro">
+                    <span class="info-label-pro">Âge Actuel</span>
+                    <div class="info-val-pro"><i class="bi bi-calendar3"></i> {{ user_app.age|default('--') }} ans</div>
+                </div>
+                <div class="info-box-pro">
+                    <span class="info-label-pro">Spécialité</span>
+                    <div class="info-val-pro"><i class="bi bi-award"></i> {{ user_app.specialite.value|default('Non définie') }}</div>
                 </div>
             </div>
+        </div>
+
+        <div class="show-footer-pro">
+            <a href="{{ path('app_user_app_index') }}" class="btn-eco-pro btn-eco-secondary">
+                <i class="bi bi-arrow-left-short fs-4"></i> Retour à la liste
+            </a>
+
+            <a href="{{ path('app_user_app_edit', {'id_user': user_app.id_user}) }}" class="btn-eco-pro btn-eco-primary">
+                <i class="bi bi-pencil-square"></i> Modifier Profil
+            </a>
         </div>
     </div>
 </div>

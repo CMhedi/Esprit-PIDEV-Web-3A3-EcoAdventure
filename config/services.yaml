@@ -39,6 +39,8 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
+        bind:
+            $geminiApiKey: '%env(GEMINI_API_KEY)%'
 
     App\:
         resource: '../src/'
@@ -46,6 +48,7 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+            - '../src/Security/GoogleAuthenticator.php'
 
     App\Service\Context\HolidayContextProvider:
         arguments:

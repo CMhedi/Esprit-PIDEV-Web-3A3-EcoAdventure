@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Email envoyé - EcoAdventure</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("{{ asset('image/im.jpg') }}") no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+        .reset-wrapper {
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+        }
+        .reset-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            text-align: center;
+        }
+        .icon-container {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: #15803d;
+            font-size: 36px;
+            box-shadow: 0 10px 20px rgba(187, 247, 208, 0.5);
+        }
+        .btn-custom {
+            border-radius: 50px;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            padding: 12px 20px;
+            transition: all 0.3s ease;
+        }
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+    </style>
+</head>
+<body>
+<div class="reset-wrapper">
+    <div class="reset-card">
+        <div class="icon-container">
+            <i class="fas fa-paper-plane"></i>
+        </div>
+        
+        <h2 class="fw-bold mb-3" style="color: #0f172a;">Vérifiez vos emails</h2>
+        
+        <p class="text-muted mb-4">
+            Si un compte correspondant à votre email existe, un message vient de vous être envoyé avec un lien pour réinitialiser votre mot de passe.
+        </p>
+        
+        <div class="p-3 bg-light rounded-3 mb-4 border" style="border-color: #f1f5f9 !important;">
+            <p class="small text-muted mb-0">
+                <i class="fas fa-clock text-warning me-2"></i>Ce lien expirera dans <strong>1 heure</strong>.
+            </p>
+        </div>
+
+        <p class="small text-muted mb-4">
+            Vous ne recevez pas d'email ?<br>
+            Vérifiez vos spams ou 
+            <a href="{{ path('app_forgot_password_request') }}" class="text-primary fw-semibold text-decoration-none">réessayez</a>.
+        </p>
+
+        <a href="{{ path('app_login') }}" class="btn btn-custom w-100">
+            Retour à la connexion
+        </a>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

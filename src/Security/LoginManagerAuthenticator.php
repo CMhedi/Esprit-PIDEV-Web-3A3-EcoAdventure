@@ -22,8 +22,10 @@ class LoginManagerAuthenticator extends AbstractLoginFormAuthenticator
 
     public const LOGIN_ROUTE = 'app_login';
 
-    public function __construct(private UrlGeneratorInterface $urlGenerator)
-    {
+    public function __construct(
+        private UrlGeneratorInterface $urlGenerator,
+        private \Doctrine\ORM\EntityManagerInterface $entityManager
+    ) {
     }
 
     public function authenticate(Request $request): Passport
@@ -34,7 +36,16 @@ class LoginManagerAuthenticator extends AbstractLoginFormAuthenticator
         $request->getSession()->set(SecurityRequestAttributes::LAST_USERNAME, $email);
 
         return new Passport(
-            new UserBadge($email),
+            new UserBadge($email, function ($userIdentifier) {
+                $user = $this->entityManager->getRepository(\App\Entity\UserApp::class)->findOneBy(['email' => $userIdentifier]);
+                if (!$user) {
+                    throw new \Symfony\Component\Security\Core\Exception\UserNotFoundException();
+                }
+                if ($user->getFailedAttempts() >= 3) {
+                    throw new \Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException('Votre compte a été bloqué pour sécurité après 3 tentatives échouées.');
+                }
+                return $user;
+            }),
             new PasswordCredentials($password),
             [
                 new RememberMeBadge(),

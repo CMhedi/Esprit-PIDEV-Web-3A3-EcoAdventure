@@ -1,106 +1,199 @@
 {# templates/user_app/index.html.twig #}
-
-{# 1. Nesta3mlou el base mta3 el admin bech n'jibu el Sidebar #}
 {% extends 'admin/base_admin.html.twig' %}
 
-{% block title %}EcoAdventure - Gestion Utilisateurs{% endblock %}
-
-{# 2. Title elli i-ji dhou fou9 el content f'el admin dashboard #}
-{% block page_title %}Gestion des Utilisateurs{% endblock %}
+{% block title %}EcoAdventure - Communauté{% endblock %}
+{% block page_title %}Communauté EcoAdventure{% endblock %}
 
 {% block body %}
 <style>
-    /* N'khalliw el glass effect ama n'na7iw el background image 
-       khater el admin dashboard 3andou background blanc/gris ndhif */
-    .glass-card-admin {
-        background: white;
-        border-radius: 20px;
-        padding: 30px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        border: 1px solid #eee;
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
+
+    :root {
+        --primary-blue: #3a7bd5;
+        --accent-teal: #00d2ff;
+        --bg-light: #f8fafc;
     }
-    .table thead th {
-        background-color: #f8f9fa;
-        color: #333;
-        border-bottom: 2px solid #dee2e6;
+
+    body { font-family: 'Outfit', sans-serif; background-color: var(--bg-light); }
+
+    .main-wrapper { padding: 20px; animation: fadeIn 0.6s ease; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .header-section {
+        background: white; border-radius: 24px; padding: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 40px;
+        display: flex; justify-content: space-between; align-items: center;
+        border: 1px solid #f1f5f9;
     }
-    .table tbody td {
-        color: #444 !important; /* Na7iw el white color mta3 el front */
+
+    .search-input-group { position: relative; width: 400px; }
+    .search-input-group i { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+    .search-input-group input {
+        width: 100%; padding: 14px 20px 14px 55px; border-radius: 18px;
+        border: 2px solid #f1f5f9; background: #f8fafc; font-weight: 600; transition: 0.3s;
+    }
+    .search-input-group input:focus { border-color: var(--primary-blue); background: white; outline: none; box-shadow: 0 0 0 5px rgba(58, 123, 213, 0.1); }
+
+    /* The Creative User Card */
+    .user-card {
+        background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px;
+        display: grid; grid-template-columns: 1.2fr 1.5fr 1fr 1fr 0.8fr;
+        align-items: center; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 1px solid #f1f5f9; box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        position: relative; overflow: hidden;
+    }
+
+    .user-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.08); border-color: var(--primary-blue); }
+
+    .user-card.is-current { background: #eff6ff; border-left: 6px solid var(--primary-blue); }
+    .me-badge { background: var(--primary-blue); color: white; padding: 3px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; margin-left: 8px; vertical-align: middle; }
+
+    .user-avatar {
+        width: 65px; height: 65px; border-radius: 20px; 
+        background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 1.4rem; color: #334155;
+        border: 3px solid white; box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+    }
+
+    .user-name { font-weight: 800; font-size: 1.25rem; color: #0f172a; margin-bottom: 4px; }
+    .user-email { color: #64748b; font-weight: 600; font-size: 0.95rem; }
+
+    .badge-premium {
+        padding: 8px 16px; border-radius: 14px; font-weight: 800; font-size: 0.75rem;
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .badge-admin { background: #fee2e2; color: #ef4444; }
+    .badge-coach { background: #dcfce7; color: #10b981; }
+    .badge-user { background: #dbeafe; color: #3b82f6; }
+
+    /* Action Buttons Solid */
+    .action-group { display: flex; gap: 12px; justify-content: flex-end; }
+    .btn-action {
+        width: 45px; height: 45px; border-radius: 15px; border: none;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem; transition: 0.3s; color: white;
+    }
+    .btn-view { background: #3b82f6; box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3); }
+    .btn-edit { background: #f59e0b; box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3); }
+    .btn-delete { background: #ef4444; box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3); }
+
+    .btn-action:hover { transform: scale(1.1) translateY(-3px); color: white; }
+
+    .btn-add-main {
+        background: var(--primary-blue); color: white; padding: 14px 30px;
+        border-radius: 18px; font-weight: 800; border: none; transition: 0.3s;
+        box-shadow: 0 10px 20px rgba(58, 123, 213, 0.3); text-decoration: none;
+    }
+    .btn-add-main:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(58, 123, 213, 0.5); color: white; }
+
+    .table-headers {
+        display: grid; grid-template-columns: 1.2fr 1.5fr 1fr 1fr 0.8fr;
+        padding: 0 30px 15px 30px; font-weight: 800; color: #94a3b8;
+        font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;
     }
 </style>
 
-<div class="glass-card-admin">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold mb-0">Liste des membres</h3>
-        <a href="{{ path('app_user_app_new') }}" class="btn btn-primary rounded-pill">
-            <i class="bi bi-person-plus me-1"></i> Nouveau Membre
-        </a>
+<div class="main-wrapper">
+    <div class="header-section">
+        <div>
+            <h2 class="fw-bold mb-1">Membres Actifs</h2>
+            <p class="text-muted small mb-0">Recherchez et gérez les membres de la plateforme</p>
+        </div>
+        <div class="d-flex gap-3 align-items-center">
+            <div class="search-input-group">
+                <i class="bi bi-search"></i>
+                <input type="text" id="memberSearch" placeholder="Nom, email, rôle...">
+            </div>
+            <a href="{{ path('app_user_app_new') }}" class="btn-add-main">
+                <i class="bi bi-person-plus me-2"></i> Ajouter Membre
+            </a>
+        </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>Membre</th>
-                    <th>Contact</th> 
-                    <th>Rôle</th>
-                    <th>Détails Pro</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for user_app in user_apps %}
-                <tr>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; font-weight: bold;">
-                                {{ user_app.nom|first|upper }}
-                            </div>
-                            <div>
-                                <div class="fw-bold text-dark">{{ user_app.nom }} {{ user_app.prenom }}</div>
-                                
-                            </div>
+    <div class="table-headers">
+        <div>Membre</div>
+        <div>Coordonnées</div>
+        <div>Rôle</div>
+        <div>Profil</div>
+        <div class="text-end">Actions</div>
+    </div>
+
+    <div id="userCardsList">
+        {% for user_app in user_apps %}
+            {% set isMe = app.user and app.user.id_user == user_app.id_user %}
+            <div class="user-card {% if isMe %}is-current{% endif %} member-row">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar me-3">
+                        {{ user_app.nom|first|upper }}{{ user_app.prenom|first|upper }}
+                    </div>
+                    <div>
+                        <div class="user-name">
+                            {{ user_app.nom }} {{ user_app.prenom }}
+                            {% if isMe %}<span class="me-badge">MOI</span>{% endif %}
                         </div>
-                    </td>
+                    </div>
+                </div>
 
-                    <td>
-                        <div class="small"><i class="bi bi-envelope me-1"></i> {{ user_app.email }}</div>
-                        <div class="text-primary small mt-1">
-                            <i class="bi bi-telephone me-1"></i> {{ user_app.telephone ?: 'N/A' }}
-                        </div>
-                    </td>
+                <div>
+                    <div class="user-email" style="font-weight: 700; color: #334155;"><i class="bi bi-envelope me-2 text-primary"></i>{{ user_app.email }}</div>
+                    <div class="text-dark small fw-bold mt-2"><i class="bi bi-telephone me-2 text-primary"></i>{{ user_app.telephone ?: '---' }}</div>
+                </div>
 
-                    <td>
-                        {% if user_app.role and user_app.role.value == 'ADMIN' %}
-                            <span class="badge bg-danger">ADMIN</span>
-                        {% else %}
-                            <span class="badge bg-info">USER_SIMPLE</span>
-                        {% endif %}
-                    </td>
+                <div>
+                    {% set role = user_app.role ? user_app.role.value : 'USER_SIMPLE' %}
+                    <span class="badge-premium {% if role == 'ADMIN' %}badge-admin{% elseif role == 'COACH' %}badge-coach{% else %}badge-user{% endif %}">
+                        {{ role }}
+                    </span>
+                </div>
 
-                    <td>
-                        <div class="small fw-bold text-dark">{{ user_app.specialite ? user_app.specialite.value : 'Sans Spécialité' }}</div>
-                        <small class="text-muted">{{ user_app.experience ?: '0' }} ans d'exp.</small>
-                    </td>
+                <div>
+                    {% if role == 'COACH' %}
+                        <div class="fw-bold text-dark">{{ user_app.specialite ? user_app.specialite.value : 'Expert' }}</div>
+                        <div class="text-muted x-small">{{ user_app.experience ?: '0' }} ans d'expérience</div>
+                    {% else %}
+                        <div class="text-muted fw-bold">Membre Simple</div>
+                    {% endif %}
+                </div>
 
-                    <td class="text-end">
-                        <div class="btn-group">
-                            <a href="{{ path('app_user_app_show', {'id_user': user_app.id_user}) }}" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <a href="{{ path('app_user_app_edit', {'id_user': user_app.id_user}) }}" class="btn btn-sm btn-warning">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="5" class="text-center py-4 text-muted">Aucun utilisateur trouvé</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                <div class="action-group">
+                    <a href="{{ path('app_user_app_show', {'id_user': user_app.id_user}) }}" class="btn-action btn-view" title="Consulter">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{{ path('app_user_app_edit', {'id_user': user_app.id_user}) }}" class="btn-action btn-edit" title="Modifier">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    {% if not isMe %}
+                    <form method="post" action="{{ path('app_user_app_delete', {'id_user': user_app.id_user}) }}" onsubmit="return confirm('Supprimer ce membre ?');" style="display:inline-block;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user_app.id_user) }}">
+                        <button class="btn-action btn-delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <p class="text-muted">Aucun membre dans la base.</p>
+            </div>
+        {% endfor %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('memberSearch');
+    const cards = document.querySelectorAll('.member-row');
+
+    searchInput.addEventListener('input', function() {
+        const query = searchInput.value.toLowerCase();
+        cards.forEach(card => {
+            const text = card.innerText.toLowerCase();
+            card.style.display = text.includes(query) ? 'grid' : 'none';
+        });
+    });
+});
+</script>
 {% endblock %}

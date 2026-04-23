@@ -1,0 +1,109 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Recherche Admin{% endblock %}
+{% block page_title %}Recherche globale{% endblock %}
+
+{% block body %}
+<div class="admin-card">
+    <form method="get" action="{{ path('admin_global_search') }}" class="row g-3 align-items-end mb-4">
+        <div class="col-lg-8">
+            <label for="admin-search-query" class="form-label fw-semibold">Recherche</label>
+            <input
+                id="admin-search-query"
+                type="text"
+                name="q"
+                class="form-control"
+                placeholder="Utilisateur, evenement, activite, pack..."
+                value="{{ query }}"
+            >
+        </div>
+        <div class="col-lg-4 d-grid">
+            <button class="btn btn-eco" type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    {% if query %}
+        <p class="text-muted mb-4">
+            Resultats pour <strong>{{ query }}</strong>
+        </p>
+
+        <div class="row g-4">
+            <div class="col-xl-6">
+                <div class="border rounded-4 p-3 h-100">
+                    <h5 class="fw-bold mb-3">Utilisateurs</h5>
+                    {% if results.users is not empty %}
+                        <ul class="list-group list-group-flush">
+                            {% for user in results.users %}
+                                <li class="list-group-item px-0">
+                                    <div class="fw-semibold">{{ user.prenom }} {{ user.nom }}</div>
+                                    <div class="text-muted small">{{ user.email }}</div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">Aucun utilisateur trouve.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-xl-6">
+                <div class="border rounded-4 p-3 h-100">
+                    <h5 class="fw-bold mb-3">Evenements</h5>
+                    {% if results.events is not empty %}
+                        <ul class="list-group list-group-flush">
+                            {% for event in results.events %}
+                                <li class="list-group-item px-0">
+                                    <div class="fw-semibold">{{ event.titre }}</div>
+                                    <div class="text-muted small">{{ event.lieu }}</div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">Aucun evenement trouve.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-xl-6">
+                <div class="border rounded-4 p-3 h-100">
+                    <h5 class="fw-bold mb-3">Activites</h5>
+                    {% if results.activities is not empty %}
+                        <ul class="list-group list-group-flush">
+                            {% for activity in results.activities %}
+                                <li class="list-group-item px-0">
+                                    <div class="fw-semibold">{{ activity.nom }}</div>
+                                    <div class="text-muted small">
+                                        {{ activity.typeActivite ? activity.typeActivite.value : 'Type inconnu' }}
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">Aucune activite trouvee.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-xl-6">
+                <div class="border rounded-4 p-3 h-100">
+                    <h5 class="fw-bold mb-3">Packs</h5>
+                    {% if results.packs is not empty %}
+                        <ul class="list-group list-group-flush">
+                            {% for pack in results.packs %}
+                                <li class="list-group-item px-0">
+                                    <div class="fw-semibold">{{ pack.nom }}</div>
+                                    <div class="text-muted small">{{ pack.typePack }} - {{ pack.statutPack }}</div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">Aucun pack trouve.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <p class="text-muted mb-0">Saisissez un mot-cle pour lancer une recherche.</p>
+    {% endif %}
+</div>
+{% endblock %}

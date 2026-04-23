@@ -2,30 +2,237 @@
 
 {% block title %}Accueil | EcoAdventure{% endblock %}
 
+{% block css %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
+
+    :root {
+        --eco-green: #346c3b;
+        --eco-green-dark: #234c28;
+        --eco-orange: #ea792c;
+        --eco-orange-dark: #c5621e;
+    }
+
+    body {
+        font-family: 'Outfit', sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
+    }
+
+    .hero-section {
+        background: linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.7)), url('https://images.unsplash.com/photo-1501555088652-021faa106b9b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') center/cover no-repeat fixed;
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        position: relative;
+        padding: 100px 0;
+        margin-top: -80px;
+    }
+
+    .hero-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 32px;
+        padding: 50px;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideUpFade {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-card h1 {
+        font-size: 3.5rem;
+        letter-spacing: -1.5px;
+        line-height: 1.1;
+        margin-bottom: 20px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .hero-card h1 span {
+        background: linear-gradient(135deg, var(--eco-green), var(--eco-orange));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: none;
+    }
+
+    .hero-card p.lead {
+        font-size: 1.25rem;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.9) !important;
+        margin-bottom: 40px;
+    }
+
+    .search-box {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 15px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .search-box .form-control, .search-box .form-select {
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 14px;
+        height: 54px;
+        font-weight: 500;
+        color: #334155;
+    }
+
+    .search-box .form-control:focus, .search-box .form-select:focus {
+        box-shadow: 0 0 0 4px rgba(234, 121, 44, 0.3);
+    }
+
+    .search-box .btn-warning {
+        background: linear-gradient(135deg, var(--eco-orange), var(--eco-orange-dark));
+        border: none;
+        border-radius: 14px;
+        height: 54px;
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: 0.3s;
+    }
+
+    .search-box .btn-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(234, 121, 44, 0.4);
+    }
+
+    .hero-image-wrapper {
+        position: relative;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+        transform: perspective(1000px) rotateY(-10deg);
+        transition: transform 0.5s ease;
+    }
+    
+    .hero-image-wrapper:hover {
+        transform: perspective(1000px) rotateY(0deg);
+    }
+
+    .section-title {
+        position: relative;
+        display: inline-block;
+        padding-bottom: 10px;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(90deg, var(--eco-green), var(--eco-orange));
+        border-radius: 2px;
+    }
+
+    .activity-card, .event-card, .pack-card {
+        border-radius: 24px;
+        transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow: hidden;
+        background: white;
+    }
+
+    .activity-card:hover, .event-card:hover, .pack-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important;
+    }
+
+    .icon-box {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, rgba(52, 108, 59, 0.1), rgba(234, 121, 44, 0.1));
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        color: var(--eco-green);
+        margin-bottom: 25px;
+    }
+
+    .btn-eco-outline {
+        border: 2px solid var(--eco-green);
+        color: var(--eco-green);
+        font-weight: 600;
+        transition: 0.3s;
+    }
+    
+    .btn-eco-outline:hover {
+        background: var(--eco-green);
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .event-image {
+        height: 220px;
+        object-fit: cover;
+    }
+
+    .btn-eco {
+        background: linear-gradient(135deg, var(--eco-green), var(--eco-green-dark));
+        color: white;
+        border: none;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+    
+    .btn-eco:hover {
+        background: linear-gradient(135deg, var(--eco-green-dark), #153218);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .pack-price {
+        font-size: 3rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--eco-green), var(--eco-orange));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .pack-features li {
+        margin-bottom: 15px;
+        color: #475569;
+        font-weight: 500;
+    }
+    
+    .pack-features i {
+        color: var(--eco-orange);
+    }
+</style>
+{% endblock %}
+
 {% block body %}
 <section class="hero-section">
     <div class="container">
         <div class="hero-card">
-            <div class="row align-items-center g-4">
-                <div class="col-lg-6">
-                    <span class="badge rounded-pill bg-light text-dark px-3 py-2 mb-3">
-                        Aventure • Nature • Sport
+            <div class="row align-items-center g-5">
+                <div class="col-lg-7">
+                    <span class="badge rounded-pill bg-white text-dark px-4 py-2 mb-4 fw-bold shadow-sm" style="font-size: 0.9rem;">
+                        <i class="bi bi-compass text-primary me-2"></i>Aventure • Nature • Sport
                     </span>
-                    <h1 class="display-4 fw-bold text-white">
-                        Explorez l’aventure avec <span>EcoAdventure</span>
+                    <h1 class="text-white">
+                        Explorez l'aventure avec<br><span>EcoAdventure</span>
                     </h1>
-                    <p class="lead text-white-50 mt-3">
-                        Réservez vos activités sportives, découvrez les événements et profitez
-                        d’une expérience immersive au cœur de la nature.
+                    <p class="lead mt-3">
+                        Réservez vos activités sportives, découvrez des événements uniques et profitez d'une expérience immersive au cœur de la nature.
                     </p>
 
-                    <form class="search-box mt-4">
-                        <div class="row g-2">
+                    <form class="search-box mt-5">
+                        <div class="row g-3">
                             <div class="col-md-5">
-                                <input type="text" class="form-control form-control-lg" placeholder="Rechercher une activité">
+                                <input type="text" class="form-control px-4" placeholder="Rechercher une activité...">
                             </div>
                             <div class="col-md-4">
-                                <select class="form-select form-select-lg">
+                                <select class="form-select px-4">
                                     <option>Toutes catégories</option>
                                     <option>Nature</option>
                                     <option>Nautique</option>
@@ -33,14 +240,16 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <button class="btn btn-warning w-100 btn-lg fw-semibold">Rechercher</button>
+                                <button type="button" class="btn btn-warning w-100 fw-bold">Rechercher</button>
                             </div>
                         </div>
                     </form>
                 </div>
 
-                <div class="col-lg-6 text-center">
-                    <img src="{{ asset('assets/img/Hero.png') }}" class="img-fluid rounded-4 hero-image" alt="Hero">
+                <div class="col-lg-5 d-none d-lg-block">
+                    <div class="hero-image-wrapper">
+                        <img src="https://images.unsplash.com/photo-1533240332313-0bc499f50e10?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="img-fluid" alt="Adventure Hero">
+                    </div>
                 </div>
             </div>
         </div>

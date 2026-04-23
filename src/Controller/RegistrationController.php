@@ -30,30 +30,33 @@ class RegistrationController extends AbstractController
         $form = $this->createForm(RegistrationFormType::class, $user);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            // 1. Hash el password
-            $user->setMot_de_passe(
-                $userPasswordHasher->hashPassword(
-                    $user,
-                    $form->get('motdepasse')->getData()
-                )
-            );
+    if ($form->isSubmitted() && $form->isValid()) {
+        // 1. Hashage
+        $clearPassword = $form->get('motdepasse')->getData();
+        $user->setMot_de_passe(
+            $userPasswordHasher->hashPassword($user, $clearPassword)
+        );
 
-            // 2. Initialisation el données
-            $selectedRole = $form->get('role')->getData(); 
-            $user->setRole($selectedRole);
-            $user->setDate_creation(new \DateTime());
-
-            $entityManager->persist($user);
-            $entityManager->flush();
-
-            // 3. Auto-login: Hedhi tna7i el buttons mta3 el Connexion toul
-            return $userAuthenticator->authenticateUser(
-                $user,
-                $authenticator,
-                $request
-            );
+        // 2. Initialisation
+        // Si le formulaire n'a pas de champ rôle (ex: inscription simple), 
+        // on peut forcer un rôle par défaut ici.
+        if (!$user->getRole()) {
+            $user->setRole(\App\Enum\RoleUser::USER_SIMPLE);
         }
+        
+        $user->setDate_creation(new \DateTime());
+
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Bienvenue dans l\'aventure EcoAdventure !');
+
+        return $userAuthenticator->authenticateUser(
+            $user,
+            $authenticator,
+            $request
+        );
+    }
 
         return $this->render('registration/register.html.twig', [
             'registrationForm' => $form->createView(),

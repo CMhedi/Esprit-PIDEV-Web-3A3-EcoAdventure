@@ -1,0 +1,16 @@
+<h1>Bonjour !</h1>
+
+<p>Pour réinitialiser votre mot de passe, veuillez cliquer sur le lien suivant :</p>
+
+<div style="margin: 20px 0;">
+    <a href="{{ url('app_reset_password', {token: resetToken.token}) }}" 
+       style="background: #3a7bd5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+        Réinitialiser mon mot de passe
+    </a>
+</div>
+
+<p>Ce lien expirera dans 1 heure.</p>
+
+<p>Si vous n'avez pas demandé ce changement, vous pouvez ignorer cet email.</p>
+
+<p>Cordialement,<br>L'équipe EcoAdventure</p>
