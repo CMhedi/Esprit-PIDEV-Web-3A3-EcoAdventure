@@ -75,6 +75,7 @@
     {% endif %}
 
     <form action="{{ path('app_reservation_create', {'id': activite.idActivite}) }}" method="POST" novalidate>
+        
         <div class="mb-3">
             <label class="form-label">Activite selectionnee</label>
             <input type="text" class="form-control" value="{{ activite.nom }}" readonly>
@@ -83,12 +84,12 @@
         <div class="mb-3">
             <label for="date_res" class="form-label">Date Reservation</label>
             <input
-                type="text"
+                type="datetime-local"
                 class="form-control"
                 id="date_res"
                 name="date_res"
-                placeholder="AAAA-MM-JJ HH:MM"
                 value="{{ formData.date_res|default('') }}"
+                min="{{ "now"|date('Y-m-d\\TH:i') }}"
             >
             {% for message in fieldErrors.dateRes|default([]) %}
                 <label class="error-label">{{ message }}</label>
@@ -126,9 +127,17 @@
             {% endfor %}
         </div>
 
+        <div class="mb-3">
+            <a href="{{ path('app_reservation_disponibilite', {'id': activite.idActivite}) }}"
+               class="btn btn-outline-primary rounded-pill px-4">
+                Voir disponibilite
+            </a>
+        </div>
+
         <button type="submit" class="btn btn-success rounded-pill px-5">
             Reserver
         </button>
+
     </form>
 </div>
 
@@ -137,10 +146,10 @@
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title">Image de l'activite</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body pt-2 text-center">
-                <img src="" alt="Apercu de l'activite" class="activite-lightbox-image" id="activiteImageModalPreview">
+                <img src="" class="activite-lightbox-image" id="activiteImageModalPreview">
             </div>
         </div>
     </div>
@@ -149,21 +158,21 @@
 
 {% block js %}
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const preview = document.querySelector('[data-activite-image-preview]');
-        const modalElement = document.getElementById('activiteImageModal');
-        const modalImage = document.getElementById('activiteImageModalPreview');
+document.addEventListener('DOMContentLoaded', () => {
+    const preview = document.querySelector('[data-activite-image-preview]');
+    const modalElement = document.getElementById('activiteImageModal');
+    const modalImage = document.getElementById('activiteImageModalPreview');
 
-        if (!preview || !modalElement || !modalImage || typeof bootstrap === 'undefined') {
-            return;
-        }
+    if (!preview || !modalElement || !modalImage || typeof bootstrap === 'undefined') {
+        return;
+    }
 
-        const modal = new bootstrap.Modal(modalElement);
+    const modal = new bootstrap.Modal(modalElement);
 
-        preview.addEventListener('dblclick', () => {
-            modalImage.src = preview.dataset.imageSrc || preview.src;
-            modal.show();
-        });
+    preview.addEventListener('dblclick', () => {
+        modalImage.src = preview.dataset.imageSrc || preview.src;
+        modal.show();
     });
+});
 </script>
 {% endblock %}

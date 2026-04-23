@@ -1,0 +1,5 @@
+nucleos_dompdf:
+    defaults:
+        defaultFont: 'DejaVu Sans'
+        isRemoteEnabled: true
+        chroot: '%kernel.project_dir%'

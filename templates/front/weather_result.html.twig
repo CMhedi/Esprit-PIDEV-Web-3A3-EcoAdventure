@@ -1,0 +1,145 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Weather Result{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+
+    {# Reservation weather result #}
+    {% if weatherUnavailable %}
+        <div class="alert alert-warning shadow-lg rounded-4 p-4 mb-4">
+            <h3>⚠️ Weather Not Available</h3>
+            <p>{{ message }}</p>
+        </div>
+
+    {% elseif isRainy %}
+        <div class="alert alert-danger shadow-lg rounded-4 p-4 mb-4">
+            <h3>🌧️ Rain Alert</h3>
+            <p>The selected date is expected to be rainy.</p>
+            <p>Please consider changing the reservation date.</p>
+        </div>
+
+    {% else %}
+        <div class="card shadow-lg rounded-4 border-0 p-4 mb-4">
+            <h3>☀️ Good Weather</h3>
+            <p>The weather looks good for your selected date.</p>
+            <p>Your reservation has been successfully confirmed.</p>
+        </div>
+    {% endif %}
+
+    {# Search city weather #}
+    <div class="card shadow-lg rounded-4 border-0 p-4 mb-4">
+        <h4 class="mb-3">🌍 Check Weather by City</h4>
+
+        <div class="input-group mb-3">
+            <input
+                type="text"
+                id="cityInput"
+                class="form-control"
+                placeholder="Enter city (Tunis, Ariana, Paris...)"
+            >
+            <button class="btn btn-primary" id="searchWeatherBtn">
+                Search
+            </button>
+        </div>
+
+        <div id="weatherResultBox" class="mt-4"></div>
+    </div>
+
+    {# Back button #}
+    <div class="text-center">
+        <a
+            href="{{ path('app_reservation_affichage', {'id': reservation.idResAct}) }}"
+            class="btn btn-success rounded-pill px-5 shadow-sm"
+        >
+            ⬅ Retour à l'affichage
+        </a>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const button = document.getElementById('searchWeatherBtn');
+    const cityInput = document.getElementById('cityInput');
+    const resultBox = document.getElementById('weatherResultBox');
+
+    async function searchWeather() {
+        const city = cityInput.value.trim();
+
+        if (!city) {
+            resultBox.innerHTML = `
+                <div class="alert alert-warning">
+                    Please enter a city name.
+                </div>
+            `;
+            return;
+        }
+
+        resultBox.innerHTML = `
+            <div class="alert alert-info">
+                Loading weather...
+            </div>
+        `;
+
+        try {
+            // Step 1: get city coordinates
+            const geoResponse = await fetch(
+                `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`
+            );
+
+            const geoData = await geoResponse.json();
+
+            if (!geoData.results || geoData.results.length === 0) {
+                resultBox.innerHTML = `
+                    <div class="alert alert-danger">
+                        City not found.
+                    </div>
+                `;
+                return;
+            }
+
+            const place = geoData.results[0];
+            const lat = place.latitude;
+            const lon = place.longitude;
+
+            // Step 2: get current weather
+            const weatherResponse = await fetch(
+                `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+            );
+
+            const weatherData = await weatherResponse.json();
+
+            const temp = weatherData.current_weather.temperature;
+            const wind = weatherData.current_weather.windspeed;
+
+            resultBox.innerHTML = `
+                <div class="card border-0 shadow-sm rounded-4 p-4">
+                    <h5>📍 ${place.name}, ${place.country}</h5>
+                    <p class="mb-2"><strong>🌡 Temperature:</strong> ${temp} °C</p>
+                    <p class="mb-0"><strong>💨 Wind Speed:</strong> ${wind} km/h</p>
+                </div>
+            `;
+        } catch (error) {
+            resultBox.innerHTML = `
+                <div class="alert alert-danger">
+                    Error fetching weather data.
+                </div>
+            `;
+        }
+    }
+
+    button.addEventListener('click', searchWeather);
+
+    // Allow Enter key to search
+    cityInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchWeather();
+        }
+    });
+});
+</script>
+{% endblock %}

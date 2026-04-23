@@ -13,7 +13,7 @@
             <h2>Liste des inscriptions aux packs</h2>
             <p>
                 Consultez les inscriptions enregistrées, recherchez instantanément un utilisateur,
-                un pack ou un statut, et visualisez les informations essentielles dans une interface moderne.
+                un pack ou un statut, et visualisez les signaux métier prioritaires sans changer la structure actuelle.
             </p>
         </div>
 
@@ -46,21 +46,30 @@
             </a>
         </div>
 
-        <form method="get"
-              action="{{ path('app_admin_inscriptions') }}"
-              id="inscriptionSearchForm">
+        <form method="get" action="{{ path('app_admin_inscriptions') }}" id="inscriptionSearchForm">
             <div class="search-live-box">
                 <i class="bi bi-search search-icon"></i>
-                <input type="text"
-                       name="search"
-                       id="liveSearchInput"
-                       class="form-control"
-                       placeholder="Rechercher par nom, email, pack ou statut..."
-                       value="{{ search|default('') }}"
-                       autocomplete="off">
+                <input
+                    type="text"
+                    name="search"
+                    id="liveSearchInput"
+                    class="form-control"
+                    placeholder="Rechercher par nom, email, pack ou statut..."
+                    value="{{ search|default('') }}"
+                    autocomplete="off"
+                >
             </div>
         </form>
     </div>
+
+    {% include 'admin/inscriptions/_analytics_panel.html.twig' with {
+        analyticsSummary: analyticsSummary|default({}),
+        analyticsSegments: analyticsSegments|default({}),
+        summaryNarrative: summaryNarrative|default(''),
+        riskOverview: riskOverview|default({}),
+        riskSummaryNarrative: riskSummaryNarrative|default(''),
+        holidayContext: holidayContext|default({})
+    } only %}
 
     <div class="inscriptions-table-card">
         {% if inscriptions|length > 0 %}
@@ -70,8 +79,10 @@
                         <tr>
                             <th>Utilisateur</th>
                             <th>Pack</th>
-                            <th>Date d’inscription</th>
+                            <th>Date d'inscription</th>
                             <th>Montant</th>
+                            <th>Priorité</th>
+                            <th>Risque</th>
                             <th>Statut</th>
                             <th class="text-center">Action</th>
                         </tr>
@@ -80,11 +91,12 @@
                         {% for inscription in inscriptions %}
                             {% set userName = inscription.userApp ? inscription.userApp.prenom ~ ' ' ~ inscription.userApp.nom : (inscription.nomUser ?: 'Utilisateur inconnu') %}
                             {% set userEmail = inscription.userApp ? inscription.userApp.email : null %}
+                            {% set priority = priorityMap[inscription.idInscription] ?? null %}
+                            {% set risk = inscriptionRiskMap[inscription.idInscription] ?? null %}
+                            {% set statut = inscription.statutInscr ? inscription.statutInscr.value : 'Inconnu' %}
                             <tr>
                                 <td>
-                                    <div class="cell-title">
-                                        {{ userName|trim }}
-                                    </div>
+                                    <div class="cell-title">{{ userName|trim }}</div>
                                     {% if userEmail %}
                                         <small class="text-muted">{{ userEmail }}</small>
                                     {% endif %}
@@ -96,35 +108,59 @@
                                     </div>
                                 </td>
 
+                                <td>{{ inscription.dateInscription ? inscription.dateInscription|date('d/m/Y H:i') : '-' }}</td>
+
                                 <td>
-                                    {{ inscription.dateInscription ? inscription.dateInscription|date('d/m/Y H:i') : '-' }}
+                                    <span class="amount-chip">{{ inscription.montantTotal }} DT</span>
                                 </td>
 
                                 <td>
-                                    <span class="amount-chip">
-                                        {{ inscription.montantTotal }} DT
-                                    </span>
+                                    {% if priority %}
+                                        <div class="fw-bold">{{ priority.priorityScore|number_format(1, '.', ' ') }}/100</div>
+                                        <small class="text-muted">{{ priority.lane }}</small>
+                                    {% else %}
+                                        -
+                                    {% endif %}
                                 </td>
 
                                 <td>
-                                    {% set statut = inscription.statutInscr ? inscription.statutInscr.value : 'Inconnu' %}
+                                    {% if risk %}
+                                        <div class="fw-bold">{{ risk.riskScore|number_format(1, '.', ' ') }}/100</div>
+                                        <div class="d-flex flex-wrap gap-1 my-1">
+                                            {% include 'admin/risk/_badge.html.twig' with { level: risk.riskLevel } only %}
+                                        </div>
+                                        <small class="text-muted d-block">{{ risk.packRiskLevel }}</small>
+                                        <small class="text-muted d-block">{{ risk.primaryAction ?: 'surveiller' }}</small>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
 
-                                    {% if statut|lower in ['confirmée', 'confirmee', 'validée', 'validee', 'active'] %}
+                                <td>
+                                    {% if statut|lower in ['confirmee', 'validée', 'validee', 'confirmee', 'active'] %}
                                         <span class="status-badge status-success">{{ statut }}</span>
-                                    {% elseif statut|lower in ['en attente', 'pending'] %}
+                                    {% elseif statut|lower in ['en attente', 'en_attente', 'pending'] %}
                                         <span class="status-badge status-warning">{{ statut }}</span>
                                     {% else %}
                                         <span class="status-badge status-dark">{{ statut }}</span>
                                     {% endif %}
+
+                                    {% if risk %}
+                                        <div class="small text-muted mt-2">{{ risk.summary }}</div>
+                                    {% elseif priority %}
+                                        <div class="small text-muted mt-2">{{ priority.explanation }}</div>
+                                    {% endif %}
                                 </td>
 
                                 <td class="text-center">
-                                    <button type="button"
-                                            class="btn btn-delete-inscription"
-                                            data-inscription-id="{{ inscription.idInscription }}"
-                                            data-inscription-user="{{ userName|trim }}"
-                                            data-inscription-pack="{{ inscription.nomPack ?: (inscription.pack ? inscription.pack.nom : 'Pack non défini') }}"
-                                            data-inscription-token="{{ csrf_token('delete_inscription_' ~ inscription.idInscription) }}">
+                                    <button
+                                        type="button"
+                                        class="btn btn-delete-inscription"
+                                        data-inscription-id="{{ inscription.idInscription }}"
+                                        data-inscription-user="{{ userName|trim }}"
+                                        data-inscription-pack="{{ inscription.nomPack ?: (inscription.pack ? inscription.pack.nom : 'Pack non défini') }}"
+                                        data-inscription-token="{{ csrf_token('delete_inscription_' ~ inscription.idInscription) }}"
+                                    >
                                         <i class="bi bi-trash me-1"></i> Supprimer
                                     </button>
                                 </td>
@@ -161,19 +197,13 @@
 
         <div class="delete-confirm-box" id="deleteConfirmBox">
             <h3>Confirmer la suppression</h3>
-            <p id="deleteConfirmText">
-                Êtes-vous sûr de vouloir supprimer cette inscription ?
-            </p>
+            <p id="deleteConfirmText">Êtes-vous sûr de vouloir supprimer cette inscription ?</p>
 
             <form id="deleteInscriptionForm" method="post" action="">
                 <input type="hidden" name="_token" id="deleteInscriptionToken">
                 <div class="delete-confirm-actions">
-                    <button type="submit" class="btn btn-confirm-yes">
-                        Oui, supprimer
-                    </button>
-                    <button type="button" class="btn btn-confirm-no" id="cancelDeleteBtn">
-                        Non
-                    </button>
+                    <button type="submit" class="btn btn-confirm-yes">Oui, supprimer</button>
+                    <button type="button" class="btn btn-confirm-no" id="cancelDeleteBtn">Non</button>
                 </div>
             </form>
         </div>

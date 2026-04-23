@@ -3,7 +3,14 @@
 namespace App\Controller;
 
 use App\Repository\ActiviteRepository;
+use App\Repository\InscriptionRepository;
+use App\Repository\PackRepository;
 use App\Repository\ReservationActiviteRepository;
+use App\Service\AI\AiRiskExplainer;
+use App\Service\Pack\PackInsightAssembler;
+use App\Service\Risk\InscriptionRiskEngine;
+use App\Service\Risk\PackRiskEngine;
+use App\Service\Risk\RiskDashboardAggregator;
 use App\Entity\Evenement;
 use App\Entity\Inscription;
 use App\Entity\UserApp;
@@ -35,7 +42,17 @@ final class AdminController extends AbstractController
     }
 
     #[Route('/admin/dashboard', name: 'app_admin_dashboard')]
-    public function dashboard(EntityManagerInterface $entityManager, Request $request): Response
+    public function dashboard(
+        EntityManagerInterface $entityManager,
+        Request $request,
+        PackRepository $packRepository,
+        InscriptionRepository $inscriptionRepository,
+        PackInsightAssembler $packInsightAssembler,
+        PackRiskEngine $packRiskEngine,
+        InscriptionRiskEngine $inscriptionRiskEngine,
+        RiskDashboardAggregator $riskDashboardAggregator,
+        AiRiskExplainer $aiRiskExplainer
+    ): Response
     {
         if ($request->query->get('clear_ai_cache')) {
             $session = $request->getSession();
@@ -92,12 +109,18 @@ final class AdminController extends AbstractController
         
         $reclamationRepo = $entityManager->getRepository(Reclamation::class);
         $reclamationStats = $reclamationRepo->countByTypeAndMonth();
+        $packInsights = $packInsightAssembler->buildInsights($packRepository->findAll());
+        $packRiskViews = $packRiskEngine->evaluate($packInsights);
+        $inscriptionRiskViews = $inscriptionRiskEngine->evaluate($inscriptionRepository->findAll(), $packRiskViews);
+        $riskDashboard = $riskDashboardAggregator->build($packRiskViews, $inscriptionRiskViews);
 
         return $this->render('admin/dashboard.html.twig', [
             'stats' => $stats,
             'recentEvents' => $recentEvents,
             'ai' => $aiData,
-            'reclamationStats' => $reclamationStats
+            'reclamationStats' => $reclamationStats,
+            'riskDashboard' => $riskDashboard,
+            'riskNarrative' => $aiRiskExplainer->summarizeDashboard($riskDashboard),
         ]);
     }
 

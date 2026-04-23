@@ -1,0 +1,23 @@
+<div id="callIncomingBanner" class="alert alert-light border call-invite-banner d-none mt-3 mb-0">
+    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-3">
+            <span class="call-invite-pulse" aria-hidden="true"></span>
+            <div>
+                <div class="fw-bold text-dark">
+                    <span id="callBannerTitle">Appel entrant</span>
+                    <span class="mx-1">-</span>
+                    <span id="incomingCallerName">Contact</span>
+                </div>
+                <small class="text-muted" id="incomingCallMeta">Audio</small>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" id="acceptCallBtn" class="btn btn-sm btn-success">
+                <i class="bi bi-telephone-inbound me-1"></i>Accepter
+            </button>
+            <button type="button" id="rejectCallBtn" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-telephone-x me-1"></i>Refuser
+            </button>
+        </div>
+    </div>
+</div>

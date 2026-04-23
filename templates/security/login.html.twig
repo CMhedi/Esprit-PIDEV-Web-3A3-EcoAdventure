@@ -284,13 +284,15 @@
         const loginForm = document.getElementById('login-form');
         const submitBtn = document.getElementById('submitBtn');
         const loader = document.getElementById('loader');
-        loginForm.addEventListener('submit', () => {
-            submitBtn.disabled = true;
-            loader.classList.remove('d-none');
-            submitBtn.querySelector('span:not(.spinner-border)').innerText = "Connexion...";
-        });
+        if (loginForm) {
+            loginForm.addEventListener('submit', () => {
+                submitBtn.disabled = true;
+                loader.classList.remove('d-none');
+                submitBtn.querySelector('span:not(.spinner-border)').innerText = "Connexion...";
+            });
+        }
 
-        // Face ID
+        // Face ID variables
         const startBtn = document.getElementById('start-face-login');
         const cancelBtn = document.getElementById('cancel-face-login');
         const faceContainer = document.getElementById('face-login-container');
@@ -298,84 +300,185 @@
         const video = document.getElementById('webcam');
         const statusText = document.getElementById('face-login-status');
         let stream = null, faceMatcher = null, detectionInterval = null;
+        let modelsLoaded = false;
 
+        // Preload Models immediately
         async function loadModels() {
-            statusText.innerText = "Chargement de l'IA...";
-            await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
-            await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-            await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+            if (modelsLoaded || (faceapi.nets.ssdMobilenetv1 && faceapi.nets.ssdMobilenetv1.params)) {
+                modelsLoaded = true;
+                return;
+            }
+            try {
+                await Promise.all([
+                    faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+                    faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+                    faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+                ]);
+                modelsLoaded = true;
+                console.log("Face-API models loaded");
+            } catch (e) {
+                console.error("Error loading models:", e);
+            }
         }
+        
+        // Start loading in background
+        loadModels();
 
         async function initFaceLogin() {
             const email = emailInput.value.trim();
             faceContainer.style.display = 'block';
             startBtn.style.display = 'none';
+            statusText.style.color = '';
+            
             try {
-                await loadModels();
+                if (!modelsLoaded) {
+                    statusText.innerText = "Chargement de l'IA...";
+                    await loadModels();
+                    if (!modelsLoaded) throw new Error("Erreur chargement IA.");
+                }
+
                 statusText.innerText = "Recherche profil...";
+                
                 const res = await fetch('/api/user/face-image', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: email })
                 });
+                
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || "Erreur données.");
 
                 let labeledDescriptors = [];
                 if (email) {
-                    if (data.descriptor) labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(email, [new Float32Array(data.descriptor)]));
-                    else if (data.imageUrl) {
+                    if (data.descriptor) {
+                        labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(email, [new Float32Array(data.descriptor)]));
+                    } else if (data.imageUrl) {
+                        statusText.innerText = "Traitement référence...";
                         const refImg = await faceapi.fetchImage(data.imageUrl);
                         const refDet = await faceapi.detectSingleFace(refImg).withFaceLandmarks().withFaceDescriptor();
-                        if (refDet) labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(email, [refDet.descriptor]));
-                        else throw new Error("Visage non détecté.");
-                    } else throw new Error("Pas de biométrie.");
+                        if (refDet) {
+                            labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(email, [refDet.descriptor]));
+                        } else {
+                            throw new Error("Visage non détecté sur votre photo de profil.");
+                        }
+                    } else {
+                        throw new Error("Aucune donnée biométrique trouvée.");
+                    }
                 } else {
-                    if (data.admins) data.admins.forEach(a => labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(a.email, [new Float32Array(a.descriptor)])));
-                    else throw new Error("Email requis.");
+                    if (data.admins && data.admins.length > 0) {
+                        data.admins.forEach(a => {
+                            labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(a.email, [new Float32Array(a.descriptor)]));
+                        });
+                    } else {
+                        throw new Error("Veuillez saisir votre email.");
+                    }
                 }
 
-                faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
-                statusText.innerText = "Caméra active...";
-                stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+                faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55); // Slightly more relaxed for speed/first hit
+                
+                statusText.innerText = "Démarrage caméra...";
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: "user",
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                
                 video.srcObject = stream;
-                video.onloadedmetadata = () => { statusText.innerText = "Scannage..."; detectFaceLoop(); };
+                
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play().then(resolve);
+                    };
+                });
+
+                statusText.innerText = "Positionnez votre visage...";
+                detectFaceLoop();
+                
             } catch (err) {
                 statusText.innerText = err.message;
                 statusText.style.color = '#ef4444';
-                setTimeout(stopFaceLogin, 4000);
+                setTimeout(() => {
+                    if (statusText.innerText === err.message) stopFaceLogin();
+                }, 4000);
             }
         }
 
         async function detectFaceLoop() {
             const canvas = document.getElementById('overlay');
-            const displaySize = { width: video.clientWidth, height: video.clientHeight };
+            const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
             faceapi.matchDimensions(canvas, displaySize);
+            
+            // Use a faster loop for detection
             detectionInterval = setInterval(async () => {
-                if (video.paused || video.ended) return;
-                const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+                if (video.paused || video.ended || !faceMatcher) return;
+                
+                // Optimized options: SSD with slightly higher threshold to avoid false positives but keep it fast
+                const detection = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 }))
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+                
+                const context = canvas.getContext('2d');
+                context.clearRect(0, 0, canvas.width, canvas.height);
+
                 if (detection) {
                     const resized = faceapi.resizeResults(detection, displaySize);
                     const match = faceMatcher.findBestMatch(detection.descriptor);
-                    const context = canvas.getContext('2d');
-                    context.clearRect(0, 0, canvas.width, canvas.height);
-                    new faceapi.draw.DrawBox(resized.detection.box, { label: match.label }).draw(canvas);
-                    if (match.label !== 'unknown') {
-                        statusText.innerText = "Reconnu !";
+                    
+                    const isMatch = match.label !== 'unknown';
+                    const drawBox = new faceapi.draw.DrawBox(resized.detection.box, { 
+                        label: isMatch ? 'Reconnu !' : 'Analyse...',
+                        boxColor: isMatch ? '#22c55e' : '#3a7bd5'
+                    });
+                    drawBox.draw(canvas);
+
+                    if (isMatch) {
+                        statusText.innerText = "Identité confirmée !";
+                        statusText.style.color = '#22c55e';
                         clearInterval(detectionInterval);
-                        const loginRes = await fetch('/login/face', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: match.label }) });
-                        const loginData = await loginRes.json();
-                        if (loginData.success) window.location.href = loginData.redirect;
-                        stopFaceLogin(false);
+                        detectionInterval = null;
+                        
+                        // Small delay for the user to see the "Reconnu" box
+                        setTimeout(async () => {
+                            try {
+                                const loginRes = await fetch('/login/face', { 
+                                    method: 'POST', 
+                                    headers: { 'Content-Type': 'application/json' }, 
+                                    body: JSON.stringify({ email: match.label }) 
+                                });
+                                const loginData = await loginRes.json();
+                                if (loginData.success) {
+                                    window.location.href = loginData.redirect;
+                                } else {
+                                    throw new Error("Erreur authentification.");
+                                }
+                            } catch (e) {
+                                statusText.innerText = "Erreur de connexion.";
+                                statusText.style.color = '#ef4444';
+                                setTimeout(stopFaceLogin, 3000);
+                            }
+                        }, 300);
                     }
                 }
-            }, 800);
+            }, 100); // 100ms for much smoother real-time feel
         }
 
         function stopFaceLogin(hide = true) {
-            if (detectionInterval) clearInterval(detectionInterval);
-            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-            if (hide) { faceContainer.style.display = 'none'; startBtn.style.display = 'flex'; statusText.style.color = ''; }
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+                detectionInterval = null;
+            }
+            if (stream) {
+                stream.getTracks().forEach(t => t.stop());
+                stream = null;
+            }
+            video.srcObject = null;
+            if (hide) {
+                faceContainer.style.display = 'none';
+                startBtn.style.display = 'flex';
+                statusText.style.color = '';
+            }
         }
 
         startBtn.addEventListener('click', initFaceLogin);

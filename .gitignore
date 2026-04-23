@@ -19,3 +19,8 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+###> local tooling ###
+tools/card_ocr_api/.venv/
+tools/card_ocr_api/__pycache__/
+###< local tooling ###

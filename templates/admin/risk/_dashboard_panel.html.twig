@@ -1,0 +1,89 @@
+{% if riskDashboard is defined %}
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="admin-card h-100">
+                <div class="small text-uppercase text-muted mb-2">Risque moyen packs</div>
+                <div class="display-6 fw-bold">{{ riskDashboard.pack_average|number_format(1, '.', ' ') }}</div>
+                <p class="text-muted mb-0">{{ riskDashboard.critical_packs }} pack(s) en critique.</p>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="admin-card h-100">
+                <div class="small text-uppercase text-muted mb-2">Risque moyen inscriptions</div>
+                <div class="display-6 fw-bold">{{ riskDashboard.inscription_average|number_format(1, '.', ' ') }}</div>
+                <p class="text-muted mb-0">{{ riskDashboard.priority_inscriptions }} inscription(s) a prioriser.</p>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="admin-card h-100">
+                <div class="small text-uppercase text-muted mb-2">Score global</div>
+                <div class="display-6 fw-bold">{{ riskDashboard.global_average|number_format(1, '.', ' ') }}</div>
+                <p class="text-muted mb-0">{{ riskDashboard.healthy_packs }} pack(s) restent sains.</p>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="admin-card h-100">
+                <div class="small text-uppercase text-muted mb-2">Inscriptions critiques</div>
+                <div class="display-6 fw-bold">{{ riskDashboard.critical_inscriptions }}</div>
+                <p class="text-muted mb-0">Vue globale du portefeuille Pack / Inscription.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+            <div class="admin-card h-100">
+                <h4 class="fw-bold mb-3">Synthese IA du risque</h4>
+                <p class="text-muted mb-3">{{ riskNarrative }}</p>
+
+                <div class="d-flex flex-wrap gap-2">
+                    {% for action in riskDashboard.recommended_actions %}
+                        <span class="badge rounded-pill text-bg-light border">{{ action }}</span>
+                    {% else %}
+                        <span class="badge rounded-pill text-bg-light border">surveiller le portefeuille pack</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="admin-card h-100">
+                <h4 class="fw-bold mb-3">Repartition packs</h4>
+                <div class="d-grid gap-2">
+                    {% for level, count in riskDashboard.pack_distribution %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            {% include 'admin/risk/_badge.html.twig' with { level: level } only %}
+                            <strong>{{ count }}</strong>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="admin-card h-100">
+                <h4 class="fw-bold mb-3">Top packs a surveiller</h4>
+                <div class="d-grid gap-3">
+                    {% for risk in riskDashboard.top_risky_packs|slice(0, 3) %}
+                        <div class="border rounded-4 p-3">
+                            <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                                <strong>{{ risk.pack.nom }}</strong>
+                                <span class="fw-bold">{{ risk.riskScore|number_format(1, '.', ' ') }}/100</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                {% include 'admin/risk/_badge.html.twig' with { level: risk.riskLevel } only %}
+                                <span class="badge rounded-pill text-bg-light border">{{ risk.riskProfile }}</span>
+                            </div>
+                            <small class="text-muted">{{ risk.summary }}</small>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">Aucun signal de risque a afficher.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}

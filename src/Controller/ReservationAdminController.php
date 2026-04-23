@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\ReservationActivite;
 use App\Entity\Activite;
 use App\Enum\StatutReservationActivite;
+use App\Repository\ActiviteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -37,14 +38,14 @@ class ReservationAdminController extends AbstractController
     }
 
     #[Route('/edit/{id}', name: 'app_admin_reservation_edit', methods: ['GET','POST'])]
-    public function edit(int $id, Request $request, EntityManagerInterface $em): Response
+    public function edit(int $id, Request $request, EntityManagerInterface $em, ActiviteRepository $activiteRepository): Response
     {
         $reservation = $em->getRepository(ReservationActivite::class)->find($id);
         if (!$reservation) {
             throw $this->createNotFoundException('Réservation non trouvée');
         }
 
-        $activites = $em->getRepository(Activite::class)->findAll();
+        $activites = $activiteRepository->findAllValid();
 
         if ($request->isMethod('POST')) {
             // Remarquez setDateRes ici

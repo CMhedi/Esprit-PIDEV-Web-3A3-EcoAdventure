@@ -21,6 +21,7 @@ class Activite
     #[ORM\Column(type: 'integer')]
     private ?int $id_activite = null;
 
+    // ===================== NOM =====================
     #[Assert\NotBlank(message: 'Le nom est obligatoire.')]
     #[Assert\Length(
         min: 3,
@@ -35,18 +36,34 @@ class Activite
     #[ORM\Column(type: 'string', length: 120)]
     private ?string $nom = null;
 
+    // ===================== TYPE =====================
     #[Assert\NotNull(message: "Le type d'activite est obligatoire.")]
+    #[Assert\Choice(
+        callback: [TypeActivite::class, 'cases'],
+        message: "Type d'activite invalide."
+    )]
     #[ORM\Column(enumType: TypeActivite::class)]
     private ?TypeActivite $type_activite = null;
 
+    // ===================== CATEGORIE =====================
     #[Assert\NotNull(message: 'La categorie est obligatoire.')]
+    #[Assert\Choice(
+        callback: [CategorieAct::class, 'cases'],
+        message: 'Categorie invalide.'
+    )]
     #[ORM\Column(enumType: CategorieAct::class)]
     private ?CategorieAct $categorie_act = null;
 
+    // ===================== NIVEAU =====================
     #[Assert\NotNull(message: 'Le niveau est obligatoire.')]
+    #[Assert\Choice(
+        callback: [NiveauAct::class, 'cases'],
+        message: 'Niveau invalide.'
+    )]
     #[ORM\Column(enumType: NiveauAct::class)]
     private ?NiveauAct $niveau_act = null;
 
+    // ===================== PRIX =====================
     #[Assert\NotNull(message: 'Le prix est obligatoire.')]
     #[Assert\Positive(message: 'Le prix doit etre positif.')]
     #[Assert\Range(
@@ -54,22 +71,56 @@ class Activite
         max: 10000,
         notInRangeMessage: 'Le prix doit etre entre {{ min }} et {{ max }} DT.'
     )]
+    #[Assert\Type(
+        type: 'numeric',
+        message: 'Le prix doit etre un nombre valide.'
+    )]
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private ?float $prix = null;
+    private ?string $prix = null;
 
+    // ===================== LATITUDE =====================
+    #[Assert\Range(
+        min: -90,
+        max: 90,
+        notInRangeMessage: 'Latitude invalide.'
+    )]
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $latitude = null;
+
+    // ===================== LONGITUDE =====================
+    #[Assert\Range(
+        min: -180,
+        max: 180,
+        notInRangeMessage: 'Longitude invalide.'
+    )]
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $longitude = null;
+
+    // ===================== STATUT =====================
     #[Assert\NotNull(message: 'Le statut est obligatoire.')]
+    #[Assert\Choice(
+        callback: [Statut::class, 'cases'],
+        message: 'Statut invalide.'
+    )]
     #[ORM\Column(enumType: Statut::class)]
     private ?Statut $statut = null;
 
+    // ===================== IMAGE =====================
     #[Assert\NotBlank(message: "L'image est obligatoire.")]
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Assert\Length(
+        max: 255,
+        maxMessage: "Le nom de l'image est trop long."
+    )]
+    #[ORM\Column(type: 'string', length: 255, nullable: false)]
     private ?string $image_url = null;
 
+    // ===================== PACK =====================
     #[Assert\NotNull(message: 'Le pack est obligatoire et doit etre valide.')]
     #[ORM\ManyToOne(targetEntity: Pack::class, inversedBy: 'activites')]
     #[ORM\JoinColumn(name: 'id_pack', referencedColumnName: 'id_pack', nullable: true)]
     private ?Pack $pack = null;
 
+    // ===================== RESERVATIONS =====================
     #[ORM\OneToMany(targetEntity: ReservationActivite::class, mappedBy: 'activite')]
     private Collection $reservationActivites;
 
@@ -77,6 +128,8 @@ class Activite
     {
         $this->reservationActivites = new ArrayCollection();
     }
+
+    // ===================== GETTERS / SETTERS =====================
 
     public function getIdActivite(): ?int
     {
@@ -91,7 +144,6 @@ class Activite
     public function setNom(?string $nom): self
     {
         $this->nom = $nom;
-
         return $this;
     }
 
@@ -103,7 +155,6 @@ class Activite
     public function setTypeActivite(?TypeActivite $type): self
     {
         $this->type_activite = $type;
-
         return $this;
     }
 
@@ -115,7 +166,6 @@ class Activite
     public function setCategorieAct(?CategorieAct $categorie): self
     {
         $this->categorie_act = $categorie;
-
         return $this;
     }
 
@@ -127,7 +177,6 @@ class Activite
     public function setNiveauAct(?NiveauAct $niveau): self
     {
         $this->niveau_act = $niveau;
-
         return $this;
     }
 
@@ -139,7 +188,28 @@ class Activite
     public function setPrix(?float $prix): self
     {
         $this->prix = $prix;
+        return $this;
+    }
 
+    public function getLatitude(): ?float
+    {
+        return $this->latitude;
+    }
+
+    public function setLatitude(?float $latitude): self
+    {
+        $this->latitude = $latitude;
+        return $this;
+    }
+
+    public function getLongitude(): ?float
+    {
+        return $this->longitude;
+    }
+
+    public function setLongitude(?float $longitude): self
+    {
+        $this->longitude = $longitude;
         return $this;
     }
 
@@ -151,7 +221,6 @@ class Activite
     public function setStatut(?Statut $statut): self
     {
         $this->statut = $statut;
-
         return $this;
     }
 
@@ -163,7 +232,6 @@ class Activite
     public function setImageUrl(?string $url): self
     {
         $this->image_url = $url;
-
         return $this;
     }
 
@@ -175,7 +243,6 @@ class Activite
     public function setPack(?Pack $pack): self
     {
         $this->pack = $pack;
-
         return $this;
     }
 

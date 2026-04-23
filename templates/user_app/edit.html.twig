@@ -3,6 +3,7 @@
 
 {% block title %}Modifier Membre - EcoAdventure{% endblock %}
 {% block page_title %}{% endblock %}
+{% block topbar_search %}{% endblock %}
 
 {% block body %}
     <style>
@@ -222,6 +223,8 @@
                     </div>
                 </div>
 
+
+
                 <div class="d-none">
                     {{ form_widget(form.imageFile, {'id': 'hidden-image-upload', 'attr': {'accept': 'image/*'}}) }}
                 </div>
@@ -411,4 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
+
+
 {% endblock %}

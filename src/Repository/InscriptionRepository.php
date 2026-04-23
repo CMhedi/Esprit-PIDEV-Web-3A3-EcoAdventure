@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Inscription;
+use App\Enum\StatutInscription;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -45,6 +46,51 @@ class InscriptionRepository extends ServiceEntityRepository
     {
         return (int) $this->createQueryBuilder('i')
             ->select('COUNT(i.id_inscription)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function findLatestForUserAndPack(int $userId, int $packId): ?Inscription
+    {
+        return $this->createQueryBuilder('i')
+            ->leftJoin('i.userApp', 'u')
+            ->leftJoin('i.pack', 'p')
+            ->andWhere('u.id_user = :userId')
+            ->andWhere('p.id_pack = :packId')
+            ->setParameter('userId', $userId)
+            ->setParameter('packId', $packId)
+            ->orderBy('i.date_inscription', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function findOneByPaymentReference(string $paymentReference): ?Inscription
+    {
+        return $this->createQueryBuilder('i')
+            ->leftJoin('i.pack', 'p')
+            ->leftJoin('i.userApp', 'u')
+            ->addSelect('p')
+            ->addSelect('u')
+            ->andWhere('i.payment_reference = :paymentReference')
+            ->setParameter('paymentReference', $paymentReference)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function countConfirmedForPack(int $packId): int
+    {
+        return (int) $this->createQueryBuilder('i')
+            ->select('COUNT(i.id_inscription)')
+            ->leftJoin('i.pack', 'p')
+            ->andWhere('p.id_pack = :packId')
+            ->andWhere('(i.statut_inscr IN (:statuses) OR i.payment_status = :paidStatus)')
+            ->setParameter('packId', $packId)
+            ->setParameter('statuses', [
+                StatutInscription::CONFIRMEE->value,
+                StatutInscription::VALIDEE->value,
+            ])
+            ->setParameter('paidStatus', Inscription::PAYMENT_STATUS_PAID)
             ->getQuery()
             ->getSingleScalarResult();
     }
