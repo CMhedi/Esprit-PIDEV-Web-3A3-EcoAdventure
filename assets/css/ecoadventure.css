@@ -1,3 +1,104 @@
+/* ================= GLOBAL ================= */
+
+body {
+    background-color: #f5f7f9; /* plus pro que skyblue */
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* ================= CARD ================= */
+
+.admin-card {
+    border-radius: 14px;
+    background: #ffffff;
+    transition: all 0.3s ease;
+    border: 1px solid #e6e9ec;
+}
+
+.admin-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* ================= INPUTS ================= */
+
+.form-control,
+.form-select {
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    border: 1px solid #ced4da;
+}
+
+/* focus eco theme */
+.form-control:focus,
+.form-select:focus {
+    border-color: #198754 !important;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.2) !important;
+}
+
+/* hover */
+.form-control:hover,
+.form-select:hover {
+    border-color: #198754;
+}
+
+/* ================= SELECT CUSTOM ================= */
+
+select.form-select.custom-select {
+    border-radius: 10px !important;
+    background-color: #fff;
+}
+
+/* focus */
+select.form-select.custom-select:focus {
+    border-color: #198754 !important;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.2) !important;
+}
+
+/* ================= INPUT GROUP ================= */
+
+.input-group-text {
+    border-radius: 10px 0 0 10px;
+    background-color: #198754;
+    color: #fff;
+    border: none;
+}
+
+/* ================= ERROR ================= */
+
+.text-danger.small {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* ================= BUTTONS ================= */
+
+.btn-success {
+    background-color: #198754;
+    border: none;
+    border-radius: 8px;
+    transition: 0.2s;
+}
+
+.btn-success:hover {
+    background-color: #157347;
+}
+
+.btn-outline-secondary {
+    border-radius: 8px;
+}
+
+/* ================= LABEL ================= */
+
+.form-label {
+    margin-bottom: 5px;
+    color: #333;
+}
+
+/* ================= OPTION (LIMITED) ================= */
+
+select option {
+    padding: 10px;
+}
 :root {
     --forest-green: #2D5A27;
     --energy-orange: #F28C28;

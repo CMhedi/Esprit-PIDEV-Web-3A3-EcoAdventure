@@ -147,9 +147,23 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
         $this->reservationEvenements = new ArrayCollection();
         $this->reservationSeances = new ArrayCollection();
         $this->seances = new ArrayCollection();
-        $this->conversations = new ArrayCollection();
-        $this->referralCode = strtoupper(substr(uniqid(), -6));
     }
+
+    // ========== SYMFONY SECURITY METHODS ==========
+#[ORM\Column(type: 'text', nullable: true)]
+private ?string $google_token = null;
+
+public function getGoogleToken(): ?string
+{
+    return $this->google_token;
+}
+
+public function setGoogleToken(?string $google_token): self
+{
+    $this->google_token = $google_token;
+    return $this;
+}
+     
 
     // ========== SYMFONY SECURITY METHODS ==========
 
@@ -245,10 +259,95 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     public function getMessages(): Collection { return $this->messages; }
-    public function getReclamations(): Collection { return $this->reclamations; }
-    public function getReservationActivites(): Collection { return $this->reservationActivites; }
-    public function getReservationEvenements(): Collection { return $this->reservationEvenements; }
-    public function getReservationSeances(): Collection { return $this->reservationSeances; }
-    public function getSeances(): Collection { return $this->seances; }
-    public function getConversations(): Collection { return $this->conversations; }
+
+
+#[ORM\Column(type: 'float', nullable: true)]
+private ?float $churnProbability = null;
+
+#[ORM\Column(type: 'boolean', options: ['default' => false])]
+private bool $churnPrediction = false;
+
+#[ORM\Column(type: 'string', length: 10, options: ['default' => 'low'])]
+private string $churnRisk = 'low';
+
+#[ORM\Column(type: 'datetime', nullable: true)]
+private ?\DateTimeInterface $lastPredictionAt = null;
+ 
+public function getChurnProbability(): ?float
+{
+    return $this->churnProbability;
+}
+
+public function setChurnProbability(float $value): self
+{
+    $this->churnProbability = $value;
+    return $this;
+}
+
+public function getChurnPrediction(): bool
+{
+    return $this->churnPrediction;
+}
+
+public function setChurnPrediction(bool $value): self
+{
+    $this->churnPrediction = $value;
+    return $this;
+}
+
+public function getChurnRisk(): string
+{
+    return $this->churnRisk;
+}
+
+public function setChurnRisk(string $value): self
+{
+    $this->churnRisk = $value;
+    return $this;
+}
+
+public function getLastPredictionAt(): ?\DateTimeInterface
+{
+    return $this->lastPredictionAt;
+}
+
+public function setLastPredictionAt(\DateTimeInterface $value): self
+{
+    $this->lastPredictionAt = $value;
+    return $this;
+}
+#[ORM\Column(type: 'float', nullable: true)]
+private ?float $weight = null;
+
+#[ORM\Column(type: 'float', nullable: true)]
+private ?float $height = null;
+
+#[ORM\Column(type: 'string', length: 1, nullable: true)]
+private ?string $gender = null;
+
+#[ORM\Column(type: 'float', nullable: true)]
+private ?float $activityLevel = null;
+public function getWeight(): ?float { return $this->weight; }
+public function setWeight(float $v): self { $this->weight = $v; return $this; }
+
+public function getHeight(): ?float { return $this->height; }
+public function setHeight(float $v): self { $this->height = $v; return $this; }
+
+public function getGender(): ?string { return $this->gender; }
+public function setGender(string $v): self { $this->gender = $v; return $this; }
+
+public function getActivityLevel(): ?float { return $this->activityLevel; }
+public function setActivityLevel(float $v): self { $this->activityLevel = $v; return $this; }
+#[ORM\Column(type: 'boolean', options: ['default' => false])]
+private bool $goalNotified = false;
+public function isGoalNotified(): bool
+{
+    return $this->goalNotified;
+}
+
+public function setGoalNotified(bool $goalNotified): self
+{
+    $this->goalNotified = $goalNotified;
+    return $this;
+}
 }

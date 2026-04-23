@@ -12,10 +12,12 @@ use App\Repository\UserAppRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Annotation\Route;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
-
+use App\Service\RecommendationService;
+use Knp\Component\Pager\PaginatorInterface;
+use App\Service\GoogleCalendarService;
 #[Route('/seance')]
 class UserSeanceController extends AbstractController
 {
@@ -24,29 +26,45 @@ class UserSeanceController extends AbstractController
     private SeanceRepository $seanceRepo;
     private EntityManagerInterface $entityManager;
     private UserAppRepository $userRepo;
+    private RecommendationService $recommendationService;
+    private GoogleCalendarService $googleService;
 
     public function __construct(
         LoggerInterface $logger,
         ReservationSeanceRepository $reservationRepo,
         SeanceRepository $seanceRepo,
         EntityManagerInterface $entityManager,
-        UserAppRepository $userRepo
+        UserAppRepository $userRepo,
+        RecommendationService $recommendationService,
+        GoogleCalendarService $googleService
     ) {
         $this->logger = $logger;
         $this->reservationRepo = $reservationRepo;
         $this->seanceRepo = $seanceRepo;
         $this->entityManager = $entityManager;
         $this->userRepo = $userRepo;
+        $this->recommendationService = $recommendationService;
+        $this->googleService = $googleService;
     }
 
     /**
      * Liste des séances
      */
    #[Route('', name: 'app_user_seances', methods: ['GET'])]
-public function index(): Response
+public function index(Request $request, PaginatorInterface $paginator): Response
 {
-    try {
-        $seances = $this->seanceRepo->findAll();
+   try {
+    $query = $this->seanceRepo->createQueryBuilder('s')
+        ->orderBy('s.idSeance', 'DESC')
+        ->getQuery();
+
+    $seances = $paginator->paginate(
+        $query,
+        $request->query->getInt('page', 1),
+        5
+    );
+    // 🔥 IMPORTANT : récupérer toutes les séances pour stats
+$allSeances = $this->seanceRepo->findAll();
 
         // 🔥 STATS GLOBALES
         $totalCapacite = 0;
@@ -70,16 +88,33 @@ public function index(): Response
             ? round(($totalReserve / $totalCapacite) * 100)
             : 0;
 
-        $this->logger->info('Page des séances consultée', [
-            'total_seances' => count($seances),
-            'pourcentage' => $pourcentage,
-            'disponibles' => $disponibles,
+$this->logger->info('Page des séances consultée', [
+    'total_seances' => count($seances),
+    'pourcentage' => $pourcentage,
+    'disponibles' => $disponibles,
+    'allSeances' => $allSeances 
+]);
+$user = $this->getUser();
+
+$recommendations = [];
+
+if ($user) {
+    try {
+        $recommendations = $this->recommendationService
+            ->recommendForUser($user->getId_user());
+    } catch (\Exception $e) {
+        $this->logger->error('Erreur recommandation', [
+            'error' => $e->getMessage()
         ]);
+    }
+}
 
         return $this->render('front/seances.html.twig', [
             'seances' => $seances,
             'pourcentage' => $pourcentage,
             'disponibles' => $disponibles,
+            'recommendations' => $recommendations,
+            'allSeances' => $allSeances 
         ]);
 
     } catch (\Exception $e) {
@@ -245,8 +280,75 @@ public function mesSeances(): Response
 }
 
 #[Route('/reservation/{id}/cancel', name: 'app_reservation_cancel', methods: ['POST'])]
-public function cancelReservation(int $id): Response
-{
+public function cancelReservation(
+    int $id,
+    GoogleCalendarService $googleService
+): Response {
+    try {
+        $reservation = $this->reservationRepo->find($id);
+
+        if (!$reservation) {
+            return $this->handleError('Réservation introuvable');
+        }
+
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->handleError('Utilisateur non connecté');
+        }
+
+        // 🔒 sécurité
+        if ($reservation->getUserApp()->getId_user() !== $user->getId_user()) {
+            return $this->handleError('Accès refusé', 'warning');
+        }
+
+        $seanceName = $reservation->getSeance()->getNom();
+
+        // 🔥 SUPPRESSION GOOGLE CALENDAR
+        if ($reservation->getGoogle_event_id()) {
+
+            $token = json_decode($user->getGoogleToken(), true);
+
+            if ($token) {
+                try {
+                    $googleService->deleteEvent(
+                        $token,
+                        $reservation->getGoogle_event_id()
+                    );
+                } catch (\Exception $e) {
+                    // 🔥 ne bloque pas toute la fonction
+                    $this->logger->error('Erreur suppression Google', [
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        }
+
+        // 🗑️ suppression DB
+        $this->entityManager->remove($reservation);
+        $this->entityManager->flush();
+
+        $this->addFlash('success', "Réservation pour '$seanceName' annulée");
+
+    } catch (\Exception $e) {
+
+        // 🔥 ERREUR EXACTE
+        $this->logger->error('Erreur lors de l’annulation', [
+            'error' => $e->getMessage()
+        ]);
+
+        return $this->handleError('Erreur lors de l’annulation');
+    }
+
+    return $this->redirectToRoute('app_mes_seances');
+}
+
+#[Route('/reservation/{id}/add-google', name: 'app_add_google')]
+public function addToGoogle(
+    int $id,
+    GoogleCalendarService $googleService,
+    Request $request
+): Response {
     try {
         $reservation = $this->reservationRepo->find($id);
 
@@ -255,33 +357,125 @@ public function cancelReservation(int $id): Response
             return $this->redirectToRoute('app_mes_seances');
         }
 
-       $user = $this->getUser();
-       if (!$user) {
-    $this->addFlash('error', 'Utilisateur non connecté');
-    return $this->redirectToRoute('app_user_seances');
-}
+        $user = $this->getUser();
 
         if (!$user) {
-            $this->addFlash('error', 'Utilisateur introuvable');
-            return $this->redirectToRoute('app_mes_seances');
+            $this->addFlash('error', 'Utilisateur non connecté');
+            return $this->redirectToRoute('app_user_seances');
         }
 
+        // 🔒 sécurité
         if ($reservation->getUserApp()->getId_user() !== $user->getId_user()) {
             $this->addFlash('error', 'Accès refusé');
             return $this->redirectToRoute('app_mes_seances');
         }
 
-        $seanceName = $reservation->getSeance()->getNom();
+        // ⚠️ déjà ajouté ?
+        if ($reservation->getGoogle_event_id()) {
+            $this->addFlash('info', 'Déjà ajouté à Google Calendar');
+            return $this->redirectToRoute('app_mes_seances');
+        }
 
-        $this->entityManager->remove($reservation);
+        // 🔑 token
+        $token = json_decode($user->getGoogleToken(), true);
+
+        // ❌ pas connecté → redirection Google avec state
+        if (!$token) {
+            return $this->redirectToRoute('google_connect', [
+                'reservationId' => $id,
+                'userId' => $user->getId_user()
+            ]);
+        }
+
+        $seance = $reservation->getSeance();
+
+$timezone = new \DateTimeZone('Africa/Tunis');
+
+$start = new \DateTime(
+    $seance->getDateSeance()->format('Y-m-d') . ' ' .
+    $seance->getHeureDebut()->format('H:i:s'),
+    $timezone
+);
+
+$end = new \DateTime(
+    $seance->getDateSeance()->format('Y-m-d') . ' ' .
+    $seance->getHeureFin()->format('H:i:s'),
+    $timezone
+);
+
+        // 📅 création event
+        $result = $googleService->addEvent(
+            $token,
+            "Séance : " . $seance->getNom(),
+            "EcoAdventure",
+            $start,
+            $end
+        );
+
+        // 💾 sauvegarde
+        $reservation->setGoogle_event_id($result['id']);
+        $reservation->setGoogle_event_link($result['htmlLink']);
+
         $this->entityManager->flush();
 
-        $this->addFlash('success', "Réservation pour '$seanceName' annulée");
+        $this->addFlash('success', 'Ajouté à Google Calendar');
 
     } catch (\Exception $e) {
-        $this->addFlash('error', 'Erreur lors de l’annulation');
+        $this->logger->error('Erreur Google Calendar', [
+            'error' => $e->getMessage()
+        ]);
+
+        $this->addFlash('error', 'Erreur Google Calendar');
     }
 
     return $this->redirectToRoute('app_mes_seances');
+}
+#[Route('/google/connect', name: 'google_connect')]
+public function connect(Request $request, GoogleCalendarService $google)
+{
+    $client = $google->getClient();
+
+    $reservationId = $request->query->get('reservationId');
+    $userId = $request->query->get('userId');
+
+    $state = json_encode([
+        'reservationId' => $reservationId,
+        'userId' => $userId
+    ]);
+
+    $client->setState($state);
+
+    return $this->redirect($client->createAuthUrl());
+}
+#[Route('/oauth/callback', name: 'google_callback')]
+public function callback(Request $request, GoogleCalendarService $google)
+{
+    $client = $google->getClient();
+
+    $token = $client->fetchAccessTokenWithAuthCode(
+        $request->get('code')
+    );
+
+    // 🔥 récupération state
+    $state = json_decode($request->get('state'), true);
+
+    if (!$state || !isset($state['userId'], $state['reservationId'])) {
+        return new Response('State invalide');
+    }
+
+    $user = $this->userRepo->find($state['userId']);
+
+    if (!$user) {
+        return new Response('Utilisateur introuvable');
+    }
+
+    // 💾 sauvegarde token
+    $user->setGoogleToken(json_encode($token));
+    $this->entityManager->flush();
+
+    // 🔁 relancer ajout automatique
+    return $this->redirectToRoute('app_add_google', [
+        'id' => $state['reservationId']
+    ]);
 }
 }

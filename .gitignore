@@ -1,3 +1,4 @@
+### Symfony ###
 
 ###> symfony/framework-bundle ###
 /.env
@@ -8,6 +9,33 @@
 /public/bundles/
 /var/
 /vendor/
+
+### PHPUnit ###
+/phpunit.xml
+/.phpunit.cache/
+
+### Assets ###
+/public/assets/
+/assets/vendor/
+
+### Python ###
+venv/
+ml-api/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+### ML ###
+*.pkl
+!ml-api/xgboost_churn_production_final.pkl
+
+### Google credentials ###
+/config/google/*.json
+
+### OS ###
+.DS_Store
+Thumbs.db
 ###< symfony/framework-bundle ###
 
 ###> phpunit/phpunit ###

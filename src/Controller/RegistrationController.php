@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\UserApp;
+use App\Enum\RoleUser; 
 use App\Form\RegistrationFormType;
 use App\Repository\ReclamationRepository;
 use Doctrine\ORM\EntityManagerInterface;

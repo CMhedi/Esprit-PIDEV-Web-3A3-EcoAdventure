@@ -87,4 +87,15 @@ public function filter($planning, $search, $date, $statut, $coach, $sort)
 
     return $qb->getQuery()->getResult();
 }
+public function findAvailable(): array
+{
+    return $this->createQueryBuilder('s')
+        ->where('s.statutSeance = :statut')
+        ->andWhere('s.dateSeance >= :today')
+        ->setParameter('statut', 'PLANIFIEE')
+        ->setParameter('today', new \DateTime())
+        ->orderBy('s.dateSeance', 'ASC')
+        ->getQuery()
+        ->getResult();
+}
 }

@@ -1,5 +1,3 @@
-# config/services.yaml
-
 parameters:
     default_messages_upload_directory: 'C:/xampp2002/htdocs/uploads'
     messages_upload_directory: '%env(default:default_messages_upload_directory:MESSAGES_UPLOAD_DIRECTORY)%'
@@ -80,6 +78,14 @@ services:
             $secretKey: '%stripe_secret_key%'
             $publishableKey: '%stripe_publishable_key%'
             $currency: '%stripe_currency%'
+
+    # ===== NUTRITION API SERVICE =====
+    App\Service\NutritionApiService:
+        arguments:
+            $httpClient: '@http_client'
+            $logger: '@logger'
+        tags:
+            - { name: 'monolog.logger', channel: 'nutrition' }
 
     App\Service\GeminiGifChatService:
         arguments:
