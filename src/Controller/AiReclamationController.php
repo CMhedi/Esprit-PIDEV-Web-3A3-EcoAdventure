@@ -16,8 +16,9 @@ class AiReclamationController extends AbstractController
     public function __construct(HttpClientInterface $client, string $geminiApiKey = null)
     {
         $this->client = $client;
-        $this->geminiApiKey = $geminiApiKey;
+        $this->geminiApiKey = $geminiApiKey ? trim($geminiApiKey) : null;
     }
+
 
     #[Route('/api/reclamation/enhance', name: 'api_reclamation_enhance', methods: ['POST'])]
     public function enhanceText(Request $request): JsonResponse
@@ -37,17 +38,25 @@ class AiReclamationController extends AbstractController
             return new JsonResponse(['error' => 'API_KEY_MISSING'], 503);
         }
 
-        $systemPrompt = "Rôle : Tu es un expert en communication administrative et traducteur assermenté.
-Mission : Ta tâche est de transformer des brouillons de réclamations clients en lettres formelles, professionnelles et structurées en Français.
-Instructions cruciales :
-- Détection de langue : Identifie si l'entrée est en Français, en Arabe classique ou en Darija tunisien (même écrit en caractères latins/franco-arabe comme '3andi', 'mchekel', 'tawa').
-- Traduction & Style : Traduis et reformule le contenu pour qu'il respecte les codes de la correspondance administrative française (Vouvoiement, ton sérieux, clarté).
-- Structure de la réponse : La lettre doit impérativement inclure : Une formule d'appel (Madame, Monsieur,), l'exposition claire du problème, une demande de solution ou d'intervention, une formule de politesse standard (Cordialement, ou Veuillez agréer...).
-- Conservation des données : Garde précieusement les noms, les dates, les montants ou les références techniques mentionnés dans le brouillon.
-- Format : Retourne uniquement le texte final de la lettre. Ne commence pas ta réponse par 'Voici la lettre' ou 'D'accord'.";
+        $systemPrompt = "INSTRUCTION CRITIQUE : Tu es un traducteur de haut niveau. 
+Ta tâche est de prendre le texte suivant (souvent en Arabe ou Darija Tunisien) et de le TRADUIRE et RÉDIGER en une lettre de réclamation FORMELLE, POLIE et PROFESSIONNELLE en FRANÇAIS.
+
+SORTIE ATTENDUE (JSON UNIQUEMENT) :
+{
+  \"enhancedText\": \"(La lettre complète et bien rédigée en FRANÇAIS)\",
+  \"sentiment\": \"COLERE/NEUTRE/POSITIF\",
+  \"category\": \"Mot de passe/Séance/Technique/Paiement/Autre\",
+  \"urgency\": \"HAUTE/MOYENNE/BASSE\",
+  \"shortDescription\": \"(Bref résumé en 3-5 mots en Français)\"
+}
+
+REMARQUE : Même si le texte original est une seule phrase, transforme-la en un paragraphe structuré et formel en Français.";
 
         try {
-            $response = $this->client->request('POST', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' . $apiKey, [
+            // Utilisation de gemini-2.0-flash (v1beta) - Seul modèle qui répond sans 404
+            $response = $this->client->request('POST', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . $apiKey, [
+
+
                 'verify_peer' => false,
                 'verify_host' => false,
                 'headers' => [
@@ -57,24 +66,70 @@ Instructions cruciales :
                     'contents' => [
                         [
                             'parts' => [
-                                ['text' => $systemPrompt . "\n\nTexte du client à transformer :\n" . $originalText]
+                                ['text' => $systemPrompt . "\n\nTexte du client à analyser :\n" . $originalText]
                             ]
                         ]
                     ]
                 ]
             ]);
 
+
             $result = $response->toArray();
             
             if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-                $enhancedText = $result['candidates'][0]['content']['parts'][0]['text'];
-                return new JsonResponse(['enhancedText' => trim($enhancedText)]);
+                $rawText = $result['candidates'][0]['content']['parts'][0]['text'];
+                
+                // Nettoyage des backticks markdown si présents
+                $cleanJson = preg_replace('/^```json\s*|```$/m', '', $rawText);
+                $analysis = json_decode(trim($cleanJson), true);
+
+
+                if ($analysis && isset($analysis['enhancedText'])) {
+                    return new JsonResponse($analysis);
+                }
+
+                return new JsonResponse([
+                    'enhancedText' => trim($rawText),
+                    'sentiment' => 'NEUTRE',
+                    'category' => 'Autre',
+                    'urgency' => 'BASSE',
+                    'shortDescription' => 'Analyse simplifiée'
+                ]);
             }
 
-            return new JsonResponse(['error' => 'Erreur lors de la génération'], 500);
-            
+            return new JsonResponse(['error' => 'Réponse vide de l\'IA'], 500);
+
         } catch (\Exception $e) {
-            return new JsonResponse(['error' => $e->getMessage()], 500);
+            $errorMessage = $e->getMessage();
+            $statusCode = 500;
+            
+            if (method_exists($e, 'getResponse')) {
+                $response = $e->getResponse();
+                $statusCode = $response->getStatusCode();
+                $content = $response->getContent(false);
+                
+                if ($statusCode === 429) {
+                    // Simulation d'analyse pour ne pas bloquer l'utilisateur quand le quota est atteint
+                    return new JsonResponse([
+                        'enhancedText' => $originalText,
+                        'sentiment' => 'NEUTRE',
+                        'category' => 'Autre',
+                        'urgency' => 'MOYENNE',
+                        'shortDescription' => 'Quota IA atteint',
+                        'isFallback' => true
+                    ]);
+                }
+                
+                $errorMessage = "API Error: " . $content;
+            }
+            
+            return new JsonResponse([
+                'error' => $errorMessage,
+                'details' => 'Problème lors de la communication avec l\'IA (Code: ' . $statusCode . ').'
+            ], $statusCode);
         }
+
+
+
     }
 }
