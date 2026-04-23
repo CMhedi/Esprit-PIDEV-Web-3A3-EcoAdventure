@@ -38,6 +38,7 @@
             <li><a href="{{ path('app_event_admin_reservations') }}" class="{{ app.request.get('_route') == 'app_event_admin_reservations' ? 'active' : '' }}"><i class="bi bi-ticket-detailed"></i> Réservations Événements</a></li>
             <li><a href="{{ path('app_admin_statistiques_event') }}" class="{{ app.request.get('_route') == 'app_admin_statistiques_event' ? 'active' : '' }}"><i class="bi bi-bar-chart"></i> Statistiques Event</a></li>
             <li><a href="{{ path('admin_messagerie_index') }}" class="{{ app.request.get('_route') starts with 'admin_messagerie' ? 'active' : '' }}"><i class="bi bi-chat-dots"></i> Messagerie</a></li>
+            <li><a href="{{ path('admin_ai_dashboard') }}" class="{{ app.request.get('_route') == 'admin_ai_dashboard' ? 'active' : '' }}"><i class="bi bi-robot"></i> AI Agent</a></li>
             <li>
                 <a href="{{ path('app_user_app_index') }}" class="{{ app.request.get('_route') == 'app_user_app_index' ? 'active' : '' }}">
                     <i class="bi bi-people"></i> Utilisateurs

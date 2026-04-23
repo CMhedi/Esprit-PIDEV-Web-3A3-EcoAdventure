@@ -40,7 +40,7 @@
                     </li>
                 {% endif %}
                 <li class="nav-item"><a class="nav-link" href="#">Coachs</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ app.user ? path('nutrition_dashboard') : path('app_login') }}">Nutrition</a></li>
             </ul>
 
             <div class="d-flex align-items-center gap-3">
