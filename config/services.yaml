@@ -3,6 +3,8 @@ parameters:
     messages_upload_directory: '%env(default:default_messages_upload_directory:MESSAGES_UPLOAD_DIRECTORY)%'
     activite_resv_image_directory: '%kernel.project_dir%/public/ActivieResvImage'
     activite_resv_image_public_path: 'ActivieResvImage'
+    app.promo_group_threshold: 11
+    app.promo_group_discount: 0.10
     default_pack_holiday_country: 'TN'
     pack_holiday_country: '%env(default:default_pack_holiday_country:PACK_HOLIDAY_COUNTRY)%'
     default_openai_api_key: ''
@@ -34,15 +36,11 @@ parameters:
     groq_default_vision_model: 'llama-3.2-11b-vision-preview'
     groq_default_audio_model: 'whisper-large-v3'
     giphy_default_api_key: ''
-    app.promo_group_threshold: 11
-    app.promo_group_discount: 0.10
 
 services:
     _defaults:
         autowire: true
         autoconfigure: true
-        bind:
-            $geminiApiKey: '%env(GEMINI_API_KEY)%'
 
     App\:
         resource: '../src/'
@@ -50,7 +48,6 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
-            - '../src/Security/GoogleAuthenticator.php'
 
     App\Service\Context\HolidayContextProvider:
         arguments:

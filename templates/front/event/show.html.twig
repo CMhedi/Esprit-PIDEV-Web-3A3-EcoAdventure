@@ -60,6 +60,7 @@
     }
 </style>
 
+<<<<<<< HEAD
 <div class="container py-5">
     
     {% for message in app.flashes('success') %}
@@ -68,6 +69,27 @@
     {% for message in app.flashes('error') %}
         <div class="alert alert-danger border-0 shadow-sm rounded-3 fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ message }}</div>
     {% endfor %}
+=======
+        <div class="row">
+            <div class="col-lg-8">
+                {% if evenement.image_url %}
+                    <img src="{{ asset(evenement.image_url) }}" class="img-fluid rounded shadow-sm mb-4" alt="{{ evenement.titre }}" style="width: 100%; max-height: 400px; object-fit: cover;">
+                {% else %}
+                    <img src="{{ asset('assets/img/event1.png') }}" class="img-fluid rounded shadow-sm mb-4" alt="{{ evenement.titre }}" style="width: 100%; max-height: 400px; object-fit: cover;">
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1 class="fw-bold">{{ evenement.titre }}</h1>
+                    <div class="text-warning fs-4">
+                        {% set avg = evenement.averageRating %}
+                        {% for i in 1..5 %}
+                            <i class="bi bi-star{{ avg >= i ? '-fill' : (avg >= i - 0.5 ? '-half' : '') }}"></i>
+                        {% endfor %}
+                        <span class="ms-1 text-muted fs-6">({{ evenement.ratings|length }})</span>
+                    </div>
+                </div>
+                <p class="lead">{{ evenement.description }}</p>
+>>>>>>> 8da195205bd0888e33115f8708c0181920e2f7bb
 
     <!-- Entête Titre -->
     <div class="mb-4 d-flex justify-content-between align-items-end">
@@ -91,7 +113,7 @@
         {% if evenement.image_url %}
             <img src="{{ asset(evenement.image_url) }}" class="event-cover-img" alt="{{ evenement.titre }}">
         {% else %}
-            <img src="{{ asset('assets/img/event1.png') }}" class="event-cover-img" alt="{{ evenement.titre }}">
+            <img src="{{ asset('assets/img/default-event.png') }}" class="event-cover-img" alt="{{ evenement.titre }}">
         {% endif %}
     </div>
 

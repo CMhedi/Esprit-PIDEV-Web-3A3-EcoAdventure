@@ -129,7 +129,7 @@
                         {% if res.evenement.image_url %}
                             <img src="{{ asset(res.evenement.image_url) }}" class="res-img" alt="{{ res.evenement.titre }}">
                         {% else %}
-                            <img src="{{ asset('assets/img/event1.png') }}" class="res-img" alt="{{ res.evenement.titre }}">
+                            <img src="{{ asset('assets/img/default-event.png') }}" class="card-img-top" alt="{{ res.evenement.titre }}" style="height: 150px; object-fit: cover;">
                         {% endif %}
 
                         <div class="card-body p-4 d-flex flex-column">
