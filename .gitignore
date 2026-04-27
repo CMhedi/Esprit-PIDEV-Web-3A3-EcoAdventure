@@ -9,14 +9,17 @@
 /public/bundles/
 /var/
 /vendor/
+###< symfony/framework-bundle ###
 
-### PHPUnit ###
+###> phpunit/phpunit ###
 /phpunit.xml
 /.phpunit.cache/
+###< phpunit/phpunit ###
 
-### Assets ###
+###> symfony/asset-mapper ###
 /public/assets/
 /assets/vendor/
+###< symfony/asset-mapper ###
 
 ### Python ###
 venv/
@@ -36,17 +39,6 @@ __pycache__/
 ### OS ###
 .DS_Store
 Thumbs.db
-###< symfony/framework-bundle ###
-
-###> phpunit/phpunit ###
-/phpunit.xml
-/.phpunit.cache/
-###< phpunit/phpunit ###
-
-###> symfony/asset-mapper ###
-/public/assets/
-/assets/vendor/
-###< symfony/asset-mapper ###
 
 ###> local tooling ###
 tools/card_ocr_api/.venv/

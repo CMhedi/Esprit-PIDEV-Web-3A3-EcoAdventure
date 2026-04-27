@@ -21,4 +21,8 @@ if (class_exists('Nucleos\\DompdfBundle\\NucleosDompdfBundle')) {
     $bundles['Nucleos\\DompdfBundle\\NucleosDompdfBundle'] = ['all' => true];
 }
 
+if (class_exists('Symfony\\Bundle\\NotifierBundle\\NotifierBundle')) {
+    $bundles['Symfony\\Bundle\\NotifierBundle\\NotifierBundle'] = ['all' => true];
+}
+
 return $bundles;

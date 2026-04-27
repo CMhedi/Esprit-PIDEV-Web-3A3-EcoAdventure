@@ -80,7 +80,6 @@ services:
             $secretKey: '%stripe_secret_key%'
             $publishableKey: '%stripe_publishable_key%'
             $currency: '%stripe_currency%'
-
     # ===== NUTRITION API SERVICE =====
     App\Service\NutritionApiService:
         arguments:

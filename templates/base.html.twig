@@ -12,6 +12,7 @@
     {% block stylesheets %}{% endblock %}
     {% block head_extra %}{% endblock %}
 </head>
+
 <body class="{% block body_class %}{% endblock %}">
 
 {% block navbar %}
@@ -20,13 +21,13 @@
         <a class="navbar-brand fw-bold brand-text" href="{{ path('app_home') }}">
             <i class="bi bi-tree-fill me-2"></i>Eco<span>Adventure</span>
         </a>
-
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
             <span class="navbar-toggler-icon"></span>
         </button>
 
         <div class="collapse navbar-collapse" id="mainNav">
             <ul class="navbar-nav mx-auto">
+
                 <li class="nav-item"><a class="nav-link" href="{{ path('app_home') }}">Accueil</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ path('app_event_front_index') }}">Evenements</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ path('app_activitefront') }}">Activites</a></li>
@@ -133,11 +134,13 @@
 <footer class="footer-eco text-white mt-5">
     <div class="footer-overlay py-5">
         <div class="container">
-            <div class="row g-4 align-items-start">
+            <div class="row g-4">
+
                 <div class="col-lg-4">
                     <h4 class="fw-bold">EcoAdventure</h4>
                     <p>Votre agence d'activites et d'evenements sportifs en pleine nature.</p>
                 </div>
+
                 <div class="col-lg-4">
                     <h5>Liens utiles</h5>
                     <ul class="list-unstyled footer-links">
@@ -148,6 +151,7 @@
                         <li><a href="{{ path('app_packs') }}">Packs</a></li>
                     </ul>
                 </div>
+
                 <div class="col-lg-4">
                     <h5>Suivez-nous</h5>
                     <div class="d-flex gap-3 fs-4">
@@ -157,6 +161,7 @@
                         <a href="#"><i class="bi bi-youtube"></i></a>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>

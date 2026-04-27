@@ -2,8 +2,8 @@
 
 namespace App\Command;
 
-use App\Repository\UserAppRepository;
 use App\Repository\NutritionLogRepository;
+use App\Repository\UserAppRepository;
 use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -14,7 +14,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:check-goals',
-    description: 'Vérifie les objectifs nutritionnels et envoie des emails',
+    description: 'Verifie les objectifs nutritionnels et envoie des emails',
 )]
 class CheckGoalsCommand extends Command
 {
@@ -39,24 +39,17 @@ class CheckGoalsCommand extends Command
         $hasUpdates = false;
 
         foreach ($users as $user) {
-
-            // sécurité
             if (!$user->getWeight() || !$user->getHeight()) {
                 continue;
             }
 
-            // ===== STATS =====
             $stats = $this->logRepo->getTotalMacros($user->getId(), $today);
-
-            // ===== GOALS =====
             $goals = $this->calculateGoals($user);
 
-            // Do not send duplicates if this user was already notified for today.
             if ($user->isGoalNotified()) {
                 continue;
             }
 
-            // ===== 🎉 OBJECTIF ATTEINT =====
             if ($stats['calories'] >= $goals['calories']) {
                 try {
                     $userName = trim(($user->getPrenom() ?? '') . ' ' . ($user->getNom() ?? ''));
@@ -64,25 +57,22 @@ class CheckGoalsCommand extends Command
 
                     $user->setGoalNotified(true);
                     $hasUpdates = true;
-                    $achievedCount++;
-                    $io->info("✅ Email envoyé à {$user->getEmail()} - Objectif atteint");
+                    ++$achievedCount;
+                    $io->info("Email envoye a {$user->getEmail()} - Objectif atteint");
                 } catch (\Exception $e) {
-                    $io->error("❌ Erreur: {$e->getMessage()}");
+                    $io->error("Erreur: {$e->getMessage()}");
                 }
-            }
-
-            // ===== ⚠️ OBJECTIF NON ATTEINT =====
-            elseif ($stats['calories'] < $goals['calories']) {
+            } elseif ($stats['calories'] < $goals['calories']) {
                 try {
                     $userName = trim(($user->getPrenom() ?? '') . ' ' . ($user->getNom() ?? ''));
                     $this->notificationService->sendGoalNotAchieved($user->getEmail(), $userName);
 
                     $user->setGoalNotified(true);
                     $hasUpdates = true;
-                    $notAchievedCount++;
-                    $io->info("⚠️ Email envoyé à {$user->getEmail()} - Objectif non atteint");
+                    ++$notAchievedCount;
+                    $io->info("Email envoye a {$user->getEmail()} - Objectif non atteint");
                 } catch (\Exception $e) {
-                    $io->error("❌ Erreur: {$e->getMessage()}");
+                    $io->error("Erreur: {$e->getMessage()}");
                 }
             }
         }
@@ -91,12 +81,11 @@ class CheckGoalsCommand extends Command
             $this->em->flush();
         }
 
-        $io->success("Emails envoyés: $achievedCount objectifs atteints, $notAchievedCount non atteints");
+        $io->success("Emails envoyes: $achievedCount objectifs atteints, $notAchievedCount non atteints");
 
         return Command::SUCCESS;
     }
 
-    // ===== 🧠 CALCUL CENTRALISÉ =====
     private function calculateGoals($user): array
     {
         $weight = $user->getWeight();
@@ -105,7 +94,6 @@ class CheckGoalsCommand extends Command
         $gender = $user->getGender() ?? 'M';
         $activity = $user->getActivityLevel() ?? 1.5;
 
-        // BMR
         if ($gender === 'M') {
             $bmr = 10 * $weight + 6.25 * $height - 5 * $age + 5;
         } else {
@@ -113,7 +101,6 @@ class CheckGoalsCommand extends Command
         }
 
         $calories = $bmr * $activity;
-
         $protein = $weight * 1.8;
         $fat = ($calories * 0.25) / 9;
         $carbs = ($calories - ($protein * 4 + $fat * 9)) / 4;
@@ -122,7 +109,7 @@ class CheckGoalsCommand extends Command
             'calories' => round($calories),
             'protein' => round($protein),
             'fat' => round($fat),
-            'carbs' => round($carbs)
+            'carbs' => round($carbs),
         ];
     }
 }

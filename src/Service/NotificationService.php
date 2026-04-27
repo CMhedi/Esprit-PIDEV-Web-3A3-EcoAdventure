@@ -1,34 +1,36 @@
 <?php
 namespace App\Service;
 
-use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Mime\Email;
-use Symfony\Component\Mime\Address;
+use App\Notification\GoalStatusEmailNotification;
+use Symfony\Component\Notifier\NotifierInterface;
+use Symfony\Component\Notifier\Recipient\Recipient;
 
 class NotificationService
 {
-    public function __construct(private MailerInterface $mailer) {}
+    public function __construct(private NotifierInterface $notifier) {}
 
     public function sendGoalAchieved(string $to, string $userName = 'Utilisateur'): void
     {
-        $email = (new Email())
-            ->from(new Address('sabribenfalah03@gmail.com', 'EcoAdventure App'))
-            ->to($to)
-            ->subject('🎉 Objectif atteint !')
-            ->html($this->getGoalAchievedTemplate($userName));
+        $notification = new GoalStatusEmailNotification(
+            '🎉 Objectif atteint !',
+            $this->getGoalAchievedTemplate($userName),
+            GoalStatusEmailNotification::IMPORTANCE_HIGH,
+            '🎉'
+        );
 
-        $this->mailer->send($email);
+        $this->notifier->send($notification, new Recipient($to));
     }
 
     public function sendGoalNotAchieved(string $to, string $userName = 'Utilisateur'): void
     {
-        $email = (new Email())
-            ->from(new Address('sabribenfalah03@gmail.com', 'EcoAdventure App'))
-            ->to($to)
-            ->subject('⚠️ Objectif non atteint')
-            ->html($this->getGoalNotAchievedTemplate($userName));
+        $notification = new GoalStatusEmailNotification(
+            '⚠️ Objectif non atteint',
+            $this->getGoalNotAchievedTemplate($userName),
+            GoalStatusEmailNotification::IMPORTANCE_MEDIUM,
+            '⚠️'
+        );
 
-        $this->mailer->send($email);
+        $this->notifier->send($notification, new Recipient($to));
     }
 
     // ===== 🎉 TEMPLATE OBJECTIF ATTEINT =====

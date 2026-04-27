@@ -6,10 +6,12 @@ use App\Entity\UserApp;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Enum\RoleUser;
+
 /**
  * @extends ServiceEntityRepository<UserApp>
  */
 class UserAppRepository extends ServiceEntityRepository
+
 {
     public function __construct(ManagerRegistry $registry)
     {
