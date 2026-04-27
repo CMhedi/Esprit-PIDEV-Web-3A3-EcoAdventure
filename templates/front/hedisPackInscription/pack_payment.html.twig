@@ -134,8 +134,16 @@
                                 <strong>{{ stripeCurrency|upper }}</strong>
                             </div>
                             <div>
+                                <span>Montant catalogue</span>
+                                <strong>{{ inscription.montantTotal|number_format(2, '.', ' ') }} DT</strong>
+                            </div>
+                            <div>
                                 <span>Montant envoye a Stripe</span>
-                                <strong>{{ inscription.montantTotal|number_format(2, '.', ' ') }} {{ stripeCurrency|upper }}</strong>
+                                <strong>{{ stripeAmount|number_format(2, '.', ' ') }} {{ stripeCurrency|upper }}</strong>
+                            </div>
+                            <div>
+                                <span>Taux applique</span>
+                                <strong>1 DT = {{ stripeDtExchangeRate|number_format(4, '.', ' ') }} {{ stripeCurrency|upper }}</strong>
                             </div>
                             <div>
                                 <span>Cle publishable</span>
@@ -146,7 +154,7 @@
                         {% if stripeCurrency|lower != 'tnd' %}
                             <div class="form-note mb-3">
                                 <i class="bi bi-exclamation-circle"></i>
-                                <span>Le prix catalogue du pack est affiche en DT, mais le test Stripe suit actuellement la devise configuree dans <code>STRIPE_CURRENCY</code>.</span>
+                                <span>Le paiement Stripe sera effectue en {{ stripeCurrency|upper }} apres conversion automatique du prix catalogue affiche en DT.</span>
                             </div>
                         {% endif %}
 

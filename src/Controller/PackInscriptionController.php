@@ -131,6 +131,8 @@ final class PackInscriptionController extends AbstractController
             'method' => 'POST',
         ]);
 
+        $stripeAmount = $stripeCheckoutGateway->convertCatalogAmountToStripeAmount((float) $inscription->getMontantTotal());
+
         return $this->render('front/hedisPackInscription/pack_payment.html.twig', [
             'inscription' => $inscription,
             'pack' => $inscription->getPack(),
@@ -140,6 +142,8 @@ final class PackInscriptionController extends AbstractController
             'stripeMissingSettings' => $stripeCheckoutGateway->getMissingConfigurationFields(),
             'stripePublishableKey' => $stripeCheckoutGateway->getPublishableKey(),
             'stripeCurrency' => $stripeCheckoutGateway->getCurrency(),
+            'stripeAmount' => $stripeAmount,
+            'stripeDtExchangeRate' => $stripeCheckoutGateway->getDtExchangeRate(),
             'demoCardPaymentEnabled' => $this->isDemoCardPaymentEnabled(),
             'cardOcrApiUrl' => $this->getParameter('card_ocr_api_url'),
             'ticketUrl' => $this->isTicketAvailable($inscription) ? $ticketFactory->generatePublicTicketUrl($inscription) : null,
@@ -192,7 +196,7 @@ final class PackInscriptionController extends AbstractController
 
             $checkoutSession = $stripeCheckoutGateway->createCheckoutSession(new StripeCheckoutRequest(
                 $inscription->getPaymentOrderId() ?? (string) $inscription->getIdInscription(),
-                (float) $inscription->getMontantTotal(),
+                $stripeCheckoutGateway->convertCatalogAmountToStripeAmount((float) $inscription->getMontantTotal()),
                 $stripeCheckoutGateway->getCurrency(),
                 sprintf('Inscription EcoAdventure - %s', $pack->getNom()),
                 $this->generateUrl('app_pack_inscription_payment_stripe_success', [], UrlGeneratorInterface::ABSOLUTE_URL) . '?session_id={CHECKOUT_SESSION_ID}',
@@ -202,6 +206,8 @@ final class PackInscriptionController extends AbstractController
                 [
                     'inscription_id' => (string) $inscription->getIdInscription(),
                     'payment_order_id' => (string) $inscription->getPaymentOrderId(),
+                    'catalog_amount_dt' => (string) $inscription->getMontantTotal(),
+                    'stripe_dt_exchange_rate' => (string) $stripeCheckoutGateway->getDtExchangeRate(),
                 ],
             ));
         } catch (PaymentGatewayConfigurationException $exception) {
@@ -272,7 +278,9 @@ final class PackInscriptionController extends AbstractController
             return new Response('Inscription Stripe introuvable.', Response::HTTP_NOT_FOUND);
         }
 
-        $expectedAmount = $stripeCheckoutGateway->amountToSmallestUnit((float) $inscription->getMontantTotal());
+        $expectedAmount = $stripeCheckoutGateway->amountToSmallestUnit(
+            $stripeCheckoutGateway->convertCatalogAmountToStripeAmount((float) $inscription->getMontantTotal())
+        );
         $orderMatches = !$checkoutSession->getClientReferenceId() || $checkoutSession->getClientReferenceId() === $inscription->getPaymentOrderId();
         $currencyMatches = strtolower($checkoutSession->getCurrency()) === strtolower($stripeCheckoutGateway->getCurrency());
 

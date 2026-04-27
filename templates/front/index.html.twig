@@ -1313,6 +1313,14 @@
                         {% endif %}
                     {% endfor %}
                     {% set isCallSummary = msgType in ['APPEL_AUDIO', 'APPEL_VIDEO'] %}
+                    {% set reactions = message.reactions ?? {} %}
+                    {% set reactionOptions = ['❤️'] %}
+                    {% set userReaction = '' %}
+                    {% for reactionEmoji in reactionOptions %}
+                        {% if mon_id in (reactions[reactionEmoji]|default([])) %}
+                            {% set userReaction = reactionEmoji %}
+                        {% endif %}
+                    {% endfor %}
                     <div class="d-flex {{ is_mine ? 'justify-content-end' : 'justify-content-start' }} mb-3 message-item">
                         <div class="{{ isCallSummary ? (is_mine ? 'message-bubble message-sent shadow' : 'message-bubble message-received shadow-sm') : ((is_mine and isTextStyled) ? 'message-bubble message-sent shadow' : 'message-bubble message-received shadow-sm') }}" style="position: relative;">
                             {% if isCallSummary %}
@@ -1365,14 +1373,6 @@
                             {% set isAudioFile = mediaFolder in ['audio', 'call', 'vocale'] or mediaExt in ['mp3', 'wav', 'm4a', 'ogg', 'aac', 'webm'] %}
                             {% set isImageFile = mediaFolder == 'images' or mediaExt in ['jpg', 'jpeg', 'png', 'webp', 'gif'] %}
                             {% set isPdfFile = (mediaFolder == 'files' and mediaExt == 'pdf') or mediaExt == 'pdf' %}
-                            {% set reactions = message.reactions ?? {} %}
-                            {% set reactionOptions = ['❤️'] %}
-                            {% set userReaction = '' %}
-                            {% for reactionEmoji in reactionOptions %}
-                                {% if mon_id in (reactions[reactionEmoji]|default([])) %}
-                                    {% set userReaction = reactionEmoji %}
-                                {% endif %}
-                            {% endfor %}
 
                             {% if attachments is not empty %}
                                 {% for attachment in attachments %}

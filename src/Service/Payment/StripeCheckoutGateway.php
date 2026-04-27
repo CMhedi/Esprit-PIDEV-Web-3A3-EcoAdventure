@@ -15,6 +15,7 @@ final class StripeCheckoutGateway
         private readonly string $secretKey,
         private readonly string $publishableKey = '',
         private readonly string $currency = 'eur',
+        private readonly string $dtExchangeRate = '1',
     ) {
     }
 
@@ -51,6 +52,18 @@ final class StripeCheckoutGateway
     public function getPublishableKey(): string
     {
         return trim($this->publishableKey);
+    }
+
+    public function getDtExchangeRate(): float
+    {
+        $exchangeRate = (float) str_replace(',', '.', trim($this->dtExchangeRate));
+
+        return $exchangeRate > 0 ? $exchangeRate : 1.0;
+    }
+
+    public function convertCatalogAmountToStripeAmount(float $catalogAmount): float
+    {
+        return round($catalogAmount * $this->getDtExchangeRate(), 2);
     }
 
     public function amountToSmallestUnit(float $amount): int

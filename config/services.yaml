@@ -25,6 +25,8 @@ parameters:
     stripe_publishable_key: '%env(default:default_stripe_publishable_key:STRIPE_PUBLISHABLE_KEY)%'
     default_stripe_currency: 'eur'
     stripe_currency: '%env(default:default_stripe_currency:STRIPE_CURRENCY)%'
+    default_stripe_dt_exchange_rate: '1'
+    stripe_dt_exchange_rate: '%env(default:default_stripe_dt_exchange_rate:STRIPE_DT_EXCHANGE_RATE)%'
     default_demo_card_payment_enabled: false
     demo_card_payment_enabled: '%env(default:default_demo_card_payment_enabled:DEMO_CARD_PAYMENT_ENABLED)%'
     default_card_ocr_api_url: 'http://127.0.0.1:5055/ocr/card'
@@ -80,6 +82,7 @@ services:
             $secretKey: '%stripe_secret_key%'
             $publishableKey: '%stripe_publishable_key%'
             $currency: '%stripe_currency%'
+            $dtExchangeRate: '%stripe_dt_exchange_rate%'
 
     App\Service\GeminiGifChatService:
         arguments:
