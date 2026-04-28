@@ -19,4 +19,5 @@ return [
     SymfonyCasts\Bundle\VerifyEmail\SymfonyCastsVerifyEmailBundle::class => ['all' => true],
     AhmedBhs\DoctrineDoctor\DoctrineDoctorBundle::class => ['dev' => true],
     App\Notification\AppNotificationBundle::class => ['all' => true],
+    App\AiBundle\AiBundle::class => ['all' => true],
 ];
