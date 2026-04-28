@@ -10,7 +10,6 @@ use Symfony\Component\HttpFoundation\Request;
 use App\Form\SeanceType;
 use App\Entity\Seance;
 use App\Repository\UserAppRepository;
-use App\Service\GoogleCalendarService;
 class SeanceController extends AbstractController
 {
 
@@ -80,8 +79,7 @@ public function new(
 public function edit(
     Seance $seance,
     Request $request,
-    SeanceRepository $repo,
-    GoogleCalendarService $googleService
+    SeanceRepository $repo
 ): Response {
 
     $form = $this->createForm(SeanceType::class, $seance);
@@ -90,48 +88,6 @@ public function edit(
     if ($form->isSubmitted() && $form->isValid()) {
 
         $repo->save($seance, true);
-
-        // 🔥 UPDATE GOOGLE EVENTS
-        $timezone = new \DateTimeZone('Africa/Tunis');
-
-        foreach ($seance->getReservationSeances() as $reservation) {
-
-            if ($reservation->getGoogle_event_id()) {
-
-                $user = $reservation->getUserApp();
-                $token = json_decode($user->getGoogleToken(), true);
-
-                if (!$token) continue;
-
-                // 🕒 nouvelles dates
-                $start = new \DateTime(
-                    $seance->getDateSeance()->format('Y-m-d') . ' ' .
-                    $seance->getHeureDebut()->format('H:i:s'),
-                    $timezone
-                );
-
-                $end = new \DateTime(
-                    $seance->getDateSeance()->format('Y-m-d') . ' ' .
-                    $seance->getHeureFin()->format('H:i:s'),
-                    $timezone
-                );
-
-                try {
-                    $googleService->updateEvent(
-                        $token,
-                        $reservation->getGoogle_event_id(),
-                        "Séance : " . $seance->getNom(),
-                        "EcoAdventure",
-                        $start,
-                        $end
-                    );
-                } catch (\Exception $e) {
-                    // 🔥 ne bloque pas toute la boucle
-                }
-            }
-        }
-
-        $this->addFlash('success', 'Séance mise à jour + Google Calendar synchronisé');
 
         return $this->redirectToRoute('app_admin_seances', [
             'id' => $seance->getPlanning()->getIdPlanning()
@@ -142,6 +98,7 @@ public function edit(
         'form' => $form->createView(),
         'planning' => $seance->getPlanning(),
         'editMode' => true,
+              // 🔥 ICI
     ]);
 }
 #[Route('/admin/seance/{id}/delete', name: 'app_admin_seance_delete', methods: ['POST'])]

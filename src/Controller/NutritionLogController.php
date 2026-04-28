@@ -1167,7 +1167,7 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
             $alert['severity'] = 'warning';
         } else {
             $alert['message'] = sprintf(
-                '✅ Vous avez perdu %.2f kg. Continuez !',
+                '✅ Vous avez perdu %.2f kg. IMC: %.2f. Continuez !',
                 abs($diff),
                 $imc
             );

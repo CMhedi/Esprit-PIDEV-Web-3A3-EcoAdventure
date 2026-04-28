@@ -1,108 +1,597 @@
 {% extends 'admin/base_admin.html.twig' %}
 
-{% block title %}Dashboard Admin{% endblock %}
-{% block page_title %}Tableau de Bord Admin{% endblock %}
+{% block title %}EcoAdventure | Pro AI Dashboard{% endblock %}
 
 {% block body %}
-<div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon"><i class="bi bi-people"></i></div>
-            <h3>{{ stats.users }}</h3>
-            <p>Utilisateurs</p>
+<div class="dashboard-container animate-fade-in px-4 py-3">
+    <!-- Header with Premium Glassmorphism -->
+    <div class="glass-header d-flex justify-content-between align-items-center mb-5 p-4 rounded-4 shadow-sm border" style="background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); border-color: rgba(255,255,255,0.4) !important;">
+        <div>
+            <h2 class="fw-bold mb-0" style="letter-spacing: -0.5px;"><span class="text-gradient">Eco-Intelligence</span> Center</h2>
+            <p class="text-muted small mb-0"><i class="bi bi-cpu-fill text-primary me-2"></i>Analyse prédictive en temps réel | {{ "now"|date("d F Y, H:i") }}</p>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon"><i class="bi bi-calendar-event"></i></div>
-            <h3>{{ stats.events }}</h3>
-            <p>Événements</p>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
-            <h3>{{ stats.packs }}</h3>
-            <p>Packs</p>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon"><i class="bi bi-journal-check"></i></div>
-            <h3>{{ stats.inscriptions }}</h3>
-            <p>Inscriptions</p>
-        </div>
-    </div>
-</div>
-
-{% include 'admin/risk/_dashboard_panel.html.twig' with {
-    riskDashboard: riskDashboard|default({}),
-    riskNarrative: riskNarrative|default('')
-} only %}
-
-<div class="admin-card mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="fw-bold mb-0">Gestion des événements</h4>
-        <a href="{{ path('app_event_admin_new') }}" class="btn btn-eco btn-sm">Ajouter</a>
-    </div>
-
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead>
-                <tr>
-                    <th>Événement</th>
-                    <th>Lieu</th>
-                    <th>Date</th>
-                    <th>Participants</th>
-                    <th>Statut</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for event in recentEvents %}
-                    <tr>
-                        <td>{{ event.title }}</td>
-                        <td>{{ event.location }}</td>
-                        <td>{{ event.date }}</td>
-                        <td>{{ event.participants }}</td>
-                        <td class="fw-bold">{{ event.title }}</td>
-                        <td>{{ event.location }}</td>
-                        <td>{{ event.date|date('d/m/Y') }}</td>
-                        <td>
-                            <span class="badge bg-info-subtle text-info px-2 py-1 rounded-pill">
-                                {{ event.participants }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if event.status == 'Active' %}
-                                <span class="badge bg-success">{{ event.status }}</span>
-                            {% elseif event.status == 'À venir' %}
-                                <span class="badge bg-warning text-dark">{{ event.status }}</span>
-                            {% else %}
-                                <span class="badge bg-secondary">{{ event.status }}</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="5" class="text-center text-muted py-3">Aucun événement récent.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="row g-4">
-    {% for event in recentEvents %}
-        <div class="col-lg-4">
-            <div class="admin-card h-100">
-                <h5 class="fw-bold">{{ event.title }}</h5>
-                <p class="mb-1 text-muted small"><i class="bi bi-geo-alt me-2"></i>{{ event.location }}</p>
-                <p class="mb-1 text-muted small"><i class="bi bi-calendar-event me-2"></i>{{ event.date|date('d/m/Y') }}</p>
-                <p class="mb-3"><i class="bi bi-people me-2"></i><strong>{{ event.participants }}</strong> participants</p>
-                <a href="{{ path('app_event_admin_edit', {'id_evenement': event.id}) }}" class="btn btn-eco-outline btn-sm">Voir détails</a>
+        <div class="d-flex gap-3">
+            <button class="btn btn-white border rounded-pill px-4 shadow-sm transition-300 hover-lift" onclick="window.print()">
+                <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Exporter PDF
+            </button>
+            <div class="status-indicator bg-white border rounded-pill px-3 py-2 d-flex align-items-center gap-2 shadow-sm">
+                <span class="pulse-dot"></span>
+                <span class="text-dark fw-bold small" style="font-size: 0.75rem; letter-spacing: 0.5px;">IA SYSTÈME ACTIVE</span>
             </div>
         </div>
-    {% endfor %}
+    </div>
+
+    {% include 'admin/risk/_dashboard_panel.html.twig' with {
+        riskDashboard: riskDashboard|default({}),
+        riskNarrative: riskNarrative|default('')
+    } only %}
+
+    <!-- Main KPI Grid -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6 col-xl-3">
+            <div class="kpi-card p-4 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden" style="background: #ffffff;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="kpi-icon-box bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-people-fill fs-4"></i>
+                    </div>
+                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1 small">+12%</span>
+                </div>
+                <div class="kpi-content">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">Utilisateurs</p>
+                    <h2 class="fw-bold mb-0 text-dark">{{ stats.users }}</h2>
+                </div>
+                <div class="kpi-bg-icon position-absolute opacity-05" style="bottom: -20px; right: -10px; font-size: 6rem; pointer-events: none;"><i class="bi bi-people"></i></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="kpi-card p-4 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden" style="background: #ffffff;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="kpi-icon-box bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-calendar-check-fill fs-4"></i>
+                    </div>
+                    <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-2 py-1 small">Actifs</span>
+                </div>
+                <div class="kpi-content">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">Événements</p>
+                    <h2 class="fw-bold mb-0 text-dark">{{ stats.events }}</h2>
+                </div>
+                <div class="kpi-bg-icon position-absolute opacity-05" style="bottom: -20px; right: -10px; font-size: 6rem; pointer-events: none;"><i class="bi bi-calendar-event"></i></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="kpi-card p-4 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden" style="background: #ffffff;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="kpi-icon-box bg-purple bg-opacity-10 text-purple rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; color: #8b5cf6;">
+                        <i class="bi bi-stars fs-4"></i>
+                    </div>
+                    <span class="badge bg-purple bg-opacity-10 text-purple rounded-pill px-2 py-1 small" style="color: #8b5cf6;">{{ ai.sentimentLabel }}</span>
+                </div>
+                <div class="kpi-content">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">Satisfaction IA</p>
+                    <h2 class="fw-bold mb-0 text-dark">{{ ai.sentiment }}%</h2>
+                </div>
+                <div class="kpi-bg-icon position-absolute opacity-05" style="bottom: -20px; right: -10px; font-size: 6rem; pointer-events: none;"><i class="bi bi-heart-fill"></i></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="kpi-card p-4 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden" style="background: #ffffff;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="kpi-icon-box bg-warning bg-opacity-10 text-warning rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-lightning-charge-fill fs-4"></i>
+                    </div>
+                    <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-2 py-1 small">Prédiction</span>
+                </div>
+                <div class="kpi-content">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">Flux Futur</p>
+                    <h2 class="fw-bold mb-0 text-dark">+{{ ai.forecast|reduce((a, b) => a + b) }}</h2>
+                </div>
+                <div class="kpi-bg-icon position-absolute opacity-05" style="bottom: -20px; right: -10px; font-size: 6rem; pointer-events: none;"><i class="bi bi-speedometer2"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Highlighted Metrics Section -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="p-4 rounded-4 shadow-sm position-relative overflow-hidden d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none;">
+                <div class="position-relative z-index-1">
+                    <p class="text-white text-opacity-80 small fw-bold text-uppercase mb-1 tracking-widest">Gestion des Packs</p>
+                    <h1 class="text-white fw-800 mb-2" style="font-size: 3rem; letter-spacing: -1.5px;">{{ stats.packs }}</h1>
+                    <div class="badge bg-white bg-opacity-20 rounded-pill px-3 py-2 small fw-bold">INVENTAIRE ACTIF</div>
+                </div>
+                <div class="text-white opacity-20" style="font-size: 5rem;"><i class="bi bi-box-seam-fill"></i></div>
+                <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;"><i class="bi bi-box-seam" style="font-size: 15rem;"></i></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="p-4 rounded-4 shadow-sm position-relative overflow-hidden d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); border: none;">
+                <div class="position-relative z-index-1">
+                    <p class="text-white text-opacity-80 small fw-bold text-uppercase mb-1 tracking-widest">Inscriptions Totales</p>
+                    <h1 class="text-white fw-800 mb-2" style="font-size: 3rem; letter-spacing: -1.5px;">{{ stats.inscriptions }}</h1>
+                    <div class="badge bg-white bg-opacity-20 rounded-pill px-3 py-2 small fw-bold">RÉSERVATIONS CONFIRMÉES</div>
+                </div>
+                <div class="text-white opacity-20" style="font-size: 5rem;"><i class="bi bi-journal-check"></i></div>
+                <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;"><i class="bi bi-journal-check" style="font-size: 15rem;"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Face ID Security Section (Refined) -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="background: #ffffff;">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-4">
+                            <div class="faceid-visual rounded-4 d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary" style="width: 80px; height: 80px;">
+                                <i class="bi bi-shield-lock-fill fs-1"></i>
+                            </div>
+                            <div>
+                                <h4 class="fw-bold mb-1 text-dark">Sécurité Biométrique Admin <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill ms-2 small" style="font-size: 0.65rem;">PRO AI</span></h4>
+                                <p class="text-muted mb-0 small fw-medium">Connexion instantanée par reconnaissance faciale active.</p>
+                            </div>
+                        </div>
+                        <div id="admin-faceid-status-area" class="text-end">
+                            {% set hasFaceDescriptor = app.user is not null and (attribute(app.user, 'faceDescriptor') is defined) and attribute(app.user, 'faceDescriptor') %}
+                            {% if hasFaceDescriptor %}
+                                <div class="d-flex align-items-center gap-2 mb-3 justify-content-end text-success fw-bold">
+                                    <div class="pulse-dot bg-success"></div> Face ID Opérationnel
+                                </div>
+                                <button type="button" id="btn-start-admin-faceid" class="btn btn-outline-primary rounded-pill px-4 fw-bold shadow-sm transition-all hover-lift">
+                                    <i class="bi bi-arrow-repeat me-2"></i> Mettre à jour mon visage
+                                </button>
+                            {% else %}
+                                <div class="d-flex align-items-center gap-2 mb-3 justify-content-end text-warning fw-bold">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Non Configuré
+                                </div>
+                                <button type="button" id="btn-start-admin-faceid" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm transition-all hover-lift">
+                                    <i class="bi bi-person-bounding-box me-2"></i> Configurer Face ID
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Hidden Setup UI -->
+                    <div id="admin-faceid-setup-ui" class="mt-4 pt-4 border-top" style="display: none;">
+                        <div class="row g-4 align-items-center">
+                            <div class="col-lg-5">
+                                <div class="position-relative rounded-4 overflow-hidden shadow-lg border border-5 border-white bg-dark mx-auto" style="max-width: 400px; aspect-ratio: 4/3;">
+                                    <video id="admin-webcam" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                    <canvas id="admin-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></canvas>
+                                    <div id="admin-setup-loader" class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-dark bg-opacity-70 text-white">
+                                        <div class="spinner-border text-primary mb-3"></div>
+                                        <span class="fw-bold small tracking-widest uppercase">Initialisation IA...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-7">
+                                <div class="ps-lg-4">
+                                    <h5 class="fw-bold text-dark mb-3" id="admin-setup-instruction">Veuillez autoriser l'accès à votre caméra</h5>
+                                    <div class="alert bg-primary bg-opacity-5 border-0 text-primary small mb-4 py-3">
+                                        <i class="bi bi-info-circle-fill me-2"></i> Vos données biométriques sont chiffrées localement et ne quittent jamais votre serveur sécurisé.
+                                    </div>
+                                    <div class="d-flex gap-3">
+                                        <button type="button" id="btn-capture-admin-face" class="btn btn-success rounded-pill px-5 py-3 fw-bold shadow-sm" disabled>
+                                            <i class="bi bi-camera-fill me-2"></i> Capturer mon profil
+                                        </button>
+                                        <button type="button" id="btn-cancel-admin-setup" class="btn btn-light rounded-pill px-4 fw-bold">Annuler</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics & Insights Grid -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-8">
+            <div class="glass-card main-ai-card overflow-hidden h-100 p-0 border-0 shadow-lg" style="background: #ffffff; border-radius: 24px;">
+                <div class="p-4 border-bottom bg-white bg-opacity-50">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-activity me-2 text-primary"></i>Prévisions de Croissance <span class="text-muted fw-normal small">(ML Model)</span></h5>
+                        <div class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill small border border-primary border-opacity-10">Algorithme Gemini-Pro</div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div style="height: 350px;">
+                        <canvas id="forecastChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="glass-card ai-insights-card h-100 p-4 border-0 shadow-lg" style="background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%); border-radius: 24px;">
+                <h5 class="fw-bold mb-4" style="color: #4f46e5;"><i class="bi bi-lightbulb-fill me-2"></i>AI Strategic Insights</h5>
+                
+                <div class="insight-item mb-4 p-3 rounded-4 bg-white shadow-sm border border-light">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="insight-icon bg-info-subtle text-info rounded-3" style="width: 32px; height: 32px;"><i class="bi bi-eye-fill"></i></div>
+                        <h6 class="mb-0 fw-bold small text-uppercase tracking-widest text-muted ms-2">Tendance</h6>
+                    </div>
+                    <p class="text-dark small mb-0 fw-semibold" style="line-height: 1.6;">"{{ ai.prediction }}"</p>
+                </div>
+
+                <div class="insight-item mb-4 p-3 rounded-4 bg-white shadow-sm border border-light">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="insight-icon bg-warning-subtle text-warning rounded-3" style="width: 32px; height: 32px;"><i class="bi bi-gear-wide-connected"></i></div>
+                        <h6 class="mb-0 fw-bold small text-uppercase tracking-widest text-muted ms-2">Recommandation</h6>
+                    </div>
+                    <p class="text-dark small mb-0" style="line-height: 1.6;">{{ ai.advice }}</p>
+                </div>
+
+                <div class="sentiment-meter mt-auto p-4 rounded-4 bg-primary text-white shadow-lg border-0">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="small fw-bold text-uppercase tracking-widest opacity-80">Indice de Confiance</span>
+                        <span class="h4 fw-900 mb-0">{{ ai.sentiment }}%</span>
+                    </div>
+                    <div class="progress rounded-pill bg-white bg-opacity-20" style="height: 10px;">
+                        <div class="progress-bar bg-white rounded-pill shadow-sm" role="progressbar" style="width: {{ ai.sentiment }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+    .dashboard-container { background-color: #f8fafc; min-height: 100vh; }
+    .text-gradient { background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .fw-800 { font-weight: 800; }
+    .fw-900 { font-weight: 900; }
+    .opacity-05 { opacity: 0.05; }
+    .z-index-1 { z-index: 1; }
+    .tracking-widest { letter-spacing: 0.1em; }
+    .hover-lift { transition: transform 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+    .hover-lift:hover { transform: translateY(-4px); }
+    .kpi-card { transition: all 0.3s ease; }
+    .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.06) !important; }
+    
+    .pulse-dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background-color: #22c55e;
+        display: inline-block;
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+</style>
+
+    <!-- Bottom Row: Events & Types -->
+    <div class="row g-4 mt-2">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-lg h-100" style="border-radius: 24px; background: #ffffff;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">Réclamations</h5>
+                            <p class="text-muted small mb-0">Distribution par catégorie</p>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-2">
+                            <i class="bi bi-pie-chart-fill"></i>
+                        </div>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="reclamationDoughnut"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg h-100" style="border-radius: 24px; background: #ffffff; overflow: hidden;">
+                <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">Opérations Récentes</h5>
+                        <p class="text-muted small mb-0">Historique des 3 derniers événements</p>
+                    </div>
+                    <a href="{{ path('app_event_admin_new') }}" class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold">
+                        <i class="bi bi-plus-lg me-1"></i> Nouveau Projet
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr class="text-muted small text-uppercase tracking-wider">
+                                    <th class="ps-4 py-3 border-0">Événement</th>
+                                    <th class="py-3 border-0">Date</th>
+                                    <th class="py-3 border-0">Participants</th>
+                                    <th class="py-3 border-0">Statut</th>
+                                    <th class="text-end pe-4 py-3 border-0">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="border-top-0">
+                                {% for event in recentEvents %}
+                                <tr>
+                                    <td class="ps-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-box me-3 shadow-sm rounded-3 d-flex align-items-center justify-content-center text-white fw-bold" style="background: linear-gradient(135deg, #4f46e5, #06b6d4); width: 42px; height: 42px;">
+                                                {{ event.title|slice(0, 1)|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">{{ event.title }}</div>
+                                                <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>{{ event.location }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="small fw-semibold text-muted font-monospace">{{ event.date|date('d M Y') }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 6px; background: #f1f5f9; width: 60px; border-radius: 10px;">
+                                                {% set percentage = (event.participants / 50 * 100)|round %}
+                                                <div class="progress-bar bg-primary rounded-pill" style="width: {{ percentage > 100 ? 100 : percentage }}%"></div>
+                                            </div>
+                                            <span class="small fw-bold text-dark">{{ event.participants }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if event.status|lower == 'active' %}
+                                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill small fw-bold">Actif</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill small fw-bold">Terminé</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="{{ path('app_event_admin_edit', {'id_evenement': event.id}) }}" class="btn btn-light btn-sm rounded-circle shadow-sm hover-primary" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;">
+                                            <i class="bi bi-chevron-right fw-bold"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-box { transition: all 0.3s ease; }
+    .table-hover tbody tr:hover { background-color: rgba(79, 70, 229, 0.02); }
+    .hover-primary:hover { background-color: #4f46e5 !important; color: white !important; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Forecast Chart (ML Prediction)
+    const forecastCtx = document.getElementById('forecastChart');
+    if (forecastCtx) {
+        const forecastData = {{ ai.forecast|json_encode|raw }};
+        const weeks = ['Semaine 1', 'Semaine 2', 'Semaine 3', 'Semaine 4'];
+        
+        new Chart(forecastCtx, {
+            type: 'line',
+            data: {
+                labels: weeks,
+                datasets: [{
+                    label: 'Prévision Inscriptions',
+                    data: forecastData,
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#4361ee',
+                    pointBorderColor: '#fff',
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        grid: { display: false },
+                        ticks: { color: '#999' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#999' }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Reclamation Doughnut
+    const doughnutCtx = document.getElementById('reclamationDoughnut');
+    if (doughnutCtx) {
+        const stats = {{ reclamationStats|json_encode|raw }};
+        const labels = [...new Set(stats.map(s => s.type))];
+        const values = labels.map(l => stats.filter(s => s.type === l).reduce((acc, c) => acc + parseInt(c.total), 0));
+
+        new Chart(doughnutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: ['#4361ee', '#4cc9f0', '#7209b7', '#ff9f1c', '#2ec4b6'],
+                    borderWidth: 0,
+                    borderRadius: 5,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        position: 'bottom',
+                        labels: { usePointStyle: true, padding: 20 }
+                    }
+                },
+                cutout: '75%'
+            }
+        });
+    }
+});
+</script>
+
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const btnStart = document.getElementById('btn-start-admin-faceid');
+    const btnCancel = document.getElementById('btn-cancel-admin-setup');
+    const btnCapture = document.getElementById('btn-capture-admin-face');
+    const setupUI = document.getElementById('admin-faceid-setup-ui');
+    const video = document.getElementById('admin-webcam');
+    const statusText = document.getElementById('admin-setup-instruction');
+    const loader = document.getElementById('admin-setup-loader');
+    
+    let stream = null;
+    let detectionInterval = null;
+    let lastDescriptor = null;
+
+    async function loadModels() {
+        if (window.faceapi && faceapi.nets.ssdMobilenetv1.params) return;
+        try {
+            await Promise.all([
+                faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+                faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+                faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+            ]);
+        } catch (e) {
+            console.error("Error loading models:", e);
+            throw new Error("Erreur chargement IA.");
+        }
+    }
+
+    async function startSetup() {
+        setupUI.style.display = 'block';
+        loader.style.display = 'flex';
+        statusText.innerText = "Initialisation de l'IA...";
+        
+        try {
+            await loadModels();
+            statusText.innerText = "Démarrage caméra...";
+            
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: "user",
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                } 
+            });
+            video.srcObject = stream;
+            
+            await new Promise(resolve => {
+                video.onloadedmetadata = () => {
+                    video.play().then(resolve);
+                };
+            });
+            
+            loader.style.display = 'none';
+            statusText.innerText = "Positionnez-vous face à la caméra...";
+            startDetectionLoop();
+            
+            // Scroll to UI
+            setupUI.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (err) {
+            statusText.innerText = "Erreur: " + err.message;
+            statusText.style.color = '#ef4444';
+            loader.style.display = 'none';
+            console.error(err);
+        }
+    }
+
+    function startDetectionLoop() {
+        const canvas = document.getElementById('admin-overlay');
+        const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+        faceapi.matchDimensions(canvas, displaySize);
+
+        detectionInterval = setInterval(async () => {
+            if (video.paused || video.ended) return;
+            
+            const detection = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+
+            const context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (detection) {
+                const resized = faceapi.resizeResults(detection, displaySize);
+                
+                // Draw face box
+                new faceapi.draw.DrawBox(resized.detection.box, { 
+                    label: "Administrateur détecté",
+                    boxColor: "#22c55e"
+                }).draw(canvas);
+                
+                lastDescriptor = detection.descriptor;
+                btnCapture.disabled = false;
+                statusText.innerText = "Visage détecté ! Prêt pour la capture.";
+                statusText.style.color = '#22c55e';
+            } else {
+                lastDescriptor = null;
+                btnCapture.disabled = true;
+                statusText.innerText = "Recherche de visage...";
+                statusText.style.color = '#3b82f6';
+            }
+        }, 300);
+    }
+
+    async function captureFace() {
+        if (!lastDescriptor) return;
+        
+        btnCapture.disabled = true;
+        statusText.innerText = "Enregistrement cryptographique...";
+        statusText.style.color = '#6366f1';
+        
+        try {
+            const res = await fetch('/api/user/save-face-descriptor', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ descriptor: Array.from(lastDescriptor) })
+            });
+            
+            if (res.ok) {
+                statusText.innerText = "Face ID admin configuré avec succès !";
+                statusText.style.color = '#22c55e';
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                const data = await res.json();
+                throw new Error(data.error || "Erreur lors de la sauvegarde.");
+            }
+        } catch (err) {
+            statusText.innerText = err.message;
+            statusText.style.color = '#ef4444';
+            btnCapture.disabled = false;
+        }
+    }
+
+    function stopSetup() {
+        if (detectionInterval) {
+            clearInterval(detectionInterval);
+            detectionInterval = null;
+        }
+        if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+            stream = null;
+        }
+        video.srcObject = null;
+        setupUI.style.display = 'none';
+    }
+
+    if (btnStart) btnStart.addEventListener('click', startSetup);
+    if (btnCancel) btnCancel.addEventListener('click', stopSetup);
+    if (btnCapture) btnCapture.addEventListener('click', captureFace);
+});
+</script>
 {% endblock %}

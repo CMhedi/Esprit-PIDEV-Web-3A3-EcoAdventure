@@ -87,7 +87,7 @@ foreach ($seances as $seance) {
                 $results[] = [
                     'seance' => $seance,
                     'score' => round($score, 3),
-                    'reason' => $this->buildReason($sim, $pop, $coach, $time, $capacity),
+                    'reason' => $this->buildReason($sim, $pop, $coach, $time, $capacity, $rec),
                     'scores' => [
                         'similarity' => round($sim, 2),
                         'popularity' => round($pop, 2),
@@ -302,7 +302,8 @@ foreach ($seances as $seance) {
         float $pop,
         float $coach,
         float $time,
-        float $capacity
+        float $capacity,
+        float $rec
     ): string {
         // Déterminer la raison dominante
         return match (true) {

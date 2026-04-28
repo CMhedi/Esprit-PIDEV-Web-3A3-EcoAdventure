@@ -1,6 +1,6 @@
 <?php
 
-$bundles = [
+return [
     Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
     Doctrine\Bundle\DoctrineBundle\DoctrineBundle::class => ['all' => true],
     Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle::class => ['all' => true],
@@ -15,14 +15,8 @@ $bundles = [
     Symfony\Bundle\MakerBundle\MakerBundle::class => ['dev' => true],
     CMEN\GoogleChartsBundle\CMENGoogleChartsBundle::class => ['all' => true],
     Knp\Bundle\PaginatorBundle\KnpPaginatorBundle::class => ['all' => true],
+    Nucleos\DompdfBundle\NucleosDompdfBundle::class => ['all' => true],
+    SymfonyCasts\Bundle\VerifyEmail\SymfonyCastsVerifyEmailBundle::class => ['all' => true],
+    AhmedBhs\DoctrineDoctor\DoctrineDoctorBundle::class => ['dev' => true],
+    App\Notification\AppNotificationBundle::class => ['all' => true],
 ];
-
-if (class_exists('Nucleos\\DompdfBundle\\NucleosDompdfBundle')) {
-    $bundles['Nucleos\\DompdfBundle\\NucleosDompdfBundle'] = ['all' => true];
-}
-
-if (class_exists('Symfony\\Bundle\\NotifierBundle\\NotifierBundle')) {
-    $bundles['Symfony\\Bundle\\NotifierBundle\\NotifierBundle'] = ['all' => true];
-}
-
-return $bundles;

@@ -91,11 +91,15 @@
                                         <i class="bi bi-people-fill"></i>
                                     </div>
                                 {% else %}
-                                    {% set creatorId = conversation.createur ? conversation.createur.id_user : null %}
-                                    {% set otherParticipant = creatorId ? conversation.participants|filter(p => p.id_user != creatorId)|first : conversation.participants|first %}
+                                    {% set createurId = conversation.createur ? conversation.createur.id_user : null %}
+                                    {% if createurId is not null %}
+                                        {% set otherParticipant = conversation.participants|filter(p => p.id_user != createurId)|first %}
+                                    {% else %}
+                                        {% set otherParticipant = conversation.participants|first %}
+                                    {% endif %}
                                     {% if otherParticipant %}
                                         <div class="conversation-avatar me-2">
-                                            {{ (otherParticipant.nom|default('?'))|first }}{{ (otherParticipant.prenom|default('?'))|first }}
+                                            {{ otherParticipant.nom|first }}{{ otherParticipant.prenom|first }}
                                         </div>
                                     {% endif %}
                                 {% endif %}
@@ -123,20 +127,25 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="user-avatar-sm me-2">
-                                    {% if conversation.createur %}
-                                        {{ conversation.createur.nom|first }}{{ conversation.createur.prenom|first }}
-                                    {% else %}
-                                        ??
-                                    {% endif %}
+                                    {% set createurNom = conversation.createur ? (conversation.createur.nom|default('')) : '' %}
+                                    {% set createurPrenom = conversation.createur ? (conversation.createur.prenom|default('')) : '' %}
+                                    {{ createurNom|first }}{{ createurPrenom|first }}
                                 </div>
                                 <div>
-                                    {% if conversation.createur %}
-                                        <div class="fw-semibold">{{ conversation.createur.nom }} {{ conversation.createur.prenom }}</div>
-                                        <small class="text-muted">@{{ conversation.createur.nom|lower }}{{ conversation.createur.prenom|lower }}</small>
-                                    {% else %}
-                                        <div class="fw-semibold text-muted">Utilisateur supprime</div>
-                                        <small class="text-muted">@unknown</small>
-                                    {% endif %}
+                                    <div class="fw-semibold">
+                                        {% if conversation.createur %}
+                                            {{ createurNom }} {{ createurPrenom }}
+                                        {% else %}
+                                            Utilisateur inconnu
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">
+                                        {% if conversation.createur %}
+                                            @{{ createurNom|lower }}{{ createurPrenom|lower }}
+                                        {% else %}
+                                            @unknown
+                                        {% endif %}
+                                    </small>
                                 </div>
                             </div>
                         </td>
@@ -145,9 +154,9 @@
                                 {% for participant in conversation.participants|slice(0, 3) %}
                                     <div class="participant-item">
                                         <div class="user-avatar-xs">
-                                            {{ (participant.nom|default('?'))|first }}{{ (participant.prenom|default('?'))|first }}
+                                            {{ participant.nom|first }}{{ participant.prenom|first }}
                                         </div>
-                                        <span class="ms-1">{{ participant.nom|default('Utilisateur') }} {{ participant.prenom|default('supprime') }}</span>
+                                        <span class="ms-1">{{ participant.nom }} {{ participant.prenom }}</span>
                                     </div>
                                 {% endfor %}
                                 {% if conversation.participants|length > 3 %}
@@ -241,9 +250,9 @@
                                 <span class="stat-number">{{ user.conversation_count }}</span>
                                 <span class="stat-label">conv.</span>
                             </div>
-                            {% if user.user_id is not empty %}
-                                <form method="POST" 
-                                      action="{{ path('admin_messagerie_ban_user', {'id': user.user_id}) }}" 
+                            {% if user.user_id is defined and user.user_id is not empty %}
+                                <form method="POST"
+                                      action="{{ path('admin_messagerie_ban_user', {'id': user.user_id}) }}"
                                       onsubmit="return confirm('Êtes-vous sûr de vouloir bannir cet utilisateur ? Tous ses messages seront supprimés.')">
                                     <input type="hidden" name="_token" value="{{ csrf_token('ban_user' ~ user.user_id) }}">
                                     <button type="submit" class="btn btn-outline-danger btn-sm" title="Bannir l'utilisateur">
@@ -251,7 +260,7 @@
                                     </button>
                                 </form>
                             {% else %}
-                                <button type="button" class="btn btn-outline-secondary btn-sm" title="Utilisateur introuvable" disabled>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" title="ID utilisateur indisponible" disabled>
                                     <i class="bi bi-person-x"></i>
                                 </button>
                             {% endif %}
@@ -284,9 +293,9 @@
                                 <span class="stat-number">{{ user.message_count }}</span>
                                 <span class="stat-label">msg.</span>
                             </div>
-                            {% if user.user_id is not empty %}
-                                <form method="POST" 
-                                      action="{{ path('admin_messagerie_ban_user', {'id': user.user_id}) }}" 
+                            {% if user.user_id is defined and user.user_id is not empty %}
+                                <form method="POST"
+                                      action="{{ path('admin_messagerie_ban_user', {'id': user.user_id}) }}"
                                       onsubmit="return confirm('Êtes-vous sûr de vouloir bannir cet utilisateur ? Tous ses messages seront supprimés.')">
                                     <input type="hidden" name="_token" value="{{ csrf_token('ban_user' ~ user.user_id) }}">
                                     <button type="submit" class="btn btn-outline-danger btn-sm" title="Bannir l'utilisateur">
@@ -294,7 +303,7 @@
                                     </button>
                                 </form>
                             {% else %}
-                                <button type="button" class="btn btn-outline-secondary btn-sm" title="Utilisateur introuvable" disabled>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" title="ID utilisateur indisponible" disabled>
                                     <i class="bi bi-person-x"></i>
                                 </button>
                             {% endif %}
