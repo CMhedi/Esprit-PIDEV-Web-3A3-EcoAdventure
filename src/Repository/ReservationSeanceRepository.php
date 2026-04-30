@@ -58,6 +58,17 @@ class ReservationSeanceRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    public function countBySeance(int $seanceId): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id_reservation)')
+            ->join('r.seance', 's')
+            ->andWhere('s.idSeance = :seanceId')
+            ->setParameter('seanceId', $seanceId)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     /**
      * Récupère toutes les réservations d'un utilisateur
      * 

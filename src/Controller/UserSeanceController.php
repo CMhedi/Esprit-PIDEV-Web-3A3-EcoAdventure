@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\ReservationSeance;
 use App\Entity\Seance;
+use App\Entity\UserApp;
 use App\Enum\StatutReservation;
 use App\Enum\StatutPresence;
 use App\Repository\ReservationSeanceRepository;
@@ -100,7 +101,7 @@ class UserSeanceController extends AbstractController
             $user = $this->getUser();
             $recommendations = [];
 
-            if ($user) {
+            if ($user instanceof UserApp) {
                 try {
                     $recommendations = $this->recommendationService
                         ->recommendForUser($user->getId_user());
@@ -137,7 +138,7 @@ class UserSeanceController extends AbstractController
     {
         try {
             $user = $this->getUser();
-            if (!$user) {
+            if (!$user instanceof UserApp) {
                 $this->addFlash('error', 'Utilisateur non connecté');
                 return $this->redirectToRoute('app_user_seances');
             }
@@ -214,7 +215,7 @@ class UserSeanceController extends AbstractController
     public function mesSeances(): Response
     {
         $user = $this->getUser();
-        if (!$user) {
+        if (!$user instanceof UserApp) {
             $this->addFlash('error', 'Utilisateur non connecté');
             return $this->redirectToRoute('app_user_seances');
         }
@@ -241,7 +242,7 @@ class UserSeanceController extends AbstractController
 
             $user = $this->getUser();
 
-            if (!$user) {
+            if (!$user instanceof UserApp) {
                 return $this->handleError('Utilisateur non connecté');
             }
 
@@ -302,7 +303,7 @@ class UserSeanceController extends AbstractController
 
             $user = $this->getUser();
 
-            if (!$user) {
+            if (!$user instanceof UserApp) {
                 $this->addFlash('error', 'Utilisateur non connecté');
                 return $this->redirectToRoute('app_user_seances');
             }
@@ -410,7 +411,7 @@ class UserSeanceController extends AbstractController
 
         $user = $this->userRepo->find($state['userId']);
 
-        if (!$user) {
+        if (!$user instanceof UserApp) {
             return new Response('Utilisateur introuvable');
         }
 
@@ -425,16 +426,6 @@ class UserSeanceController extends AbstractController
     }
 
     // ========== PRIVATE METHODS ==========
-
-    private function validateUser($user): bool
-    {
-        return $user !== null;
-    }
-
-    private function validateNotAlreadyReserved($user, Seance $seance): bool
-    {
-        return !$this->reservationRepo->isUserReserved($user, $seance);
-    }
 
     private function validateCapacity(Seance $seance): bool
     {

@@ -4,6 +4,7 @@
 namespace App\Repository;
 
 use App\Entity\Seance;
+use App\Entity\UserApp;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -94,6 +95,16 @@ public function findAvailable(): array
         ->andWhere('s.dateSeance >= :today')
         ->setParameter('statut', 'PLANIFIEE')
         ->setParameter('today', new \DateTime())
+        ->orderBy('s.dateSeance', 'ASC')
+        ->getQuery()
+        ->getResult();
+}
+
+public function findByCoach(UserApp $coach): array
+{
+    return $this->createQueryBuilder('s')
+        ->where('s.coach = :coach')
+        ->setParameter('coach', $coach)
         ->orderBy('s.dateSeance', 'ASC')
         ->getQuery()
         ->getResult();

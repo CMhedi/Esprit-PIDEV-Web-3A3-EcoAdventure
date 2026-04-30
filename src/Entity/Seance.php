@@ -141,9 +141,9 @@ public function setHeureFin(?\DateTimeInterface $heure): self
        // ❌ hors interval (VERSION CORRIGÉE)
 if ($this->dateSeance && $this->planning->getDateDebut() && $this->planning->getDateFin()) {
 
-    $dateSeance = (clone $this->dateSeance)->setTime(0, 0);
-    $dateDebut = (clone $this->planning->getDateDebut())->setTime(0, 0);
-    $dateFin = (clone $this->planning->getDateFin())->setTime(23, 59, 59);
+    $dateSeance = \DateTimeImmutable::createFromInterface($this->dateSeance)->setTime(0, 0);
+    $dateDebut = \DateTimeImmutable::createFromInterface($this->planning->getDateDebut())->setTime(0, 0);
+    $dateFin = \DateTimeImmutable::createFromInterface($this->planning->getDateFin())->setTime(23, 59, 59);
 
     if ($dateSeance < $dateDebut || $dateSeance > $dateFin) {
         $context->buildViolation("La date doit être comprise entre le début et la fin du planning")

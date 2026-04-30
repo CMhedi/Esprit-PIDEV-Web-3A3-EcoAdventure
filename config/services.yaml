@@ -95,6 +95,7 @@ services:
             $giphyApiKey: '%env(default:giphy_default_api_key:GIPHY_API_KEY)%'
             $groqVisionModel: '%env(default:groq_default_vision_model:GROQ_VISION_MODEL)%'
             $groqAudioModel: '%env(default:groq_default_audio_model:GROQ_AUDIO_MODEL)%'
+            $debug: '%kernel.debug%'
 
     App\Service\GroqAiService:
         arguments:

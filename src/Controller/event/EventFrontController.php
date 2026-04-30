@@ -22,11 +22,11 @@ class EventFrontController extends AbstractController
     public function rate(Request $request, Evenement $evenement, EntityManagerInterface $entityManager): Response
     {
         $user = $this->getUser();
-        if (!$user) {
+        if (!$user instanceof UserApp) {
             $user = $entityManager->getRepository(UserApp::class)->findOneBy(['email' => 'guest@ecoadventure.com']);
         }
 
-        if (!$user) {
+        if (!$user instanceof UserApp) {
             $this->addFlash('error', 'Vous devez être connecté pour noter un événement.');
             return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
         }

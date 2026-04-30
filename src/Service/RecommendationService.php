@@ -203,7 +203,6 @@ foreach ($seances as $seance) {
             PreferredTime::MORNING => $isMorning ? 1.0 : 0.2,
             PreferredTime::AFTERNOON => $isAfternoon ? 1.0 : 0.2,
             PreferredTime::EVENING => $isEvening ? 1.0 : 0.2,
-            default => 0.5
         };
     }
 

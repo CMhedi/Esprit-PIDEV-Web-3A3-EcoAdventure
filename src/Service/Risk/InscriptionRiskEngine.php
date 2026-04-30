@@ -125,7 +125,7 @@ final class InscriptionRiskEngine
 
         $daysOld = (int) (new \DateTimeImmutable())->diff(\DateTimeImmutable::createFromInterface($date))->format('%a');
 
-        if (($inscription->getStatutInscr()?->value ?? '') === 'EN_ATTENTE') {
+        if ($inscription->getStatutInscr()->value === 'EN_ATTENTE') {
             return $this->clamp($daysOld / 7);
         }
 

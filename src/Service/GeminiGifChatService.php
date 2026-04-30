@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class GeminiGifChatService
@@ -12,6 +13,9 @@ class GeminiGifChatService
     private readonly string $giphyApiKey;
     private readonly string $groqVisionModel;
     private readonly string $groqAudioModel;
+    private readonly bool $debug;
+    private readonly ?LoggerInterface $logger;
+    private ?string $lastGroqError = null;
 
     public function __construct(
         HttpClientInterface $httpClient,
@@ -19,14 +23,18 @@ class GeminiGifChatService
         ?string $groqModel,
         ?string $giphyApiKey,
         ?string $groqVisionModel,
-        ?string $groqAudioModel
+        ?string $groqAudioModel,
+        bool $debug = false,
+        ?LoggerInterface $logger = null
     ) {
         $this->httpClient = $httpClient;
-        $this->groqApiKey = $groqApiKey ?? '';
+        $this->groqApiKey = trim($groqApiKey ?? '');
         $this->groqModel = $groqModel ?: 'llama-3.3-70b-versatile';
         $this->giphyApiKey = $giphyApiKey ?? '';
         $this->groqVisionModel = $groqVisionModel ?: 'llama-3.2-11b-vision-preview';
         $this->groqAudioModel = $groqAudioModel ?: 'whisper-large-v3';
+        $this->debug = $debug;
+        $this->logger = $logger;
     }
 
     public function generateReply(string $prompt): string
@@ -51,7 +59,7 @@ class GeminiGifChatService
             return $this->limitTo1000($result);
         }
 
-        return 'Le service Groq est temporairement indisponible.';
+        return $this->buildGroqUnavailableMessage();
     }
 
     public function generateConversationSummary(string $conversationText): string
@@ -77,7 +85,7 @@ class GeminiGifChatService
         $result = $this->callGroqChat($messages);
         return $result !== null
             ? $this->limitTo1000($result)
-            : 'Impossible de generer le resume pour le moment.';
+            : $this->buildGroqUnavailableMessage('Impossible de generer le resume pour le moment.');
     }
 
     public function generateLongMessage(string $instruction): string
@@ -95,6 +103,8 @@ class GeminiGifChatService
      */
     private function callGroqChat(array $messages): ?string
     {
+        $this->lastGroqError = null;
+
         try {
             $response = $this->httpClient->request('POST', 'https://api.groq.com/openai/v1/chat/completions', [
                 'headers' => [
@@ -109,16 +119,61 @@ class GeminiGifChatService
                 'timeout' => 25,
             ]);
 
+            $statusCode = $response->getStatusCode();
             $data = $response->toArray(false);
+            if ($statusCode >= 400) {
+                $this->lastGroqError = $this->extractGroqErrorMessage($statusCode, $data);
+                $this->logger?->warning('Groq chat completion failed.', [
+                    'status_code' => $statusCode,
+                    'model' => $this->groqModel,
+                    'error' => $this->lastGroqError,
+                ]);
+
+                return null;
+            }
+
             $text = $data['choices'][0]['message']['content'] ?? null;
             if (!is_string($text) || trim($text) === '') {
+                $this->lastGroqError = 'La reponse Groq est vide.';
                 return null;
             }
 
             return trim($text);
-        } catch (\Throwable) {
+        } catch (\Throwable $exception) {
+            $this->lastGroqError = $exception->getMessage();
+            $this->logger?->error('Groq chat completion threw an exception.', [
+                'model' => $this->groqModel,
+                'exception' => $exception,
+            ]);
+
             return null;
         }
+    }
+
+    private function buildGroqUnavailableMessage(string $fallback = 'Le service Groq est temporairement indisponible.'): string
+    {
+        if (!$this->debug || $this->lastGroqError === null || $this->lastGroqError === '') {
+            return $fallback;
+        }
+
+        return $fallback . ' Details dev: ' . $this->lastGroqError;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function extractGroqErrorMessage(int $statusCode, array $data): string
+    {
+        $error = $data['error'] ?? null;
+        if (is_array($error)) {
+            $message = $error['message'] ?? null;
+            $type = $error['type'] ?? null;
+            if (is_string($message) && $message !== '') {
+                return sprintf('HTTP %d - %s%s', $statusCode, $message, is_string($type) && $type !== '' ? ' (' . $type . ')' : '');
+            }
+        }
+
+        return sprintf('HTTP %d - reponse Groq invalide ou incomplete.', $statusCode);
     }
 
     private function limitTo1000(string $text): string
@@ -382,7 +437,7 @@ class GeminiGifChatService
                     'Authorization' => 'Bearer ' . $this->groqApiKey,
                 ],
                 'body' => [
-                    'model' => $this->groqAudioModel !== '' ? $this->groqAudioModel : 'whisper-large-v3',
+                    'model' => $this->groqAudioModel,
                     'language' => 'fr',
                     'file' => $stream,
                 ],
@@ -426,7 +481,7 @@ class GeminiGifChatService
                     'Content-Type' => 'application/json',
                 ],
                 'json' => [
-                    'model' => $this->groqVisionModel !== '' ? $this->groqVisionModel : 'llama-3.2-11b-vision-preview',
+                    'model' => $this->groqVisionModel,
                     'messages' => [
                         [
                             'role' => 'system',
@@ -486,8 +541,8 @@ class GeminiGifChatService
 
         $matches = [];
         preg_match_all('/\(([^\)]{2,})\)/', $raw, $matches);
-        $chunks = $matches[1] ?? [];
-        if (!is_array($chunks) || $chunks === []) {
+        $chunks = $matches[1];
+        if ($chunks === []) {
             return '';
         }
 

@@ -75,9 +75,7 @@ final class HolidayContextProvider
                     return [];
                 }
 
-                $data = $response->toArray(false);
-
-                return is_array($data) ? $data : [];
+                return $response->toArray(false);
             } catch (\Throwable) {
                 return [];
             }

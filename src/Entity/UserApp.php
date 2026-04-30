@@ -138,6 +138,11 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToMany(targetEntity: Conversation::class, mappedBy: 'participants')]
     private Collection $conversations;
 
+    /**
+     * @var list<float>|null
+     */
+    private ?array $faceDescriptor = null;
+
     public function __construct()
     {
         $this->date_creation = new \DateTime();
@@ -260,6 +265,10 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     // Google token
     public function getGoogleToken(): ?string { return $this->google_token; }
     public function setGoogleToken(?string $google_token): self { $this->google_token = $google_token; return $this; }
+    /** @return list<float>|null */
+    public function getFaceDescriptor(): ?array { return $this->faceDescriptor; }
+    /** @param list<float>|null $faceDescriptor */
+    public function setFaceDescriptor(?array $faceDescriptor): self { $this->faceDescriptor = $faceDescriptor; return $this; }
 
     // Churn prediction
     public function getChurnProbability(): ?float { return $this->churnProbability; }

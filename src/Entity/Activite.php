@@ -182,12 +182,12 @@ class Activite
 
     public function getPrix(): ?float
     {
-        return $this->prix;
+        return $this->prix !== null ? (float) $this->prix : null;
     }
 
     public function setPrix(?float $prix): self
     {
-        $this->prix = $prix;
+        $this->prix = $prix !== null ? number_format($prix, 2, '.', '') : null;
         return $this;
     }
 

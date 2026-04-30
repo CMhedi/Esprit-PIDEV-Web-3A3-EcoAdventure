@@ -3,7 +3,6 @@
 namespace App\Service;
 
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Psr\Log\LoggerInterface;
 
 class NutritionApiService
@@ -12,7 +11,6 @@ class NutritionApiService
     private const API_BASE_URL = 'https://api.spoonacular.com';
 
     private HttpClientInterface $httpClient;
-    private FilesystemAdapter $cache;
     private LoggerInterface $logger;
 
     public function __construct(
@@ -21,7 +19,6 @@ class NutritionApiService
     ) {
         $this->httpClient = $httpClient;
         $this->logger = $logger;
-        $this->cache = new FilesystemAdapter('nutrition_api', 86400);
 
         // 🔥 API KEY
         $this->apiKey = '5cdb0a7de4b6405fb5a0e5450eaf6961';
@@ -190,6 +187,31 @@ class NutritionApiService
 
             return $this->emptyNutrition();
         }
+    }
+
+    public function getDailyRecommendations(int $age, string $gender, float $activity): array
+    {
+        $weight = 70.0;
+        $height = 175.0;
+        $gender = strtoupper($gender) === 'F' ? 'F' : 'M';
+
+        if ($gender === 'F') {
+            $bmr = 10 * $weight + 6.25 * $height - 5 * $age - 161;
+        } else {
+            $bmr = 10 * $weight + 6.25 * $height - 5 * $age + 5;
+        }
+
+        $calories = (int) round($bmr * max(1.2, $activity));
+        $protein = (int) round($weight * 1.8);
+        $fat = (int) round(($calories * 0.25) / 9);
+        $carbs = (int) round(($calories - ($protein * 4 + $fat * 9)) / 4);
+
+        return [
+            'calories' => $calories,
+            'protein' => max(0, $protein),
+            'fat' => max(0, $fat),
+            'carbs' => max(0, $carbs),
+        ];
     }
     public function compareIngredients(string $ing1, string $ing2): array
 {

@@ -294,7 +294,7 @@ public function editPack(
 
         // Calculer les moyennes par type
         foreach ($stats['prixMoyenParType'] as $type => &$data) {
-            $data['moyenne'] = $data['count'] > 0 ? $data['total'] / $data['count'] : 0;
+            $data['moyenne'] = $data['total'] / $data['count'];
         }
 
         $html = $this->renderView('admin/packs/pdf.html.twig', [
@@ -333,7 +333,7 @@ public function editPack(
         $dompdf->addInfo('Subject', 'Rapport professionnel des packs disponibles');
         $dompdf->addInfo('Author', 'EcoAdventure Platform');
         $dompdf->addInfo('Creator', 'Système d\'administration EcoAdventure');
-        $dompdf->addInfo('Producer', (string) $dompdf->version);
+        $dompdf->addInfo('Producer', 'dompdf');
         $dompdf->addInfo('CreationDate', date('Y-m-d\TH:i:sP'));
         $dompdf->addInfo('ModDate', date('Y-m-d\TH:i:sP'));
 

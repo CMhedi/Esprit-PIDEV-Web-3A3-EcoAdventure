@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Repository\ActiviteRepository;
 use App\Repository\InscriptionRepository;
 use App\Repository\PackRepository;
+use App\Repository\ReclamationRepository;
 use App\Repository\ReservationActiviteRepository;
 use App\Service\AI\AiRiskExplainer;
 use App\Service\Pack\PackInsightAssembler;
@@ -51,7 +52,8 @@ final class AdminController extends AbstractController
         PackRiskEngine $packRiskEngine,
         InscriptionRiskEngine $inscriptionRiskEngine,
         RiskDashboardAggregator $riskDashboardAggregator,
-        AiRiskExplainer $aiRiskExplainer
+        AiRiskExplainer $aiRiskExplainer,
+        ReclamationRepository $reclamationRepository
     ): Response
     {
         if ($request->query->get('clear_ai_cache')) {
@@ -107,8 +109,7 @@ final class AdminController extends AbstractController
 
         $aiData = $this->getAdvancedAiAnalytics($entityManager);
         
-        $reclamationRepo = $entityManager->getRepository(Reclamation::class);
-        $reclamationStats = $reclamationRepo->countByTypeAndMonth();
+        $reclamationStats = $reclamationRepository->countByTypeAndMonth();
         $packInsights = $packInsightAssembler->buildInsights($packRepository->findAll());
         $packRiskViews = $packRiskEngine->evaluate($packInsights);
         $inscriptionRiskViews = $inscriptionRiskEngine->evaluate($inscriptionRepository->findAll(), $packRiskViews);

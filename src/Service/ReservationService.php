@@ -72,7 +72,7 @@ class ReservationService
     {
         try {
             $count = $this->repo->countBySeance($seanceId);
-            return $count ?? 0;
+            return $count;
 
         } catch (\Exception $e) {
             $this->logger->error("Erreur countReservations: " . $e->getMessage());

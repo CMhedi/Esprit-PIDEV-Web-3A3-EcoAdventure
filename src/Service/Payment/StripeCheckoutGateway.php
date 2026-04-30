@@ -151,7 +151,7 @@ final class StripeCheckoutGateway
         $metadata = [];
         if (is_array($data['metadata'] ?? null)) {
             foreach ($data['metadata'] as $key => $value) {
-                if (is_scalar($key) && is_scalar($value)) {
+                if (is_scalar($value)) {
                     $metadata[(string) $key] = (string) $value;
                 }
             }

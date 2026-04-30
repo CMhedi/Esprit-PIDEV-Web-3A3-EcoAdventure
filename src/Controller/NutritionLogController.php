@@ -131,7 +131,7 @@ public function getTodayStats(Request $request): JsonResponse
             'date' => $today->format('Y-m-d'),
 
             // ===== CONSOMMATION =====
-            'total_calories' => (float)($totalCalories ?? 0),
+            'total_calories' => (float) $totalCalories,
             'macros' => [
                 'calories' => (float)($macros['calories'] ?? 0),
                 'protein' => (float)($macros['protein'] ?? 0),
@@ -151,10 +151,8 @@ public function getTodayStats(Request $request): JsonResponse
             ],
 
             // ===== LOGS =====
-            'logs_count' => is_array($logs) ? count($logs) : 0,
-            'logs' => is_array($logs)
-                ? array_map(fn($log) => $this->formatLog($log), $logs)
-                : []
+            'logs_count' => count($logs),
+            'logs' => array_map(fn($log) => $this->formatLog($log), $logs)
         ]);
 
     } catch (\Exception $e) {
@@ -220,28 +218,26 @@ public function getTodayStats(Request $request): JsonResponse
             }
 
             // Remplir avec les logs
-            if (is_array($logs)) {
-                foreach ($logs as $log) {
-                    try {
-                        $logDate = $log->getLog_date();
-                        if ($logDate) {
-                            $dayKey = $logDate->format('Y-m-d');
-                            if (isset($byDay[$dayKey])) {
-                                $byDay[$dayKey]['calories'] += (float)($log->getCalories() ?? 0);
-                                $byDay[$dayKey]['count']++;
-                            }
+            foreach ($logs as $log) {
+                try {
+                    $logDate = $log->getLog_date();
+                    if ($logDate) {
+                        $dayKey = $logDate->format('Y-m-d');
+                        if (isset($byDay[$dayKey])) {
+                            $byDay[$dayKey]['calories'] += (float) ($log->getCalories() ?? 0);
+                            $byDay[$dayKey]['count']++;
                         }
-                    } catch (\Exception $e) {
-                        error_log('Error processing log: ' . $e->getMessage());
-                        continue;
                     }
+                } catch (\Exception $e) {
+                    error_log('Error processing log: ' . $e->getMessage());
+                    continue;
                 }
             }
 
             return $this->json([
                 'success' => true,
                 'week' => 'This Week',
-                'total_logs' => is_array($logs) ? count($logs) : 0,
+                'total_logs' => count($logs),
                 'daily_average' => round($average, 2),
                 'total_macros' => $totalMacros,
                 'by_day' => array_values($byDay)
@@ -277,19 +273,11 @@ public function getTodayStats(Request $request): JsonResponse
             error_log('User ID: ' . $userId);
 
             // ===== VÉRIFIER QUE LA MÉTHODE EXISTE =====
-            if (!method_exists($this->repository, 'getByUser')) {
-                error_log('Method getByUser does not exist in repository');
-                return $this->json(['error' => 'Repository method not found'], 500);
-            }
+            
 
             // ===== RÉCUPÉRER LES LOGS =====
             $logs = $this->repository->getByUser($userId);
-            error_log('Logs count: ' . (is_array($logs) ? count($logs) : 'not array'));
-
-            if (!is_array($logs)) {
-                error_log('Result is not array, type: ' . gettype($logs));
-                $logs = [];
-            }
+            error_log('Logs count: ' . count($logs));
 
             // ===== FORMATER LES LOGS =====
             $formattedLogs = [];
@@ -550,9 +538,6 @@ public function add(Request $request): JsonResponse
             }
 
             $logs = $this->repository->getByUser($user->getId());
-            if (!is_array($logs)) {
-                $logs = [];
-            }
 
             $csv = "Date,Aliment,Calories,Protéines,Graisses,Glucides\n";
             

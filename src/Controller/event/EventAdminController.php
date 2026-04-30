@@ -14,6 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
 use App\Repository\ReservationEvenementRepository;
+use App\Entity\ReservationEvenement;
 use App\Enum\StatutReservationEvenement;
 
 #[Route('/admin/events')]

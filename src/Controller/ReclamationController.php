@@ -3,6 +3,7 @@
 namespace App\Controller;
 use App\Service\ReclamationProcessor;
 use App\Entity\Reclamation;
+use App\Entity\UserApp;
 use App\Form\ReclamationType;
 use App\Repository\ReclamationRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -48,7 +49,7 @@ final class ReclamationController extends AbstractController
         $reclamation = new Reclamation();
         $reclamation->setDate_creation(new \DateTime());
         $reclamation->setStatut(StatutReclamation::EN_ATTENTE);
-        $reclamation->setUserApp($this->getUser());
+        $reclamation->setUserApp($this->getUser() instanceof UserApp ? $this->getUser() : null);
 
         $form = $this->createForm(ReclamationType::class, $reclamation);
         $form->handleRequest($request);
