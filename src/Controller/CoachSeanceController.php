@@ -22,20 +22,17 @@ class CoachSeanceController extends AbstractController
     private SeanceRepository $seanceRepo;
     private ReservationSeanceRepository $reservationRepo;
     private EntityManagerInterface $entityManager;
-    private UserAppRepository $userRepo;
 
     public function __construct(
         LoggerInterface $logger,
         SeanceRepository $seanceRepo,
         ReservationSeanceRepository $reservationRepo,
         EntityManagerInterface $entityManager,
-        UserAppRepository $userRepo
     ) {
         $this->logger = $logger;
         $this->seanceRepo = $seanceRepo;
         $this->reservationRepo = $reservationRepo;
         $this->entityManager = $entityManager;
-        $this->userRepo = $userRepo;
     }
 
   #[Route('/seances', name: 'app_coach_seances', methods: ['GET'])]
@@ -43,16 +40,14 @@ class CoachSeanceController extends AbstractController
     {
         try {
             // 🔥 COACH STATIQUE (temporaire)
+            /** @var \App\Entity\UserApp|null $coach */
            $coach = $this->getUser();
            if (!$coach) {
     $this->addFlash('error', 'Utilisateur non connecté');
     return $this->redirectToRoute('app_coach_seances');
 } // À adapter
 
-            if (!$coach) {
-                $this->addFlash('error', 'Coach introuvable');
-                return $this->redirectToRoute('app_coach_seances');
-            }
+          
 
             // Récupérer toutes les séances du coach
             $seances = $this->seanceRepo->findByCoach($coach);
@@ -91,7 +86,7 @@ public function detail(int $id): Response
             $this->addFlash('error', 'Séance introuvable');
             return $this->redirectToRoute('app_coach_seances');
         }
-
+/** @var \App\Entity\UserApp|null $coach */
         $coach = $this->getUser();
         if (!$coach) {
             $this->addFlash('error', 'Utilisateur non connecté');
@@ -120,9 +115,12 @@ public function detail(int $id): Response
             'seanceStats' => $seanceStats,
         ]);
 
-    } catch (\Exception $e) {
-        dd($e->getMessage()); // 🔥 DEBUG TEMPORAIRE
-    }
+   } catch (\Exception $e) {
+    $this->logger->error($e->getMessage());
+
+    $this->addFlash('error', 'Erreur lors de l\'affichage de la séance');
+    return $this->redirectToRoute('app_coach_seances');
+}
 }
 
 #[Route('/seance/participant/{id}/presence', name: 'app_coach_update_presence', methods: ['POST'])]
@@ -134,7 +132,7 @@ public function updatePresence(int $id): Response
         if (!$reservation) {
             return new JsonResponse(['error' => 'Réservation introuvable'], 404);
         }
-
+/** @var \App\Entity\UserApp|null $coach */
        $coach = $this->getUser();
       
 
@@ -165,8 +163,7 @@ if (!$coach) {
         ]);
 
     } catch (\Exception $e) {
-
-        dd($e->getMessage()); // 🔥 pour voir l'erreur exacte
+        $this->logger->error($e->getMessage()); // 🔥 pour voir l'erreur exacte
 
         return new JsonResponse([
             'error' => 'Erreur lors de la mise à jour',
@@ -180,7 +177,7 @@ if (!$coach) {
 public function exportPdf(): Response
 {
     try {
-        // 🔥 COACH STATIQUE
+/** @var \App\Entity\UserApp|null $coach */
        $coach = $this->getUser();
        
 
@@ -189,10 +186,7 @@ if (!$coach) {
     return $this->redirectToRoute('app_coach_seances');
 }
 
-        if (!$coach) {
-            $this->addFlash('error', 'Coach introuvable');
-            return $this->redirectToRoute('app_coach_seances');
-        }
+      
 
         $seances = $this->seanceRepo->findByCoach($coach);
         $stats = $this->calculateStats($seances);
@@ -255,72 +249,96 @@ if (!$coach) {
         return $this->redirectToRoute('app_coach_seances');
     }
 }
-    /**
-     * Calcule les statistiques des séances du coach
-     */
-    private function calculateStats(array $seances): array
-    {
-       $maxReservations = 0;
-$seancePopulaire = null;
+/**
+ * @param Seance[] $seances
+ * @return array{
+ *     seance_populaire: ?Seance,
+ *     nb_reservations_max: int,
+ *     total_seances: int,
+ *     total_places: int,
+ *     total_participants: int,
+ *     taux_participation: int,
+ *     seances_a_venir: int,
+ *     seances_terminees: int,
+ *     prochaine_seance: ?Seance,
+ *     revenus_potentiels: int,
+ *     semaine_actuelle: int
+ * }
+ */
+private function calculateStats(array $seances): array
+{
+    $maxReservations = 0;
+    $seancePopulaire = null;
 
-foreach ($seances as $seance) {
-    $count = count($seance->getReservationSeances());
+    foreach ($seances as $seance) {
+        $count = count($seance->getReservationSeances());
 
-    if ($count > $maxReservations) {
-        $maxReservations = $count;
-        $seancePopulaire = $seance;
-    }
-}
-
-$stats['seance_populaire'] = $seancePopulaire;
-$stats['nb_reservations_max'] = $maxReservations;
-        
-        $totalSeances = count($seances);
-        $totalPlaces = 0;
-        $totalParticipants = 0;
-        $seancesAVenir = 0;
-        $seancesTerminees = 0;
-        $prochainerSeance = null;
-
-        $now = new \DateTime();
-
-        foreach ($seances as $seance) {
-            $totalPlaces += $seance->getCapacite();
-            $participants = $this->reservationRepo->findSeanceReservations($seance);
-            $totalParticipants += count($participants);
-
-            if ($seance->getStatutSeance()->value === 'PLANIFIEE') {
-                $seancesAVenir++;
-                if ($prochainerSeance === null || $seance->getDateSeance() < $prochainerSeance->getDateSeance()) {
-                    $prochainerSeance = $seance;
-                }
-            } elseif ($seance->getStatutSeance()->value === 'TERMINEE') {
-                $seancesTerminees++;
-            }
+        if ($count > $maxReservations) {
+            $maxReservations = $count;
+            $seancePopulaire = $seance;
         }
-
-        $tauxParticipation = $totalPlaces > 0 ? round(($totalParticipants / $totalPlaces) * 100) : 0;
-        $revenusPatentiels = $totalParticipants * 25; // À adapter au prix
-
-        return [
-            'seance_populaire' => $stats['seance_populaire'],
-            'nb_reservations_max' => $stats['nb_reservations_max'],
-            'total_seances' => $totalSeances,
-            'total_places' => $totalPlaces,
-            'total_participants' => $totalParticipants,
-            'taux_participation' => $tauxParticipation,
-            'seances_a_venir' => $seancesAVenir,
-            'seances_terminees' => $seancesTerminees,
-            'prochaine_seance' => $prochainerSeance,
-            'revenus_potentiels' => $revenusPatentiels,
-            'semaine_actuelle' => $this->getSeancesThisWeek($seances),
-        ];
     }
 
-    /**
-     * Compte les séances de cette semaine
-     */
-    private function getSeancesThisWeek(array $seances): int
+    $stats['seance_populaire'] = $seancePopulaire;
+    $stats['nb_reservations_max'] = $maxReservations;
+
+    $totalSeances = count($seances);
+    $totalPlaces = 0;
+    $totalParticipants = 0;
+    $seancesAVenir = 0;
+    $seancesTerminees = 0;
+
+    // ✅ correction ici
+    $prochaineSeance = null;
+
+    foreach ($seances as $seance) {
+        $totalPlaces += $seance->getCapacite();
+        $participants = $this->reservationRepo->findSeanceReservations($seance);
+        $totalParticipants += count($participants);
+
+        if ($seance->getStatutSeance()->value === 'PLANIFIEE') {
+            $seancesAVenir++;
+
+            if (
+                $prochaineSeance === null ||
+                $seance->getDateSeance() < $prochaineSeance->getDateSeance()
+            ) {
+                $prochaineSeance = $seance;
+            }
+
+        } elseif ($seance->getStatutSeance()->value === 'TERMINEE') {
+            $seancesTerminees++;
+        }
+    }
+
+    $tauxParticipation = $totalPlaces > 0
+        ? round(($totalParticipants / $totalPlaces) * 100)
+        : 0;
+
+    // ✅ correction nom variable
+    $revenusPotentiels = $totalParticipants * 25;
+
+    return [
+        'seance_populaire' => $stats['seance_populaire'],
+        'nb_reservations_max' => $stats['nb_reservations_max'],
+        'total_seances' => $totalSeances,
+        'total_places' => $totalPlaces,
+        'total_participants' => $totalParticipants,
+        'taux_participation' => $tauxParticipation,
+        'seances_a_venir' => $seancesAVenir,
+        'seances_terminees' => $seancesTerminees,
+
+        // ✅ correction ici
+        'prochaine_seance' => $prochaineSeance,
+
+        'revenus_potentiels' => $revenusPotentiels,
+        'semaine_actuelle' => $this->getSeancesThisWeek($seances),
+    ];
+}
+/**
+ * @param Seance[] $seances
+ */
+private function getSeancesThisWeek(array $seances): int
     {
         $count = 0;
         $now = new \DateTime();

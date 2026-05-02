@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Controller;
-
+use App\Entity\UserApp;
 use App\Entity\ReservationSeance;
 use App\Entity\Seance;
 use App\Enum\StatutReservation;
@@ -96,6 +96,8 @@ $allSeances = $this->seanceRepo->findAll();
         ]);
         $user = $this->getUser();
 
+/** @var \App\Entity\UserApp|null $user */
+
 $recommendations = [];
 
 if ($user) {
@@ -134,15 +136,14 @@ public function reserver(Seance $seance): Response
 {
     try {
        $user = $this->getUser();
+
+/** @var \App\Entity\UserApp|null $user */
        if (!$user) {
     $this->addFlash('error', 'Utilisateur non connecté');
     return $this->redirectToRoute('app_user_seances');
 }
 
-        if (!$user) {
-            $this->addFlash('error', 'Utilisateur introuvable');
-            return $this->redirectToRoute('app_user_seances');
-        }
+        
 
         // 🔍 DEBUG INFOS
         $alreadyReserved = $this->reservationRepo->isUserReserved($user, $seance);
@@ -213,15 +214,9 @@ public function reserver(Seance $seance): Response
     }
 }
 
-    private function validateUser($user): bool
-    {
-        return $user !== null;
-    }
+   
 
-    private function validateNotAlreadyReserved($user, Seance $seance): bool
-    {
-        return !$this->reservationRepo->isUserReserved($user, $seance);
-    }
+    
 
     private function validateCapacity(Seance $seance): bool
     {
@@ -233,8 +228,7 @@ public function reserver(Seance $seance): Response
     {
         return $seance->getStatutSeance()->value === 'PLANIFIEE';
     }
-
-    private function createReservation($user, Seance $seance): ReservationSeance
+private function createReservation(UserApp $user, Seance $seance): ReservationSeance
     {
         $reservation = new ReservationSeance();
 
@@ -247,27 +241,20 @@ public function reserver(Seance $seance): Response
         return $reservation;
     }
 
-    private function handleError(string $message, string $type = 'error'): Response
-    {
-        $this->logger->warning($message);
-        $this->addFlash($type, $message);
-
-        return $this->redirectToRoute('app_user_seances');
-    }
+    
     #[Route('/mes-seances', name: 'app_mes_seances', methods: ['GET'])]
 public function mesSeances(): Response
 {
     // 🔥 utilisateur temporaire
-   $user = $this->getUser();
+  $user = $this->getUser();
+
+/** @var \App\Entity\UserApp|null $user */
    if (!$user) {
     $this->addFlash('error', 'Utilisateur non connecté');
     return $this->redirectToRoute('app_user_seances');
 }
 
-    if (!$user) {
-        $this->addFlash('error', 'Utilisateur introuvable');
-        return $this->redirectToRoute('app_user_seances');
-    }
+   
 
     // 🔥 récupérer les réservations de l'utilisateur
     $reservations = $this->reservationRepo->findBy([
@@ -282,7 +269,6 @@ public function mesSeances(): Response
 #[Route('/reservation/{id}/cancel', name: 'app_reservation_cancel', methods: ['POST'])]
 public function cancelReservation(
     int $id,
-    GoogleCalendarService $googleService
 ): Response {
     try {
         $reservation = $this->reservationRepo->find($id);
@@ -293,6 +279,8 @@ public function cancelReservation(
         }
 
         $user = $this->getUser();
+
+/** @var \App\Entity\UserApp|null $user */
 
         if (!$user) {
             $this->addFlash('error', 'Utilisateur non connecté');
@@ -313,7 +301,7 @@ public function cancelReservation(
             $token = json_decode($user->getGoogleToken(), true);
 
             if ($token) {
-                $googleService->deleteEvent(
+                $this->googleService->deleteEvent(
                     $token,
                     $reservation->getGoogle_event_id()
                 );
@@ -340,7 +328,7 @@ public function cancelReservation(
 #[Route('/reservation/{id}/add-google', name: 'app_add_google')]
 public function addToGoogle(
     int $id,
-    GoogleCalendarService $googleService,
+    
     Request $request
 ): Response {
     try {
@@ -353,6 +341,7 @@ public function addToGoogle(
 
         $user = $this->getUser();
 
+/** @var \App\Entity\UserApp|null $user */
         if (!$user) {
             $this->addFlash('error', 'Utilisateur non connecté');
             return $this->redirectToRoute('app_user_seances');
@@ -398,7 +387,7 @@ $end = new \DateTime(
 );
 
         // 📅 création event
-        $result = $googleService->addEvent(
+        $result = $this->googleService->addEvent(
             $token,
             "Séance : " . $seance->getNom(),
             "EcoAdventure",
@@ -425,9 +414,9 @@ $end = new \DateTime(
     return $this->redirectToRoute('app_mes_seances');
 }
 #[Route('/google/connect', name: 'google_connect')]
-public function connect(Request $request, GoogleCalendarService $google)
+public function connect(Request $request): Response
 {
-    $client = $google->getClient();
+    $client = $this->googleService->getClient();
 
     $reservationId = $request->query->get('reservationId');
     $userId = $request->query->get('userId');
@@ -442,9 +431,9 @@ public function connect(Request $request, GoogleCalendarService $google)
     return $this->redirect($client->createAuthUrl());
 }
 #[Route('/oauth/callback', name: 'google_callback')]
-public function callback(Request $request, GoogleCalendarService $google)
+public function callback(Request $request): Response
 {
-    $client = $google->getClient();
+    $client = $this->googleService->getClient();
 
     $token = $client->fetchAccessTokenWithAuthCode(
         $request->get('code')

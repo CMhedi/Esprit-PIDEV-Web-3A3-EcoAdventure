@@ -6,7 +6,10 @@ namespace App\Repository;
 use App\Entity\Seance;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-
+use App\Entity\UserApp;
+/**
+ * @extends ServiceEntityRepository<Seance>
+ */
 class SeanceRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -14,7 +17,9 @@ class SeanceRepository extends ServiceEntityRepository
         parent::__construct($registry, Seance::class);
     }
 
-    // 🔥 équivalent getByPlanning()
+  /**
+ * @return Seance[]
+ */
     public function findByPlanning(int $planningId): array
     {
         return $this->createQueryBuilder('s')
@@ -51,7 +56,24 @@ public function remove(Seance $entity, bool $flush = false): void
         $this->getEntityManager()->flush();
     }
 }
-public function filter($planning, $search, $date, $statut, $coach, $sort)
+/**
+ * @param int $planning
+ * @param string|null $search
+ * @param string|null $date
+ * @param string|null $statut
+ * @param int|null $coach
+ * @param string|null $sort
+ * 
+ * @return Seance[]
+ */
+public function filter(
+    int $planning,
+    ?string $search,
+    ?string $date,
+    ?string $statut,
+    ?int $coach,
+    ?string $sort
+): array
 {
     $qb = $this->createQueryBuilder('s')
         ->where('s.planning = :planning')
@@ -85,8 +107,15 @@ public function filter($planning, $search, $date, $statut, $coach, $sort)
         $qb->orderBy('s.capacite', 'DESC');
     }
 
-    return $qb->getQuery()->getResult();
+   $result = $qb->getQuery()->getResult();
+
+/** @var Seance[] $result */
+return $result;
 }
+
+/**
+ * @return Seance[]
+ */
 public function findAvailable(): array
 {
     return $this->createQueryBuilder('s')
@@ -94,6 +123,18 @@ public function findAvailable(): array
         ->andWhere('s.dateSeance >= :today')
         ->setParameter('statut', 'PLANIFIEE')
         ->setParameter('today', new \DateTime())
+        ->orderBy('s.dateSeance', 'ASC')
+        ->getQuery()
+        ->getResult();
+}
+/**
+ * @return Seance[]
+ */
+public function findByCoach(UserApp $coach): array
+{
+    return $this->createQueryBuilder('s')
+        ->where('s.coach = :coach')
+        ->setParameter('coach', $coach)
         ->orderBy('s.dateSeance', 'ASC')
         ->getQuery()
         ->getResult();

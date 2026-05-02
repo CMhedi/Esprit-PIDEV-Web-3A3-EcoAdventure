@@ -23,7 +23,19 @@ class RecommendationService
      * Recommande des séances personnalisées pour un utilisateur
      *
      * @param int $userId ID de l'utilisateur
-     * @return array Tableau des séances recommandées avec score et raison
+      * @return array<int, array{
+ *     seance: \App\Entity\Seance,
+ *     score: float,
+ *     reason: string,
+ *     scores: array{
+ *         similarity: float,
+ *         popularity: float,
+ *         coach_match: float,
+ *         time_match: float,
+ *         recency: float,
+ *         capacity: float
+ *     }
+ * }>
      */
     public function recommendForUser(int $userId): array
     {
@@ -87,7 +99,7 @@ foreach ($seances as $seance) {
                 $results[] = [
                     'seance' => $seance,
                     'score' => round($score, 3),
-                    'reason' => $this->buildReason($sim, $pop, $coach, $time, $capacity),
+                    'reason' => $this->buildReason($sim, $pop, $coach, $time, $capacity, $rec),
                     'scores' => [
                         'similarity' => round($sim, 2),
                         'popularity' => round($pop, 2),
@@ -120,9 +132,9 @@ foreach ($seances as $seance) {
         }
     }
 
-    /**
-     * Score de similarité basé sur les utilisateurs avec goûts similaires
-     */
+/**
+ * @param array<int, array<int>> $map
+ */
     private function similarityScore(int $userId, int $seanceId, array $map): float
     {
         $target = $map[$userId] ?? [];
@@ -150,10 +162,10 @@ foreach ($seances as $seance) {
         return $best;
     }
 
-    /**
-     * Calcul de similarité Jaccard
-     * Intersection / Union = mesure de similarité
-     */
+/**
+ * @param int[] $a
+ * @param int[] $b
+ */
     private function jaccard(array $a, array $b): float
     {
         if (empty($a) || empty($b)) {
@@ -163,7 +175,7 @@ foreach ($seances as $seance) {
         $intersection = count(array_intersect($a, $b));
         $union = count(array_unique(array_merge($a, $b)));
 
-        return $union > 0 ? $intersection / $union : 0;
+       return $intersection / $union;
     }
 
     /**
@@ -199,12 +211,11 @@ foreach ($seances as $seance) {
         $isAfternoon = $hour >= 12 && $hour < 18;
         $isEvening = $hour >= 18;
 
-        return match ($profile->getPreferredTime()) {
-            PreferredTime::MORNING => $isMorning ? 1.0 : 0.2,
-            PreferredTime::AFTERNOON => $isAfternoon ? 1.0 : 0.2,
-            PreferredTime::EVENING => $isEvening ? 1.0 : 0.2,
-            default => 0.5
-        };
+      return match ($profile->getPreferredTime()) {
+    PreferredTime::MORNING => $isMorning ? 1.0 : 0.2,
+    PreferredTime::AFTERNOON => $isAfternoon ? 1.0 : 0.2,
+    PreferredTime::EVENING => $isEvening ? 1.0 : 0.2,
+};
     }
 
     /**
@@ -302,7 +313,8 @@ foreach ($seances as $seance) {
         float $pop,
         float $coach,
         float $time,
-        float $capacity
+        float $capacity,
+        float $rec 
     ): string {
         // Déterminer la raison dominante
         return match (true) {

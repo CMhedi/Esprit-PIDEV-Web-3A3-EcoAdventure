@@ -31,7 +31,7 @@ public function index(
 
     // 🎯 SEANCES (avec filtre)
     $seances = $repo->filter(
-        $planning,
+          $planning->getIdPlanning(),
         $search,
         $date,
         $statut,

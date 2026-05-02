@@ -58,7 +58,7 @@ class NutritionLogController extends AbstractController
 public function getTodayStats(Request $request): JsonResponse
 {
     try {
-        /** @var UserApp $user */
+        /** @var UserApp|null $user */
         $user = $this->getUser();
 
         if (!$user) {
@@ -102,41 +102,36 @@ public function getTodayStats(Request $request): JsonResponse
         }
 
         // ===== MACROS =====
-        try {
-            $macros = $this->repository->getTotalMacros($userId, $today);
-        } catch (\Exception $e) {
-            error_log('getTotalMacros error: ' . $e->getMessage());
-            $macros = [
-                'calories' => 0,
-                'protein' => 0,
-                'fat' => 0,
-                'carbs' => 0
-            ];
-        }
+       try {
+    $macros = $this->repository->getTotalMacros($userId, $today);
+} catch (\Exception $e) {
+    error_log('getTotalMacros error: ' . $e->getMessage());
 
-        // ===== LOGS =====
-        try {
-            $logs = $this->repository->findByDateRange(
-                $userId,
-                new \DateTime('today'),
-                new \DateTime('tomorrow')
-            );
-        } catch (\Exception $e) {
-            error_log('findByDateRange error: ' . $e->getMessage());
-            $logs = [];
-        }
+    $macros = [
+        'calories' => 0.0,
+        'protein' => 0.0,
+        'fat' => 0.0,
+        'carbs' => 0.0
+    ];
+}
+
+    $logs = $this->repository->findByDateRange(
+    $userId,
+    new \DateTime('today'),
+    new \DateTime('tomorrow')
+);
 
         return $this->json([
             'success' => true,
             'date' => $today->format('Y-m-d'),
 
             // ===== CONSOMMATION =====
-            'total_calories' => (float)($totalCalories ?? 0),
+            'total_calories' =>(float)$totalCalories,
             'macros' => [
-                'calories' => (float)($macros['calories'] ?? 0),
-                'protein' => (float)($macros['protein'] ?? 0),
-                'fat' => (float)($macros['fat'] ?? 0),
-                'carbs' => (float)($macros['carbs'] ?? 0),
+'calories' => (float)$macros['calories'],
+'protein' => (float)$macros['protein'],
+'fat' => (float)$macros['fat'],
+'carbs' => (float)$macros['carbs'],
             ],
 
             // ===== 🎯 OBJECTIFS =====
@@ -151,10 +146,8 @@ public function getTodayStats(Request $request): JsonResponse
             ],
 
             // ===== LOGS =====
-            'logs_count' => is_array($logs) ? count($logs) : 0,
-            'logs' => is_array($logs)
-                ? array_map(fn($log) => $this->formatLog($log), $logs)
-                : []
+          'logs_count' => count($logs),
+'logs' => array_map(fn($log) => $this->formatLog($log), $logs),
         ]);
 
     } catch (\Exception $e) {
@@ -174,7 +167,7 @@ public function getTodayStats(Request $request): JsonResponse
     public function getWeekStats(): JsonResponse
     {
         try {
-            /** @var UserApp $user */
+            /** @var UserApp|null $user */
             $user = $this->getUser();
 
             if (!$user) {
@@ -183,13 +176,7 @@ public function getTodayStats(Request $request): JsonResponse
 
             $userId = $user->getId();
 
-            try {
-                $logs = $this->repository->findThisWeek($userId);
-            } catch (\Exception $e) {
-                error_log('findThisWeek error: ' . $e->getMessage());
-                $logs = [];
-            }
-
+          $logs = $this->repository->findThisWeek($userId);
             try {
                 $average = $this->repository->getWeeklyAverage($userId);
             } catch (\Exception $e) {
@@ -197,12 +184,7 @@ public function getTodayStats(Request $request): JsonResponse
                 $average = 0;
             }
 
-            try {
-                $totalMacros = $this->repository->getTotalMacros($userId);
-            } catch (\Exception $e) {
-                error_log('getTotalMacros error: ' . $e->getMessage());
-                $totalMacros = ['calories' => 0, 'protein' => 0, 'fat' => 0, 'carbs' => 0];
-            }
+        $totalMacros = $this->repository->getTotalMacros($userId);
 
             // ===== GROUPER PAR JOUR =====
             $byDay = [];
@@ -220,32 +202,32 @@ public function getTodayStats(Request $request): JsonResponse
             }
 
             // Remplir avec les logs
-            if (is_array($logs)) {
-                foreach ($logs as $log) {
-                    try {
-                        $logDate = $log->getLog_date();
-                        if ($logDate) {
-                            $dayKey = $logDate->format('Y-m-d');
-                            if (isset($byDay[$dayKey])) {
-                                $byDay[$dayKey]['calories'] += (float)($log->getCalories() ?? 0);
-                                $byDay[$dayKey]['count']++;
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        error_log('Error processing log: ' . $e->getMessage());
-                        continue;
-                    }
-                }
+           foreach ($logs as $log) {
+    try {
+        $logDate = $log->getLog_date();
+
+        if ($logDate) {
+            $dayKey = $logDate->format('Y-m-d');
+
+            if (isset($byDay[$dayKey])) {
+                $byDay[$dayKey]['calories'] += (float)($log->getCalories() ?? 0);
+                $byDay[$dayKey]['count']++;
             }
+        }
+    } catch (\Exception $e) {
+        error_log('Error processing log: ' . $e->getMessage());
+        continue;
+    }
+}
 
             return $this->json([
-                'success' => true,
-                'week' => 'This Week',
-                'total_logs' => is_array($logs) ? count($logs) : 0,
-                'daily_average' => round($average, 2),
-                'total_macros' => $totalMacros,
-                'by_day' => array_values($byDay)
-            ]);
+    'success' => true,
+    'week' => 'This Week',
+    'total_logs' => count($logs),
+    'daily_average' => round($average, 2),
+    'total_macros' => $totalMacros,
+    'by_day' => array_values($byDay)
+]);
 
         } catch (\Exception $e) {
             error_log('getWeekStats error: ' . $e->getMessage());
@@ -256,97 +238,50 @@ public function getTodayStats(Request $request): JsonResponse
         }
     }
 
-    /**
-     * Récupère tous les logs de l'utilisateur - FIX 🔧
-     */
-    #[Route('/logs', name: 'logs', methods: ['GET'])]
-    public function getLogs(): JsonResponse
-    {
-        try {
-            error_log('=== getLogs START ===');
-            
-            /** @var UserApp $user */
-            $user = $this->getUser();
+#[Route('/logs', name: 'logs', methods: ['GET'])]
+public function getLogs(): JsonResponse
+{
+    try {
+        /** @var UserApp|null $user */
+        $user = $this->getUser();
 
-            if (!$user) {
-                error_log('No user authenticated');
-                return $this->json(['error' => 'Utilisateur non authentifié'], 401);
-            }
-
-            $userId = $user->getId();
-            error_log('User ID: ' . $userId);
-
-            // ===== VÉRIFIER QUE LA MÉTHODE EXISTE =====
-            if (!method_exists($this->repository, 'getByUser')) {
-                error_log('Method getByUser does not exist in repository');
-                return $this->json(['error' => 'Repository method not found'], 500);
-            }
-
-            // ===== RÉCUPÉRER LES LOGS =====
-            $logs = $this->repository->getByUser($userId);
-            error_log('Logs count: ' . (is_array($logs) ? count($logs) : 'not array'));
-
-            if (!is_array($logs)) {
-                error_log('Result is not array, type: ' . gettype($logs));
-                $logs = [];
-            }
-
-            // ===== FORMATER LES LOGS =====
-            $formattedLogs = [];
-            
-            foreach ($logs as $log) {
-                try {
-                    if (!is_object($log)) {
-                        error_log('Log is not object: ' . gettype($log));
-                        continue;
-                    }
-
-                    $logDate = $log->getLog_date();
-                    $dateString = 'N/A';
-                    
-                    if ($logDate instanceof \DateTimeInterface) {
-                        $dateString = $logDate->format('Y-m-d');
-                    } elseif (is_string($logDate)) {
-                        $dateString = $logDate;
-                    }
-
-                    $formattedLogs[] = [
-                        'id' => (int)$log->getId(),
-                        'food_name' => (string)($log->getFood_name() ?? 'N/A'),
-                        'calories' => (float)($log->getCalories() ?? 0),
-                        'protein' => (float)($log->getProtein() ?? 0),
-                        'fat' => (float)($log->getFat() ?? 0),
-                        'carbs' => (float)($log->getCarbs() ?? 0),
-                        'log_date' => $dateString
-                    ];
-                } catch (\Exception $logE) {
-                    error_log('Error formatting log: ' . $logE->getMessage());
-                    continue;
-                }
-            }
-
-            error_log('Formatted logs count: ' . count($formattedLogs));
-            error_log('=== getLogs SUCCESS ===');
-
-            return $this->json([
-                'success' => true,
-                'count' => count($formattedLogs),
-                'logs' => $formattedLogs
-            ]);
-
-        } catch (\Exception $e) {
-            error_log('=== getLogs ERROR ===');
-            error_log('Message: ' . $e->getMessage());
-            error_log('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
-            error_log('Stack: ' . $e->getTraceAsString());
-            error_log('=== END ERROR ===');
-            
-            return $this->json([
-                'success' => false,
-                'error' => 'Erreur: ' . $e->getMessage()
-            ], 500);
+        if (!$user) {
+            return $this->json(['error' => 'Utilisateur non authentifié'], 401);
         }
+
+        $logs = $this->repository->getByUser($user->getId());
+
+        $formattedLogs = [];
+
+        foreach ($logs as $log) {
+            $logDate = $log->getLog_date();
+
+            $formattedLogs[] = [
+                'id' => (int) $log->getId(),
+                'food_name' => (string) ($log->getFood_name() ?? 'N/A'),
+                'calories' => (float) ($log->getCalories() ?? 0),
+                'protein' => (float) ($log->getProtein() ?? 0),
+                'fat' => (float) ($log->getFat() ?? 0),
+                'carbs' => (float) ($log->getCarbs() ?? 0),
+                'log_date' => $logDate instanceof \DateTimeInterface
+                    ? $logDate->format('Y-m-d')
+                    : 'N/A'
+            ];
+        }
+
+        return $this->json([
+            'success' => true,
+            'count' => count($formattedLogs),
+            'logs' => $formattedLogs
+        ]);
+
+    } catch (\Exception $e) {
+        return $this->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Ajouter un log de nutrition
@@ -371,7 +306,7 @@ public function add(Request $request): JsonResponse
             );
         }
 
-        /** @var UserApp $user */
+        /** @var UserApp|null $user */
         $user = $this->getUser();
 
         if (!$user) {
@@ -452,7 +387,7 @@ public function add(Request $request): JsonResponse
     public function deleteLog(NutritionLog $log): JsonResponse
     {
         try {
-            /** @var UserApp $user */
+            /** @var UserApp|null $user */
             $user = $this->getUser();
 
             if (!$user) {
@@ -489,7 +424,7 @@ public function add(Request $request): JsonResponse
     public function updateLog(Request $request, NutritionLog $log): JsonResponse
     {
         try {
-            /** @var UserApp $user */
+            /** @var UserApp|null $user */
             $user = $this->getUser();
 
             if (!$user) {
@@ -542,7 +477,7 @@ public function add(Request $request): JsonResponse
     public function export(): Response
     {
         try {
-            /** @var UserApp $user */
+            /** @var UserApp|null $user */
             $user = $this->getUser();
 
             if (!$user) {
@@ -550,9 +485,8 @@ public function add(Request $request): JsonResponse
             }
 
             $logs = $this->repository->getByUser($user->getId());
-            if (!is_array($logs)) {
-                $logs = [];
-            }
+                
+            
 
             $csv = "Date,Aliment,Calories,Protéines,Graisses,Glucides\n";
             
@@ -749,7 +683,7 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
         $gender = $data['gender'] ?? 'M';
         $activityLevel = (float)($data['activity_level'] ?? 1.5);
 
-        /** @var UserApp $user */
+        /** @var UserApp|null $user */
         $user = $this->getUser();
 
         if (!$user) {
@@ -970,7 +904,17 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
     // ================================
     // ===== HELPERS =====
     // ================================
-
+/**
+ * @return array{
+ *     imc: float,
+ *     category: string,
+ *     color: string,
+ *     severity: string,
+ *     remark: string,
+ *     weight: float,
+ *     height: float
+ * }
+ */
     private function analyzeIMC(float $imc, float $weight, float $height): array
     {
         $category = '';
@@ -1012,7 +956,14 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
 
         return compact('imc', 'category', 'color', 'severity', 'remark', 'weight', 'height');
     }
-
+/**
+ * @return array{
+ *     nutrition: string[],
+ *     exercise: string[],
+ *     lifestyle: string[],
+ *     medical: string[]
+ * }
+ */
     private function getRecommendations(float $imc, float $weight, float $height, int $age, string $gender): array
     {
         $recommendations = [
@@ -1119,7 +1070,13 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
 
         return $recommendations;
     }
-
+/**
+ * @return array{
+ *     min: float,
+ *     max: float,
+ *     formula: string
+ * }
+ */
     private function calculateIdealWeight(float $height, string $gender): array
     {
         $heightCm = $height;
@@ -1149,7 +1106,13 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
 
         return round($bmr);
     }
-
+/**
+ * @return array{
+ *     type: string,
+ *     message: string,
+ *     severity: string
+ * }
+ */
     private function generateAlert(float $diff, float $imc): array
     {
         $alert = [
@@ -1160,17 +1123,17 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
 
         if ($diff > 0) {
             $alert['message'] = sprintf(
-                '⚠️ Vous avez pris %.2f kg. IMC: %.2f',
-                $diff,
-                $imc
-            );
+    '⚠️ Vous avez pris %.2f kg. IMC: %.2f',
+    $diff,
+    $imc
+);
             $alert['severity'] = 'warning';
         } else {
             $alert['message'] = sprintf(
-                '✅ Vous avez perdu %.2f kg. Continuez !',
-                abs($diff),
-                $imc
-            );
+    '✅ Vous avez perdu %.2f kg. IMC: %.2f',
+    abs($diff),
+    $imc
+);
             $alert['severity'] = 'success';
         }
 
@@ -1187,7 +1150,18 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
 
         return '200g ' . $ingredient;
     }
-
+/**
+ * @return array{
+ *     id: int,
+ *     food_name: string,
+ *     calories: float,
+ *     protein: float,
+ *     fat: float,
+ *     carbs: float,
+ *     log_date: string,
+ *     macros_total: float
+ * }
+ */
     private function formatLog(NutritionLog $log): array
     {
         $logDate = $log->getLog_date();
@@ -1204,6 +1178,15 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
             'macros_total' => (float)(($log->getProtein() ?? 0) + ($log->getFat() ?? 0) + ($log->getCarbs() ?? 0))
         ];
     }
+    /**
+ * @return array{
+ *     bmr: int,
+ *     calories: int,
+ *     protein: int,
+ *     fat: int,
+ *     carbs: int
+ * }
+ */
     private function calculateNutritionGoals(
     float $weight,
     float $height,
@@ -1234,13 +1217,13 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
     // reste des calories
     $carbs = ($tdee - ($protein * 4 + $fat * 9)) / 4;
 
-    return [
-        'bmr' => round($bmr),
-        'calories' => round($tdee),
-        'protein' => round($protein),
-        'fat' => round($fat),
-        'carbs' => round($carbs)
-    ];
+   return [
+    'bmr' => (int) round($bmr),
+    'calories' => (int) round($tdee),
+    'protein' => (int) round($protein),
+    'fat' => (int) round($fat),
+    'carbs' => (int) round($carbs)
+];
 }
 
 

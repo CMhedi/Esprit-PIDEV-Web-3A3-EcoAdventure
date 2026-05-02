@@ -11,6 +11,8 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use App\Entity\UserApp;
+
 
 #[AsCommand(
     name: 'app:check-goals',
@@ -88,33 +90,40 @@ elseif ($stats['calories'] < $goals['calories']) {
         return Command::SUCCESS;
     }
 
-    // ===== 🧠 CALCUL CENTRALISÉ =====
-    private function calculateGoals($user): array
-    {
-        $weight = $user->getWeight();
-        $height = $user->getHeight();
-        $age = $user->getAge() ?? 30;
-        $gender = $user->getGender() ?? 'M';
-        $activity = $user->getActivityLevel() ?? 1.5;
 
-        // BMR
-        if ($gender === 'M') {
-            $bmr = 10 * $weight + 6.25 * $height - 5 * $age + 5;
-        } else {
-            $bmr = 10 * $weight + 6.25 * $height - 5 * $age - 161;
-        }
+/**
+ * @return array{
+ *     calories: int,
+ *     protein: int,
+ *     fat: int,
+ *     carbs: int
+ * }
+ */
+private function calculateGoals(UserApp $user): array
+{
+    $weight = $user->getWeight();
+    $height = $user->getHeight();
+    $age = $user->getAge() ?? 30;
+    $gender = $user->getGender() ?? 'M';
+    $activity = $user->getActivityLevel() ?? 1.5;
 
-        $calories = $bmr * $activity;
-
-        $protein = $weight * 1.8;
-        $fat = ($calories * 0.25) / 9;
-        $carbs = ($calories - ($protein * 4 + $fat * 9)) / 4;
-
-        return [
-            'calories' => round($calories),
-            'protein' => round($protein),
-            'fat' => round($fat),
-            'carbs' => round($carbs)
-        ];
+    if ($gender === 'M') {
+        $bmr = 10 * $weight + 6.25 * $height - 5 * $age + 5;
+    } else {
+        $bmr = 10 * $weight + 6.25 * $height - 5 * $age - 161;
     }
+
+    $calories = $bmr * $activity;
+
+    $protein = $weight * 1.8;
+    $fat = ($calories * 0.25) / 9;
+    $carbs = ($calories - ($protein * 4 + $fat * 9)) / 4;
+
+    return [
+        'calories' => (int) round($calories),
+        'protein' => (int) round($protein),
+        'fat' => (int) round($fat),
+        'carbs' => (int) round($carbs)
+    ];
+}
 }

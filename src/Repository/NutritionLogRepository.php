@@ -16,9 +16,9 @@ class NutritionLogRepository extends ServiceEntityRepository
         parent::__construct($registry, NutritionLog::class);
     }
 
-    /**
-     * Récupère tous les logs d'un utilisateur
-     */
+/**
+ * @return NutritionLog[]
+ */
     public function getByUser(int $userId): array
     {
         try {
@@ -61,9 +61,14 @@ class NutritionLogRepository extends ServiceEntityRepository
         }
     }
 
-    /**
-     * Récupère les macros totales d'un jour/période
-     */
+/**
+ * @return array{
+ *     calories: float,
+ *     protein: float,
+ *     fat: float,
+ *     carbs: float
+ * }
+ */
     public function getTotalMacros(int $userId, ?\DateTime $date = null): array
     {
         try {
@@ -99,9 +104,10 @@ class NutritionLogRepository extends ServiceEntityRepository
         }
     }
 
-    /**
-     * Récupère les logs dans une plage de dates
-     */
+/**
+ * @return NutritionLog[]
+ */
+
     public function findByDateRange(int $userId, \DateTime $start, \DateTime $end): array
     {
         try {
@@ -121,9 +127,9 @@ class NutritionLogRepository extends ServiceEntityRepository
         }
     }
 
-    /**
-     * Récupère les logs de la semaine actuelle
-     */
+/**
+ * @return NutritionLog[]
+ */
     public function findThisWeek(int $userId): array
     {
         try {
@@ -169,9 +175,9 @@ class NutritionLogRepository extends ServiceEntityRepository
         }
     }
 
-    /**
-     * Récupère les logs du mois en cours
-     */
+/**
+ * @return NutritionLog[]
+ */
     public function findThisMonth(int $userId): array
     {
         try {
@@ -193,9 +199,9 @@ class NutritionLogRepository extends ServiceEntityRepository
         }
     }
 
-    /**
-     * Récupère les logs par nom d'aliment
-     */
+/**
+ * @return NutritionLog[]
+ */
     public function findByFoodName(string $foodName): array
     {
         try {

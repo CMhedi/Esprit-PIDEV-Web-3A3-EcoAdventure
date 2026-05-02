@@ -19,13 +19,14 @@ class ChurnService
         private string $mlApiUrl = 'http://127.0.0.1:8001'
     ) {}
     
-    /**
-     * 🔥 Prédiction UN utilisateur
-     * 
-     * @param array $features Les features (10 paramètres)
-     * @return array ['churn' => 0|1, 'probability' => float, ...]
-     */
-    public function predictUser(array $features): array
+/**
+ * @param array<string, float|int> $features
+ * @return array{
+ *     churn: int,
+ *     probability: float
+ * }
+ */
+public function predictUser(array $features): array
     {
         try {
             $this->logger->info("📊 Prédiction utilisateur");
@@ -39,12 +40,17 @@ class ChurnService
         }
     }
     
-    /**
-     * 🔥 Prédictions BATCH (plusieurs utilisateurs)
-     * 
-     * @param array $usersData Array de features
-     * @return array ['total' => int, 'predictions' => [...], ...]
-     */
+ /**
+ * @param array<int, array<string, float|int>> $usersData
+ * @return array{
+ *     count?: int,
+ *     total?: int,
+ *     predictions: array<int, array{
+ *         churn: int,
+ *         probability: float
+ *     }>
+ * }
+ */
    public function predictBatch(array $usersData): array
 {
     try {
@@ -80,7 +86,8 @@ class ChurnService
     {
         try {
             $response = $this->callApi('GET', '/health');
-            $isHealthy = $response['status'] === 'healthy' && $response['model_loaded'] === true;
+            $isHealthy = ($response['status'] ?? null) === 'healthy'
+    && ($response['model_loaded'] ?? false) === true;
             
             if ($isHealthy) {
                 $this->logger->info("✅ API ML opérationnelle");
@@ -97,9 +104,10 @@ class ChurnService
     
     // ==================== PRIVATE METHODS ====================
     
-    /**
-     * Appel API avec retry automatique
-     */
+/**
+ * @param array<string, mixed> $options
+ * @return array<string, mixed>
+ */
     private function callApi(string $method, string $endpoint, array $options = []): array
     {
         $attempt = 0;

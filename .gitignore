@@ -30,3 +30,6 @@ __pycache__/
 ### OS ###
 .DS_Store
 Thumbs.db
+###> phpstan/phpstan ###
+phpstan.neon
+###< phpstan/phpstan ###

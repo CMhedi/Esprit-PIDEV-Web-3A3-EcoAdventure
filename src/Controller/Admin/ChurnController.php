@@ -21,7 +21,6 @@ use App\Enum\RoleUser;
 #[IsGranted('ROLE_ADMIN')]
 class ChurnController extends AbstractController
 {
-    private const BATCH_FLUSH_SIZE = 50;
     
     public function __construct(
         private ChurnService $churnService,
@@ -101,9 +100,13 @@ class ChurnController extends AbstractController
                 return $this->json(['error' => 'Utilisateur non trouvé'], 404);
             }
 
-            // ✅ CORRIGÉ: utiliser getIdUser() pour les features
-            $features = $this->userRepository->getUserFeatures($user->getId_user());
+           $userId = $user->getId_user();
 
+if (!$userId) {
+    return $this->json(['error' => 'ID utilisateur invalide'], 400);
+}
+
+$features = $this->userRepository->getUserFeatures($userId);
             if (!$features) {
                 return $this->json(['error' => 'Impossible de générer les features'], 400);
             }
@@ -165,7 +168,13 @@ $users = $this->userRepository->createQueryBuilder('u')
                 $validUsers = [];
 
                 foreach ($users as $user) {
-                    $features = $this->userRepository->getUserFeatures($user->getId_user()); // ✅ getIdUser()
+                    $userId = $user->getId_user();
+
+if (!$userId) {
+    return $this->json(['error' => 'ID utilisateur invalide'], 400);
+}
+
+$features = $this->userRepository->getUserFeatures($userId);// ✅ getIdUser()
 
                     if (!$features) {
                         $totalErrors++;
@@ -239,8 +248,8 @@ $users = $this->userRepository->createQueryBuilder('u')
             $total = $this->userRepository->count($criteria);
             
             $data = array_map(function ($user) {
-                $probability = round($user->getChurnProbability() ?? 0, 4);
-                $riskLevel = $user->getChurnRisk() ?? 'unknown';
+                $probability = round($user->getChurnProbability(), 4);
+               $riskLevel = $user->getChurnRisk();
                 
                 $riskColor = match($riskLevel) {
                     'high' => '#dc3545',
@@ -250,20 +259,20 @@ $users = $this->userRepository->createQueryBuilder('u')
                 };
                 
                 return [
-                    'id' => $user->getId_user(),  // ✅ CORRIGÉ: getIdUser()
-                    'name' => $user->getFullName(),
+                    'id' => $user->getId_user(),
+                    'name' => $user->getNom() . ' ' . $user->getPrenom(),
                     'email' => $user->getEmail(),
                     'churn' => [
                         'probability' => $probability,
-                        'prediction' => (int) ($user->getChurnPrediction() ?? 0),
+                        'prediction' => (int) $user->getChurnPrediction(),
                         'risk_level' => $riskLevel,
                         'risk_color' => $riskColor,
                         'last_update' => $user->getLastPredictionAt()?->format('Y-m-d H:i:s') ?? 'jamais',
                     ],
                     'metrics' => [
-                        'reservations_7j' => $user->getReservations7Days() ?? 0,
-                        'absences_30j' => $user->getAbsences30Days() ?? 0,
-                        'active_days' => $user->getActiveDays30() ?? 0,
+                        'reservations_7j' => $user->getReservations7Days(),
+                        'absences_30j' => $user->getAbsences30Days(),
+                        'active_days' => $user->getActiveDays30(),
                     ]
                 ];
             }, $users);
@@ -300,10 +309,10 @@ $users = $this->userRepository->createQueryBuilder('u')
             );
             
             $data = array_map(fn($user) => [
-                'id' => $user->getId_user(),  // ✅ CORRIGÉ: getIdUser()
-                'name' => $user->getFullName(),
+                'id' => $user->getId_user(),
+                'name' => $user->getNom() . ' ' . $user->getPrenom(),
                 'email' => $user->getEmail(),
-                'probability' => round($user->getChurnProbability() ?? 0, 4),
+                'probability' => round($user->getChurnProbability(), 4),
                 'risk_color' => '#dc3545',
                 'last_update' => $user->getLastPredictionAt()?->format('Y-m-d H:i:s'),
             ], $users);
@@ -361,8 +370,8 @@ $users = $this->userRepository->createQueryBuilder('u')
                 return $this->json(['error' => 'Utilisateur non trouvé'], 404);
             }
             
-            $probability = round($user->getChurnProbability() ?? 0, 4);
-            $riskLevel = $user->getChurnRisk() ?? 'unknown';
+            $probability = round($user->getChurnProbability(), 4);
+          $riskLevel = $user->getChurnRisk();
             
             $riskColor = match($riskLevel) {
                 'high' => '#dc3545',
@@ -372,27 +381,27 @@ $users = $this->userRepository->createQueryBuilder('u')
             };
             
             return $this->json([
-                'id' => $user->getId_user(),  // ✅ CORRIGÉ: getIdUser()
-                'name' => $user->getFullName(),
+                'id' => $user->getId_user(),
+                'name' => $user->getNom() . ' ' . $user->getPrenom(),
                 'email' => $user->getEmail(),
                 'created_at' => $user->getCreatedAt()?->format('Y-m-d H:i:s'),
                 'churn' => [
                     'probability' => $probability,
-                    'prediction' => (int) ($user->getChurnPrediction() ?? 0),
+                    'prediction' => (int) ($user->getChurnPrediction()),
                     'risk_level' => $riskLevel,
                     'risk_color' => $riskColor,
                     'last_update' => $user->getLastPredictionAt()?->format('Y-m-d H:i:s') ?? 'jamais',
                 ],
                 'metrics' => [
-                    'reservations_7j' => $user->getReservations7Days() ?? 0,
-                    'absences_30j' => $user->getAbsences30Days() ?? 0,
-                    'absence_rate' => round($user->getAbsenceRate() ?? 0, 4),
-                    'active_days' => $user->getActiveDays30() ?? 0,
-                    'avg_calories' => round($user->getAvgCalories7Days() ?? 0, 2),
+                    'reservations_7j' => $user->getReservations7Days(),
+                    'absences_30j' => $user->getAbsences30Days(),
+                    'absence_rate' => round($user->getAbsenceRate(), 4),
+                    'active_days' => $user->getActiveDays30(),
+                    'avg_calories' => round($user->getAvgCalories7Days(), 2),
                 ],
                 'trends' => [
-                    'reservations' => round($user->getReservationTrend() ?? 0, 4),
-                    'absence' => round($user->getAbsenceTrend() ?? 0, 4),
+                    'reservations' => round($user->getReservationTrend(), 4),
+                    'absence' => round($user->getAbsenceTrend(), 4),
                 ]
             ]);
         } catch (\Exception $e) {
@@ -402,18 +411,16 @@ $users = $this->userRepository->createQueryBuilder('u')
     
     // ==================== PRIVATE METHODS ====================
     
-    /**
-     * ✅ CORRIGÉ: Sauvegarder la prédiction avec UserApp
-     * Avec calcul du risk_level côté backend
-     */
-    private function savePrediction(UserApp $user, array $prediction): void
+/**
+ * @param array{
+ *     churn: int|bool,
+ *     probability: float
+ * } $prediction
+ */
+private function savePrediction(UserApp $user, array $prediction): void
 {
-    if (!isset($prediction['probability'])) {
-        return;
-    }
 
     $probability = (float) $prediction['probability'];
-    $churn = (int) $prediction['churn'];
 
     // 🎯 Définir le risque
 if ($probability > 0.6) {
@@ -424,7 +431,7 @@ if ($probability > 0.6) {
     $risk = 'low';
 }
     $user->setChurnProbability($probability);
-    $user->setChurnPrediction($churn);
+    $user->setChurnPrediction((bool) $prediction['churn']);
     $user->setChurnRisk($risk);
     $user->setLastPredictionAt(new \DateTime());
 }
