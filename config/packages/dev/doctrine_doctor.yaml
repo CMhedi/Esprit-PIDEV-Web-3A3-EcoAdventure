@@ -1,17 +1,2 @@
-doctrine_doctor:
-    enabled: true
-
-    profiler:
-        show_in_toolbar: true
-
-    analyzers:
-        n_plus_one:
-            threshold: 3
-        slow_query:
-            threshold: 75
-        hydration:
-            row_threshold: 30
-            critical_threshold: 200
-        eager_loading:
-            join_threshold: 4
-            critical_join_threshold: 6
+# DoctrineDoctorBundle is a dev dependency. Re-enable this file after installing
+# dev dependencies with `composer install`.

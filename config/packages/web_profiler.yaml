@@ -1,12 +1,2 @@
-when@dev:
-    web_profiler:
-        toolbar: false
-
-    framework:
-        profiler:
-            collect: false
-            collect_serializer_data: false
-
-when@test:
-    framework:
-        profiler: { collect: false }
+# WebProfilerBundle is a dev dependency. Re-enable this file after installing
+# dev dependencies with `composer install`.

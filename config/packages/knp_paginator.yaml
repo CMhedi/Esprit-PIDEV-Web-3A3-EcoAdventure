@@ -1,3 +1,2 @@
-knp_paginator:
-    template:
-        pagination: '@KnpPaginator/Pagination/bootstrap_v5_pagination.html.twig'
+# KnpPaginatorBundle is optional in the current vendor install. Re-enable this
+# after restoring dependencies with `composer install`.

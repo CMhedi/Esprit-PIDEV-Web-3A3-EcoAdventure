@@ -3,9 +3,12 @@
 {% block title %}Gestion des Inscriptions{% endblock %}
 {% block page_title %}Gestion des Inscriptions{% endblock %}
 
-{% block body %}
-<link rel="stylesheet" href="{{ asset('assets/css/inscriptions-admin.css') }}">
+{% block css %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/inscriptions-admin.css') }}">
+{% endblock %}
 
+{% block body %}
 <div class="inscriptions-page">
     <div class="inscriptions-hero">
         <div class="hero-content">
