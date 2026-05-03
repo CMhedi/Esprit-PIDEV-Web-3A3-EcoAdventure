@@ -122,6 +122,37 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToMany(targetEntity: Conversation::class, mappedBy: 'participants')]
     private Collection $conversations;
 
+    // AI & EXTRA FIELDS (Kept for compatibility)
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $churn_probability = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $churn_prediction = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $churn_risk = null;
+
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $last_prediction_at = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $google_token = null;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $weight = null;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $height = null;
+
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    private ?string $gender = null;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private ?string $activity_level = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $goal_notified = false;
+
     #[Assert\Callback]
     public function validateCoachRequirements(ExecutionContextInterface $context): void
     {
