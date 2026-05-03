@@ -19,6 +19,9 @@ use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\SvgWriter;
 use App\Entity\Notification;
 use App\Service\ReservationPricingService;
+use App\Service\EventDocumentService;
+use App\Service\EventWorkflowService;
+use App\Service\ReservationManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,7 +34,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class ReservationController extends AbstractController
 {
     #[Route('/download-all-tickets', name: 'app_reservation_all_tickets', methods: ['GET'])]
-    public function downloadAllTickets(EntityManagerInterface $entityManager, EventDocumentService $documentService): Response
+    public function downloadAllTickets(EntityManagerInterface $entityManager, EventDocumentService $documentService, ReservationPricingService $pricingService): Response
     {
         $user = $this->getUser();
         if (!$user instanceof UserApp) return $this->redirectToRoute('app_login');
@@ -62,7 +65,7 @@ class ReservationController extends AbstractController
                 'totalBillets' => $data['total_billets'],
                 'qrCode' => $documentService->generateQrCode(sprintf('EVENT:%d|USER:%d|TICKETS:%d', $eventId, $user->getId_user(), $data['total_billets'])),
                 'reference' => 'EVT-' . $eventId . '-' . $user->getId_user(),
-                'pricing' => $this->pricingService->calculatePricing($data['evenement'], $data['total_billets'])
+                'pricing' => $pricingService->calculatePricing($data['evenement'], $data['total_billets'])
             ];
         }
 
@@ -176,25 +179,25 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/evenement/{id_evenement}', name: 'app_reservation_event', methods: ['POST'])]
-    public function reserver(Request $request, Evenement $evenement, EntityManagerInterface $entityManager, \App\Service\AiEventOptimizerService $aiOptimizer): Response
+    public function reserver(Request $request, Evenement $evenement, EntityManagerInterface $entityManager, \App\Service\AiEventOptimizerService $aiOptimizer, ReservationManager $reservationManager): Response
     {
-        /** @var UserApp $user */
         $user = $this->getUser();
 
-        if (!$user) {
+        if (!$user instanceof UserApp) {
             $this->addFlash('error', 'Vous devez être connecté pour réserver.');
             return $this->redirectToRoute('app_login');
         }
 
         $nbBillets = (int) $request->request->get('nb_billets', 1);
-        $placesRestantes = $evenement->getPlacesRestantes();
 
-
-
-        if ($placesRestantes > 0 && $nbBillets > $placesRestantes) {
-            $this->addFlash('error', sprintf('Il ne reste que %d place(s). Vous ne pouvez pas réserver plus que ce qui est disponible tant que l\'événement n\'est pas complet.', $placesRestantes));
+        try {
+            $reservationManager->validateReservationDemande($evenement, $nbBillets);
+        } catch (\LogicException $e) {
+            $this->addFlash('error', $e->getMessage());
             return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
         }
+
+        $placesRestantes = $evenement->getPlacesRestantes();
 
             if ($placesRestantes <= 0) {
             $reservationsAttente = $entityManager->getRepository(ReservationEvenement::class)->findBy([
@@ -245,10 +248,8 @@ class ReservationController extends AbstractController
 
         $entityManager->persist($reservation);
 
-        if ($user instanceof UserApp) {
-            $user->addLoyaltyPoints($nbBillets * 10);
-            $entityManager->persist($user);
-        }
+        $user->addLoyaltyPoints($nbBillets * 10);
+        $entityManager->persist($user);
 
         $entityManager->flush();
 

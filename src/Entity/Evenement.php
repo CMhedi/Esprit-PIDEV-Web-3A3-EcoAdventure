@@ -150,9 +150,15 @@ class Evenement
     public function getImageUrl(): ?string { return $this->image_url; }
     public function setImageUrl(?string $url): self { $this->image_url = $url; return $this; }
 
+    /**
+     * @var Collection<int, ReservationEvenement>
+     */
     #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement', cascade: ['remove'], orphanRemoval: true)]
     private Collection $reservationEvenements;
 
+    /**
+     * @var Collection<int, EventRating>
+     */
     #[ORM\OneToMany(targetEntity: EventRating::class, mappedBy: 'evenement', cascade: ['remove'])]
     private Collection $ratings;
 
@@ -208,14 +214,16 @@ class Evenement
 
     public function getPlacesRestantes(): int
     {
+        $totalPlaces = $this->nb_places ?? 0;
         $nbReservationsExistantes = 0;
+        
         foreach ($this->reservationEvenements as $res) {
             $statut = $res->getStatut_res();
             if ($statut !== \App\Enum\StatutReservationEvenement::ANNULEE && $statut !== \App\Enum\StatutReservationEvenement::LISTE_ATTENTE) {
-                $nbReservationsExistantes += $res->getNb_billets();
+                $nbReservationsExistantes += (int) $res->getNb_billets();
             }
         }
-        return max(0, $this->nb_places - $nbReservationsExistantes);
+        return max(0, $totalPlaces - $nbReservationsExistantes);
     }
 
 }
