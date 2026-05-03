@@ -81,7 +81,7 @@ public function edit(Request $request, UserApp $user, EntityManagerInterface $en
 
     $form = $this->createForm(UserAppType::class, $user, [
         'is_admin' => $this->isGranted('ROLE_ADMIN'),
-        'is_coach' => ($user->getRole() && $user->getRole()->value === 'COACH'),
+        'is_coach' => ($user->getRole()->value === 'COACH'),
     ]);
     $form->handleRequest($request);
 

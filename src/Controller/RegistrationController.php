@@ -37,14 +37,6 @@ class RegistrationController extends AbstractController
         );
 
         // 2. Initialisation
-        // Si le formulaire n'a pas de champ rôle (ex: inscription simple), 
-        // on peut forcer un rôle par défaut ici.
-        if (!$user->getRole()) {
-            $user->setRole(\App\Enum\RoleUser::USER_SIMPLE);
-        }
-        
-        $user->setDate_creation(new \DateTime());
-
         $entityManager->persist($user);
         $entityManager->flush();
 

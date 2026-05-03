@@ -9,8 +9,8 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 class SmsService
 {
-    private $client;
-    private $requestStack;
+    private ?\Vonage\Client $client = null;
+    private \Symfony\Component\HttpFoundation\RequestStack $requestStack;
 
     public function __construct(RequestStack $requestStack)
     {
@@ -42,11 +42,17 @@ class SmsService
             } catch (\Exception $e) {
                 error_log("Erreur Vonage: " . $e->getMessage());
                 // Fallback simulation si erreur API
-                $this->requestStack->getSession()->getFlashBag()->add('success', "MODE SIMULATION - Code SMS secret : $code");
+                $session = $this->requestStack->getSession();
+                if ($session instanceof \Symfony\Component\HttpFoundation\Session\Session) {
+                    $session->getFlashBag()->add('success', "MODE SIMULATION - Code SMS secret : $code");
+                }
             }
         } else {
             // Mode simulation si pas de clés configurées
-            $this->requestStack->getSession()->getFlashBag()->add('success', "MODE SIMULATION - Code SMS secret : $code");
+            $session = $this->requestStack->getSession();
+            if ($session instanceof \Symfony\Component\HttpFoundation\Session\Session) {
+                $session->getFlashBag()->add('success', "MODE SIMULATION - Code SMS secret : $code");
+            }
             error_log("Code SMS simulé: $code");
         }
     }

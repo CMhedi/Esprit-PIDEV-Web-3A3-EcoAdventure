@@ -17,7 +17,8 @@ class UserAppRepository extends ServiceEntityRepository
     }
 
 
-public function findCoaches()
+    /** @return array<int, UserApp> */
+    public function findCoaches(): array
 {
     return $this->createQueryBuilder('u')
         ->where('u.role = :role')

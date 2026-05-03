@@ -10,8 +10,8 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class AiReclamationController extends AbstractController
 {
-    private $client;
-    private $geminiApiKey;
+    private HttpClientInterface $client;
+    private ?string $geminiApiKey;
 
     public function __construct(HttpClientInterface $client, string $geminiApiKey = null)
     {

@@ -1,0 +1,23 @@
+parameters:
+    level: 6
+    ignoreErrors:
+        - '#is never assigned.*so it can be removed from the property type#'
+    paths:
+        - src/Entity/UserApp.php
+        - src/Entity/Reclamation.php
+        - src/Entity/ResetPasswordRequest.php
+        - src/Controller/UserAppController.php
+        - src/Controller/ReclamationController.php
+        - src/Controller/RegistrationController.php
+        - src/Controller/LoginController.php
+        - src/Controller/SecurityController.php
+        - src/Controller/ResetPasswordController.php
+        - src/Controller/AiReclamationController.php
+        - src/Controller/ProfileController.php
+        - src/Controller/GoogleController.php
+        - src/Service/UserManager.php
+        - src/Service/SmsService.php
+        - src/EventListener/LoginListener.php
+        - src/Repository/ReclamationRepository.php
+        - src/Repository/UserAppRepository.php
+        - src/Security/GoogleAuthenticator.php

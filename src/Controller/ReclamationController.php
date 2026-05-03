@@ -11,7 +11,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Enum\StatutReclamation;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/reclamation')]
+#[IsGranted('ROLE_USER')]
 final class ReclamationController extends AbstractController
 {
     #[Route('/admin', name: 'app_admin_reclamation_index', methods: ['GET'])]
@@ -46,9 +48,12 @@ final class ReclamationController extends AbstractController
     public function new(Request $request, EntityManagerInterface $entityManager, ReclamationProcessor $processor): Response
     {
         $reclamation = new Reclamation();
-        $reclamation->setDate_creation(new \DateTime());
         $reclamation->setStatut(StatutReclamation::EN_ATTENTE);
-        $reclamation->setUserApp($this->getUser());
+        
+        $user = $this->getUser();
+        if ($user instanceof \App\Entity\UserApp) {
+            $reclamation->setUserApp($user);
+        }
 
         $form = $this->createForm(ReclamationType::class, $reclamation);
         $form->handleRequest($request);

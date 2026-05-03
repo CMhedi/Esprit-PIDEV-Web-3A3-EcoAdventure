@@ -20,10 +20,10 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 
 class GoogleAuthenticator extends OAuth2Authenticator
 {
-    private $clientRegistry;
-    private $entityManager;
-    private $router;
-    private $passwordHasher;
+    private ClientRegistry $clientRegistry;
+    private EntityManagerInterface $entityManager;
+    private RouterInterface $router;
+    private UserPasswordHasherInterface $passwordHasher;
 
     public function __construct(ClientRegistry $clientRegistry, EntityManagerInterface $entityManager, RouterInterface $router, UserPasswordHasherInterface $passwordHasher)
     {
@@ -66,7 +66,7 @@ class GoogleAuthenticator extends OAuth2Authenticator
                     $user->setEmail($email);
                     $user->setNom($googleUser->getLastName() ?? 'Inconnu');
                     $user->setPrenom($googleUser->getFirstName() ?? 'Inconnu');
-                    $user->setRole(RoleUser::CLIENT); // Default role
+                    $user->setRole(RoleUser::USER_SIMPLE); // Default role
                     
                     // Generate random password
                     $hashedPassword = $this->passwordHasher->hashPassword(

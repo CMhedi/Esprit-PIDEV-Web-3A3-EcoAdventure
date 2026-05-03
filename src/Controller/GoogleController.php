@@ -18,11 +18,11 @@ class GoogleController extends AbstractController
             ->getClient('google')
             ->redirect([
                 'email', 'profile' // the scopes you want to access
-            ]);
+            ], []);
     }
 
     #[Route('/connect/google/check', name: 'connect_google_check')]
-    public function connectCheckAction(Request $request, ClientRegistry $clientRegistry)
+    public function connectCheckAction(Request $request, ClientRegistry $clientRegistry): void
     {
         // leave this blank, the authenticator will handle it
     }

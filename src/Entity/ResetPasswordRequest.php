@@ -6,11 +6,17 @@ use App\Repository\ResetPasswordRequestRepository;
 use Doctrine\ORM\Mapping as ORM;
 use SymfonyCasts\Bundle\ResetPassword\Model\ResetPasswordRequestInterface;
 use SymfonyCasts\Bundle\ResetPassword\Model\ResetPasswordRequestTrait;
+use Symfony\Component\Serializer\Annotation\Ignore;
 
 #[ORM\Entity(repositoryClass: ResetPasswordRequestRepository::class)]
 class ResetPasswordRequest implements ResetPasswordRequestInterface
 {
     use ResetPasswordRequestTrait;
+
+    /** @var string */
+    #[Ignore]
+    #[ORM\Column(type: 'string', length: 100)]
+    protected $hashedToken;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]

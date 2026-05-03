@@ -51,11 +51,11 @@ class ResetPasswordController extends AbstractController
                 ->getOneOrNullResult();
 
             if (!$user) {
-                $this->addFlash('reset_password_error', 'Utilisateur non trouvé en base de données.');
+                $this->addFlash('reset_password_error', 'Utilisateur non trouvé .');
                 return $this->redirectToRoute('app_forgot_password_request');
             }
 
-            if ($identifier === $user->getTelephone() && $identifier !== null) {
+            if ($identifier === $user->getTelephone()) {
                 // SMS logic using Twilio Verify
                 try {
                     $request->getSession()->set('sms_reset_user_id', $user->getId());
@@ -230,7 +230,7 @@ class ResetPasswordController extends AbstractController
 
         if (!$user) {
             // Ajoute ça pour vérifier si l'user est trouvé
-            $this->addFlash('reset_password_error', 'Utilisateur non trouvé en base de données.');
+            $this->addFlash('reset_password_error', 'Utilisateur non trouvé .');
             return $this->redirectToRoute('app_forgot_password_request');
         }
 
