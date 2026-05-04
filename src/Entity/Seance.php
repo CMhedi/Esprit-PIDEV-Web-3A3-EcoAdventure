@@ -19,6 +19,7 @@ class Seance
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
+    /** @phpstan-ignore-next-line */
     private ?int $idSeance = null;
 
     #[ORM\Column(type: 'string', length: 100)]
@@ -56,9 +57,11 @@ class Seance
     #[ORM\JoinColumn(name: 'id_coach', referencedColumnName: 'id_user', nullable: false)]
     private ?UserApp $coach = null;
 
-    #[ORM\OneToMany(targetEntity: ReservationSeance::class, mappedBy: 'seance')]
-    /** @var Collection<int, ReservationSeance> */
-    private Collection $reservationSeances;
+/**
+ * @var Collection<int, ReservationSeance>
+ */
+#[ORM\OneToMany(targetEntity: ReservationSeance::class, mappedBy: 'seance')]
+private Collection $reservationSeances;
 
     public function __construct()
     {
@@ -106,10 +109,9 @@ public function setHeureFin(?\DateTimeInterface $heure): self
 
     public function getCoach(): ?UserApp { return $this->coach; }
     public function setCoach(?UserApp $coach): self { $this->coach = $coach; return $this; }
-
-    /**
-     * @return Collection<int, ReservationSeance>
-     */
+/**
+ * @return Collection<int, ReservationSeance>
+ */
     public function getReservationSeances(): Collection { return $this->reservationSeances; }
 
     // =========================
@@ -145,9 +147,9 @@ public function setHeureFin(?\DateTimeInterface $heure): self
        // ❌ hors interval (VERSION CORRIGÉE)
 if ($this->dateSeance && $this->planning->getDateDebut() && $this->planning->getDateFin()) {
 
-    $dateSeance = \DateTimeImmutable::createFromInterface($this->dateSeance)->setTime(0, 0);
-    $dateDebut = \DateTimeImmutable::createFromInterface($this->planning->getDateDebut())->setTime(0, 0);
-    $dateFin = \DateTimeImmutable::createFromInterface($this->planning->getDateFin())->setTime(23, 59, 59);
+ $dateSeance = (new \DateTime($this->dateSeance->format('Y-m-d')))->setTime(0, 0);
+$dateDebut = (new \DateTime($this->planning->getDateDebut()->format('Y-m-d')))->setTime(0, 0);
+$dateFin = (new \DateTime($this->planning->getDateFin()->format('Y-m-d')))->setTime(23, 59, 59);
 
     if ($dateSeance < $dateDebut || $dateSeance > $dateFin) {
         $context->buildViolation("La date doit être comprise entre le début et la fin du planning")

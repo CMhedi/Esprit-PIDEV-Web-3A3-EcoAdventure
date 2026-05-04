@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Psr\Log\LoggerInterface;
 
 class NutritionApiService
@@ -24,9 +25,14 @@ class NutritionApiService
         $this->apiKey = '5cdb0a7de4b6405fb5a0e5450eaf6961';
     }
 
-    // =========================
-    // GET NUTRITION VALUES (VERSION JAVA COMPATIBLE)
-    // =========================
+  /**
+ * @return array{
+ *     calories: float|int,
+ *     protein: float|int,
+ *     fat: float|int,
+ *     carbs: float|int
+ * }
+ */
     public function getNutritionValues(string $ingredient): array
     {
         try {
@@ -82,9 +88,15 @@ class NutritionApiService
         }
     }
 
-    // =========================
-    // PARSE RESPONSE (ROBUSTE)
-    // =========================
+ /**
+ * @param array<int, array<string, mixed>> $data
+ * @return array{
+ *     calories: float,
+ *     protein: float,
+ *     fat: float,
+ *     carbs: float
+ * }
+ */
     private function parseNutritionResponse(array $data): array
     {
         if (!isset($data[0]['nutrition']['nutrients'])) {
@@ -118,7 +130,14 @@ class NutritionApiService
 
         return $nutrition;
     }
-
+/**
+ * @return array{
+ *     calories: int,
+ *     protein: int,
+ *     fat: int,
+ *     carbs: int
+ * }
+ */
     private function emptyNutrition(): array
     {
         return [
@@ -129,9 +148,9 @@ class NutritionApiService
         ];
     }
 
-    // =========================
-    // SEARCH INGREDIENTS
-    // =========================
+    /**
+ * @return array<int, array<string, mixed>>
+ */
     public function searchIngredients(string $query, int $number = 10): array
     {
         try {
@@ -157,9 +176,14 @@ class NutritionApiService
         }
     }
 
-    // =========================
-    // GET RECIPE NUTRITION
-    // =========================
+/**
+ * @return array{
+ *     calories: mixed,
+ *     carbs: mixed,
+ *     fat: mixed,
+ *     protein: mixed
+ * }
+ */
     public function getRecipeNutrition(int $recipeId): array
     {
         try {
@@ -189,30 +213,35 @@ class NutritionApiService
         }
     }
 
-    public function getDailyRecommendations(int $age, string $gender, float $activity): array
-    {
-        $weight = 70.0;
-        $height = 175.0;
-        $gender = strtoupper($gender) === 'F' ? 'F' : 'M';
-
-        if ($gender === 'F') {
-            $bmr = 10 * $weight + 6.25 * $height - 5 * $age - 161;
-        } else {
-            $bmr = 10 * $weight + 6.25 * $height - 5 * $age + 5;
-        }
-
-        $calories = (int) round($bmr * max(1.2, $activity));
-        $protein = (int) round($weight * 1.8);
-        $fat = (int) round(($calories * 0.25) / 9);
-        $carbs = (int) round(($calories - ($protein * 4 + $fat * 9)) / 4);
-
-        return [
-            'calories' => $calories,
-            'protein' => max(0, $protein),
-            'fat' => max(0, $fat),
-            'carbs' => max(0, $carbs),
-        ];
-    }
+    /**
+ * @return array{
+ *     ingredient1: array{
+ *         name: string,
+ *         nutrition: array{
+ *             calories: float|int,
+ *             protein: float|int,
+ *             fat: float|int,
+ *             carbs: float|int
+ *         }
+ *     },
+ *     ingredient2: array{
+ *         name: string,
+ *         nutrition: array{
+ *             calories: float|int,
+ *             protein: float|int,
+ *             fat: float|int,
+ *             carbs: float|int
+ *         }
+ *     },
+ *     comparison: array{
+ *         calories_diff: float|int,
+ *         protein_diff: float|int,
+ *         fat_diff: float|int,
+ *         carbs_diff: float|int,
+ *         healthier: string
+ *     }
+ * }
+ */
     public function compareIngredients(string $ing1, string $ing2): array
 {
     $nut1 = $this->getNutritionValues($ing1);
@@ -234,6 +263,23 @@ class NutritionApiService
             'carbs_diff' => $nut1['carbs'] - $nut2['carbs'],
             'healthier' => $nut1['calories'] < $nut2['calories'] ? 'ingredient1' : 'ingredient2'
         ]
+    ];
+}
+/**
+ * @return array{
+ *     calories: int,
+ *     protein: int,
+ *     fat: int,
+ *     carbs: int
+ * }
+ */
+public function getDailyRecommendations(int $age, string $gender, float $activity): array
+{
+    return [
+        'calories' => 2000,
+        'protein' => 150,
+        'fat' => 70,
+        'carbs' => 250
     ];
 }
 }

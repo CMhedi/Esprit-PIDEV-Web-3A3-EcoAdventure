@@ -13,13 +13,9 @@ class ReservationService
         private SeanceRepository $seanceRepo,
         private LoggerInterface $logger
     ) {}
-
-    /**
-     * Récupère une map de toutes les réservations utilisateur-séance
-     * Format: [userId => [seanceId1, seanceId2, ...]]
-     *
-     * @return array Map des réservations
-     */
+/**
+ * @return array<int, array<int>>
+ */
     public function getUserReservationsMap(): array
     {
         try {
@@ -84,8 +80,9 @@ class ReservationService
      * Récupère les séances d'un utilisateur
      *
      * @param int $userId ID de l'utilisateur
-     * @return array Tableau des séances
-     */
+ * @return array<int, \App\Entity\Seance>
+ */
+     
     public function getUserSeances(int $userId): array
     {
         try {
@@ -139,7 +136,12 @@ class ReservationService
     /**
      * Récupère les statistiques de réservation
      *
-     * @return array Statistiques
+      * @return array{
+ *     total_reservations: int,
+ *     total_capacity: int,
+ *     fill_rate: float|int,
+ *     total_seances: int
+ * }
      */
     public function getStatistics(): array
     {
@@ -158,7 +160,12 @@ class ReservationService
 
         } catch (\Exception $e) {
             $this->logger->error("Erreur getStatistics: " . $e->getMessage());
-            return [];
+            return [
+                'total_reservations' => 0,
+                'total_capacity' => 0,
+                'fill_rate' => 0,
+                'total_seances' => 0,
+            ];
         }
     }
 
@@ -166,7 +173,7 @@ class ReservationService
      * Récupère les utilisateurs les plus actifs
      *
      * @param int $limit Nombre de résultats
-     * @return array Utilisateurs et leur nombre de réservations
+     * @return array<int, array{user_id: int, reservation_count: int}>
      */
     public function getTopActiveUsers(int $limit = 10): array
     {

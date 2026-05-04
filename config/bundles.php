@@ -13,11 +13,12 @@ return [
     Symfony\Bundle\SecurityBundle\SecurityBundle::class => ['all' => true],
     Symfony\Bundle\MonologBundle\MonologBundle::class => ['all' => true],
     Symfony\Bundle\MakerBundle\MakerBundle::class => ['dev' => true],
-    CMEN\GoogleChartsBundle\CMENGoogleChartsBundle::class => ['all' => true],
     Knp\Bundle\PaginatorBundle\KnpPaginatorBundle::class => ['all' => true],
-    Nucleos\DompdfBundle\NucleosDompdfBundle::class => ['all' => true],
     SymfonyCasts\Bundle\VerifyEmail\SymfonyCastsVerifyEmailBundle::class => ['all' => true],
-    AhmedBhs\DoctrineDoctor\DoctrineDoctorBundle::class => ['dev' => true],
     App\Notification\AppNotificationBundle::class => ['all' => true],
     App\AiBundle\AiBundle::class => ['all' => true],
+     CMEN\GoogleChartsBundle\CMENGoogleChartsBundle::class => ['all' => true],
+ Nucleos\DompdfBundle\NucleosDompdfBundle::class => ['all' => true],
+AhmedBhs\DoctrineDoctor\DoctrineDoctorBundle::class => ['dev' => true],
+
 ];

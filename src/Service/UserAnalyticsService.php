@@ -164,12 +164,18 @@ class UserAnalyticsService
         };
     }
 
-    /**
-     * Récupère les statistiques de l'utilisateur
-     *
-     * @param int $userId ID de l'utilisateur
-     * @return array Statistiques
-     */
+/**
+ * Récupère les statistiques de l'utilisateur
+ *
+ * @param int $userId ID de l'utilisateur
+ * @return array{
+ *     total_reservations: int,
+ *     first_reservation: string|null,
+ *     last_reservation: string|null,
+ *     months_active?: int,
+ *     average_per_month: float|int
+ * }
+ */
     public function getUserStatistics(int $userId): array
     {
         try {
@@ -178,13 +184,13 @@ class UserAnalyticsService
             ]);
 
             if (empty($reservations)) {
-                return [
-                    'total_reservations' => 0,
-                    'first_reservation' => null,
-                    'last_reservation' => null,
-                    'favorite_coach' => null,
-                    'average_per_month' => 0,
-                ];
+              return [
+    'total_reservations' => 0,
+    'first_reservation' => null,
+    'last_reservation' => null,
+    'months_active' => 0,
+    'average_per_month' => 0,
+];
             }
 
             $dates = array_map(fn($r) => $r->getSeance()?->getDateSeance(), $reservations);
@@ -205,8 +211,15 @@ class UserAnalyticsService
             ];
 
         } catch (\Exception $e) {
-            $this->logger->error("Erreur getUserStatistics: " . $e->getMessage());
-            return [];
-        }
+    $this->logger->error("Erreur getUserStatistics: " . $e->getMessage());
+
+    return [
+        'total_reservations' => 0,
+        'first_reservation' => null,
+        'last_reservation' => null,
+        'months_active' => 0,
+        'average_per_month' => 0,
+    ];
+}
     }
 }

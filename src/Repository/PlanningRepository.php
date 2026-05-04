@@ -5,7 +5,6 @@ namespace App\Repository;
 use App\Entity\Planning;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-
 /**
  * @extends ServiceEntityRepository<Planning>
  */
@@ -16,13 +15,10 @@ class PlanningRepository extends ServiceEntityRepository
         parent::__construct($registry, Planning::class);
     }
 
-    // =========================
-    // 📋 GET ALL (trié comme Java)
-    // =========================
-    /**
-     * @return array<int, Planning>
-     */
-    public function findAllOrdered(): array
+/**
+ * @return Planning[]
+ */
+public function findAllOrdered(): array
     {
         return $this->createQueryBuilder('p')
             ->orderBy('p.dateDebut', 'DESC')
@@ -30,12 +26,9 @@ class PlanningRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // =========================
-    // 🔥 GET ACTIFS
-    // =========================
-    /**
-     * @return array<int, Planning>
-     */
+/**
+ * @return Planning[]
+ */
     public function findActifs(): array
     {
         return $this->createQueryBuilder('p')
@@ -46,12 +39,9 @@ class PlanningRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // =========================
-    // 🔍 SEARCH (comme JavaFX)
-    // =========================
-    /**
-     * @return array<int, Planning>
-     */
+/**
+ * @return Planning[]
+ */
     public function search(?string $keyword): array
     {
         $qb = $this->createQueryBuilder('p');
@@ -66,12 +56,9 @@ class PlanningRepository extends ServiceEntityRepository
                   ->getResult();
     }
 
-    // =========================
-    // 📅 FILTER BY YEAR
-    // =========================
-    /**
-     * @return array<int, Planning>
-     */
+/**
+ * @return Planning[]
+ */
     public function filterByYear(?int $year): array
     {
         if (!$year) {
@@ -86,12 +73,9 @@ class PlanningRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // =========================
-    // 📌 FILTER BY STATUT
-    // =========================
-    /**
-     * @return array<int, Planning>
-     */
+/**
+ * @return Planning[]
+ */
     public function filterByStatut(?string $statut): array
     {
         if (!$statut || $statut === 'TOUS') {
@@ -129,32 +113,43 @@ class PlanningRepository extends ServiceEntityRepository
             $this->getEntityManager()->flush();
         }
     }
-    /**
-     * @return array<int, Planning>
-     */
-    public function filter(?string $search, ?int $annee, ?string $statut): array
-    {
-        $qb = $this->createQueryBuilder('p');
+/**
+ * @param string|null $search
+ * @param int|null $annee
+ * @param string|null $statut
+ * 
+ * @return Planning[]
+ */
+public function filter(
+    ?string $search,
+    ?int $annee,
+    ?string $statut
+): array
+{
+    $qb = $this->createQueryBuilder('p');
 
-        if ($search) {
-            $qb->andWhere('p.titre LIKE :search')
-               ->setParameter('search', '%'.$search.'%');
-        }
-
-        if ($annee) {
-            $dateStart = new \DateTime($annee . '-01-01');
-            $dateEnd = new \DateTime($annee . '-12-31');
-
-            $qb->andWhere('p.date_debut BETWEEN :start AND :end')
-               ->setParameter('start', $dateStart)
-               ->setParameter('end', $dateEnd);
-        }
-
-        if ($statut) {
-            $qb->andWhere('p.statut = :statut')
-               ->setParameter('statut', $statut);
-        }
-
-        return $qb->getQuery()->getResult();
+    if ($search) {
+        $qb->andWhere('p.titre LIKE :search')
+           ->setParameter('search', '%'.$search.'%');
     }
+
+    // ✅ CORRECTION ICI
+    if ($annee) {
+        $dateStart = new \DateTime($annee . '-01-01');
+        $dateEnd   = new \DateTime($annee . '-12-31');
+
+        $qb->andWhere('p.date_debut BETWEEN :start AND :end')
+           ->setParameter('start', $dateStart)
+           ->setParameter('end', $dateEnd);
+    }
+
+    if ($statut) {
+        $qb->andWhere('p.statut = :statut')
+           ->setParameter('statut', $statut);
+    }
+
+  $result = $qb->getQuery()->getResult();
+/** @var Planning[] $result */
+return $result;
+}
 }

@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\ReservationSeance;
 use App\Entity\Seance;
 use App\Entity\UserApp;
+use App\Enum\StatutPresence;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -54,17 +55,6 @@ class ReservationSeanceRepository extends ServiceEntityRepository
             ->select('COUNT(r.id_reservation)')
             ->andWhere('r.seance = :seance')
             ->setParameter('seance', $seance)
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
-
-    public function countBySeance(int $seanceId): int
-    {
-        return (int) $this->createQueryBuilder('r')
-            ->select('COUNT(r.id_reservation)')
-            ->join('r.seance', 's')
-            ->andWhere('s.idSeance = :seanceId')
-            ->setParameter('seanceId', $seanceId)
             ->getQuery()
             ->getSingleScalarResult();
     }
@@ -156,4 +146,28 @@ class ReservationSeanceRepository extends ServiceEntityRepository
         $this->getEntityManager()->remove($reservation);
         $this->getEntityManager()->flush();
     }
+    public function countBySeance(int $seanceId): int
+{
+    return $this->createQueryBuilder('r')
+        ->select('COUNT(r.id)')
+        ->where('r.seance = :seance')
+        ->setParameter('seance', $seanceId)
+        ->getQuery()
+        ->getSingleScalarResult();
+}
+public function getAbsences30Days(int $userId): int
+{
+    $date = new \DateTime('-30 days');
+
+    return (int) $this->createQueryBuilder('r')
+        ->select('COUNT(r.id)')
+        ->where('r.userApp = :user')
+        ->andWhere('r.statut_presence = :absence')
+        ->andWhere('r.date_reservation >= :date')
+        ->setParameter('user', $userId)
+        ->setParameter('absence', StatutPresence::ABSENT)
+        ->setParameter('date', $date)
+        ->getQuery()
+        ->getSingleScalarResult();
+}
 }

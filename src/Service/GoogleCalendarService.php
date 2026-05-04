@@ -30,7 +30,16 @@ class GoogleCalendarService
         return $client;
     }
 
-    // ================= SERVICE =================
+    /**
+ * @param array{
+ *     access_token: string,
+ *     expires_in?: int,
+ *     refresh_token?: string,
+ *     scope?: string,
+ *     token_type?: string,
+ *     created?: int
+ * } $token
+ */
     public function getService(array $token): Calendar
     {
         $client = $this->getClient();
@@ -46,7 +55,21 @@ class GoogleCalendarService
         return new Calendar($client);
     }
 
-    // ================= ADD EVENT =================
+   /**
+ * @param array{
+ *     access_token: string,
+ *     expires_in?: int,
+ *     refresh_token?: string,
+ *     scope?: string,
+ *     token_type?: string,
+ *     created?: int
+ * } $token
+ * 
+ * @return array{
+ *     id: string|null,
+ *     htmlLink: string|null
+ * }
+ */
     public function addEvent(
         array $token,
         string $summary,
@@ -88,7 +111,16 @@ class GoogleCalendarService
         ];
     }
 
-    // ================= DELETE =================
+/**
+ * @param array{
+ *     access_token: string,
+ *     expires_in?: int,
+ *     refresh_token?: string,
+ *     scope?: string,
+ *     token_type?: string,
+ *     created?: int
+ * } $token
+ */
     public function deleteEvent(array $token, string $eventId): void
     {
         $service = $this->getService($token);
@@ -100,7 +132,16 @@ class GoogleCalendarService
         }
     }
 
-    // ================= UPDATE =================
+  /**
+ * @param array{
+ *     access_token: string,
+ *     expires_in?: int,
+ *     refresh_token?: string,
+ *     scope?: string,
+ *     token_type?: string,
+ *     created?: int
+ * } $token
+ */
     public function updateEvent(
         array $token,
         string $eventId,
