@@ -87,7 +87,7 @@ private ?StatutReservationEvenement $statut_res = null;
     }
 
     #[ORM\ManyToOne(targetEntity: UserApp::class, inversedBy: 'reservationEvenements')]
-    #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user')]
+    #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user', onDelete: 'CASCADE')]
     private ?UserApp $userApp = null;
 
     public function getUserApp(): ?UserApp
@@ -102,7 +102,7 @@ private ?StatutReservationEvenement $statut_res = null;
     }
 
     #[ORM\ManyToOne(targetEntity: Evenement::class, inversedBy: 'reservationEvenements')]
-    #[ORM\JoinColumn(name: 'id_evenement', referencedColumnName: 'id_evenement')]
+    #[ORM\JoinColumn(name: 'id_evenement', referencedColumnName: 'id_evenement', nullable: false, onDelete: 'CASCADE')]
     private ?Evenement $evenement = null;
 
     public function getEvenement(): ?Evenement
@@ -110,7 +110,7 @@ private ?StatutReservationEvenement $statut_res = null;
         return $this->evenement;
     }
 
-    public function setEvenement(?Evenement $evenement): self
+    public function setEvenement(Evenement $evenement): self
     {
         $this->evenement = $evenement;
         return $this;

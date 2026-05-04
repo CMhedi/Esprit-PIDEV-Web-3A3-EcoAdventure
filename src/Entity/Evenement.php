@@ -153,7 +153,7 @@ class Evenement
     #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement', cascade: ['remove'], orphanRemoval: true)]
     private Collection $reservationEvenements;
 
-    #[ORM\OneToMany(targetEntity: EventRating::class, mappedBy: 'evenement', cascade: ['remove'])]
+    #[ORM\OneToMany(targetEntity: EventRating::class, mappedBy: 'evenement', cascade: ['remove'], orphanRemoval: true)]
     private Collection $ratings;
 
     public function __construct()

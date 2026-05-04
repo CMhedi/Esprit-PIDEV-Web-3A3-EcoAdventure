@@ -59,15 +59,15 @@ private ?string $food_name = null;
         return $this;
     }
 
-#[ORM\Column(type: 'float', nullable: true)]
-    private ?float $calories = null;
+#[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
+    private ?string $calories = null;
 
-    public function getCalories(): ?float
+    public function getCalories(): ?string
     {
         return $this->calories;
     }
 
-    public function setCalories(?float $calories): self
+    public function setCalories(?string $calories): self
     {
         $this->calories = $calories;
         return $this;
@@ -87,43 +87,43 @@ private ?string $food_name = null;
         return $this;
     }
 
-#[ORM\Column(type: 'float', nullable: true)]
-private ?float $protein = null;
+#[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
+private ?string $protein = null;
 
-    public function getProtein(): ?float
+    public function getProtein(): ?string
     {
         return $this->protein;
     }
 
-    public function setProtein(?float $protein): self
+    public function setProtein(?string $protein): self
     {
         $this->protein = $protein;
         return $this;
     }
 
-#[ORM\Column(type: 'float', nullable: true)]
-private ?float $fat = null;
+#[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
+private ?string $fat = null;
 
-    public function getFat(): ?float
+    public function getFat(): ?string
     {
         return $this->fat;
     }
 
-    public function setFat(?float $fat): self
+    public function setFat(?string $fat): self
     {
         $this->fat = $fat;
         return $this;
     }
 
-#[ORM\Column(type: 'float', nullable: true)]
-private ?float $carbs = null;
+#[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
+private ?string $carbs = null;
 
-    public function getCarbs(): ?float
+    public function getCarbs(): ?string
     {
         return $this->carbs;
     }
 
-    public function setCarbs(?float $carbs): self
+    public function setCarbs(?string $carbs): self
     {
         $this->carbs = $carbs;
         return $this;

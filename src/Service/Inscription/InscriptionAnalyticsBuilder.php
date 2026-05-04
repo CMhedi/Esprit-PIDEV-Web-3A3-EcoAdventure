@@ -48,8 +48,10 @@ final class InscriptionAnalyticsBuilder
             $priorityViews[] = $priorityView;
             $segments[$priorityView->getLane()]++;
 
-            $status = $inscription->getStatutInscr()->value;
-            $statusBreakdown[$status] = ($statusBreakdown[$status] ?? 0) + 1;
+            $status = $inscription->getStatutInscr()?->value;
+            if ($status !== null) {
+                $statusBreakdown[$status] = ($statusBreakdown[$status] ?? 0) + 1;
+            }
 
             $packName = $inscription->getNomPack() ?: ($inscription->getPack()?->getNom() ?? 'Pack');
             $packCounts[$packName] = ($packCounts[$packName] ?? 0) + 1;

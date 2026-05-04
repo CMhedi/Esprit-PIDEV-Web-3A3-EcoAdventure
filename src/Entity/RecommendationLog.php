@@ -45,7 +45,12 @@ public function setUser(?UserApp $user): self
     return $this;
 }
 
-    #[ORM\Column(type: 'datetime', nullable: true)]
+public function __construct()
+{
+    $this->created_at = new \DateTime();
+}
+
+    #[ORM\Column(type: 'datetime', nullable: false)]
     private ?\DateTimeInterface $created_at = null;
 
     public function getCreated_at(): ?\DateTimeInterface

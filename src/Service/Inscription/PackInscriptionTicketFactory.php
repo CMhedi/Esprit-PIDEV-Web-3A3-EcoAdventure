@@ -29,6 +29,9 @@ final class PackInscriptionTicketFactory
     ) {
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function buildViewData(Inscription $inscription): array
     {
         $user = $inscription->getUserApp();
@@ -146,14 +149,19 @@ final class PackInscriptionTicketFactory
         }
 
         $port = $request->getPort();
-        $portSuffix = $this->isDefaultPort($request->getScheme(), $port) ? '' : ':' . $port;
+        $portSuffix = $this->isDefaultPort($request->getScheme(), (int)$port) ? '' : ':' . $port;
 
         return sprintf('%s://%s%s', $request->getScheme(), $lanIp, $portSuffix);
     }
 
     private function detectLanIp(): ?string
     {
-        $hostIps = gethostbynamel(gethostname()) ?: [];
+        $hostname = gethostname();
+        if ($hostname === false) {
+            return null;
+        }
+        $hostnames = gethostbynamel($hostname);
+        $hostIps = is_array($hostnames) ? $hostnames : [];
         $privateIps = [];
 
         foreach ($hostIps as $ip) {

@@ -23,10 +23,10 @@ class ResetPasswordRequest
     #[ORM\Column(length: 255)]
     private string $hashedToken = '';
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeInterface $requestedAt;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeInterface $expiresAt;
 
     public function __construct(?UserApp $user = null, ?\DateTimeInterface $expiresAt = null, string $selector = '', string $hashedToken = '')

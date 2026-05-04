@@ -67,9 +67,15 @@ class Pack
     #[ORM\Column(name: 'statut_pack', type: 'string', length: 255)]
     private ?string $statut_pack = null;
 
+    /**
+     * @var Collection<int, Activite>
+     */
     #[ORM\OneToMany(targetEntity: Activite::class, mappedBy: 'pack')]
     private Collection $activites;
 
+    /**
+     * @var Collection<int, Inscription>
+     */
     #[ORM\OneToMany(targetEntity: Inscription::class, mappedBy: 'pack')]
     private Collection $inscriptions;
 
@@ -155,11 +161,17 @@ class Pack
         return $this;
     }
 
+    /**
+     * @return Collection<int, Activite>
+     */
     public function getActivites(): Collection
     {
         return $this->activites;
     }
 
+    /**
+     * @return Collection<int, Inscription>
+     */
     public function getInscriptions(): Collection
     {
         return $this->inscriptions;

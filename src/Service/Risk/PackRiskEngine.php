@@ -44,7 +44,7 @@ final class PackRiskEngine
                 'coverage' => $this->clamp(1.0 - (float) ($metrics['coverage_ratio'] ?? 0.0)),
                 'discount' => $this->computeDiscountRisk((float) ($metrics['reduction_ratio'] ?? 0.0)),
                 'trend' => $this->computeTrendRisk(
-                    (float) (($metrics['inscriptions_30d'] ?? 0) + ($metrics['views_30d'] ?? 0) + ($metrics['opens_30d'] ?? 0) + ($metrics['confirmed_30d'] ?? 0)),
+                    (float) ((float)($metrics['inscriptions_30d'] ?? 0) + (float)($metrics['views_30d'] ?? 0) + (float)($metrics['opens_30d'] ?? 0) + (float)($metrics['confirmed_30d'] ?? 0)),
                     (float) ($typeBenchmark['median_recent_signal'] ?? 0.0)
                 ),
                 'pending' => $this->computePendingRisk((int) ($metrics['pending_count'] ?? 0), (int) ($metrics['inscriptions_total'] ?? 0)),
@@ -110,7 +110,7 @@ final class PackRiskEngine
             $typeKey = $this->normalizeType((string) ($metrics['type_label'] ?? 'standard'));
             $linkedActivities = max((int) ($metrics['linked_activities'] ?? 0), 1);
             $pricePerActivity = (float) ($metrics['final_price'] ?? 0.0) / $linkedActivities;
-            $recentSignal = (float) (($metrics['inscriptions_30d'] ?? 0) + ($metrics['views_30d'] ?? 0) + ($metrics['opens_30d'] ?? 0) + ($metrics['confirmed_30d'] ?? 0));
+            $recentSignal = (float) ((float)($metrics['inscriptions_30d'] ?? 0) + (float)($metrics['views_30d'] ?? 0) + (float)($metrics['opens_30d'] ?? 0) + (float)($metrics['confirmed_30d'] ?? 0));
 
             foreach ([$typeKey, '__global__'] as $bucket) {
                 $series[$bucket]['inscriptions'][] = (float) ($metrics['inscriptions_total'] ?? 0.0);

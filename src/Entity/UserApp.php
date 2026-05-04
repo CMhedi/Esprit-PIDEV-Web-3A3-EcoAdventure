@@ -114,27 +114,51 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private int $failedAttempts = 0;
 
     // RELATIONS
+    /**
+     * @var Collection<int, Inscription>
+     */
     #[ORM\OneToMany(targetEntity: Inscription::class, mappedBy: 'userApp')]
     private Collection $inscriptions;
 
+    /**
+     * @var Collection<int, Message>
+     */
     #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'userApp')]
     private Collection $messages;
 
+    /**
+     * @var Collection<int, Reclamation>
+     */
     #[ORM\OneToMany(targetEntity: Reclamation::class, mappedBy: 'userApp')]
     private Collection $reclamations;
 
+    /**
+     * @var Collection<int, ReservationActivite>
+     */
     #[ORM\OneToMany(targetEntity: ReservationActivite::class, mappedBy: 'userApp')]
     private Collection $reservationActivites;
 
+    /**
+     * @var Collection<int, ReservationEvenement>
+     */
     #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'userApp')]
     private Collection $reservationEvenements;
 
+    /**
+     * @var Collection<int, ReservationSeance>
+     */
     #[ORM\OneToMany(targetEntity: ReservationSeance::class, mappedBy: 'userApp')]
     private Collection $reservationSeances;
 
+    /**
+     * @var Collection<int, Seance>
+     */
     #[ORM\OneToMany(mappedBy: "coach", targetEntity: Seance::class)]
     private Collection $seances;
 
+    /**
+     * @var Collection<int, Conversation>
+     */
     #[ORM\ManyToMany(targetEntity: Conversation::class, mappedBy: 'participants')]
     private Collection $conversations;
 
@@ -301,13 +325,37 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function resetFailedAttempts(): self { $this->failedAttempts = 0; return $this; }
 
     // Relations
+    /**
+     * @return Collection<int, Inscription>
+     */
     public function getInscriptions(): Collection { return $this->inscriptions; }
+    /**
+     * @return Collection<int, Message>
+     */
     public function getMessages(): Collection { return $this->messages; }
+    /**
+     * @return Collection<int, Reclamation>
+     */
     public function getReclamations(): Collection { return $this->reclamations; }
+    /**
+     * @return Collection<int, ReservationActivite>
+     */
     public function getReservationActivites(): Collection { return $this->reservationActivites; }
+    /**
+     * @return Collection<int, ReservationEvenement>
+     */
     public function getReservationEvenements(): Collection { return $this->reservationEvenements; }
+    /**
+     * @return Collection<int, ReservationSeance>
+     */
     public function getReservationSeances(): Collection { return $this->reservationSeances; }
+    /**
+     * @return Collection<int, Seance>
+     */
     public function getSeances(): Collection { return $this->seances; }
+    /**
+     * @return Collection<int, Conversation>
+     */
     public function getConversations(): Collection { return $this->conversations; }
 
     public function addInscription(Inscription $inscription): self

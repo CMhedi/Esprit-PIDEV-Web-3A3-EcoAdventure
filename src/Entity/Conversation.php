@@ -20,7 +20,7 @@ class Conversation
     private ?int $id_conversation = null;
 
     #[ORM\ManyToOne(targetEntity: UserApp::class)]
-    #[ORM\JoinColumn(name: 'id_createur', referencedColumnName: 'id_user', nullable: false)]
+    #[ORM\JoinColumn(name: 'id_createur', referencedColumnName: 'id_user', nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull(message: "Le créateur de la conversation est obligatoire.")]
     private ?UserApp $createur = null;
 
@@ -52,7 +52,7 @@ class Conversation
     #[Assert\LessThanOrEqual("now", message: "La date de création ne peut pas être dans le futur.")]
     private ?\DateTimeInterface $date_creation = null;
 
-    #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'conversation', cascade: ['remove'])]
+    #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'conversation', cascade: ['remove'], orphanRemoval: true)]
     private Collection $messages;
 
     public function __construct()
