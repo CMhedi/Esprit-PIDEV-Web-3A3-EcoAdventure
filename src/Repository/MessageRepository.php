@@ -18,6 +18,9 @@ class MessageRepository extends ServiceEntityRepository
         parent::__construct($registry, Message::class);
     }
 
+    /**
+     * @return array<int, Message>
+     */
     public function findMessagesForConversation(Conversation $conversation): array
     {
         return $this->createQueryBuilder('m')
@@ -30,6 +33,9 @@ class MessageRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * @return array<string, int>
+     */
     public function getLatestIdAndIncomingCount(Conversation $conversation, UserApp $user, int $lastSeenId): array
     {
         $latestId = (int) ($this->createQueryBuilder('m')

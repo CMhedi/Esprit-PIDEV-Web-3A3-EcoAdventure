@@ -8,6 +8,9 @@ use App\Entity\UserApp;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
+/**
+ * @extends ServiceEntityRepository<Seance>
+ */
 class SeanceRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -16,6 +19,9 @@ class SeanceRepository extends ServiceEntityRepository
     }
 
     // 🔥 équivalent getByPlanning()
+    /**
+     * @return array<int, Seance>
+     */
     public function findByPlanning(int $planningId): array
     {
         return $this->createQueryBuilder('s')
@@ -37,76 +43,88 @@ class SeanceRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
     public function save(Seance $entity, bool $flush = false): void
-{
-    $this->getEntityManager()->persist($entity);
+    {
+        $this->getEntityManager()->persist($entity);
 
-    if ($flush) {
-        $this->getEntityManager()->flush();
-    }
-}
-public function remove(Seance $entity, bool $flush = false): void
-{
-    $this->getEntityManager()->remove($entity);
-
-    if ($flush) {
-        $this->getEntityManager()->flush();
-    }
-}
-public function filter($planning, $search, $date, $statut, $coach, $sort)
-{
-    $qb = $this->createQueryBuilder('s')
-        ->where('s.planning = :planning')
-        ->setParameter('planning', $planning);
-
-    if ($search) {
-        $qb->andWhere('s.nom LIKE :search')
-           ->setParameter('search', '%'.$search.'%');
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 
-    if ($date) {
-        $qb->andWhere('s.dateSeance = :date')
-           ->setParameter('date', new \DateTime($date));
+    public function remove(Seance $entity, bool $flush = false): void
+    {
+        $this->getEntityManager()->remove($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 
-    if ($statut) {
-        $qb->andWhere('s.statutSeance = :statut')
-           ->setParameter('statut', $statut);
+    /**
+     * @return array<int, Seance>
+     */
+    public function filter($planning, $search, $date, $statut, $coach, $sort): array
+    {
+        $qb = $this->createQueryBuilder('s')
+            ->where('s.planning = :planning')
+            ->setParameter('planning', $planning);
+
+        if ($search) {
+            $qb->andWhere('s.nom LIKE :search')
+               ->setParameter('search', '%'.$search.'%');
+        }
+
+        if ($date) {
+            $qb->andWhere('s.dateSeance = :date')
+               ->setParameter('date', new \DateTime($date));
+        }
+
+        if ($statut) {
+            $qb->andWhere('s.statutSeance = :statut')
+               ->setParameter('statut', $statut);
+        }
+
+        if ($coach) {
+            $qb->andWhere('s.coach = :coach')
+               ->setParameter('coach', $coach);
+        }
+
+        if ($sort === 'date') {
+            $qb->orderBy('s.dateSeance', 'ASC');
+        }
+
+        if ($sort === 'capacite') {
+            $qb->orderBy('s.capacite', 'DESC');
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
-    if ($coach) {
-        $qb->andWhere('s.coach = :coach')
-           ->setParameter('coach', $coach);
+    /**
+     * @return array<int, Seance>
+     */
+    public function findAvailable(): array
+    {
+        return $this->createQueryBuilder('s')
+            ->where('s.statutSeance = :statut')
+            ->andWhere('s.dateSeance >= :today')
+            ->setParameter('statut', 'PLANIFIEE')
+            ->setParameter('today', new \DateTime())
+            ->orderBy('s.dateSeance', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
-    if ($sort === 'date') {
-        $qb->orderBy('s.dateSeance', 'ASC');
+    /**
+     * @return array<int, Seance>
+     */
+    public function findByCoach(UserApp $coach): array
+    {
+        return $this->createQueryBuilder('s')
+            ->where('s.coach = :coach')
+            ->setParameter('coach', $coach)
+            ->orderBy('s.dateSeance', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
-
-    if ($sort === 'capacite') {
-        $qb->orderBy('s.capacite', 'DESC');
-    }
-
-    return $qb->getQuery()->getResult();
-}
-public function findAvailable(): array
-{
-    return $this->createQueryBuilder('s')
-        ->where('s.statutSeance = :statut')
-        ->andWhere('s.dateSeance >= :today')
-        ->setParameter('statut', 'PLANIFIEE')
-        ->setParameter('today', new \DateTime())
-        ->orderBy('s.dateSeance', 'ASC')
-        ->getQuery()
-        ->getResult();
-}
-
-public function findByCoach(UserApp $coach): array
-{
-    return $this->createQueryBuilder('s')
-        ->where('s.coach = :coach')
-        ->setParameter('coach', $coach)
-        ->orderBy('s.dateSeance', 'ASC')
-        ->getQuery()
-        ->getResult();
-}
 }

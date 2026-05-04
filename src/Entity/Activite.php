@@ -122,6 +122,7 @@ class Activite
 
     // ===================== RESERVATIONS =====================
     #[ORM\OneToMany(targetEntity: ReservationActivite::class, mappedBy: 'activite')]
+    /** @var Collection<int, ReservationActivite> */
     private Collection $reservationActivites;
 
     public function __construct()
@@ -246,6 +247,9 @@ class Activite
         return $this;
     }
 
+    /**
+     * @return Collection<int, ReservationActivite>
+     */
     public function getReservationActivites(): Collection
     {
         return $this->reservationActivites;

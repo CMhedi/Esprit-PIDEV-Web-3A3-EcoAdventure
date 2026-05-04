@@ -31,6 +31,7 @@ class Conversation
         inverseJoinColumns: [new ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user')]
     )]
     #[Assert\Count(min: 1, minMessage: "Il doit y avoir au moins un participant.")]
+    /** @var Collection<int, UserApp> */
     private Collection $participants;
 
     #[ORM\Column(type: 'string', length: 150)]
@@ -53,6 +54,7 @@ class Conversation
     private ?\DateTimeInterface $date_creation = null;
 
     #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'conversation', cascade: ['remove'])]
+    /** @var Collection<int, Message> */
     private Collection $messages;
 
     public function __construct()
@@ -84,6 +86,9 @@ class Conversation
         return $this;
     }
 
+    /**
+     * @return Collection<int, UserApp>
+     */
     /**
      * @return Collection<int, UserApp>
      */
@@ -161,6 +166,9 @@ class Conversation
         return $this;
     }
 
+    /**
+     * @return Collection<int, Message>
+     */
     /**
      * @return Collection<int, Message>
      */

@@ -2,6 +2,7 @@
 
 namespace App\Tests\Entity;
 
+
 use App\Entity\ReservationActivite;
 use App\Enum\StatutReservationActivite;
 use PHPUnit\Framework\TestCase;

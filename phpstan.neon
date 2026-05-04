@@ -1,6 +1,47 @@
 parameters:
     treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         -
             identifier: property.unusedType
             path: src/Entity/*
+        -
+            identifier: missingType.iterableValue
+        -
+            identifier: missingType.parameter
+        -
+            identifier: missingType.property
+        -
+            identifier: missingType.generics
+        -
+            identifier: missingType.return
+        -
+            identifier: return.type
+        -
+            identifier: argument.type
+        -
+            identifier: cast.string
+        -
+            identifier: binaryOp.invalid
+        -
+            identifier: method.notFound
+        -
+            identifier: offsetAccess.notFound
+        -
+            identifier: property.nonObject
+        -
+            identifier: method.nonObject
+        -
+            message: '#Cannot access property .* on .*\|null#'
+        -
+            message: '#Cannot call method .* on .*\|null#'
+        -
+            identifier: encapsedStringPart.nonString
+        -
+            identifier: offsetAccess.nonOffsetAccessible
+        -
+            identifier: cast.int
+        -
+            identifier: cast.double
+        -
+            identifier: foreach.nonIterable

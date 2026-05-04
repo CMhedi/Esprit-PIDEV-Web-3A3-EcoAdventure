@@ -6,6 +6,9 @@ use App\Entity\Evenement;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
+/**
+ * @extends ServiceEntityRepository<Evenement>
+ */
 class EvenementRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -14,6 +17,9 @@ class EvenementRepository extends ServiceEntityRepository
     }
 
     // 🔍 FILTRE
+    /**
+     * @return mixed
+     */
     public function findByFilters(?string $search, ?string $categorie, ?string $lieu, ?string $sortBy = 'date_desc', bool $onlyAvailable = false, int $page = 1, int $limit = 6)
     {
         $qb = $this->createQueryBuilder('e');
@@ -68,6 +74,9 @@ class EvenementRepository extends ServiceEntityRepository
     }
 
     // 📍 LIEUX DISTINCTS
+    /**
+     * @return array<int, string>
+     */
     public function findDistinctLieux(): array
     {
         return $this->createQueryBuilder('e')

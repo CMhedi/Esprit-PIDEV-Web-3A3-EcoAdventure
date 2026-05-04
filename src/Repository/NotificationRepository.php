@@ -12,7 +12,8 @@ use Doctrine\Persistence\ManagerRegistry;
  * @method Notification|null find($id, $lockMode = null, $lockVersion = null)
  * @method Notification|null findOneBy(array $criteria, array $orderBy = null)
  * @method Notification[]    findAll()
- * @method Notification[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Notification[]    findBy(array<string, mixed> $criteria, array<string, string>|null $orderBy = null, int|null $limit = null, int|null $offset = null)
+ * @method Notification|null findOneBy(array<string, mixed> $criteria, array<string, string>|null $orderBy = null)
  */
 class NotificationRepository extends ServiceEntityRepository
 {
@@ -21,6 +22,9 @@ class NotificationRepository extends ServiceEntityRepository
         parent::__construct($registry, Notification::class);
     }
 
+    /**
+     * @return array<int, Notification>
+     */
     public function findUnread(): array
     {
         return $this->createQueryBuilder('n')
@@ -31,6 +35,9 @@ class NotificationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * @return array<int, Notification>
+     */
     public function findRecent(int $limit = 10): array
     {
         return $this->createQueryBuilder('n')

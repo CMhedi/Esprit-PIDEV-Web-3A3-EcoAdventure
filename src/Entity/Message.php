@@ -53,9 +53,11 @@ class Message
     private ?PrioriteMessage $priorite_message = PrioriteMessage::NORMAL;
 
     #[ORM\Column(type: 'json', nullable: true)]
+    /** @var array<string, mixed>|null */
     private ?array $reactions = [];
 
     #[ORM\Column(type: 'json', nullable: true)]
+    /** @var array<string, mixed>|null */
     private ?array $attachments = [];
 
     #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
@@ -162,11 +164,17 @@ class Message
         return $this;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getReactions(): array
     {
         return $this->reactions ?? [];
     }
 
+    /**
+     * @param array<string, mixed>|null $reactions
+     */
     public function setReactions(?array $reactions): self
     {
         $this->reactions = $reactions ?? [];
@@ -184,11 +192,17 @@ class Message
         return $this;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getAttachments(): array
     {
         return $this->attachments ?? [];
     }
 
+    /**
+     * @param array<string, mixed>|null $attachments
+     */
     public function setAttachments(?array $attachments): self
     {
         $this->attachments = $attachments ?? [];

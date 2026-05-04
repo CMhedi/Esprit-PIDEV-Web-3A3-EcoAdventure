@@ -19,16 +19,23 @@ class UserAppRepository extends ServiceEntityRepository
     }
 
 
-public function findCoaches()
-{
-    return $this->createQueryBuilder('u')
-        ->where('u.role = :role')
-        ->setParameter('role', RoleUser::COACH)
-        ->getQuery()
-        ->getResult();
-}
-public function getUserFeatures(int $userId): array
-{
+    /**
+     * @return array<int, UserApp>
+     */
+    public function findCoaches(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.role = :role')
+            ->setParameter('role', RoleUser::COACH)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getUserFeatures(int $userId): array
+    {
     $conn = $this->getEntityManager()->getConnection();
 
     $userId = (int) $userId; // sécurité
@@ -112,10 +119,14 @@ public function getUserFeatures(int $userId): array
     GROUP BY u.id_user
     ";
 
-    return $conn->executeQuery($sql)->fetchAssociative() ?: [];
-}
-public function getAllUsersFeatures(): array
-{
+        return $conn->executeQuery($sql)->fetchAssociative() ?: [];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getAllUsersFeatures(): array
+    {
     $conn = $this->getEntityManager()->getConnection();
 
     $sql = "
@@ -159,6 +170,6 @@ public function getAllUsersFeatures(): array
     GROUP BY u.id_user
     ";
 
-    return $conn->executeQuery($sql)->fetchAllAssociative();
-}
+        return $conn->executeQuery($sql)->fetchAllAssociative();
+    }
 }

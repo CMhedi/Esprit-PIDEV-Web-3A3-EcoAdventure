@@ -57,6 +57,7 @@ class Seance
     private ?UserApp $coach = null;
 
     #[ORM\OneToMany(targetEntity: ReservationSeance::class, mappedBy: 'seance')]
+    /** @var Collection<int, ReservationSeance> */
     private Collection $reservationSeances;
 
     public function __construct()
@@ -106,6 +107,9 @@ public function setHeureFin(?\DateTimeInterface $heure): self
     public function getCoach(): ?UserApp { return $this->coach; }
     public function setCoach(?UserApp $coach): self { $this->coach = $coach; return $this; }
 
+    /**
+     * @return Collection<int, ReservationSeance>
+     */
     public function getReservationSeances(): Collection { return $this->reservationSeances; }
 
     // =========================

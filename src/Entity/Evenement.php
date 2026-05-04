@@ -151,9 +151,11 @@ class Evenement
     public function setImageUrl(?string $url): self { $this->image_url = $url; return $this; }
 
     #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement', cascade: ['remove'], orphanRemoval: true)]
+    /** @var Collection<int, ReservationEvenement> */
     private Collection $reservationEvenements;
 
     #[ORM\OneToMany(targetEntity: EventRating::class, mappedBy: 'evenement', cascade: ['remove'])]
+    /** @var Collection<int, EventRating> */
     private Collection $ratings;
 
     public function __construct()

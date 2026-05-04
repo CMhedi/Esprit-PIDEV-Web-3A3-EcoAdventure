@@ -55,6 +55,7 @@ class Planning
     private ?\DateTimeInterface $updated_at = null;
 
     #[ORM\OneToMany(targetEntity: Seance::class, mappedBy: 'planning')]
+    /** @var Collection<int, Seance> */
     private Collection $seances;
 
     public function __construct()
@@ -121,6 +122,9 @@ public function validateDates(ExecutionContextInterface $context): void
     public function getUpdatedAt(): ?\DateTimeInterface { return $this->updated_at; }
     public function setUpdatedAt(\DateTimeInterface $date): self { $this->updated_at = $date; return $this; }
 
+    /**
+     * @return Collection<int, Seance>
+     */
     public function getSeances(): Collection { return $this->seances; }
     public function getDuree(): ?int
 {

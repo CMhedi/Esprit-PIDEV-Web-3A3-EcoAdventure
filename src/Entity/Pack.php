@@ -68,9 +68,11 @@ class Pack
     private ?string $statut_pack = null;
 
     #[ORM\OneToMany(targetEntity: Activite::class, mappedBy: 'pack')]
+    /** @var Collection<int, Activite> */
     private Collection $activites;
 
     #[ORM\OneToMany(targetEntity: Inscription::class, mappedBy: 'pack')]
+    /** @var Collection<int, Inscription> */
     private Collection $inscriptions;
 
     public function __construct()
@@ -155,11 +157,17 @@ class Pack
         return $this;
     }
 
+    /**
+     * @return Collection<int, Activite>
+     */
     public function getActivites(): Collection
     {
         return $this->activites;
     }
 
+    /**
+     * @return Collection<int, Inscription>
+     */
     public function getInscriptions(): Collection
     {
         return $this->inscriptions;
