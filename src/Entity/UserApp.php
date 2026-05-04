@@ -358,4 +358,61 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
         }
         return $this;
     }
+    public function getReservations7Days(): ?int
+{
+    $count = 0;
+    $limitDate = new \DateTime('-7 days');
+
+    foreach ($this->reservationSeances as $res) {
+        if ($res->getCreatedAt() >= $limitDate) {
+            $count++;
+        }
+    }
+
+    return $count;
+}
+public function getActiveDays30(): int
+{
+    return $this->activeDays30 ?? 0;
+}
+public function getAvgCalories7Days(): ?float
+{
+    return 0; // placeholder (à connecter avec NutritionLog)
+}
+public function getReservationTrend(): float
+{
+    return 0.0; // placeholder (logique complexe → service)
+}
+public function getAbsenceTrend(): float
+{
+    return 0.0;
+}
+public function getAbsenceRate(): float
+{
+    return $this->absenceRate ?? 0.0;
+}
+/**
+ * @return int
+ */
+public function getAbsences30Days(): int
+{
+    $count = 0;
+    $limitDate = new \DateTime('-30 days');
+
+    foreach ($this->getReservationSeances() as $reservation) {
+
+        $date = $reservation->getDate_reservation();
+
+        if (
+            $date &&
+            $date >= $limitDate &&
+            $reservation->getStatut_presence() === StatutPresence::ABSENT
+        ) {
+            $count++;
+        }
+    }
+
+    return $count;
+}
+
 }
