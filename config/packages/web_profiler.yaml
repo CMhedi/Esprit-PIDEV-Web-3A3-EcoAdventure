@@ -1,2 +1,7 @@
-# WebProfilerBundle is a dev dependency. Re-enable this file after installing
-# dev dependencies with `composer install`.
+web_profiler:
+    toolbar: true
+    intercept_redirects: false
+
+framework:
+    profiler:
+        collect: true

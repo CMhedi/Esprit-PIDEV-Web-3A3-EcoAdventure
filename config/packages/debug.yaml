@@ -1,2 +1,5 @@
-# DebugBundle is a dev dependency. Re-enable this block after installing dev
-# dependencies with `composer install`.
+debug:
+    # Forwards VarDumper Data clones to a centralized server allowing to inspect objects during serialization
+    dump_destination: "tcp://%env(VAR_DUMPER_SERVER)%"
+    # when using the profiler, prefix all non-root URLs with /_profiler to avoid conflicts with your app's routes
+    # (add /_profiler-assets to web_profiler below to make assets work)

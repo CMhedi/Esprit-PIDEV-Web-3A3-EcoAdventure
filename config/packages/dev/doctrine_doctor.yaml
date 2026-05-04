@@ -1,2 +1,3 @@
-# DoctrineDoctorBundle is a dev dependency. Re-enable this file after installing
-# dev dependencies with `composer install`.
+doctrine_doctor:
+    profiler: true
+    enabled: true

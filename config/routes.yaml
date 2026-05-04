@@ -9,3 +9,7 @@ ai_bundle_controllers:
         path: ../src/AiBundle/Controller/
         namespace: App\AiBundle\Controller
     type: attribute
+
+when@dev:
+    _profiler:
+        resource: routes/dev.yaml
