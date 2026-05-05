@@ -58,12 +58,6 @@ public function __construct()
         return $this->created_at;
     }
 
-    public function setCreated_at(?\DateTimeInterface $created_at): self
-    {
-        $this->created_at = $created_at;
-        return $this;
-    }
-
     #[ORM\Column(type: 'text', nullable: false)]
     private ?string $request_json = null;
 

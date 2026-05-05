@@ -6,10 +6,8 @@ use App\Repository\BlockedMessagingUserRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: BlockedMessagingUserRepository::class)]
-#[ORM\Table(
-    name: 'blocked_messaging_user',
-    uniqueConstraints: [new ORM\UniqueConstraint(name: 'uniq_blocked_messaging_user_user', columns: ['user_id'])]
-)]
+#[ORM\Table(name: 'blocked_messaging_user')]
+#[ORM\UniqueConstraint(name: 'uniq_blocked_messaging_user_user', columns: ['user_id'])]
 class BlockedMessagingUser
 {
     #[ORM\Id]
@@ -81,10 +79,4 @@ class BlockedMessagingUser
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
 }

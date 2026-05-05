@@ -87,12 +87,6 @@ class FeedbackEvent
         return $this->created_at;
     }
 
-    public function setCreatedAt(?\DateTimeInterface $created_at): self
-    {
-        $this->created_at = $created_at;
-        return $this;
-    }
-
     public function getMetaJson(): ?string
     {
         return $this->meta_json;

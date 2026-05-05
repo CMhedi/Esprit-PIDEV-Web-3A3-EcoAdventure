@@ -16,9 +16,7 @@ class PackRepository extends ServiceEntityRepository
     public function findForAdmin(?string $search = null, ?string $sort = null): array
     {
         $qb = $this->createQueryBuilder('p')
-            ->leftJoin('p.inscriptions', 'i')
-            ->addSelect('COUNT(i.id_inscription) AS HIDDEN inscriptionsCount')
-            ->groupBy('p.id_pack');
+            ->addSelect('SIZE(p.inscriptions) AS HIDDEN inscriptionsCount');
 
         if (!empty($search)) {
             $qb->andWhere('
@@ -70,12 +68,11 @@ class PackRepository extends ServiceEntityRepository
         ?string $search = null,
         ?string $type = null,
         ?string $statut = null,
-        ?string $sort = null
+        ?string $sort = null,
+        int $limit = 50,
     ): array {
         $qb = $this->createQueryBuilder('p')
-            ->leftJoin('p.inscriptions', 'i')
-            ->addSelect('COUNT(i.id_inscription) AS HIDDEN inscriptionsCount')
-            ->groupBy('p.id_pack');
+            ->addSelect('SIZE(p.inscriptions) AS HIDDEN inscriptionsCount');
 
         if (!empty($search)) {
             $qb->andWhere('
@@ -125,6 +122,8 @@ class PackRepository extends ServiceEntityRepository
                 break;
         }
 
+        $qb->setMaxResults(max(1, $limit));
+
         return $qb->getQuery()->getResult();
     }
 
@@ -133,6 +132,7 @@ class PackRepository extends ServiceEntityRepository
         $results = $this->createQueryBuilder('p')
             ->select('DISTINCT p.type_pack AS type_pack')
             ->orderBy('p.type_pack', 'ASC')
+            ->setMaxResults(50)
             ->getQuery()
             ->getArrayResult();
 
@@ -144,6 +144,7 @@ class PackRepository extends ServiceEntityRepository
         $results = $this->createQueryBuilder('p')
             ->select('DISTINCT p.statut_pack AS statut_pack')
             ->orderBy('p.statut_pack', 'ASC')
+            ->setMaxResults(50)
             ->getQuery()
             ->getArrayResult();
 

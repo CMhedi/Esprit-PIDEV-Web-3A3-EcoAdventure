@@ -1,3 +1,16 @@
 doctrine_doctor:
     profiler: true
     enabled: true
+    analyzers:
+        naming_convention:
+            enabled: false
+        blameable_trait:
+            enabled: false
+        missing_embeddable_opportunity:
+            enabled: false
+        strict_mode:
+            enabled: false
+        inno_db_engine:
+            enabled: false
+        connection_pooling:
+            enabled: false

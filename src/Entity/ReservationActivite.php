@@ -21,9 +21,9 @@ class ReservationActivite
     #[Assert\GreaterThanOrEqual('today', message: 'La date de reservation doit etre aujourd hui ou dans le futur.')]
     private ?\DateTimeInterface $dateRes = null;
 
-    #[ORM\Column(enumType: StatutReservationActivite::class)]
+    #[ORM\Column(type: 'string')]
     #[Assert\NotNull(message: 'Le statut de reservation est obligatoire.')]
-    private ?StatutReservationActivite $statut_res = null;
+    private ?string $statut_res = null;
 
     #[ORM\Column(type: 'integer')]
     #[Assert\NotNull(message: 'Le nombre de personnes est obligatoire.')]
@@ -65,12 +65,12 @@ class ReservationActivite
 
     public function getStatutRes(): ?StatutReservationActivite
     {
-        return $this->statut_res;
+        return $this->statut_res !== null ? StatutReservationActivite::tryFrom($this->statut_res) : null;
     }
 
-    public function setStatutRes(?StatutReservationActivite $statut_res): self
+    public function setStatutRes(StatutReservationActivite|string|null $statut_res): self
     {
-        $this->statut_res = $statut_res;
+        $this->statut_res = $statut_res instanceof StatutReservationActivite ? $statut_res->value : $statut_res;
         return $this;
     }
 

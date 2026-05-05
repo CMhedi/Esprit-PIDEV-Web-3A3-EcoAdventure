@@ -43,7 +43,6 @@ class EventWorkflowService
                 $evenement->getTitre(),
                 $now->format('H:i:s')
             ))
-            ->setCreatedAt($now)
             ->setType('cancellation');
         $this->entityManager->persist($notif);
 

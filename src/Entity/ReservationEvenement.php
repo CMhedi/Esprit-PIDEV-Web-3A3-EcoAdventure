@@ -44,17 +44,17 @@ class ReservationEvenement
 
 
 
-#[ORM\Column(enumType: StatutReservationEvenement::class)]
-private ?StatutReservationEvenement $statut_res = null;
+#[ORM\Column(type: 'string')]
+private ?string $statut_res = null;
 
     public function getStatut_res(): ?StatutReservationEvenement
     {
-        return $this->statut_res;
+        return $this->statut_res !== null ? StatutReservationEvenement::tryFrom($this->statut_res) : null;
     }
 
-    public function setStatut_res(StatutReservationEvenement $statut_res): self
+    public function setStatut_res(StatutReservationEvenement|string $statut_res): self
     {
-        $this->statut_res = $statut_res;
+        $this->statut_res = $statut_res instanceof StatutReservationEvenement ? $statut_res->value : $statut_res;
         return $this;
     }
 

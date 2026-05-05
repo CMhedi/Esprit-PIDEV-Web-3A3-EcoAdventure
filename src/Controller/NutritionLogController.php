@@ -370,10 +370,10 @@ public function add(Request $request): JsonResponse
         $log = new NutritionLog();
         $log->setUser($user);
         $log->setFood_name(trim($data['food_name']));
-        $log->setCalories((float)$data['calories']);
-        $log->setProtein((float)($data['protein'] ?? 0));
-        $log->setFat((float)($data['fat'] ?? 0));
-        $log->setCarbs((float)($data['carbs'] ?? 0));
+        $log->setCalories($this->normalizeDecimal($data['calories']));
+        $log->setProtein($this->normalizeDecimal($data['protein'] ?? 0));
+        $log->setFat($this->normalizeDecimal($data['fat'] ?? 0));
+        $log->setCarbs($this->normalizeDecimal($data['carbs'] ?? 0));
 
         if (isset($data['log_date']) && !empty($data['log_date'])) {
             $log->setLog_date(new \DateTime($data['log_date']));
@@ -494,16 +494,16 @@ public function add(Request $request): JsonResponse
                 $log->setFood_name(trim($data['food_name']));
             }
             if (isset($data['calories'])) {
-                $log->setCalories((float)$data['calories']);
+                $log->setCalories($this->normalizeDecimal($data['calories']));
             }
             if (isset($data['protein'])) {
-                $log->setProtein((float)$data['protein']);
+                $log->setProtein($this->normalizeDecimal($data['protein']));
             }
             if (isset($data['fat'])) {
-                $log->setFat((float)$data['fat']);
+                $log->setFat($this->normalizeDecimal($data['fat']));
             }
             if (isset($data['carbs'])) {
-                $log->setCarbs((float)$data['carbs']);
+                $log->setCarbs($this->normalizeDecimal($data['carbs']));
             }
             if (isset($data['log_date'])) {
                 $log->setLog_date(new \DateTime($data['log_date']));
@@ -1177,17 +1177,25 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
     {
         $logDate = $log->getLog_date();
         $dateString = $logDate instanceof \DateTimeInterface ? $logDate->format('Y-m-d') : date('Y-m-d');
+        $protein = (float)($log->getProtein() ?? 0);
+        $fat = (float)($log->getFat() ?? 0);
+        $carbs = (float)($log->getCarbs() ?? 0);
 
         return [
             'id' => (int)$log->getId(),
             'food_name' => (string)($log->getFood_name() ?? 'N/A'),
             'calories' => (float)($log->getCalories() ?? 0),
-            'protein' => (float)($log->getProtein() ?? 0),
-            'fat' => (float)($log->getFat() ?? 0),
-            'carbs' => (float)($log->getCarbs() ?? 0),
+            'protein' => $protein,
+            'fat' => $fat,
+            'carbs' => $carbs,
             'log_date' => $dateString,
-            'macros_total' => (float)(($log->getProtein() ?? 0) + ($log->getFat() ?? 0) + ($log->getCarbs() ?? 0))
+            'macros_total' => $protein + $fat + $carbs
         ];
+    }
+
+    private function normalizeDecimal(mixed $value): string
+    {
+        return number_format((float) $value, 2, '.', '');
     }
     private function calculateNutritionGoals(
     float $weight,

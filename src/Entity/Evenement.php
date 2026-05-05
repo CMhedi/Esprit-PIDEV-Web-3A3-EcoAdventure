@@ -27,9 +27,9 @@ class Evenement
     #[Assert\NotBlank(message: "La description est obligatoire.")]
     private ?string $description = null;
 
-    #[ORM\Column(enumType: CategorieEvenement::class)]
+    #[ORM\Column(type: 'string')]
     #[Assert\NotNull(message: "Veuillez choisir une cat├®gorie.")]
-    private ?CategorieEvenement $categorie_evt = null;
+    private ?string $categorie_evt = null;
 
     #[ORM\Column(type: 'datetime', nullable: false)]
     #[Assert\NotBlank(message: "La date est obligatoire.")]
@@ -63,10 +63,10 @@ class Evenement
     public function setTitre(string $titre): self { $this->titre = $titre; return $this; }
     public function getDescription(): ?string { return $this->description; }
     public function setDescription(?string $desc): self { $this->description = $desc; return $this; }
-    public function getCategorie_evt(): ?CategorieEvenement { return $this->categorie_evt; }
-    public function setCategorie_evt(CategorieEvenement $cat): self { $this->categorie_evt = $cat; return $this; }
-    public function getCategorieEvt(): ?CategorieEvenement { return $this->categorie_evt; }
-    public function setCategorieEvt(CategorieEvenement $cat): self { $this->categorie_evt = $cat; return $this; }
+    public function getCategorie_evt(): ?CategorieEvenement { return $this->categorie_evt !== null ? CategorieEvenement::tryFrom($this->categorie_evt) : null; }
+    public function setCategorie_evt(CategorieEvenement|string $cat): self { $this->categorie_evt = $cat instanceof CategorieEvenement ? $cat->value : $cat; return $this; }
+    public function getCategorieEvt(): ?CategorieEvenement { return $this->getCategorie_evt(); }
+    public function setCategorieEvt(CategorieEvenement|string $cat): self { return $this->setCategorie_evt($cat); }
     public function getDate_event(): ?\DateTimeInterface { return $this->date_event; }
     public function setDate_event(\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
     public function getDateEvent(): ?\DateTimeInterface { return $this->date_event; }
@@ -150,10 +150,10 @@ class Evenement
     public function getImageUrl(): ?string { return $this->image_url; }
     public function setImageUrl(?string $url): self { $this->image_url = $url; return $this; }
 
-    #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement', cascade: ['remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $reservationEvenements;
 
-    #[ORM\OneToMany(targetEntity: EventRating::class, mappedBy: 'evenement', cascade: ['remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: EventRating::class, mappedBy: 'evenement', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $ratings;
 
     public function __construct()

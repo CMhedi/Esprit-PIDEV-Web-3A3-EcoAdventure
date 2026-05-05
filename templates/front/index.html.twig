@@ -1313,6 +1313,14 @@
                         {% endif %}
                     {% endfor %}
                     {% set isCallSummary = msgType in ['APPEL_AUDIO', 'APPEL_VIDEO'] %}
+                    {% set reactions = message.reactions ?? {} %}
+                    {% set reactionOptions = ['❤️'] %}
+                    {% set userReaction = '' %}
+                    {% for reactionEmoji in reactionOptions %}
+                        {% if mon_id in (reactions[reactionEmoji]|default([])) %}
+                            {% set userReaction = reactionEmoji %}
+                        {% endif %}
+                    {% endfor %}
                     <div class="d-flex {{ is_mine ? 'justify-content-end' : 'justify-content-start' }} mb-3 message-item">
                         <div class="{{ isCallSummary ? (is_mine ? 'message-bubble message-sent shadow' : 'message-bubble message-received shadow-sm') : ((is_mine and isTextStyled) ? 'message-bubble message-sent shadow' : 'message-bubble message-received shadow-sm') }}" style="position: relative;">
                             {% if isCallSummary %}
@@ -1365,14 +1373,6 @@
                             {% set isAudioFile = mediaFolder in ['audio', 'call', 'vocale'] or mediaExt in ['mp3', 'wav', 'm4a', 'ogg', 'aac', 'webm'] %}
                             {% set isImageFile = mediaFolder == 'images' or mediaExt in ['jpg', 'jpeg', 'png', 'webp', 'gif'] %}
                             {% set isPdfFile = (mediaFolder == 'files' and mediaExt == 'pdf') or mediaExt == 'pdf' %}
-                            {% set reactions = message.reactions ?? {} %}
-                            {% set reactionOptions = ['❤️'] %}
-                            {% set userReaction = '' %}
-                            {% for reactionEmoji in reactionOptions %}
-                                {% if mon_id in (reactions[reactionEmoji]|default([])) %}
-                                    {% set userReaction = reactionEmoji %}
-                                {% endif %}
-                            {% endfor %}
 
                             {% if attachments is not empty %}
                                 {% for attachment in attachments %}
@@ -3206,21 +3206,18 @@ function getPeerConnectionsForNegotiation() {
     return [];
 }
 
-function resolveVideoTransceiver(connection) {
+function resolveVideoSender(connection) {
     if (!connection) {
         return null;
     }
 
-    const transceivers = connection.getTransceivers?.() || [];
-    return transceivers.find((item) => item.sender?.track?.kind === 'video')
-        || transceivers.find((item) => item.receiver?.track?.kind === 'video')
-        || null;
-}
+    const transceiver = connection.getTransceivers?.().find((item) => {
+        const senderKind = item.sender?.track?.kind || '';
+        const receiverKind = item.receiver?.track?.kind || '';
+        return senderKind === 'video' || receiverKind === 'video';
+    });
 
-function resolveVideoSender(connection) {
-    return resolveVideoTransceiver(connection)?.sender
-        || connection.getSenders?.().find((sender) => sender.track?.kind === 'video')
-        || null;
+    return transceiver?.sender || connection.getSenders?.().find((sender) => sender.track?.kind === 'video') || null;
 }
 
 function resolveAudioSender(connection) {
@@ -3296,16 +3293,8 @@ async function ensureWebRtcVideoTrackAttached(videoTrack) {
 
     const peers = getPeerConnectionsForNegotiation();
     for (const { connection } of peers) {
-        const videoTransceiver = resolveVideoTransceiver(connection);
-        const videoSender = videoTransceiver?.sender || resolveVideoSender(connection);
+        const videoSender = resolveVideoSender(connection);
         if (videoSender) {
-            if (videoTransceiver) {
-                const currentDirection = String(videoTransceiver.direction || videoTransceiver.currentDirection || '').toLowerCase();
-                if (currentDirection === 'recvonly' || currentDirection === 'inactive') {
-                    videoTransceiver.direction = 'sendrecv';
-                }
-            }
-
             await videoSender.replaceTrack(videoTrack);
             continue;
         }
@@ -3317,21 +3306,12 @@ async function ensureWebRtcVideoTrackAttached(videoTrack) {
 async function clearWebRtcVideoTrackFromPeers() {
     const peers = getPeerConnectionsForNegotiation();
     for (const { connection } of peers) {
-        const videoTransceiver = resolveVideoTransceiver(connection);
-        const videoSender = videoTransceiver?.sender || resolveVideoSender(connection);
+        const videoSender = resolveVideoSender(connection);
         if (!videoSender) {
             continue;
         }
 
         await videoSender.replaceTrack(null);
-        if (videoTransceiver) {
-            const currentDirection = String(videoTransceiver.direction || videoTransceiver.currentDirection || '').toLowerCase();
-            if (currentDirection === 'sendrecv') {
-                videoTransceiver.direction = 'recvonly';
-            } else if (currentDirection === 'sendonly') {
-                videoTransceiver.direction = 'inactive';
-            }
-        }
     }
 }
 

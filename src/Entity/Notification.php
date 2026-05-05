@@ -65,12 +65,6 @@ class Notification
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-        return $this;
-    }
-
     public function isRead(): bool
     {
         return $this->isRead;

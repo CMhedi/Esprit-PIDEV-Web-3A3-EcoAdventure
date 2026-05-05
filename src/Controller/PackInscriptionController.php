@@ -47,6 +47,7 @@ final class PackInscriptionController extends AbstractController
         HolidayContextProvider $holidayContextProvider,
         AiPackExplainer $aiPackExplainer,
         PackInscriptionTicketFactory $ticketFactory,
+        KonnectPaymentGateway $konnectPaymentGateway,
     ): Response {
         $user = $this->getAuthenticatedUser();
         $pack = $this->findPackOrFail($id, $entityManager);
@@ -107,6 +108,10 @@ final class PackInscriptionController extends AbstractController
             'latestInscription' => $latestInscription,
             'latestTicketUrl' => $this->isTicketAvailable($latestInscription) ? $ticketFactory->generatePublicTicketUrl($latestInscription) : null,
             'latestPremiumPassUrl' => $latestInscription ? $this->generateUrl('app_pack_inscription_premium_pass', ['id' => $latestInscription->getIdInscription()]) : null,
+            'paymentGatewayConfigured' => $konnectPaymentGateway->isConfigured(),
+            'paymentToken' => $konnectPaymentGateway->getToken(),
+            'demoCardPaymentEnabled' => $this->isDemoCardPaymentEnabled(),
+            'cardOcrApiUrl' => $this->getParameter('card_ocr_api_url'),
         ]);
     }
 

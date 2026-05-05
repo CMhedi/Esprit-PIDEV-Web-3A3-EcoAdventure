@@ -44,9 +44,9 @@ class Planning
     #[Assert\Type(\DateTimeInterface::class)]
     private ?\DateTimeInterface $date_fin = null;
 
-    #[ORM\Column(enumType: StatutPlanning::class)]
+    #[ORM\Column(type: 'string')]
     #[Assert\NotNull(message: "Le statut est obligatoire")]
-    private ?StatutPlanning $statut = null;
+    private ?string $statut = null;
 
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $created_at = null;
@@ -112,8 +112,8 @@ public function validateDates(ExecutionContextInterface $context): void
     return $this;
 }
 
-    public function getStatut(): ?StatutPlanning { return $this->statut; }
-    public function setStatut(StatutPlanning $statut): self { $this->statut = $statut; return $this; }
+    public function getStatut(): ?StatutPlanning { return $this->statut !== null ? StatutPlanning::tryFrom($this->statut) : null; }
+    public function setStatut(StatutPlanning|string $statut): self { $this->statut = $statut instanceof StatutPlanning ? $statut->value : $statut; return $this; }
 
     public function getCreatedAt(): ?\DateTimeInterface { return $this->created_at; }
     public function setCreatedAt(\DateTimeInterface $date): self { $this->created_at = $date; return $this; }

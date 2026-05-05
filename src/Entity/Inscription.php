@@ -29,8 +29,8 @@ class Inscription
     private ?\DateTimeInterface $date_inscription = null;
 
     #[Assert\NotBlank(message: 'Le statut est obligatoire.')]
-    #[ORM\Column(name: 'statut_inscr', type: 'string', enumType: StatutInscription::class, length: 255)]
-    private ?StatutInscription $statut_inscr = null;
+    #[ORM\Column(name: 'statut_inscr', type: 'string', length: 255)]
+    private ?string $statut_inscr = null;
 
     #[ORM\Column(name: 'montant_total', type: 'decimal', precision: 10, scale: 2)]
     private ?string $montant_total = null;
@@ -90,12 +90,12 @@ class Inscription
 
     public function getStatutInscr(): ?StatutInscription
     {
-        return $this->statut_inscr;
+        return $this->statut_inscr !== null ? StatutInscription::tryFrom($this->statut_inscr) : null;
     }
 
-    public function setStatutInscr(StatutInscription $statut_inscr): self
+    public function setStatutInscr(StatutInscription|string $statut_inscr): self
     {
-        $this->statut_inscr = $statut_inscr;
+        $this->statut_inscr = $statut_inscr instanceof StatutInscription ? $statut_inscr->value : $statut_inscr;
         return $this;
     }
 

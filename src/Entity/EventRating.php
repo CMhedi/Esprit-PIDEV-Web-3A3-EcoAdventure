@@ -19,7 +19,7 @@ class EventRating
     private ?UserApp $user = null;
 
     #[ORM\ManyToOne(targetEntity: Evenement::class, inversedBy: 'ratings')]
-    #[ORM\JoinColumn(name: 'id_evenement', referencedColumnName: 'id_evenement', nullable: false)]
+    #[ORM\JoinColumn(name: 'id_evenement', referencedColumnName: 'id_evenement', nullable: false, onDelete: 'CASCADE')]
     private ?Evenement $evenement = null;
 
     #[ORM\Column(type: 'integer', nullable: true)]
@@ -88,11 +88,5 @@ class EventRating
     public function getCreatedAt(): ?\DateTimeInterface
     {
         return $this->createdAt;
-    }
-
-    public function setCreatedAt(\DateTimeInterface $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-        return $this;
     }
 }

@@ -63,17 +63,17 @@ private ?string $contenu = null;
 
 
 
-#[ORM\Column(enumType: StatutReclamation::class)]
-private ?StatutReclamation $statut = null;
+#[ORM\Column(type: 'string')]
+private ?string $statut = null;
 
     public function getStatut(): ?StatutReclamation
     {
-        return $this->statut;
+        return $this->statut !== null ? StatutReclamation::tryFrom($this->statut) : null;
     }
 
-    public function setStatut(StatutReclamation $statut): self
+    public function setStatut(StatutReclamation|string $statut): self
     {
-        $this->statut = $statut;
+        $this->statut = $statut instanceof StatutReclamation ? $statut->value : $statut;
         return $this;
     }
 

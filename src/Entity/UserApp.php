@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use SensitiveParameter;
 use App\Repository\UserAppRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -11,6 +12,7 @@ use App\Enum\RoleUser;
 use App\Enum\Specialite;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Ignore;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
@@ -44,8 +46,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $image_url = null;
 
-    #[ORM\Column(enumType: RoleUser::class)]
-    private ?RoleUser $role = null;
+    #[ORM\Column(type: 'string')]
+    private ?string $role = null;
 
     #[ORM\Column(type: 'string', length: 255)]
     private ?string $mot_de_passe = null;
@@ -62,14 +64,14 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
     private ?string $experience = null;
 
-    #[ORM\Column(enumType: Specialite::class, nullable: true)]
-    private ?Specialite $specialite = null;
+    #[ORM\Column(type: 'string', nullable: true)]
+    private ?string $specialite = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $bio_certifs = null;
 
-    #[ORM\Column(enumType: Disponibilite::class, nullable: true)]
-    private ?Disponibilite $disponibilite = null;
+    #[ORM\Column(type: 'string', nullable: true)]
+    private ?string $disponibilite = null;
 
     #[ORM\Column(type: 'string', length: 10, nullable: true)]
     private ?string $referralCode = null;
@@ -78,6 +80,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private int $loyaltyPoints = 0;
 
     // Google OAuth fields
+    #[Ignore]
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $google_token = null;
 
@@ -141,7 +144,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var Collection<int, ReservationEvenement>
      */
-    #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'userApp')]
+    #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'userApp', cascade: ['remove'])]
     private Collection $reservationEvenements;
 
     /**
@@ -192,7 +195,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $roles = [];
         if ($this->role) {
-            $roles[] = 'ROLE_' . strtoupper($this->role->value);
+            $roles[] = 'ROLE_' . strtoupper($this->role);
         }
         $roles[] = 'ROLE_USER';
         return array_unique($roles);
@@ -212,7 +215,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\Callback]
     public function validateCoachRequirements(ExecutionContextInterface $context): void
     {
-        if ($this->role === RoleUser::COACH) {
+        if ($this->getRole() === RoleUser::COACH) {
             if (null === $this->age) {
                 $context->buildViolation("L'âge est obligatoire pour un coach.")
                     ->atPath('age')
@@ -256,8 +259,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEmail(string $email): self { $this->email = $email; return $this; }
     public function getTelephone(): ?string { return $this->telephone; }
     public function setTelephone(?string $telephone): self { $this->telephone = $telephone; return $this; }
-    public function getRole(): ?RoleUser { return $this->role; }
-    public function setRole(RoleUser $role): self { $this->role = $role; return $this; }
+    public function getRole(): ?RoleUser { return $this->role !== null ? RoleUser::tryFrom($this->role) : null; }
+    public function setRole(RoleUser|string $role): self { $this->role = $role instanceof RoleUser ? $role->value : $role; return $this; }
     public function getMot_de_passe(): ?string { return $this->mot_de_passe; }
     public function setMot_de_passe(string $mot_de_passe): self { $this->mot_de_passe = $mot_de_passe; return $this; }
     public function getDate_creation(): ?\DateTimeInterface { return $this->date_creation; }
@@ -268,8 +271,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function setAge(?int $age): self { $this->age = $age; return $this; }
     public function getExperience(): ?string { return $this->experience; }
     public function setExperience(?string $experience): self { $this->experience = $experience; return $this; }
-    public function getSpecialite(): ?Specialite { return $this->specialite; }
-    public function setSpecialite(?Specialite $specialite): self { $this->specialite = $specialite; return $this; }
+    public function getSpecialite(): ?Specialite { return $this->specialite !== null ? Specialite::tryFrom($this->specialite) : null; }
+    public function setSpecialite(Specialite|string|null $specialite): self { $this->specialite = $specialite instanceof Specialite ? $specialite->value : $specialite; return $this; }
     public function getBioCertifs(): ?string { return $this->bio_certifs; }
     public function setBioCertifs(?string $bio_certifs): self { $this->bio_certifs = $bio_certifs; return $this; }
     public function getBio_certifs(): ?string { return $this->bio_certifs; }
@@ -278,8 +281,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function setImageUrl(?string $image_url): self { $this->image_url = $image_url; return $this; }
     public function getImage_url(): ?string { return $this->image_url; }
     public function setImage_url(?string $image_url): self { $this->image_url = $image_url; return $this; }
-    public function getDisponibilite(): ?Disponibilite { return $this->disponibilite; }
-    public function setDisponibilite(?Disponibilite $disponibilite): self { $this->disponibilite = $disponibilite; return $this; }
+    public function getDisponibilite(): ?Disponibilite { return $this->disponibilite !== null ? Disponibilite::tryFrom($this->disponibilite) : null; }
+    public function setDisponibilite(Disponibilite|string|null $disponibilite): self { $this->disponibilite = $disponibilite instanceof Disponibilite ? $disponibilite->value : $disponibilite; return $this; }
     public function getReferralCode(): ?string { return $this->referralCode; }
     public function setReferralCode(?string $code): self { $this->referralCode = $code; return $this; }
     public function getLoyaltyPoints(): int { return $this->loyaltyPoints; }
@@ -288,7 +291,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
 
     // Google token
     public function getGoogleToken(): ?string { return $this->google_token; }
-    public function setGoogleToken(?string $google_token): self { $this->google_token = $google_token; return $this; }
+    public function setGoogleToken(#[SensitiveParameter] ?string $google_token): self { $this->google_token = $google_token; return $this; }
     /** @return list<float>|null */
     public function getFaceDescriptor(): ?array { return $this->faceDescriptor; }
     /** @param list<float>|null $faceDescriptor */
@@ -302,8 +305,6 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function getChurnRisk(): string { return $this->churnRisk; }
     public function setChurnRisk(string $value): self { $this->churnRisk = $value; return $this; }
     public function getLastPredictionAt(): ?\DateTimeInterface { return $this->lastPredictionAt; }
-    public function setLastPredictionAt(\DateTimeInterface $value): self { $this->lastPredictionAt = $value; return $this; }
-
     // Physical attributes
     public function getWeight(): ?float { return $this->weight; }
     public function setWeight(float $v): self { $this->weight = $v; return $this; }

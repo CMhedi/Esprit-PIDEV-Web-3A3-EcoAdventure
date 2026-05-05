@@ -18,9 +18,9 @@ class Message
     #[ORM\Column(type: 'integer')]
     private ?int $id_message = null;
 
-    #[ORM\Column(enumType: TypeMessage::class)]
+    #[ORM\Column(type: 'string')]
     #[Assert\NotNull(message: "Le type de message est obligatoire.")]
-    private ?TypeMessage $type_message = null;
+    private ?string $type_message = null;
 
     #[ORM\Column(type: 'string', length: 10000, nullable: true)]
     #[Assert\Length(
@@ -30,9 +30,9 @@ class Message
     #[Assert\NotBlank(message: "Le contenu du message ne peut pas être vide.", groups: ["text_message"])]
     private ?string $contenu = null;
 
-    #[ORM\Column(enumType: StatutMessage::class)]
+    #[ORM\Column(type: 'string')]
     #[Assert\NotNull(message: "Le statut du message est obligatoire.")]
-    private ?StatutMessage $statut_message = null;
+    private ?string $statut_message = null;
 
     #[ORM\Column(type: 'datetime', nullable: false)]
     #[Assert\NotNull(message: "La date d'envoi est obligatoire.")]
@@ -49,8 +49,8 @@ class Message
     )]
     private ?\DateTimeInterface $date_modifier = null;
 
-    #[ORM\Column(enumType: PrioriteMessage::class, options: ['default' => 'NORMAL'])]
-    private ?PrioriteMessage $priorite_message = PrioriteMessage::NORMAL;
+    #[ORM\Column(type: 'string', options: ['default' => 'NORMAL'])]
+    private ?string $priorite_message = PrioriteMessage::NORMAL->value;
 
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $reactions = [];
@@ -59,7 +59,7 @@ class Message
     private ?array $attachments = [];
 
     #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
-    #[ORM\JoinColumn(name: 'id_conversation', referencedColumnName: 'id_conversation', nullable: false)]
+    #[ORM\JoinColumn(name: 'id_conversation', referencedColumnName: 'id_conversation', nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull(message: "Le message doit être rattaché à une conversation.")]
     private ?Conversation $conversation = null;
 
@@ -87,12 +87,12 @@ class Message
 
     public function getType_message(): ?TypeMessage
     {
-        return $this->type_message;
+        return $this->type_message !== null ? TypeMessage::tryFrom($this->type_message) : null;
     }
 
-    public function setType_message(TypeMessage $type_message): self
+    public function setType_message(TypeMessage|string $type_message): self
     {
-        $this->type_message = $type_message;
+        $this->type_message = $type_message instanceof TypeMessage ? $type_message->value : $type_message;
         return $this;
     }
 
@@ -109,12 +109,12 @@ class Message
 
     public function getStatut_message(): ?StatutMessage
     {
-        return $this->statut_message;
+        return $this->statut_message !== null ? StatutMessage::tryFrom($this->statut_message) : null;
     }
 
-    public function setStatut_message(StatutMessage $statut_message): self
+    public function setStatut_message(StatutMessage|string $statut_message): self
     {
-        $this->statut_message = $statut_message;
+        $this->statut_message = $statut_message instanceof StatutMessage ? $statut_message->value : $statut_message;
         return $this;
     }
 
@@ -153,12 +153,12 @@ class Message
 
     public function getPrioriteMessage(): PrioriteMessage
     {
-        return $this->priorite_message ?? PrioriteMessage::NORMAL;
+        return $this->priorite_message !== null ? (PrioriteMessage::tryFrom($this->priorite_message) ?? PrioriteMessage::NORMAL) : PrioriteMessage::NORMAL;
     }
 
-    public function setPrioriteMessage(PrioriteMessage $priorite_message): self
+    public function setPrioriteMessage(PrioriteMessage|string $priorite_message): self
     {
-        $this->priorite_message = $priorite_message;
+        $this->priorite_message = $priorite_message instanceof PrioriteMessage ? $priorite_message->value : $priorite_message;
         return $this;
     }
 

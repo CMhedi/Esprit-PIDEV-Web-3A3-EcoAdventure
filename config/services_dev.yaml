@@ -1,0 +1,16 @@
+services:
+    AhmedBhs\DoctrineDoctor\Analyzer\Integrity\PrimaryKeyStrategyAnalyzer:
+        autoconfigure: false
+        tags: []
+
+    AhmedBhs\DoctrineDoctor\Analyzer\Integrity\TimestampableTraitAnalyzer:
+        autoconfigure: false
+        tags: []
+
+    AhmedBhs\DoctrineDoctor\Analyzer\Configuration\CollationAnalyzer:
+        autoconfigure: false
+        tags: []
+
+    AhmedBhs\DoctrineDoctor\Analyzer\Configuration\TimeZoneAnalyzer:
+        autoconfigure: false
+        tags: []

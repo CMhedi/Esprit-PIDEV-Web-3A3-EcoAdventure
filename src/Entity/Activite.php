@@ -42,8 +42,8 @@ class Activite
         callback: [TypeActivite::class, 'cases'],
         message: "Type d'activite invalide."
     )]
-    #[ORM\Column(enumType: TypeActivite::class)]
-    private ?TypeActivite $type_activite = null;
+    #[ORM\Column(type: 'string')]
+    private ?string $type_activite = null;
 
     // ===================== CATEGORIE =====================
     #[Assert\NotNull(message: 'La categorie est obligatoire.')]
@@ -51,8 +51,8 @@ class Activite
         callback: [CategorieAct::class, 'cases'],
         message: 'Categorie invalide.'
     )]
-    #[ORM\Column(enumType: CategorieAct::class)]
-    private ?CategorieAct $categorie_act = null;
+    #[ORM\Column(type: 'string')]
+    private ?string $categorie_act = null;
 
     // ===================== NIVEAU =====================
     #[Assert\NotNull(message: 'Le niveau est obligatoire.')]
@@ -60,8 +60,8 @@ class Activite
         callback: [NiveauAct::class, 'cases'],
         message: 'Niveau invalide.'
     )]
-    #[ORM\Column(enumType: NiveauAct::class)]
-    private ?NiveauAct $niveau_act = null;
+    #[ORM\Column(type: 'string')]
+    private ?string $niveau_act = null;
 
     // ===================== PRIX =====================
     #[Assert\NotNull(message: 'Le prix est obligatoire.')]
@@ -102,8 +102,8 @@ class Activite
         callback: [Statut::class, 'cases'],
         message: 'Statut invalide.'
     )]
-    #[ORM\Column(enumType: Statut::class)]
-    private ?Statut $statut = null;
+    #[ORM\Column(type: 'string')]
+    private ?string $statut = null;
 
     // ===================== IMAGE =====================
     #[Assert\NotBlank(message: "L'image est obligatoire.")]
@@ -149,34 +149,34 @@ class Activite
 
     public function getTypeActivite(): ?TypeActivite
     {
-        return $this->type_activite;
+        return $this->type_activite !== null ? TypeActivite::tryFrom($this->type_activite) : null;
     }
 
-    public function setTypeActivite(?TypeActivite $type): self
+    public function setTypeActivite(TypeActivite|string|null $type): self
     {
-        $this->type_activite = $type;
+        $this->type_activite = $type instanceof TypeActivite ? $type->value : $type;
         return $this;
     }
 
     public function getCategorieAct(): ?CategorieAct
     {
-        return $this->categorie_act;
+        return $this->categorie_act !== null ? CategorieAct::tryFrom($this->categorie_act) : null;
     }
 
-    public function setCategorieAct(?CategorieAct $categorie): self
+    public function setCategorieAct(CategorieAct|string|null $categorie): self
     {
-        $this->categorie_act = $categorie;
+        $this->categorie_act = $categorie instanceof CategorieAct ? $categorie->value : $categorie;
         return $this;
     }
 
     public function getNiveauAct(): ?NiveauAct
     {
-        return $this->niveau_act;
+        return $this->niveau_act !== null ? NiveauAct::tryFrom($this->niveau_act) : null;
     }
 
-    public function setNiveauAct(?NiveauAct $niveau): self
+    public function setNiveauAct(NiveauAct|string|null $niveau): self
     {
-        $this->niveau_act = $niveau;
+        $this->niveau_act = $niveau instanceof NiveauAct ? $niveau->value : $niveau;
         return $this;
     }
 
@@ -215,12 +215,12 @@ class Activite
 
     public function getStatut(): ?Statut
     {
-        return $this->statut;
+        return $this->statut !== null ? Statut::tryFrom($this->statut) : null;
     }
 
-    public function setStatut(?Statut $statut): self
+    public function setStatut(Statut|string|null $statut): self
     {
-        $this->statut = $statut;
+        $this->statut = $statut instanceof Statut ? $statut->value : $statut;
         return $this;
     }
 

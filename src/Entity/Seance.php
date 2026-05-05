@@ -44,9 +44,9 @@ class Seance
     #[Assert\Positive(message: "Capacité doit être positive")]
     private ?int $capacite = null;
 
-    #[ORM\Column(enumType: StatutSeance::class)]
+    #[ORM\Column(type: 'string')]
     #[Assert\NotNull(message: "Statut obligatoire")]
-    private ?StatutSeance $statutSeance = null;
+    private ?string $statutSeance = null;
 
     #[ORM\ManyToOne(targetEntity: Planning::class, inversedBy: 'seances')]
     #[ORM\JoinColumn(name: 'id_planning', referencedColumnName: 'id_planning', nullable: false)]
@@ -97,8 +97,8 @@ public function setHeureFin(?\DateTimeInterface $heure): self
     public function getCapacite(): ?int { return $this->capacite; }
     public function setCapacite(int $capacite): self { $this->capacite = $capacite; return $this; }
 
-    public function getStatutSeance(): ?StatutSeance { return $this->statutSeance; }
-    public function setStatutSeance(StatutSeance $statut): self { $this->statutSeance = $statut; return $this; }
+    public function getStatutSeance(): ?StatutSeance { return $this->statutSeance !== null ? StatutSeance::tryFrom($this->statutSeance) : null; }
+    public function setStatutSeance(StatutSeance|string $statut): self { $this->statutSeance = $statut instanceof StatutSeance ? $statut->value : $statut; return $this; }
 
     public function getPlanning(): ?Planning { return $this->planning; }
     public function setPlanning(?Planning $planning): self { $this->planning = $planning; return $this; }
