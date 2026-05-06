@@ -269,10 +269,6 @@ class ReservationController extends AbstractController
         }
 
         $session = $request->getSession();
-        if ($session === null) {
-            return null;
-        }
-
         $sessionUserId = $session->get('id_user') ?? $session->get('user_id');
         if (!is_numeric($sessionUserId)) {
             return null;

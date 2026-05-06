@@ -132,7 +132,8 @@
                             </div>
                         </div>
                         <div id="admin-faceid-status-area" class="text-end">
-                            {% if app.user.faceDescriptor %}
+                            {% set hasFaceDescriptor = app.user is not null and (attribute(app.user, 'faceDescriptor') is defined) and attribute(app.user, 'faceDescriptor') %}
+                            {% if hasFaceDescriptor %}
                                 <div class="d-flex align-items-center gap-2 mb-3 justify-content-end text-success fw-bold">
                                     <div class="pulse-dot bg-success"></div> Face ID Opérationnel
                                 </div>

@@ -114,7 +114,7 @@ final class PackInsightAssembler
                 ++$inscriptions30d;
             }
 
-            if (($inscription->getStatutInscr()?->value ?? '') === 'EN_ATTENTE') {
+            if ($inscription->getStatutInscr()->value === 'EN_ATTENTE') {
                 ++$pendingCount;
             }
         }

@@ -122,9 +122,9 @@ final class PackRiskEngine
         $benchmarks = [];
         foreach ($series as $bucket => $values) {
             $benchmarks[$bucket] = [
-                'median_inscriptions' => $this->median($values['inscriptions'] ?? []),
-                'median_price_per_activity' => $this->median($values['price_per_activity'] ?? []),
-                'median_recent_signal' => $this->median($values['recent_signal'] ?? []),
+                'median_inscriptions' => $this->median($values['inscriptions']),
+                'median_price_per_activity' => $this->median($values['price_per_activity']),
+                'median_recent_signal' => $this->median($values['recent_signal']),
             ];
         }
 

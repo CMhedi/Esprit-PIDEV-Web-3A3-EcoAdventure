@@ -22,8 +22,11 @@ class EventRating
     #[ORM\JoinColumn(name: 'id_evenement', referencedColumnName: 'id_evenement', nullable: false)]
     private ?Evenement $evenement = null;
 
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $note = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $commentaire = null;
 
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $createdAt = null;
@@ -68,6 +71,17 @@ class EventRating
     public function setNote(int $note): self
     {
         $this->note = $note;
+        return $this;
+    }
+
+    public function getCommentaire(): ?string
+    {
+        return $this->commentaire;
+    }
+
+    public function setCommentaire(?string $commentaire): self
+    {
+        $this->commentaire = $commentaire;
         return $this;
     }
 

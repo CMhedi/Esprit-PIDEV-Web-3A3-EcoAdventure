@@ -58,6 +58,20 @@ private ?StatutReservationEvenement $statut_res = null;
         return $this;
     }
 
+    #[ORM\Column(type: 'boolean', options: ["default" => false])]
+    private bool $is_notified_availability = false;
+
+    public function isNotifiedAvailability(): bool
+    {
+        return $this->is_notified_availability;
+    }
+
+    public function setIsNotifiedAvailability(bool $is_notified_availability): self
+    {
+        $this->is_notified_availability = $is_notified_availability;
+        return $this;
+    }
+
     #[ORM\Column(type: 'integer', nullable: false)]
     private ?int $nb_billets = null;
 

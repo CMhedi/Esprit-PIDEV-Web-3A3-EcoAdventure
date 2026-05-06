@@ -4,87 +4,186 @@
 
 {% block css %}
 <style>
+    /* --- PREMIUM ECOADVENTURE UI RE-DESIGN --- */
+    :root {
+        --eco-green: #2E7D32;
+        --eco-light-green: #4CAF50;
+        --eco-accent: #FFC107;
+        --eco-glass: rgba(255, 255, 255, 0.85);
+    }
+    body {
+        font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f6f9;
+        color: #333;
+    }
+    
+    /* Hero Banner */
+    .hero-banner {
+        background: linear-gradient(135deg, rgba(46, 125, 50, 0.8) 0%, rgba(0, 150, 136, 0.9) 100%), url('https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat;
+        padding: 100px 0 120px 0;
+        color: white;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .hero-banner::after {
+        content: '';
+        position: absolute;
+        bottom: -20px;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        background: #f4f6f9;
+        transform: skewY(-2deg);
+    }
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        letter-spacing: -1px;
+        text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+        animation: fadeInDown 0.8s ease-out;
+    }
+    .hero-subtitle {
+        font-size: 1.25rem;
+        font-weight: 300;
+        opacity: 0.9;
+        animation: fadeInUp 0.8s ease-out 0.2s backwards;
+    }
+
+    /* Glassmorphism Filter Box */
+    .filter-wrapper {
+        margin-top: -80px;
+        position: relative;
+        z-index: 5;
+        animation: fadeInUp 0.8s ease-out 0.4s backwards;
+    }
     .filter-box {
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
+        background: var(--eco-glass);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        padding: 30px;
         transition: all 0.3s ease;
     }
-    .filter-box:focus-within {
-        border-color: #ffc107;
-        box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1) !important;
+    .filter-box:hover, .filter-box:focus-within {
+        box-shadow: 0 20px 45px rgba(0, 150, 136, 0.15);
+        border-color: rgba(76, 175, 80, 0.5);
+    }
+    
+    /* Inputs Styling */
+    .form-control, .form-select {
+        border-radius: 12px;
+        padding: 12px 15px;
+        border: 2px solid transparent;
+        background-color: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        transition: all 0.3s ease;
+        font-weight: 500;
+        color: #444;
     }
     .form-control:focus, .form-select:focus {
-        border-color: #ffc107;
-        box-shadow: none;
+        border-color: var(--eco-light-green);
+        box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
+        background-color: #fff;
     }
-    .btn-warning {
-        background-color: #ffc107;
-        border-color: #ffc107;
-        color: #000;
-        transition: all 0.3s ease;
+    .input-group-text {
+        border-radius: 12px 0 0 12px;
+        border: 2px solid transparent;
+        background-color: rgba(255, 255, 255, 0.9);
+        color: var(--eco-green);
     }
-    .btn-warning:hover {
-        background-color: #e0a800;
-        transform: translateY(-2px);
+    
+    /* Custom Toggle Switch */
+    .form-check-switch .form-check-input {
+        width: 3rem;
+        height: 1.5rem;
+        cursor: pointer;
     }
+    .form-check-switch .form-check-input:checked {
+        background-color: var(--eco-light-green);
+        border-color: var(--eco-light-green);
+    }
+    
+    /* Loader */
     #loader {
         transition: opacity 0.3s ease;
+        backdrop-filter: blur(5px);
+        border-radius: 20px;
+    }
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        color: var(--eco-green) !important;
+    }
+
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
 {% endblock %}
 
 {% block body %}
-<section class="page-header py-5">
+<section class="hero-banner">
     <div class="container">
-        <h1 class="fw-bold">Tous les Événements</h1>
-        <p class="text-muted">Retrouvez l’ensemble des activités et événements sportifs.</p>
+        <h1 class="hero-title">Aventures & Événements</h1>
+        <p class="hero-subtitle mt-3">Découvrez des expériences inoubliables au cœur de la nature.</p>
+    </div>
+</section>
 
-        <div class="filter-box shadow-sm p-4 bg-white rounded-4 mb-5">
-            <form id="filter-form" action="{{ path('app_event_front_index') }}" method="GET">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <div class="input-group">
-                            <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search"></i></span>
-                            <input type="text" name="search" id="search" class="form-control border-start-0" placeholder="Recherche..." value="{{ search }}">
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <select name="categorie" id="categorie" class="form-select">
-                            <option value="">Toutes les catégories</option>
-                            <option value="TOURNOI" {% if selected_cat == 'TOURNOI' %}selected{% endif %}>TOURNOI</option>
-                            <option value="MARATHON" {% if selected_cat == 'MARATHON' %}selected{% endif %}>MARATHON</option>
-                            <option value="COMPETITION" {% if selected_cat == 'COMPETITION' %}selected{% endif %}>COMPETITION</option>
-                            <option value="STAGE" {% if selected_cat == 'STAGE' %}selected{% endif %}>STAGE</option>
-                            <option value="NATURE" {% if selected_cat == 'NATURE' %}selected{% endif %}>NATURE</option>
-                            <option value="NAUTIQUE" {% if selected_cat == 'NAUTIQUE' %}selected{% endif %}>NAUTIQUE</option>
-                            <option value="AVENTURE" {% if selected_cat == 'AVENTURE' %}selected{% endif %}>AVENTURE</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <select name="lieu" id="lieu" class="form-select">
-                            <option value="">Tous les lieux</option>
-                            {% for l in lieux %}
-                                <option value="{{ l }}" {% if selected_lieu == l %}selected{% endif %}>{{ l }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <select name="sortBy" id="sortBy" class="form-select">
-                            <option value="date_desc" {% if selected_sort == 'date_desc' %}selected{% endif %}>Plus récents</option>
-                            <option value="date_asc" {% if selected_sort == 'date_asc' %}selected{% endif %}>Plus anciens</option>
-                            <option value="title_asc" {% if selected_sort == 'title_asc' %}selected{% endif %}>Titre (A-Z)</option>
-                            <option value="title_desc" {% if selected_sort == 'title_desc' %}selected{% endif %}>Titre (Z-A)</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2 d-flex align-items-center">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" name="disponible" id="disponible" value="1" {% if only_available %}checked{% endif %}>
-                            <label class="form-check-label" for="disponible">Disponibles</label>
-                        </div>
+<section class="filter-wrapper container">
+    <div class="filter-box">
+        <form id="filter-form" action="{{ path('app_event_front_index') }}" method="GET">
+            <input type="hidden" name="page" id="page-input" value="{{ current_page|default(1) }}">
+            <div class="row g-3 align-items-center">
+                <div class="col-lg-3 col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search fs-5"></i></span>
+                        <input type="text" name="search" id="search" class="form-control border-start-0 ps-0" placeholder="Chercher une aventure..." value="{{ search }}">
                     </div>
                 </div>
-            </form>
-        </div>
+                <div class="col-lg-2 col-md-6">
+                    <select name="categorie" id="categorie" class="form-select">
+                        <option value="">✨ Toutes Catégories</option>
+                        <option value="TOURNOI" {% if selected_cat == 'TOURNOI' %}selected{% endif %}>Tournoi</option>
+                        <option value="MARATHON" {% if selected_cat == 'MARATHON' %}selected{% endif %}>Marathon</option>
+                        <option value="COMPETITION" {% if selected_cat == 'COMPETITION' %}selected{% endif %}>Compétition</option>
+                        <option value="STAGE" {% if selected_cat == 'STAGE' %}selected{% endif %}>Stage</option>
+                        <option value="NATURE" {% if selected_cat == 'NATURE' %}selected{% endif %}>Nature</option>
+                        <option value="NAUTIQUE" {% if selected_cat == 'NAUTIQUE' %}selected{% endif %}>Nautique</option>
+                        <option value="AVENTURE" {% if selected_cat == 'AVENTURE' %}selected{% endif %}>Aventure Extrême</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <select name="lieu" id="lieu" class="form-select">
+                        <option value="">📍 Tous les lieux</option>
+                        {% for l in lieux %}
+                            <option value="{{ l }}" {% if selected_lieu == l %}selected{% endif %}>{{ l }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-4">
+                    <select name="sortBy" id="sortBy" class="form-select">
+                        <option value="date_desc" {% if selected_sort == 'date_desc' %}selected{% endif %}>🕒 Plus récents</option>
+                        <option value="date_asc" {% if selected_sort == 'date_asc' %}selected{% endif %}>⏳ Plus anciens</option>
+                        <option value="price_asc" {% if selected_sort == 'price_asc' %}selected{% endif %}>💰 Prix croissant</option>
+                        <option value="price_desc" {% if selected_sort == 'price_desc' %}selected{% endif %}>💎 Prix décroissant</option>
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-4 d-flex justify-content-end align-items-center">
+                    <div class="form-check form-switch form-check-switch me-2">
+                        <input class="form-check-input shadow-sm" type="checkbox" role="switch" name="disponible" id="disponible" value="1" {% if only_available %}checked{% endif %}>
+                        <label class="form-check-label ms-2 fw-bold text-muted" for="disponible" style="padding-top: 5px;">Disponibles Seulement</label>
+                    </div>
+                </div>
+            </div>
+        </form>
     </div>
 </section>
 
@@ -136,9 +235,28 @@ document.addEventListener('DOMContentLoaded', function() {
         if(e.target.type === 'text') {
             // Debounce for text input
             clearTimeout(timeout);
-            timeout = setTimeout(updateEvents, 500);
+            timeout = setTimeout(() => {
+                document.getElementById('page-input').value = 1; // Reset to page 1 on new search
+                updateEvents();
+            }, 500);
         } else {
+            document.getElementById('page-input').value = 1; // Reset to page 1 on new filter
             updateEvents();
+        }
+    });
+
+    // Pagination Click Handling via Event Delegation
+    eventsList.addEventListener('click', function(e) {
+        const btn = e.target.closest('button.page-link');
+        if (btn) {
+            e.preventDefault();
+            const page = btn.getAttribute('data-page');
+            if (page) {
+                document.getElementById('page-input').value = page;
+                updateEvents();
+                // scroll to top of list
+                eventsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
     });
 

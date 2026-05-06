@@ -17,6 +17,9 @@ class InscriptionRepository extends ServiceEntityRepository
         parent::__construct($registry, Inscription::class);
     }
 
+    /**
+     * @return array<int, Inscription>
+     */
     public function findForAdmin(?string $search = null): array
     {
         $qb = $this->createQueryBuilder('i')

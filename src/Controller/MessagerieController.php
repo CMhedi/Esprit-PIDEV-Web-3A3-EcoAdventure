@@ -571,9 +571,9 @@ class MessagerieController extends AbstractController
                     $targetFolder = match ($attachmentType) {
                         TypeMessage::IMAGE => 'images',
                         TypeMessage::GIF => 'Gifs',
-                        TypeMessage::VIDEO, TypeMessage::APPEL_VIDEO => 'video',
+                        TypeMessage::VIDEO => 'video',
                         TypeMessage::AUDIO => 'Audio',
-                        TypeMessage::VOCALE, TypeMessage::APPEL_AUDIO => 'Vocale',
+                        TypeMessage::VOCALE => 'Vocale',
                         TypeMessage::PDF => 'files',
                         default => 'files',
                     };
@@ -1111,7 +1111,7 @@ public function callLog(
                     $existingParticipants = $this->getCallSessionParticipants($cache, $conversationId, $sessionId);
                     $groupPeers = array_values(array_filter(
                         $existingParticipants,
-                        static fn (array $participant): bool => (int) ($participant['user_id'] ?? 0) !== (int) $sender->getId_user()
+                        static fn (array $participant): bool => (int) $participant['user_id'] !== (int) $sender->getId_user()
                     ));
                     $this->upsertCallSessionParticipant($cache, $conversationId, $sessionId, $sender->getId_user(), $participantName);
                 }
@@ -1399,7 +1399,7 @@ public function callLog(
             array_push($needles, 'sad', 'cry', 'crying', 'tears');
         }
 
-        return array_values(array_unique(array_filter($needles, static fn (string $needle): bool => $needle !== '')));
+        return array_values(array_unique($needles));
     }
 
     /**
@@ -1524,9 +1524,6 @@ public function callLog(
             }
 
             $rows = $response->toArray(false);
-            if (!is_array($rows)) {
-                return [];
-            }
 
             $needles = $this->buildEmojiSearchNeedles($query);
             $items = [];
@@ -1878,8 +1875,8 @@ public function callLog(
 
         $items = $this->getEmojiPickerItems($query, $limit, $httpClient);
         $items = array_values(array_filter($items, function (array $item) use ($moderationService, $blockedMeaningHints): bool {
-            $name = trim((string) ($item['name'] ?? ''));
-            $emoji = trim((string) ($item['emoji'] ?? ''));
+            $name = trim((string) $item['name']);
+            $emoji = trim((string) $item['emoji']);
             if ($name === '') {
                 return $emoji === '' || !$moderationService->containsManualProhibitedContent($emoji);
             }
@@ -2348,7 +2345,7 @@ public function callLog(
         $updated = false;
 
         foreach ($participants as &$participant) {
-            if ((int) ($participant['user_id'] ?? 0) !== $userId) {
+            if ((int) $participant['user_id'] !== $userId) {
                 continue;
             }
 
@@ -2376,7 +2373,7 @@ public function callLog(
     ): void {
         $participants = array_values(array_filter(
             $this->getCallSessionParticipants($cache, $conversationId, $sessionId),
-            static fn (array $participant): bool => (int) ($participant['user_id'] ?? 0) !== $userId
+            static fn (array $participant): bool => (int) $participant['user_id'] !== $userId
         ));
 
         $this->saveCallSessionParticipants($cache, $conversationId, $sessionId, $participants);
@@ -2412,7 +2409,7 @@ public function callLog(
             }
 
             $attachments = $message->getAttachments();
-            if (is_array($attachments) && $attachments !== []) {
+            if ($attachments !== []) {
                 $validAttachments = [];
                 foreach ($attachments as $attachment) {
                     if (!is_array($attachment)) {

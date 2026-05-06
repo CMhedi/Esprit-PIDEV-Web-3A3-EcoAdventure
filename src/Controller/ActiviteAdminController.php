@@ -9,6 +9,7 @@ use App\Enum\NiveauAct;
 use App\Enum\Statut;
 use App\Repository\ActiviteRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,7 +19,11 @@ use Symfony\Component\Routing\Annotation\Route;
 class ActiviteAdminController extends AbstractController
 {
     #[Route('', name: 'app_admin_activites')]
-    public function index(Request $request, ActiviteRepository $activiteRepository): Response
+    public function index(
+        Request $request,
+        ActiviteRepository $activiteRepository,
+        PaginatorInterface $paginator
+    ): Response
     {
         $nom = trim((string) $request->query->get('nom', ''));
         $sortBy = (string) $request->query->get('sort_by', 'prix');
@@ -33,7 +38,11 @@ class ActiviteAdminController extends AbstractController
             $tri = 'asc';
         }
 
-        $activites = $activiteRepository->findBySearchAndSort($nom, $sortBy, $tri);
+        $activites = $paginator->paginate(
+            $activiteRepository->findBySearchAndSort($nom, $sortBy, $tri),
+            $request->query->getInt('page', 1),
+            10
+        );
 
         return $this->render('admin/activiteadmin.html.twig', [
             'activites' => $activites,

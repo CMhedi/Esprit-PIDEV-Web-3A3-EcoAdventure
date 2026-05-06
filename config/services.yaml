@@ -1,10 +1,10 @@
-# config/services.yaml
-
 parameters:
     default_messages_upload_directory: 'C:/xampp2002/htdocs/uploads'
     messages_upload_directory: '%env(default:default_messages_upload_directory:MESSAGES_UPLOAD_DIRECTORY)%'
     activite_resv_image_directory: '%kernel.project_dir%/public/ActivieResvImage'
     activite_resv_image_public_path: 'ActivieResvImage'
+    app.promo_group_threshold: 11
+    app.promo_group_discount: 0.10
     default_pack_holiday_country: 'TN'
     pack_holiday_country: '%env(default:default_pack_holiday_country:PACK_HOLIDAY_COUNTRY)%'
     default_openai_api_key: ''
@@ -41,8 +41,6 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
-        bind:
-            $geminiApiKey: '%env(GEMINI_API_KEY)%'
 
     App\:
         resource: '../src/'
@@ -82,6 +80,13 @@ services:
             $secretKey: '%stripe_secret_key%'
             $publishableKey: '%stripe_publishable_key%'
             $currency: '%stripe_currency%'
+    # ===== NUTRITION API SERVICE =====
+    App\Service\NutritionApiService:
+        arguments:
+            $httpClient: '@http_client'
+            $logger: '@logger'
+        tags:
+            - { name: 'monolog.logger', channel: 'nutrition' }
 
     App\Service\GeminiGifChatService:
         arguments:
@@ -90,6 +95,7 @@ services:
             $giphyApiKey: '%env(default:giphy_default_api_key:GIPHY_API_KEY)%'
             $groqVisionModel: '%env(default:groq_default_vision_model:GROQ_VISION_MODEL)%'
             $groqAudioModel: '%env(default:groq_default_audio_model:GROQ_AUDIO_MODEL)%'
+            $debug: '%kernel.debug%'
 
     App\Service\GroqAiService:
         arguments:

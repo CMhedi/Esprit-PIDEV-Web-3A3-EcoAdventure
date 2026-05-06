@@ -49,9 +49,10 @@ class LoginListener implements EventSubscriberInterface
 
         if ($user instanceof UserApp) {
             if ($user->getFailedAttempts() < 3) {
+                $nextFailedAttempts = $user->getFailedAttempts() + 1;
                 $user->incrementFailedAttempts();
                 
-                if ($user->getFailedAttempts() === 3) {
+                if ($nextFailedAttempts === 3) {
                     $this->securityAlertService->notifyAdminOfFailedAttempts($user, $event->getRequest());
                 }
 

@@ -32,8 +32,8 @@ final class PackAfficheController extends AbstractController
 
         if ($sort === 'smart_desc') {
             usort($packs, static function ($left, $right) use ($packInsights): int {
-                $leftScore = $packInsights[$left->getIdPack()]?->getScore() ?? 0;
-                $rightScore = $packInsights[$right->getIdPack()]?->getScore() ?? 0;
+                $leftScore = $packInsights[$left->getIdPack()]->getScore();
+                $rightScore = $packInsights[$right->getIdPack()]->getScore();
 
                 return $rightScore <=> $leftScore;
             });

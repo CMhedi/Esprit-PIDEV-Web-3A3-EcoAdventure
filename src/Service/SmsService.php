@@ -2,9 +2,6 @@
 
 namespace App\Service;
 
-use Vonage\Client\Credentials\Basic;
-use Vonage\Client;
-use Vonage\SMS\Message\SMS;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 class SmsService
@@ -19,9 +16,11 @@ class SmsService
         $key = $_ENV['VONAGE_API_KEY'] ?? '85b174bc';
         $secret = $_ENV['VONAGE_API_SECRET'] ?? 'nk%XqZGpV5gEgs(';
         
-        if ($key && $secret) {
-            $basic  = new Basic($key, $secret);
-            $this->client = new Client($basic);
+        if ($key && $secret && class_exists('Vonage\\Client') && class_exists('Vonage\\Client\\Credentials\\Basic')) {
+            $basicClass = 'Vonage\\Client\\Credentials\\Basic';
+            $clientClass = 'Vonage\\Client';
+            $basic = new $basicClass($key, $secret);
+            $this->client = new $clientClass($basic);
         }
     }
 
@@ -36,9 +35,12 @@ class SmsService
 
         if ($this->client) {
             try {
-                $this->client->sms()->send(
-                    new SMS($to, 'EcoAdven', "Votre code EcoAdventure est : $code")
-                );
+                if (class_exists('Vonage\\SMS\\Message\\SMS')) {
+                    $smsClass = 'Vonage\\SMS\\Message\\SMS';
+                    $this->client->sms()->send(
+                        new $smsClass($to, 'EcoAdven', "Votre code EcoAdventure est : $code")
+                    );
+                }
             } catch (\Exception $e) {
                 error_log("Erreur Vonage: " . $e->getMessage());
                 // Fallback simulation si erreur API

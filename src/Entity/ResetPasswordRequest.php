@@ -6,17 +6,11 @@ use App\Repository\ResetPasswordRequestRepository;
 use Doctrine\ORM\Mapping as ORM;
 use SymfonyCasts\Bundle\ResetPassword\Model\ResetPasswordRequestInterface;
 use SymfonyCasts\Bundle\ResetPassword\Model\ResetPasswordRequestTrait;
-use Symfony\Component\Serializer\Annotation\Ignore;
 
 #[ORM\Entity(repositoryClass: ResetPasswordRequestRepository::class)]
 class ResetPasswordRequest implements ResetPasswordRequestInterface
 {
     use ResetPasswordRequestTrait;
-
-    /** @var string */
-    #[Ignore]
-    #[ORM\Column(type: 'string', length: 100)]
-    protected $hashedToken;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -27,10 +21,13 @@ class ResetPasswordRequest implements ResetPasswordRequestInterface
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id_user', nullable: false)]
     private ?UserApp $user = null;
 
-    public function __construct(UserApp $user, \DateTimeInterface $expiresAt, string $selector, string $hashedToken)
+    public function __construct(?object $user = null, ?\DateTimeInterface $expiresAt = null, string $selector = '', string $hashedToken = '')
     {
         $this->user = $user;
-        $this->initialize($expiresAt, $selector, $hashedToken);
+        $this->expiresAt = $expiresAt ?? new \DateTimeImmutable('+1 hour');
+        $this->selector = $selector;
+        $this->hashedToken = $hashedToken;
+        $this->requestedAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -38,7 +35,7 @@ class ResetPasswordRequest implements ResetPasswordRequestInterface
         return $this->id;
     }
 
-    public function getUser(): UserApp
+    public function getUser(): object
     {
         return $this->user;
     }

@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Entity\UserApp;
 use App\Form\ChangePasswordFormType;
 use App\Form\ResetPasswordRequestFormType;
+use App\Service\SmsService;
+use App\Service\UserManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,7 +30,7 @@ class ResetPasswordController extends AbstractController
     public function __construct(
         private ResetPasswordHelperInterface $resetPasswordHelper,
         private EntityManagerInterface $entityManager,
-        private \App\Service\UserManager $userManager,
+        private UserManager $userManager
     ) {
     }
 
@@ -36,7 +38,7 @@ class ResetPasswordController extends AbstractController
      * Display & process form to request a password reset.
      */
     #[Route('', name: 'app_forgot_password_request')]
-    public function request(Request $request, MailerInterface $mailer, TranslatorInterface $translator, \App\Service\SmsService $smsService): Response
+    public function request(Request $request, MailerInterface $mailer, TranslatorInterface $translator, SmsService $smsService): Response
     {
         $form = $this->createForm(ResetPasswordRequestFormType::class);
         $form->handleRequest($request);
@@ -86,7 +88,7 @@ class ResetPasswordController extends AbstractController
     }
 
     #[Route('/check-sms-code', name: 'app_check_sms_code')]
-    public function checkSmsCode(Request $request, \App\Service\SmsService $smsService): Response
+    public function checkSmsCode(Request $request, SmsService $smsService): Response
     {
         $userId = $request->getSession()->get('sms_reset_user_id');
         if (!$userId) {
@@ -160,8 +162,7 @@ class ResetPasswordController extends AbstractController
     #[Route('/check-email', name: 'app_check_email')]
     public function checkEmail(): Response
     {
-        // Generate a fake token if the user does not exist or someone hit this page directly.
-        // This prevents exposing whether or not a user was found with the given email address or not
+        // Generate a fake token if the user does not exist or if the user has already been sent an email
         if (null === ($resetToken = $this->getTokenObjectFromSession())) {
             $resetToken = $this->resetPasswordHelper->generateFakeResetToken();
         }
@@ -178,8 +179,8 @@ class ResetPasswordController extends AbstractController
     public function reset(Request $request, UserPasswordHasherInterface $passwordHasher, TranslatorInterface $translator, ?string $token = null): Response
     {
         if ($token) {
-            // We store the token in session and remove it from the URL, to avoid the URL being
-            // loaded in a browser and potentially leaking the token to 3rd party JavaScript.
+            // We store the token in session and redirect to the target entity to prevent
+            // the URL from being exposed in logs or browser history.
             $this->storeTokenInSession($token);
 
             return $this->redirectToRoute('app_reset_password');
@@ -237,7 +238,6 @@ class ResetPasswordController extends AbstractController
         ]);
 
         if (!$user) {
-            // Ajoute ça pour vérifier si l'user est trouvé
             $this->addFlash('reset_password_error', 'Utilisateur non trouvé .');
             return $this->redirectToRoute('app_forgot_password_request');
         }
@@ -245,7 +245,6 @@ class ResetPasswordController extends AbstractController
         try {
             $resetToken = $this->resetPasswordHelper->generateResetToken($user);
         } catch (ResetPasswordExceptionInterface $e) {
-            // Décommente ces lignes pour voir l'erreur réelle
             $this->addFlash('reset_password_error', sprintf(
                 '%s - %s',
                 $translator->trans(ResetPasswordExceptionInterface::MESSAGE_PROBLEM_HANDLE, [], 'ResetPasswordBundle'),

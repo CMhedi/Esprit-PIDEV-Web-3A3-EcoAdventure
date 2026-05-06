@@ -84,7 +84,7 @@
         <div class="col-12">
             <h5 class="fw-bold mb-3">
                 <i class="bi bi-chat-dots me-2"></i>
-                Messages ({{ messages|length }})
+                Messages ({{ messages.getTotalItemCount|default(messages|length) }})
             </h5>
             <div class="messages-container">
                 {% if messages|length > 0 %}
@@ -322,6 +322,11 @@
                     </div>
                 {% endif %}
             </div>
+            {% if messages.getTotalItemCount is defined and messages.getTotalItemCount > 0 %}
+                <div class="d-flex justify-content-end mt-3 admin-pagination-wrap">
+                    {{ knp_pagination_render(messages) }}
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -654,6 +659,33 @@
     border-color: #badbcc;
     background: #d1e7dd;
     color: #0f5132;
+}
+
+.admin-pagination-wrap .pagination {
+    --bs-pagination-color: #475569;
+    --bs-pagination-bg: #ffffff;
+    --bs-pagination-border-color: #d7dee8;
+    --bs-pagination-hover-color: #0f172a;
+    --bs-pagination-hover-bg: #f8fafc;
+    --bs-pagination-hover-border-color: #cbd5e1;
+    --bs-pagination-focus-color: #0f172a;
+    --bs-pagination-focus-bg: #eff6ff;
+    --bs-pagination-focus-box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
+    --bs-pagination-active-color: #ffffff;
+    --bs-pagination-active-bg: #0f766e;
+    --bs-pagination-active-border-color: #0f766e;
+    --bs-pagination-disabled-color: #94a3b8;
+    --bs-pagination-disabled-bg: #ffffff;
+    --bs-pagination-disabled-border-color: #d7dee8;
+    gap: 0.35rem;
+    margin-bottom: 0;
+}
+
+.admin-pagination-wrap .page-link {
+    border-radius: 12px;
+    min-width: 42px;
+    text-align: center;
+    font-weight: 600;
 }
 
 /* Responsive adjustments */

@@ -41,8 +41,6 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private string $email = '';
 
     #[ORM\Column(type: 'string', length: 30, nullable: true)]
-    #[Assert\Regex(pattern: "/^[0-9]+$/", message: "Le numéro de téléphone ne doit contenir que des chiffres")]
-    #[Assert\Length(min: 8, max: 15, minMessage: "Le numéro de téléphone doit faire au moins {{ limit }} chiffres")]
     private ?string $telephone = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
@@ -52,8 +50,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private string $role = RoleUser::USER_SIMPLE->value;
 
     #[ORM\Column(type: 'string', length: 255)]
-
     private string $mot_de_passe = '';
+
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $date_creation;
 
@@ -61,7 +59,6 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     private ?\DateTimeInterface $last_seen = null;
 
     #[ORM\Column(type: 'integer', nullable: true)]
-    #[Assert\Range(min: 18, max: 40, notInRangeMessage: "L'âge doit être compris entre {{ min }} et {{ max }} ans")]
     private ?int $age = null;
 
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
@@ -82,12 +79,45 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'integer', options: ["default" => 0])]
     private int $loyaltyPoints = 0;
 
-    #[ORM\Column(type: 'integer', options: ["default" => 0])]
-    private int $failedAttempts = 0;
+    // Google OAuth fields
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $google_token = null;
 
     /** @var array<mixed>|null */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $faceDescriptor = null;
+
+    // Churn prediction fields
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $churnProbability = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $churnPrediction = false;
+
+    #[ORM\Column(type: 'string', length: 10, options: ['default' => 'low'])]
+    private string $churnRisk = 'low';
+
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $lastPredictionAt = null;
+
+    // Physical attributes fields
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $weight = null;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $height = null;
+
+    #[ORM\Column(type: 'string', length: 1, nullable: true)]
+    private ?string $gender = null;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $activityLevel = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $goalNotified = false;
+
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private int $failedAttempts = 0;
 
     // RELATIONS
     /** @var Collection<int, Inscription> */
@@ -121,72 +151,6 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     /** @var Collection<int, Conversation> */
     #[ORM\ManyToMany(targetEntity: Conversation::class, mappedBy: 'participants')]
     private Collection $conversations;
-
-    // AI & EXTRA FIELDS (Kept for compatibility)
-    #[ORM\Column(type: 'float', nullable: true)]
-    private ?float $churn_probability = null;
-
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    private ?string $churn_prediction = null;
-
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    private ?string $churn_risk = null;
-
-    #[ORM\Column(type: 'datetime', nullable: true)]
-    private ?\DateTimeInterface $last_prediction_at = null;
-
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $google_token = null;
-
-    #[ORM\Column(type: 'float', nullable: true)]
-    private ?float $weight = null;
-
-    #[ORM\Column(type: 'float', nullable: true)]
-    private ?float $height = null;
-
-    #[ORM\Column(type: 'string', length: 20, nullable: true)]
-    private ?string $gender = null;
-
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private ?string $activity_level = null;
-
-    #[ORM\Column(type: 'boolean', options: ['default' => false])]
-    private bool $goal_notified = false;
-
-    #[Assert\Callback]
-    public function validateCoachRequirements(ExecutionContextInterface $context): void
-    {
-        if ($this->role === \App\Enum\RoleUser::COACH->value) {
-            if (null === $this->age) {
-                $context->buildViolation("L'âge est obligatoire pour un coach.")
-                    ->atPath('age')
-                    ->addViolation();
-            }
-
-            if (null === $this->experience || $this->experience === '') {
-                $context->buildViolation("Le nombre d'années d'expérience est obligatoire.")
-                    ->atPath('experience')
-                    ->addViolation();
-            }
-            if (null === $this->specialite) {
-                $context->buildViolation("Choisir une spécialité est obligatoire pour un coach.")
-                    ->atPath('specialite')
-                    ->addViolation();
-            }
-
-            if (null === $this->disponibilite) {
-                $context->buildViolation("Choisir votre disponibilité est obligatoire pour un coach.")
-                    ->atPath('disponibilite')
-                    ->addViolation();
-            }
-            
-            if ($this->age && $this->experience && ($this->age - (int)$this->experience < 16)) {
-                $context->buildViolation("L'expérience est incohérente avec votre âge.")
-                    ->atPath('experience')
-                    ->addViolation();
-            }
-        }
-    }
 
     public function __construct()
     {
@@ -226,6 +190,43 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function eraseCredentials(): void
     {
+    }
+
+    // ========== VALIDATION ==========
+
+    #[Assert\Callback]
+    public function validateCoachRequirements(ExecutionContextInterface $context): void
+    {
+        if ($this->role === RoleUser::COACH->value) {
+            if (null === $this->age) {
+                $context->buildViolation("L'âge est obligatoire pour un coach.")
+                    ->atPath('age')
+                    ->addViolation();
+            }
+
+            if (null === $this->experience || $this->experience === '') {
+                $context->buildViolation("Le nombre d'années d'expérience est obligatoire.")
+                    ->atPath('experience')
+                    ->addViolation();
+            }
+            if (null === $this->specialite) {
+                $context->buildViolation("Choisir une spécialité est obligatoire pour un coach.")
+                    ->atPath('specialite')
+                    ->addViolation();
+            }
+
+            if (null === $this->disponibilite) {
+                $context->buildViolation("Choisir votre disponibilité est obligatoire pour un coach.")
+                    ->atPath('disponibilite')
+                    ->addViolation();
+            }
+
+            if ($this->age && $this->experience && ($this->age - (int)$this->experience < 16)) {
+                $context->buildViolation("L'expérience est incohérente avec votre âge.")
+                    ->atPath('experience')
+                    ->addViolation();
+            }
+        }
     }
 
     // ========== GETTERS & SETTERS ==========
@@ -270,24 +271,63 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLoyaltyPoints(int $points): self { $this->loyaltyPoints = $points; return $this; }
     public function addLoyaltyPoints(int $points): self { $this->loyaltyPoints += $points; return $this; }
 
-    public function getFailedAttempts(): int { return $this->failedAttempts; }
-    public function setFailedAttempts(int $failedAttempts): self { $this->failedAttempts = $failedAttempts; return $this; }
-    /** @phpstan-impure */
-    public function incrementFailedAttempts(): self { $this->failedAttempts++; return $this; }
-    public function resetFailedAttempts(): self { $this->failedAttempts = 0; return $this; }
+    // Google token
+    public function getGoogleToken(): ?string { return $this->google_token; }
+    public function setGoogleToken(?string $google_token): self { $this->google_token = $google_token; return $this; }
 
     /** @return array<mixed>|null */
     public function getFaceDescriptor(): ?array { return $this->faceDescriptor; }
     /** @param array<mixed>|null $faceDescriptor */
     public function setFaceDescriptor(?array $faceDescriptor): self { $this->faceDescriptor = $faceDescriptor; return $this; }
 
-    /**
-     * @return Collection<int, Inscription>
-     */
-    public function getInscriptions(): Collection
-    {
-        return $this->inscriptions;
-    }
+    // Churn prediction
+    public function getChurnProbability(): ?float { return $this->churnProbability; }
+    public function setChurnProbability(float $value): self { $this->churnProbability = $value; return $this; }
+    public function getChurnPrediction(): bool { return $this->churnPrediction; }
+    public function setChurnPrediction(bool $value): self { $this->churnPrediction = $value; return $this; }
+    public function getChurnRisk(): string { return $this->churnRisk; }
+    public function setChurnRisk(string $value): self { $this->churnRisk = $value; return $this; }
+    public function getLastPredictionAt(): ?\DateTimeInterface { return $this->lastPredictionAt; }
+    public function setLastPredictionAt(\DateTimeInterface $value): self { $this->lastPredictionAt = $value; return $this; }
+
+    // Physical attributes
+    public function getWeight(): ?float { return $this->weight; }
+    public function setWeight(float $v): self { $this->weight = $v; return $this; }
+    public function getHeight(): ?float { return $this->height; }
+    public function setHeight(float $v): self { $this->height = $v; return $this; }
+    public function getGender(): ?string { return $this->gender; }
+    public function setGender(string $v): self { $this->gender = $v; return $this; }
+    public function getActivityLevel(): ?float { return $this->activityLevel; }
+    public function setActivityLevel(float $v): self { $this->activityLevel = $v; return $this; }
+
+    // Goal notification
+    public function isGoalNotified(): bool { return $this->goalNotified; }
+    public function setGoalNotified(bool $goalNotified): self { $this->goalNotified = $goalNotified; return $this; }
+
+    // Security failed login attempts
+    public function getFailedAttempts(): int { return $this->failedAttempts; }
+    public function setFailedAttempts(int $failedAttempts): self { $this->failedAttempts = max(0, $failedAttempts); return $this; }
+    /** @phpstan-impure */
+    public function incrementFailedAttempts(): self { $this->failedAttempts++; return $this; }
+    public function resetFailedAttempts(): self { $this->failedAttempts = 0; return $this; }
+
+    // Relations
+    /** @return Collection<int, Inscription> */
+    public function getInscriptions(): Collection { return $this->inscriptions; }
+    /** @return Collection<int, Message> */
+    public function getMessages(): Collection { return $this->messages; }
+    /** @return Collection<int, Reclamation> */
+    public function getReclamations(): Collection { return $this->reclamations; }
+    /** @return Collection<int, ReservationActivite> */
+    public function getReservationActivites(): Collection { return $this->reservationActivites; }
+    /** @return Collection<int, ReservationEvenement> */
+    public function getReservationEvenements(): Collection { return $this->reservationEvenements; }
+    /** @return Collection<int, ReservationSeance> */
+    public function getReservationSeances(): Collection { return $this->reservationSeances; }
+    /** @return Collection<int, Seance> */
+    public function getSeances(): Collection { return $this->seances; }
+    /** @return Collection<int, Conversation> */
+    public function getConversations(): Collection { return $this->conversations; }
 
     public function addInscription(Inscription $inscription): self
     {
@@ -306,18 +346,37 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /** @return Collection<int, Message> */
-    public function getMessages(): Collection { return $this->messages; }
-    /** @return Collection<int, Reclamation> */
-    public function getReclamations(): Collection { return $this->reclamations; }
-    /** @return Collection<int, ReservationActivite> */
-    public function getReservationActivites(): Collection { return $this->reservationActivites; }
-    /** @return Collection<int, ReservationEvenement> */
-    public function getReservationEvenements(): Collection { return $this->reservationEvenements; }
-    /** @return Collection<int, ReservationSeance> */
-    public function getReservationSeances(): Collection { return $this->reservationSeances; }
-    /** @return Collection<int, Seance> */
-    public function getSeances(): Collection { return $this->seances; }
-    /** @return Collection<int, Conversation> */
-    public function getConversations(): Collection { return $this->conversations; }
+    public function getReservations7Days(): ?int
+    {
+        $count = 0;
+        $limitDate = new \DateTime('-7 days');
+
+        foreach ($this->reservationSeances as $res) {
+            if ($res->getCreatedAt() >= $limitDate) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    public function getAbsences30Days(): int
+    {
+        $count = 0;
+        $limitDate = new \DateTime('-30 days');
+
+        foreach ($this->getReservationSeances() as $reservation) {
+            $date = $reservation->getDate_reservation();
+            if (
+                $date &&
+                $date >= $limitDate &&
+                $reservation->getStatut_presence() === \App\Enum\StatutPresence::ABSENT
+            ) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
 }
+

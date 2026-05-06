@@ -1,0 +1,41 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block page_title %}AI Local Dashboard{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <h2 class="mb-4">AI Local Dashboard</h2>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            Activity Analysis
+        </div>
+
+        <div class="card-body">
+            {% if analysis is defined and analysis is not empty %}
+                <ul class="list-group list-group-flush">
+                    {% for item in analysis %}
+                        <li class="list-group-item">
+                            {{ item }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">No analysis available.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            Global AI Insight
+        </div>
+
+        <div class="card-body">
+            <p class="mb-0">
+                {{ global is defined ? global : 'No AI data available.' }}
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

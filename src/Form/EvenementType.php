@@ -28,6 +28,11 @@ class EvenementType extends AbstractType
             ])
             ->add('lieu')
             ->add('nb_places')
+            ->add('limite_attente', null, [
+                'label' => 'Limite de la liste d\'attente',
+                'required' => false,
+                'empty_data' => '10'
+            ])
             ->add('prix', null, [
                 'label' => 'Prix par billet (DT)',
             ])

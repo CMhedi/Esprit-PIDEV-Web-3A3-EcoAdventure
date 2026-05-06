@@ -34,6 +34,9 @@ class ConversationRepository extends ServiceEntityRepository
 //    }
 // Fichier: src/Repository/ConversationRepository.php
 
+/**
+ * @return Conversation|null
+ */
 public function findOneByParticipants(UserApp $u1, UserApp $u2)
 {
     return $this->createQueryBuilder('c')
@@ -69,6 +72,9 @@ public function findOneByParticipants(UserApp $u1, UserApp $u2)
             ->getOneOrNullResult();
     }
 
+    /**
+     * @return array<int, Conversation>|null
+     */
     public function findConversationsByUser(UserApp $user)
     {
         return $this->createQueryBuilder('c')
@@ -83,6 +89,9 @@ public function findOneByParticipants(UserApp $u1, UserApp $u2)
             ->getResult();
     }
 
+    /**
+     * @return array<int, mixed>
+     */
     public function getUnreadCountsForUser(UserApp $user): array
     {
         $rows = $this->getEntityManager()->createQueryBuilder()

@@ -9,6 +9,7 @@ use App\Repository\ConversationRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserAppRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,7 +26,8 @@ class AdminMessagerieController extends AbstractController
     public function index(
         ConversationRepository $conversationRepo,
         MessageRepository $messageRepo,
-        Request $request
+        Request $request,
+        PaginatorInterface $paginator
     ): Response {
         // Get filter parameters
         $search = $request->query->get('search', '');
@@ -64,7 +66,11 @@ class AdminMessagerieController extends AbstractController
                ->setParameter('dateTo', new \DateTime($dateTo . ' 23:59:59'));
         }
 
-        $conversations = $qb->getQuery()->getResult();
+        $conversations = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            10
+        );
         
         // Récupérer le dernier message pour chaque conversation
         foreach ($conversations as $conversation) {
@@ -96,12 +102,18 @@ class AdminMessagerieController extends AbstractController
     #[Route('/{id}', name: 'admin_messagerie_view', requirements: ['id' => '\d+'])]
     public function view(
         Conversation $conversation,
-        MessageRepository $messageRepo
+        MessageRepository $messageRepo,
+        Request $request,
+        PaginatorInterface $paginator
     ): Response {
         $currentUser = $this->getUser();
-        $messages = $messageRepo->findBy(
-            ['conversation' => $conversation],
-            ['date_envoi' => 'ASC']
+        $messages = $paginator->paginate(
+            $messageRepo->createQueryBuilder('m')
+                ->where('m.conversation = :conversation')
+                ->setParameter('conversation', $conversation)
+                ->orderBy('m.date_envoi', 'ASC'),
+            $request->query->getInt('page', 1),
+            25
         );
 
         return $this->render('admin/messagerie/view.html.twig', [

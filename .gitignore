@@ -1,3 +1,4 @@
+### Symfony ###
 
 ###> symfony/framework-bundle ###
 /.env
@@ -19,6 +20,25 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+### Python ###
+venv/
+ml-api/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+### ML ###
+*.pkl
+!ml-api/xgboost_churn_production_final.pkl
+
+### Google credentials ###
+/config/google/*.json
+
+### OS ###
+.DS_Store
+Thumbs.db
 
 ###> local tooling ###
 tools/card_ocr_api/.venv/

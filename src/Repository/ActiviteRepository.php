@@ -12,6 +12,9 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
+/**
+ * @extends ServiceEntityRepository<Activite>
+ */
 class ActiviteRepository extends ServiceEntityRepository
 {
     private const SORT_FIELDS = [
@@ -28,6 +31,9 @@ class ActiviteRepository extends ServiceEntityRepository
         parent::__construct($registry, Activite::class);
     }
 
+    /**
+     * @return array<int, Activite>
+     */
     public function findAllValid(): array
     {
         return $this->createValidQueryBuilder()
@@ -36,6 +42,9 @@ class ActiviteRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * @return array<int, Activite>
+     */
     public function findBySearchAndSort(
         string $search = '',
         string $sortBy = 'prix',
@@ -59,6 +68,9 @@ class ActiviteRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * @return array<int, Activite>
+     */
     public function findTrendingValid(int $limit = 10): array
     {
         return $this->createValidQueryBuilder()
@@ -95,6 +107,7 @@ class ActiviteRepository extends ServiceEntityRepository
 
     /**
      * @param BackedEnum[] $cases
+     * @return array<int, string>
      */
     private function enumValues(array $cases): array
     {

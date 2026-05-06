@@ -7,6 +7,7 @@ use App\Entity\EventRating;
 use App\Entity\UserApp;
 use App\Repository\EvenementRepository;
 use App\Service\WeatherService;
+use App\Service\ReservationPricingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,11 +22,11 @@ class EventFrontController extends AbstractController
     public function rate(Request $request, Evenement $evenement, EntityManagerInterface $entityManager): Response
     {
         $user = $this->getUser();
-        if (!$user) {
+        if (!$user instanceof UserApp) {
             $user = $entityManager->getRepository(UserApp::class)->findOneBy(['email' => 'guest@ecoadventure.com']);
         }
 
-        if (!$user) {
+        if (!$user instanceof UserApp) {
             $this->addFlash('error', 'Vous devez être connecté pour noter un événement.');
             return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
         }
@@ -36,27 +37,42 @@ class EventFrontController extends AbstractController
             return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
         }
 
-        // Check if already rated
-        $existingRating = $entityManager->getRepository(EventRating::class)->findOneBy([
-            'user' => $user,
-            'evenement' => $evenement
-        ]);
 
-        if ($existingRating) {
-            $existingRating->setNote($note);
-            $existingRating->setCreatedAt(new \DateTime());
-        } else {
-            $rating = new EventRating();
-            $rating->setUser($user);
-            $rating->setEvenement($evenement);
-            $rating->setNote($note);
-            $entityManager->persist($rating);
-        }
 
+        $commentaire = $request->request->get('commentaire');
+
+        $rating = new EventRating();
+        $rating->setUser($user);
+        $rating->setEvenement($evenement);
+        $rating->setNote($note);
+        $rating->setCommentaire($commentaire);
+        $entityManager->persist($rating);
         $entityManager->flush();
 
-        $this->addFlash('success', 'Merci pour votre note !');
+        $this->addFlash('success', 'Merci pour votre avis !');
         return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
+    }
+
+    #[Route('/rate/delete/{id}', name: 'app_event_rate_delete', methods: ['POST'])]
+    public function deleteRating(EventRating $rating, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            $this->addFlash('error', 'Vous devez être connecté.');
+            return $this->redirectToRoute('app_event_front_index');
+        }
+
+        $eventId = $rating->getEvenement()->getId_evenement();
+
+        if ($rating->getUser() === $user) {
+            $entityManager->remove($rating);
+            $entityManager->flush();
+            $this->addFlash('success', 'Votre avis a été supprimé avec succès.');
+        } else {
+            $this->addFlash('error', 'Vous n\'êtes pas autorisé à supprimer cet avis.');
+        }
+
+        return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $eventId]);
     }
 
     #[Route('/', name: 'app_event_front_index', methods: ['GET'])]
@@ -67,50 +83,86 @@ class EventFrontController extends AbstractController
         $lieu = $request->query->get('lieu');
         $sortBy = $request->query->get('sortBy', 'date_desc');
         $onlyAvailable = $request->query->getBoolean('disponible', false);
+        $page = $request->query->getInt('page', 1);
+        $limit = 6; // N events per page
 
-        // Handling pagination & sorting can go here, but for now we use the repository filters
-        $events = $evenementRepository->findByFilters($search, $categorie, $lieu, $sortBy, $onlyAvailable);
+        $eventsPaginator = $evenementRepository->findByFilters($search, $categorie, $lieu, $sortBy, $onlyAvailable, $page, $limit);
+        $totalEvents = count($eventsPaginator);
+        $totalPages = ceil($totalEvents / $limit);
 
-        // Fetch distinct locations for filter dropdown
         $lieux = $evenementRepository->findDistinctLieux();
 
-        // Check if AJAX request for real-time search
         if ($request->isXmlHttpRequest()) {
             return $this->render('front/event/_list.html.twig', [
-                'events' => $events,
+                'events' => $eventsPaginator,
+                'current_page' => $page,
+                'total_pages' => $totalPages
             ]);
         }
 
         return $this->render('front/event/events.html.twig', [
-            'events' => $events,
+            'events' => $eventsPaginator,
             'lieux'  => $lieux,
             'search' => $search,
             'selected_cat' => $categorie,
             'selected_lieu' => $lieu,
             'selected_sort' => $sortBy,
-            'only_available' => $onlyAvailable
+            'only_available' => $onlyAvailable,
+            'current_page' => $page,
+            'total_pages' => $totalPages
         ]);
     }
 
     #[Route('/{id_evenement}', name: 'app_event_front_show', methods: ['GET'])]
-    public function show(Evenement $evenement, WeatherService $weatherService): Response
+    public function show(Evenement $evenement, WeatherService $weatherService, ReservationPricingService $pricingService, \App\Service\AiEventOptimizerService $aiOptimizer): Response
     {
         // Compute available places properly
-        $nbReservationsExistantes = 0;
+        $placesDispo = $evenement->getPlacesRestantes();
+        
+        $reservationsAttente = 0;
         foreach ($evenement->getReservationEvenements() as $res) {
-            if ($res->getStatut_res() !== \App\Enum\StatutReservationEvenement::ANNULEE) {
-                $nbReservationsExistantes += $res->getNb_billets();
+            if ($res->getStatut_res() === \App\Enum\StatutReservationEvenement::LISTE_ATTENTE) {
+                $reservationsAttente += $res->getNb_billets();
             }
         }
-        $placesDispo = $evenement->getNb_places() - $nbReservationsExistantes;
+        $attenteDispo = $evenement->getLimite_attente() - $reservationsAttente;
 
         // Fetch Weather
         $weather = $weatherService->getWeather($evenement->getLieu());
+        
+        // IA Alerte Météo
+        $weatherAiAlert = null;
+        if ($weather) {
+            $weatherAiAlert = $aiOptimizer->getWeatherAiAlert($weather, $evenement);
+        }
+
+        // 🤖 Récupérer une recommandation IA si l'événement est complet
+        $aiRecommendation = null;
+        if ($placesDispo <= 0) {
+            $aiRecommendation = $aiOptimizer->getSimilarAvailableEvent($evenement);
+        }
+
+        // Vérifier si l'utilisateur peut noter l'événement
+        $userRating = null;
+        if ($this->getUser()) {
+            foreach ($evenement->getRatings() as $r) {
+                if ($r->getUser() === $this->getUser()) {
+                    $userRating = $r;
+                    break;
+                }
+            }
+        }
 
         return $this->render('front/event/show.html.twig', [
             'evenement' => $evenement,
             'places_dispo' => $placesDispo,
-            'weather' => $weather
+            'attente_dispo' => $attenteDispo,
+            'weather' => $weather,
+            'weather_ai_alert' => $weatherAiAlert,
+            'promo_threshold' => $pricingService->getPromoThreshold(),
+            'promo_discount' => $pricingService->getPromoDiscount(),
+            'ai_recommendation' => $aiRecommendation,
+            'user_rating' => $userRating
         ]);
     }
 }

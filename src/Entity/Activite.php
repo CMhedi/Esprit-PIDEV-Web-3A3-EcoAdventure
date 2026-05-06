@@ -122,6 +122,7 @@ class Activite
 
     // ===================== RESERVATIONS =====================
     #[ORM\OneToMany(targetEntity: ReservationActivite::class, mappedBy: 'activite')]
+    /** @var Collection<int, ReservationActivite> */
     private Collection $reservationActivites;
 
     public function __construct()
@@ -182,12 +183,12 @@ class Activite
 
     public function getPrix(): ?float
     {
-        return $this->prix;
+        return $this->prix !== null ? (float) $this->prix : null;
     }
 
     public function setPrix(?float $prix): self
     {
-        $this->prix = $prix;
+        $this->prix = $prix !== null ? number_format($prix, 2, '.', '') : null;
         return $this;
     }
 
@@ -246,6 +247,9 @@ class Activite
         return $this;
     }
 
+    /**
+     * @return Collection<int, ReservationActivite>
+     */
     public function getReservationActivites(): Collection
     {
         return $this->reservationActivites;
