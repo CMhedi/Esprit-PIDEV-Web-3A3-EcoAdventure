@@ -22,4 +22,21 @@ class UserManager
 
         return true;
     }
+
+    public function validateResetIdentifier(string $identifier): bool
+    {
+        if (empty($identifier)) {
+            throw new \InvalidArgumentException('L\'identifiant est obligatoire');
+        }
+
+        // Check if it's a valid email or a valid phone number (basic check)
+        $isEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL);
+        $isPhone = preg_match('/^[0-9]{8,}$/', $identifier);
+
+        if (!$isEmail && !$isPhone) {
+            throw new \InvalidArgumentException('L\'identifiant doit être un email ou un numéro de téléphone valide');
+        }
+
+        return true;
+    }
 }

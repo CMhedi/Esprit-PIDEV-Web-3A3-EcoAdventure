@@ -28,6 +28,7 @@ class ResetPasswordController extends AbstractController
     public function __construct(
         private ResetPasswordHelperInterface $resetPasswordHelper,
         private EntityManagerInterface $entityManager,
+        private \App\Service\UserManager $userManager,
     ) {
     }
 
@@ -43,6 +44,13 @@ class ResetPasswordController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var string $identifier */
             $identifier = $form->get('identifier')->getData();
+
+            try {
+                $this->userManager->validateResetIdentifier($identifier);
+            } catch (\InvalidArgumentException $e) {
+                $this->addFlash('reset_password_error', $e->getMessage());
+                return $this->redirectToRoute('app_forgot_password_request');
+            }
 
             $user = $this->entityManager->getRepository(UserApp::class)->createQueryBuilder('u')
                 ->where('u.email = :identifier OR u.telephone = :identifier')

@@ -61,4 +61,34 @@ class UserManagerTest extends TestCase
         $manager = new UserManager();
         $manager->validate($user);
     }
+
+    public function testValidResetIdentifierEmail()
+    {
+        $manager = new UserManager();
+        $this->assertTrue($manager->validateResetIdentifier('test@gmail.com'));
+    }
+
+    public function testValidResetIdentifierPhone()
+    {
+        $manager = new UserManager();
+        $this->assertTrue($manager->validateResetIdentifier('12345678'));
+    }
+
+    public function testEmptyResetIdentifier()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('L\'identifiant est obligatoire');
+
+        $manager = new UserManager();
+        $manager->validateResetIdentifier('');
+    }
+
+    public function testInvalidResetIdentifier()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('L\'identifiant doit être un email ou un numéro de téléphone valide');
+
+        $manager = new UserManager();
+        $manager->validateResetIdentifier('invalid');
+    }
 }
