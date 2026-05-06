@@ -16,6 +16,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Repository\ReservationEvenementRepository;
 use App\Entity\ReservationEvenement;
 use App\Enum\StatutReservationEvenement;
+use App\Entity\ReservationEvenement;
 
 #[Route('/admin/events')]
 class EventAdminController extends AbstractController
@@ -52,7 +53,7 @@ class EventAdminController extends AbstractController
     }
 
     #[Route('/new', name: 'app_event_admin_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager, SluggerInterface $slugger): Response
+    public function new(Request $request, EntityManagerInterface $entityManager, SluggerInterface $slugger, \App\Service\EventManager $eventManager): Response
     {
         $evenement = new Evenement();
         $form = $this->createForm(EvenementType::class, $evenement);
@@ -80,10 +81,13 @@ class EventAdminController extends AbstractController
             $evenement->setStatut('Active'); // Ou le laisser null
 
             try {
+                $eventManager->validateEventRules($evenement);
                 $entityManager->persist($evenement);
                 $entityManager->flush();
                 $this->addFlash('success', 'Événement créé avec succès.');
                 return $this->redirectToRoute('app_event_admin_index', [], Response::HTTP_SEE_OTHER);
+            } catch (\LogicException $e) {
+                $this->addFlash('error', $e->getMessage());
             } catch (\Exception $e) {
                 $this->addFlash('error', 'Erreur BDD: ' . $e->getMessage());
             }
@@ -102,7 +106,7 @@ class EventAdminController extends AbstractController
     }
 
     #[Route('/{id_evenement}/edit', name: 'app_event_admin_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Evenement $evenement, EntityManagerInterface $entityManager, SluggerInterface $slugger): Response
+    public function edit(Request $request, Evenement $evenement, EntityManagerInterface $entityManager, SluggerInterface $slugger, \App\Service\EventManager $eventManager): Response
     {
         $form = $this->createForm(EvenementType::class, $evenement);
         $form->handleRequest($request);
@@ -126,9 +130,12 @@ class EventAdminController extends AbstractController
             }
 
             try {
+                $eventManager->validateEventRules($evenement);
                 $entityManager->flush();
                 $this->addFlash('success', 'Événement modifié avec succès.');
                 return $this->redirectToRoute('app_event_admin_index', [], Response::HTTP_SEE_OTHER);
+            } catch (\LogicException $e) {
+                $this->addFlash('error', $e->getMessage());
             } catch (\Exception $e) {
                 $this->addFlash('error', 'Erreur BDD: ' . $e->getMessage());
             }

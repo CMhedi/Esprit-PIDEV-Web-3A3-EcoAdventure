@@ -68,9 +68,9 @@ class Evenement
     public function getCategorieEvt(): ?CategorieEvenement { return $this->categorie_evt; }
     public function setCategorieEvt(CategorieEvenement $cat): self { $this->categorie_evt = $cat; return $this; }
     public function getDate_event(): ?\DateTimeInterface { return $this->date_event; }
-    public function setDate_event(\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
+    public function setDate_event(?\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
     public function getDateEvent(): ?\DateTimeInterface { return $this->date_event; }
-    public function setDateEvent(\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
+    public function setDateEvent(?\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
 
     public function getLieu(): ?string
     {
@@ -150,10 +150,16 @@ class Evenement
     public function getImageUrl(): ?string { return $this->image_url; }
     public function setImageUrl(?string $url): self { $this->image_url = $url; return $this; }
 
+    /**
+     * @var Collection<int, ReservationEvenement>
+     */
     #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement', cascade: ['remove'], orphanRemoval: true)]
     /** @var Collection<int, ReservationEvenement> */
     private Collection $reservationEvenements;
 
+    /**
+     * @var Collection<int, EventRating>
+     */
     #[ORM\OneToMany(targetEntity: EventRating::class, mappedBy: 'evenement', cascade: ['remove'])]
     /** @var Collection<int, EventRating> */
     private Collection $ratings;
@@ -210,14 +216,16 @@ class Evenement
 
     public function getPlacesRestantes(): int
     {
+        $totalPlaces = $this->nb_places ?? 0;
         $nbReservationsExistantes = 0;
+        
         foreach ($this->reservationEvenements as $res) {
             $statut = $res->getStatut_res();
             if ($statut !== \App\Enum\StatutReservationEvenement::ANNULEE && $statut !== \App\Enum\StatutReservationEvenement::LISTE_ATTENTE) {
-                $nbReservationsExistantes += $res->getNb_billets();
+                $nbReservationsExistantes += (int) $res->getNb_billets();
             }
         }
-        return max(0, $this->nb_places - $nbReservationsExistantes);
+        return max(0, $totalPlaces - $nbReservationsExistantes);
     }
 
 }

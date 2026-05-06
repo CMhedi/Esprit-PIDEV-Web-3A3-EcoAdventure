@@ -36,12 +36,14 @@ parameters:
     groq_default_vision_model: 'llama-3.2-11b-vision-preview'
     groq_default_audio_model: 'whisper-large-v3'
     giphy_default_api_key: ''
-
 services:
+    # default configuration for services in *this* file
     _defaults:
-        autowire: true
-        autoconfigure: true
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
         exclude:
@@ -106,3 +108,5 @@ services:
             $manualBadWordsEn: '%env(default::BAD_WORDS_EN)%'
             $manualBadWordsFr: '%env(default::BAD_WORDS_FR)%'
             $manualBadWordsAr: '%env(default::BAD_WORDS_AR)%'
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones

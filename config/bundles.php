@@ -17,8 +17,7 @@ return [
     SymfonyCasts\Bundle\VerifyEmail\SymfonyCastsVerifyEmailBundle::class => ['all' => true],
     App\Notification\AppNotificationBundle::class => ['all' => true],
     App\AiBundle\AiBundle::class => ['all' => true],
-     CMEN\GoogleChartsBundle\CMENGoogleChartsBundle::class => ['all' => true],
- Nucleos\DompdfBundle\NucleosDompdfBundle::class => ['all' => true],
-AhmedBhs\DoctrineDoctor\DoctrineDoctorBundle::class => ['dev' => true],
-
+    CMEN\GoogleChartsBundle\CMENGoogleChartsBundle::class => ['all' => true],
+    Nucleos\DompdfBundle\NucleosDompdfBundle::class => ['all' => true],
+    AhmedBhs\DoctrineDoctor\DoctrineDoctorBundle::class => ['dev' => true, 'test' => true],
 ];
