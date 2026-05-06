@@ -68,9 +68,9 @@ class Evenement
     public function getCategorieEvt(): ?CategorieEvenement { return $this->categorie_evt; }
     public function setCategorieEvt(CategorieEvenement $cat): self { $this->categorie_evt = $cat; return $this; }
     public function getDate_event(): ?\DateTimeInterface { return $this->date_event; }
-    public function setDate_event(\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
+    public function setDate_event(?\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
     public function getDateEvent(): ?\DateTimeInterface { return $this->date_event; }
-    public function setDateEvent(\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
+    public function setDateEvent(?\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
 
     public function getLieu(): ?string
     {
