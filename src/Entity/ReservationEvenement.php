@@ -44,7 +44,7 @@ class ReservationEvenement
 
 
 
-#[ORM\Column(enumType: StatutReservationEvenement::class)]
+    #[ORM\Column(enumType: StatutReservationEvenement::class)]
 private ?StatutReservationEvenement $statut_res = null;
 
     public function getStatut_res(): ?StatutReservationEvenement

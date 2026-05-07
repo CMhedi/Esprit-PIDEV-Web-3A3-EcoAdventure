@@ -81,6 +81,7 @@ final class FrontController extends AbstractController
         ]);
     }
 
+    /*
     #[Route('/events', name: 'app_events')]
     public function events(): Response
     {
@@ -115,6 +116,7 @@ final class FrontController extends AbstractController
             'events' => $events
         ]);
     }
+    */
     // The route /events is now handled by EventFrontController (app_event_front_index)
 
     #[Route('/packs', name: 'app_packs')]

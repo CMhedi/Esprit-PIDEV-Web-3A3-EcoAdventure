@@ -27,11 +27,16 @@ class FeedbackEvent
     #[ORM\Column(type: 'string', length: 40)]
     private ?string $action = null;
 
-    #[ORM\Column(type: 'datetime', nullable: true)]
+    #[ORM\Column(type: 'datetime', nullable: false)]
     private ?\DateTimeInterface $created_at = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $meta_json = null;
+
+    public function __construct()
+    {
+        $this->created_at = new \DateTime();
+    }
 
     public function getId(): ?int
     {

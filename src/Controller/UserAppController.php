@@ -69,74 +69,74 @@ final class UserAppController extends AbstractController
         ]);
     }
 
-// src/Controller/UserAppController.php
+    // src/Controller/UserAppController.php
 
-#[Route('/{id_user}/edit', name: 'app_user_app_edit', methods: ['GET', 'POST'])]
-public function edit(Request $request, UserApp $user, EntityManagerInterface $entityManager, UserPasswordHasherInterface $userPasswordHasher, SluggerInterface $slugger): Response
-{
-    // Security check: Only Admin or the owner can edit
-    if (!$this->isGranted('ROLE_ADMIN') && $this->getUser() !== $user) {
-        throw $this->createAccessDeniedException("Vous n'avez pas le droit de modifier ce profil.");
-    }
-
-    $form = $this->createForm(UserAppType::class, $user, [
-        'is_admin' => $this->isGranted('ROLE_ADMIN'),
-        'is_coach' => ($user->getRole()->value === 'COACH'),
-    ]);
-    $form->handleRequest($request);
-
-    if ($form->isSubmitted() && $form->isValid()) {
-        // 1. Gérer le mot de passe s'il est rempli
-        $plainPassword = $form->get('plainPassword')->getData();
-        if ($plainPassword) {
-            $user->setMot_de_passe(
-                $userPasswordHasher->hashPassword($user, $plainPassword)
-            );
+    #[Route('/{id_user}/edit', name: 'app_user_app_edit', methods: ['GET', 'POST'])]
+    public function edit(Request $request, UserApp $user, EntityManagerInterface $entityManager, UserPasswordHasherInterface $userPasswordHasher, SluggerInterface $slugger): Response
+    {
+        // Security check: Only Admin or the owner can edit
+        if (!$this->isGranted('ROLE_ADMIN') && $this->getUser() !== $user) {
+            throw $this->createAccessDeniedException("Vous n'avez pas le droit de modifier ce profil.");
         }
 
-        // 2. Gérer l'upload de l'image de profil
-        $imageFile = $form->get('imageFile')->getData();
-        if ($imageFile) {
-            $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
-            $safeFilename = $slugger->slug($originalFilename);
-            $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
+        $form = $this->createForm(UserAppType::class, $user, [
+            'is_admin' => $this->isGranted('ROLE_ADMIN'),
+            'is_coach' => ($user->getRole()->value === 'COACH'),
+        ]);
+        $form->handleRequest($request);
 
-            try {
-                $imageFile->move(
-                    $this->getParameter('kernel.project_dir') . '/public/uploads',
-                    $newFilename
+        if ($form->isSubmitted() && $form->isValid()) {
+            // 1. Gérer le mot de passe s'il est rempli
+            $plainPassword = $form->get('plainPassword')->getData();
+            if ($plainPassword) {
+                $user->setMot_de_passe(
+                    $userPasswordHasher->hashPassword($user, $plainPassword)
                 );
-                $user->setImageUrl($newFilename);
-            } catch (FileException $e) {
-                $this->addFlash('error', 'Erreur lors de l\'upload de l\'image.');
+            }
+
+            // 2. Gérer l'upload de l'image de profil
+            $imageFile = $form->get('imageFile')->getData();
+            if ($imageFile) {
+                $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
+                $safeFilename = $slugger->slug($originalFilename);
+                $newFilename = $safeFilename . '-' . uniqid() . '.' . $imageFile->guessExtension();
+
+                try {
+                    $imageFile->move(
+                        $this->getParameter('kernel.project_dir') . '/public/uploads',
+                        $newFilename
+                    );
+                    $user->setImageUrl($newFilename);
+                } catch (FileException $e) {
+                    $this->addFlash('error', 'Erreur lors de l\'upload de l\'image.');
+                }
+            }
+
+            $entityManager->flush();
+
+            // REDIRECTION: Admin editing someone else -> List, otherwise -> Show Details
+            if ($this->isGranted('ROLE_ADMIN') && $this->getUser() !== $user) {
+                $this->addFlash('success', 'Le profil de ' . $user->getNom() . ' a été mis à jour.');
+                return $this->redirectToRoute('app_user_app_index');
+            }
+            $this->addFlash('success', 'Votre profil a été mis à jour.');
+            return $this->redirectToRoute('app_profile_index');
+        } elseif ($form->isSubmitted() && !$form->isValid()) {
+            // Collect all errors and flash them
+            foreach ($form->getErrors(true) as $error) {
+                $this->addFlash('error', $error->getMessage());
             }
         }
 
-        $entityManager->flush();
-
-        // REDIRECTION: Admin editing someone else -> List, otherwise -> Show Details
-        if ($this->isGranted('ROLE_ADMIN') && $this->getUser() !== $user) {
-            $this->addFlash('success', 'Le profil de ' . $user->getNom() . ' a été mis à jour.');
-            return $this->redirectToRoute('app_user_app_index');
-        }
-        $this->addFlash('success', 'Votre profil a été mis à jour.');
-        return $this->redirectToRoute('app_profile_index'); 
-    } elseif ($form->isSubmitted() && !$form->isValid()) {
-        // Collect all errors and flash them
-        foreach ($form->getErrors(true) as $error) {
-            $this->addFlash('error', $error->getMessage());
-        }
+        return $this->render('user_app/edit.html.twig', [
+            'user' => $user,
+            'form' => $form,
+        ]);
     }
-
-    return $this->render('user_app/edit.html.twig', [
-        'user' => $user,
-        'form' => $form,
-    ]);
-}
     #[Route('/{id_user}', name: 'app_user_app_delete', methods: ['POST'])]
     public function delete(Request $request, UserApp $userApp, EntityManagerInterface $entityManager): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$userApp->getId_user(), $request->getPayload()->getString('_token'))) {
+        if ($this->isCsrfTokenValid('delete' . $userApp->getId_user(), $request->getPayload()->getString('_token'))) {
             $entityManager->remove($userApp);
             $entityManager->flush();
         }

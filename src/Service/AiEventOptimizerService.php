@@ -199,4 +199,62 @@ class AiEventOptimizerService
             }
         }
     }
+
+    /**
+     * Cas 6 : Prédictions Financières Annuelles (Machine Learning Simulation)
+     * Utilisé pour le rapport Excel détaillé.
+     */
+    public function predictFinancials(Evenement $evenement): array
+    {
+        try {
+            $placesMax = $evenement->getNb_places();
+            $tauxRemplissage = $placesMax > 0 ? (max(0, $placesMax - $evenement->getPlacesRestantes()) / $placesMax) : 0;
+
+            $response = $this->client->request('POST', 'http://127.0.0.1:5000/api/ai/predict-financials', [
+                'json' => [
+                    'event_id' => $evenement->getId_evenement(),
+                    'categorie' => $evenement->getCategorie_evt()->value,
+                    'current_fill_rate' => $tauxRemplissage,
+                    'unit_price' => (float)$evenement->getPrix()
+                ],
+                'timeout' => 2
+            ]);
+
+            return $response->toArray();
+
+        } catch (\Exception $e) {
+            $this->logger->warning('API Python IA injoignable pour Financial Predictions. Fallback Mocked.');
+            
+            // Logique de simulation ML "EcoAdventure"
+            $scoreIA = 65; // Score de base
+            $multiplier = 1.0;
+            
+            // Facteurs d'influence
+            $cat = $evenement->getCategorie_evt()->value;
+            if ($cat === 'NAUTIQUE' || $cat === 'CAMPING') {
+                $scoreIA += 15;
+                $multiplier = 1.2;
+            }
+            
+            $placesMax = $evenement->getNb_places();
+            $tauxRemplissage = $placesMax > 0 ? (max(0, $placesMax - $evenement->getPlacesRestantes()) / $placesMax) : 0;
+            
+            if ($tauxRemplissage > 0.8) {
+                $scoreIA += 10;
+                $multiplier += 0.2;
+            }
+
+            $scoreIA = min(98, $scoreIA + rand(-5, 5));
+            
+            // On prédit une augmentation basée sur la popularité (score IA)
+            $predictedTickets = (int)($placesMax * $multiplier * (1 + ($scoreIA / 100)));
+            $predictedCA = $predictedTickets * $evenement->getPrix();
+
+            return [
+                'score_ia' => $scoreIA,
+                'predicted_tickets' => $predictedTickets,
+                'predicted_ca' => round($predictedCA, 2)
+            ];
+        }
+    }
 }
