@@ -24,7 +24,8 @@ class LoginManagerAuthenticator extends AbstractLoginFormAuthenticator
 
     public function __construct(
         private UrlGeneratorInterface $urlGenerator,
-        private \Doctrine\ORM\EntityManagerInterface $entityManager
+        private \Doctrine\ORM\EntityManagerInterface $entityManager,
+        private \App\Service\TelegramService $telegramService
     ) {
     }
 
@@ -55,8 +56,30 @@ class LoginManagerAuthenticator extends AbstractLoginFormAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        // 1. Njibou el roles mta3 el user elli t'connecta tawa
+        /** @var \App\Entity\UserApp $user */
         $user = $token->getUser();
+        
+        // 2FA logic
+        if ($user->getTelegramId()) {
+            $loginRequest = new \App\Entity\LoginRequest();
+            $loginRequest->setUser($user);
+            
+            $this->entityManager->persist($loginRequest);
+            $this->entityManager->flush();
+
+            // Send Telegram Notification
+            $this->telegramService->sendLoginRequest($user->getTelegramId(), $loginRequest->getToken());
+
+            // Set session flag
+            $request->getSession()->set('_2fa_pending_token', $loginRequest->getToken());
+
+            // Redirect to Waiting Page
+            return new RedirectResponse($this->urlGenerator->generate('app_2fa_waiting', [
+                'token' => $loginRequest->getToken()
+            ]));
+        }
+
+        // Normal flow if no Telegram ID
         $roles = $user->getRoles();
 
         // 2. Kenou ADMIN, n'hizzouh lil dashboard direct

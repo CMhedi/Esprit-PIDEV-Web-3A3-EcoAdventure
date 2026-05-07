@@ -36,6 +36,8 @@ parameters:
     groq_default_vision_model: 'llama-3.2-11b-vision-preview'
     groq_default_audio_model: 'whisper-large-v3'
     giphy_default_api_key: ''
+    default_telegram_bot_token: ''
+    telegram_bot_token: '%env(default:default_telegram_bot_token:TELEGRAM_BOT_TOKEN)%'
 
 services:
     _defaults:
@@ -106,3 +108,7 @@ services:
             $manualBadWordsEn: '%env(default::BAD_WORDS_EN)%'
             $manualBadWordsFr: '%env(default::BAD_WORDS_FR)%'
             $manualBadWordsAr: '%env(default::BAD_WORDS_AR)%'
+
+    App\Service\TelegramService:
+        arguments:
+            $telegramBotToken: '%telegram_bot_token%'

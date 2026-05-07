@@ -35,7 +35,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\Length(min: 2, max: 80, minMessage: "Le prénom doit faire au moins {{ limit }} caractères")]
     private string $prenom = '';
 
-    #[ORM\Column(type: 'string', length: 120, unique: true)]
+    #[ORM\Column(type: 'string', length: 180, unique: true)]
     #[Assert\NotBlank(message: "L'email est obligatoire")]
     #[Assert\Email(message: "L'adresse email '{{ value }}' n'est pas valide.")]
     private string $email = '';
@@ -81,7 +81,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
 
     // Google OAuth fields
     #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $google_token = null;
+    #[\Symfony\Component\Serializer\Annotation\Ignore]
+    private ?string $googleToken = null;
 
     /** @var array<mixed>|null */
     #[ORM\Column(type: 'json', nullable: true)]
@@ -118,6 +119,13 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'integer', options: ['default' => 0])]
     private int $failedAttempts = 0;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private ?string $telegramId = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[\Symfony\Component\Serializer\Annotation\Ignore]
+    private ?string $telegramToken = null;
 
     // RELATIONS
     /** @var Collection<int, Inscription> */
@@ -248,7 +256,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function getDate_creation(): \DateTimeInterface { return $this->date_creation; }
     protected function setDate_creation(\DateTimeInterface $date_creation): self { $this->date_creation = $date_creation; return $this; }
     public function getLast_seen(): ?\DateTimeInterface { return $this->last_seen; }
-    protected function setLast_seen(?\DateTimeInterface $last_seen): self { $this->last_seen = $last_seen; return $this; }
+    public function setLast_seen(?\DateTimeInterface $last_seen): self { $this->last_seen = $last_seen; return $this; }
+    public function setLastSeen(?\DateTimeInterface $last_seen): self { $this->last_seen = $last_seen; return $this; }
     public function getAge(): ?int { return $this->age; }
     public function setAge(?int $age): self { $this->age = $age; return $this; }
     public function getExperience(): ?string { return $this->experience; }
@@ -272,8 +281,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function addLoyaltyPoints(int $points): self { $this->loyaltyPoints += $points; return $this; }
 
     // Google token
-    public function getGoogleToken(): ?string { return $this->google_token; }
-    public function setGoogleToken(?string $google_token): self { $this->google_token = $google_token; return $this; }
+    public function getGoogleToken(): ?string { return $this->googleToken; }
+    public function setGoogleToken(#[\SensitiveParameter] ?string $googleToken): self { $this->googleToken = $googleToken; return $this; }
 
     /** @return array<mixed>|null */
     public function getFaceDescriptor(): ?array { return $this->faceDescriptor; }
@@ -310,6 +319,12 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     /** @phpstan-impure */
     public function incrementFailedAttempts(): self { $this->failedAttempts++; return $this; }
     public function resetFailedAttempts(): self { $this->failedAttempts = 0; return $this; }
+
+    public function getTelegramId(): ?string { return $this->telegramId; }
+    public function setTelegramId(?string $telegramId): self { $this->telegramId = $telegramId; return $this; }
+
+    public function getTelegramToken(): ?string { return $this->telegramToken; }
+    public function setTelegramToken(#[\SensitiveParameter] ?string $telegramToken): self { $this->telegramToken = $telegramToken; return $this; }
 
     // Relations
     /** @return Collection<int, Inscription> */
