@@ -1,0 +1,39 @@
+{% if topRiskyPacks is not empty %}
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-uppercase text-muted mb-2">Risque moyen packs</div>
+                    <div class="display-6 fw-bold">{{ averagePackRisk|number_format(1, '.', ' ') }}/100</div>
+                    <p class="text-muted mb-0">Lecture risque calculee a partir du statut, de la demande, de la conversion et du positionnement prix / valeur.</p>
+                </div>
+            </div>
+        </div>
+
+        {% for risk in topRiskyPacks %}
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                            <div>
+                                <div class="small text-uppercase text-muted mb-1">Pack a risque</div>
+                                <h3 class="h5 mb-1">{{ risk.pack.nom }}</h3>
+                            </div>
+                            <span class="badge rounded-pill text-bg-dark">{{ risk.riskScore|number_format(1, '.', ' ') }}/100</span>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            {% include 'admin/risk/_badge.html.twig' with { level: risk.riskLevel } only %}
+                            <span class="badge rounded-pill text-bg-light border">{{ risk.riskProfile }}</span>
+                        </div>
+
+                        <p class="text-muted small mb-2">{{ risk.summary }}</p>
+                        <div class="small">
+                            <strong>Action:</strong> {{ risk.primaryAction ?: 'surveiller' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

@@ -1,0 +1,70 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nutrition{% endblock %}
+
+{% block body %}
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="text-center mb-5">
+                    <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill mb-3">Nutrition sportive</span>
+                    <h1 class="fw-bold mb-3">Mieux manger pour mieux performer</h1>
+                    <p class="lead text-muted">
+                        Retrouvez des conseils simples pour soutenir vos activites, optimiser votre energie
+                        et ameliorer votre recuperation.
+                    </p>
+                </div>
+
+                <div class="row g-4 mb-5">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body p-4">
+                                <div class="fs-2 text-success mb-3"><i class="bi bi-droplet-half"></i></div>
+                                <h4 class="fw-semibold">Hydratation</h4>
+                                <p class="text-muted mb-0">Buvez regulierement tout au long de la journee, pas seulement pendant l effort.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body p-4">
+                                <div class="fs-2 text-success mb-3"><i class="bi bi-egg-fried"></i></div>
+                                <h4 class="fw-semibold">Equilibre</h4>
+                                <p class="text-muted mb-0">Composez vos repas avec proteines, fibres, bons lipides et glucides de qualite.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body p-4">
+                                <div class="fs-2 text-success mb-3"><i class="bi bi-heart-pulse"></i></div>
+                                <h4 class="fw-semibold">Recuperation</h4>
+                                <p class="text-muted mb-0">Une bonne alimentation apres l exercice aide le corps a recuperer plus vite.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4 p-lg-5">
+                        <h3 class="fw-bold mb-4">Conseils pratiques</h3>
+                        <div class="row g-3">
+                            {% for tip in tips %}
+                                <div class="col-12">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div class="text-success fs-4 lh-1">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        </div>
+                                        <div>{{ tip }}</div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

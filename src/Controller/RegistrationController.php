@@ -3,6 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\UserApp;
+use App\Enum\RoleUser;
+
+use App\Enum\StatutReclamation;
 use App\Form\RegistrationFormType;
 use App\Repository\ReclamationRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -12,8 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\UserAuthenticatorInterface;
-// Hna nasta3mlou el Authenticator elli b3aththouly enti
-use App\Security\LoginManagerAuthenticator; 
+use App\Security\LoginManagerAuthenticator;
 
 class RegistrationController extends AbstractController
 {
@@ -23,30 +25,29 @@ class RegistrationController extends AbstractController
         UserPasswordHasherInterface $userPasswordHasher, 
         EntityManagerInterface $entityManager,
         UserAuthenticatorInterface $userAuthenticator, 
-        LoginManagerAuthenticator $authenticator // <--- Ismou s7i7 hna
+        LoginManagerAuthenticator $authenticator
     ): Response {
         $user = new UserApp();
         $form = $this->createForm(RegistrationFormType::class, $user);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // 1. Hash el password
+            // 1. Hash the password
+            $clearPassword = $form->get('motdepasse')->getData();
             $user->setMot_de_passe(
-                $userPasswordHasher->hashPassword(
-                    $user,
-                    $form->get('motdepasse')->getData()
-                )
+                $userPasswordHasher->hashPassword($user, $clearPassword)
             );
 
-            // 2. Initialisation el données
-            $selectedRole = $form->get('role')->getData(); 
-            $user->setRole($selectedRole);
-            $user->setDate_creation(new \DateTime());
-
+            // 2. Set default role if not set
+            if (!$user->getRole()) {
+                $user->setRole(RoleUser::USER_SIMPLE);
+            }
+            
             $entityManager->persist($user);
             $entityManager->flush();
 
-            // 3. Auto-login: Hedhi tna7i el buttons mta3 el Connexion toul
+            $this->addFlash('success', 'Bienvenue dans l\'aventure EcoAdventure !');
+
             return $userAuthenticator->authenticateUser(
                 $user,
                 $authenticator,
@@ -60,8 +61,12 @@ class RegistrationController extends AbstractController
     }
 
     #[Route('/reclamation/admin-reply/{id_reclamation}', name: 'app_reclamation_admin_reply', methods: ['POST'])]
-    public function adminReply(Request $request, int $id_reclamation, EntityManagerInterface $entityManager, ReclamationRepository $repo): Response
-    {
+    public function adminReply(
+        Request $request, 
+        int $id_reclamation, 
+        EntityManagerInterface $entityManager, 
+        ReclamationRepository $repo
+    ): Response {
         $reclamation = $repo->find($id_reclamation);
         
         if ($reclamation && $this->isGranted('ROLE_ADMIN')) {
@@ -70,9 +75,9 @@ class RegistrationController extends AbstractController
 
             if (!empty(trim($reponse))) {
                 $reclamation->setReponse($reponse);
-                $reclamation->setStatut(\App\Enum\StatutReclamation::TRAITEE);
+                $reclamation->setStatut(StatutReclamation::TRAITEE);  // ✅ Added use statement above
             } elseif ($statutSelect === 'REJETEE') {
-                $reclamation->setStatut(\App\Enum\StatutReclamation::REJETEE);
+                $reclamation->setStatut(StatutReclamation::REJETEE);   // ✅ Added use statement above
                 $reclamation->setReponse("Réclamation rejetée par l'administration.");
             }
 

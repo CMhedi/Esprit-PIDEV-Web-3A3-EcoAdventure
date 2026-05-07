@@ -9,6 +9,7 @@ use App\Repository\PlanningRepository;
 use App\Enum\StatutPlanning;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
+
 #[ORM\Entity(repositoryClass: PlanningRepository::class)]
 #[ORM\Table(name: 'planning')]
 class Planning
@@ -16,6 +17,7 @@ class Planning
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
+    /** @phpstan-ignore-next-line */
     private ?int $id_planning = null;
 
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
@@ -54,9 +56,11 @@ class Planning
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $updated_at = null;
 
-    #[ORM\OneToMany(targetEntity: Seance::class, mappedBy: 'planning')]
-    private Collection $seances;
-
+   /**
+ * @var Collection<int, Seance>
+ */
+#[ORM\OneToMany(targetEntity: Seance::class, mappedBy: 'planning')]
+private Collection $seances;
     public function __construct()
     {
         $this->seances = new ArrayCollection();
@@ -120,7 +124,9 @@ public function validateDates(ExecutionContextInterface $context): void
 
     public function getUpdatedAt(): ?\DateTimeInterface { return $this->updated_at; }
     public function setUpdatedAt(\DateTimeInterface $date): self { $this->updated_at = $date; return $this; }
-
+/**
+ * @return Collection<int, Seance>
+ */
     public function getSeances(): Collection { return $this->seances; }
     public function getDuree(): ?int
 {

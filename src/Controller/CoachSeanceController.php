@@ -22,40 +22,35 @@ class CoachSeanceController extends AbstractController
     private SeanceRepository $seanceRepo;
     private ReservationSeanceRepository $reservationRepo;
     private EntityManagerInterface $entityManager;
-    private UserAppRepository $userRepo;
 
     public function __construct(
         LoggerInterface $logger,
         SeanceRepository $seanceRepo,
         ReservationSeanceRepository $reservationRepo,
         EntityManagerInterface $entityManager,
-        UserAppRepository $userRepo
     ) {
         $this->logger = $logger;
         $this->seanceRepo = $seanceRepo;
         $this->reservationRepo = $reservationRepo;
         $this->entityManager = $entityManager;
-        $this->userRepo = $userRepo;
     }
 
-    #[Route('/seances', name: 'app_coach_seances', methods: ['GET'])]
+  #[Route('/seances', name: 'app_coach_seances', methods: ['GET'])]
     public function seances(): Response
     {
         try {
             // 🔥 COACH STATIQUE (temporaire)
-            $coach = $this->getUser();
-            if (!$coach) {
-                $this->addFlash('error', 'Utilisateur non connecté');
-                return $this->redirectToRoute('app_coach_seances');
-            } // À adapter
+            /** @var \App\Entity\UserApp|null $coach */
+           $coach = $this->getUser();
+           if (!$coach) {
+    $this->addFlash('error', 'Utilisateur non connecté');
+    return $this->redirectToRoute('app_coach_seances');
+} // À adapter
 
-            if (!$coach) {
-                $this->addFlash('error', 'Coach introuvable');
-                return $this->redirectToRoute('app_coach_seances');
-            }
+          
 
             // Récupérer toutes les séances du coach
-            $seances = $this->seanceRepo->findBy(['coach' => $coach]);
+            $seances = $this->seanceRepo->findByCoach($coach);
 
             // Calculer les stats
             $stats = $this->calculateStats($seances);
@@ -81,246 +76,269 @@ class CoachSeanceController extends AbstractController
         }
     }
 
-    #[Route('/seance/{id}', name: 'app_coach_seance_detail', methods: ['GET'])]
-    public function detail(int $id): Response
-    {
-        try {
-            $seance = $this->seanceRepo->find($id);
+#[Route('/seance/{id}', name: 'app_coach_seance_detail', methods: ['GET'])]
+public function detail(int $id): Response
+{
+    try {
+        $seance = $this->seanceRepo->find($id);
 
-            if (!$seance) {
-                $this->addFlash('error', 'Séance introuvable');
-                return $this->redirectToRoute('app_coach_seances');
-            }
-
-            $coach = $this->getUser();
-            if (!$coach) {
-                $this->addFlash('error', 'Utilisateur non connecté');
-                return $this->redirectToRoute('app_coach_seances');
-            }
-
-            if ($seance->getCoach()->getId_user() !== $coach->getId_user()) {
-                $this->addFlash('error', 'Accès refusé');
-                return $this->redirectToRoute('app_coach_seances');
-            }
-
-            $participants = $this->reservationRepo->findSeanceReservations($seance);
-
-            $seanceStats = [
-                'total_places' => $seance->getCapacite(),
-                'places_reservees' => count($participants),
-                'places_restantes' => $seance->getCapacite() - count($participants),
-                'taux_occupation' => round((count($participants) / $seance->getCapacite()) * 100),
-                'presents' => count(array_filter($participants, fn($r) => $r->getStatut_presence()->value === 'PRESENT')),
-                'absents' => count(array_filter($participants, fn($r) => $r->getStatut_presence()->value === 'ABSENT')),
-            ];
-
-            return $this->render('front/coach_seance_detail.html.twig', [
-                'seance' => $seance,
-                'participants' => $participants,
-                'seanceStats' => $seanceStats,
-            ]);
-
-        } catch (\Exception $e) {
-            dd($e->getMessage()); // 🔥 DEBUG TEMPORAIRE
-        }
-    }
-
-    #[Route('/seance/participant/{id}/presence', name: 'app_coach_update_presence', methods: ['POST'])]
-    public function updatePresence(int $id): Response
-    {
-        try {
-            $reservation = $this->reservationRepo->find($id);
-
-            if (!$reservation) {
-                return new JsonResponse(['error' => 'Réservation introuvable'], 404);
-            }
-
-            $coach = $this->getUser();
-
-
-            if (!$coach instanceof \App\Entity\UserApp) {
-                $this->addFlash('error', 'Utilisateur non connecté');
-                return $this->redirectToRoute('app_coach_seances');
-            }
-
-            if ($reservation->getSeance()->getCoach()->getId_user() !== $coach->getId_user()) {
-                return new JsonResponse(['error' => 'Non autorisé'], 403);
-            }
-
-            // 🔥 SIMPLE ET PROPRE (pas besoin de reflection)
-            $currentStatus = $reservation->getStatut_presence()->value;
-
-            $newStatus = $currentStatus === 'PRESENT'
-                ? \App\Enum\StatutPresence::ABSENT
-                : \App\Enum\StatutPresence::PRESENT;
-
-            $reservation->setStatut_presence($newStatus);
-
-            $this->entityManager->flush();
-
-            return new JsonResponse([
-                'success' => true,
-                'message' => "Statut mis à jour",
-                'status' => $newStatus->value,
-            ]);
-
-        } catch (\Exception $e) {
-
-            dd($e->getMessage()); // 🔥 pour voir l'erreur exacte
-
-            return new JsonResponse([
-                'error' => 'Erreur lors de la mise à jour',
-            ], 500);
-        }
-    }
-
-
-
-    #[Route('/export-pdf', name: 'app_coach_export_pdf', methods: ['GET'])]
-    public function exportPdf(): Response
-    {
-        try {
-            // 🔥 COACH STATIQUE
-            $coach = $this->getUser();
-
-
-            if (!$coach instanceof \App\Entity\UserApp) {
-                $this->addFlash('error', 'Utilisateur non connecté');
-                return $this->redirectToRoute('app_coach_seances');
-            }
-
-            if (!$coach) {
-                $this->addFlash('error', 'Coach introuvable');
-                return $this->redirectToRoute('app_coach_seances');
-            }
-
-            $seances = $this->seanceRepo->findBy(['coach' => $coach]);
-            $stats = $this->calculateStats($seances);
-
-            // Vérifier s'il y a des séances
-            if (empty($seances)) {
-                $this->addFlash('warning', 'Aucune séance à exporter');
-                return $this->redirectToRoute('app_coach_seances');
-            }
-
-            // Générer HTML depuis Twig
-            $html = $this->renderView('pdf/coach_seances_pdf.html.twig', [
-                'seances' => $seances,
-                'stats' => $stats,
-                'coach' => $coach,
-                'generated_at' => new \DateTime(),
-            ]);
-
-            // Configuration Dompdf
-            $options = new Options();
-            $options->set('defaultFont', 'Arial');
-            $options->set('isPhpEnabled', true);
-            $options->set('isRemoteEnabled', true);
-            $options->set('fontDir', $this->getParameter('kernel.project_dir') . '/public/fonts');
-
-            $dompdf = new Dompdf($options);
-            $dompdf->loadHtml($html, 'UTF-8');
-            $dompdf->setPaper('A4', 'portrait');
-            $dompdf->render();
-
-            // Nom du fichier
-            $fileName = 'seances_' . $coach->getNom() . '_' . date('Y-m-d_H-i-s') . '.pdf';
-
-            // Logger l'export
-            $this->logger->info('Export PDF généré', [
-                'coach_id' => $coach->getId_user(),
-                'total_seances' => count($seances),
-                'file_name' => $fileName,
-            ]);
-
-            // ✅ CORRECTION ICI UNIQUEMENT
-            $pdfContent = $dompdf->output();
-
-            return new Response(
-                $pdfContent,
-                200,
-                [
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-                ]
-            );
-
-        } catch (\Exception $e) {
-            $this->logger->error('Erreur lors de la génération du PDF', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            $this->addFlash('error', 'Erreur lors de la génération du PDF: ' . $e->getMessage());
+        if (!$seance) {
+            $this->addFlash('error', 'Séance introuvable');
             return $this->redirectToRoute('app_coach_seances');
         }
-    }
-    /**
-     * Calcule les statistiques des séances du coach
-     */
-    private function calculateStats(array $seances): array
-    {
-        $maxReservations = 0;
-        $seancePopulaire = null;
-
-        foreach ($seances as $seance) {
-            $count = count($seance->getReservationSeances());
-
-            if ($count > $maxReservations) {
-                $maxReservations = $count;
-                $seancePopulaire = $seance;
-            }
+/** @var \App\Entity\UserApp|null $coach */
+        $coach = $this->getUser();
+        if (!$coach) {
+            $this->addFlash('error', 'Utilisateur non connecté');
+            return $this->redirectToRoute('app_coach_seances');
         }
 
-        $stats['seance_populaire'] = $seancePopulaire;
-        $stats['nb_reservations_max'] = $maxReservations;
-
-        $totalSeances = count($seances);
-        $totalPlaces = 0;
-        $totalParticipants = 0;
-        $seancesAVenir = 0;
-        $seancesTerminees = 0;
-        $prochainerSeance = null;
-
-        $now = new \DateTime();
-
-        foreach ($seances as $seance) {
-            $totalPlaces += $seance->getCapacite();
-            $participants = $this->reservationRepo->findSeanceReservations($seance);
-            $totalParticipants += count($participants);
-
-            if ($seance->getStatutSeance()->value === 'PLANIFIEE') {
-                $seancesAVenir++;
-                if ($prochainerSeance === null || $seance->getDateSeance() < $prochainerSeance->getDateSeance()) {
-                    $prochainerSeance = $seance;
-                }
-            } elseif ($seance->getStatutSeance()->value === 'TERMINEE') {
-                $seancesTerminees++;
-            }
+        if ($seance->getCoach()->getId_user() !== $coach->getId_user()) {
+            $this->addFlash('error', 'Accès refusé');
+            return $this->redirectToRoute('app_coach_seances');
         }
 
-        $tauxParticipation = $totalPlaces > 0 ? round(($totalParticipants / $totalPlaces) * 100) : 0;
-        $revenusPatentiels = $totalParticipants * 25; // À adapter au prix
+        $participants = $this->reservationRepo->findSeanceReservations($seance);
 
-        return [
-            'seance_populaire' => $stats['seance_populaire'],
-            'nb_reservations_max' => $stats['nb_reservations_max'],
-            'total_seances' => $totalSeances,
-            'total_places' => $totalPlaces,
-            'total_participants' => $totalParticipants,
-            'taux_participation' => $tauxParticipation,
-            'seances_a_venir' => $seancesAVenir,
-            'seances_terminees' => $seancesTerminees,
-            'prochaine_seance' => $prochainerSeance,
-            'revenus_potentiels' => $revenusPatentiels,
-            'semaine_actuelle' => $this->getSeancesThisWeek($seances),
+        $seanceStats = [
+            'total_places' => $seance->getCapacite(),
+            'places_reservees' => count($participants),
+            'places_restantes' => $seance->getCapacite() - count($participants),
+            'taux_occupation' => round((count($participants) / $seance->getCapacite()) * 100),
+            'presents' => count(array_filter($participants, fn($r) => $r->getStatut_presence()->value === 'PRESENT')),
+            'absents' => count(array_filter($participants, fn($r) => $r->getStatut_presence()->value === 'ABSENT')),
         ];
+
+        return $this->render('front/coach_seance_detail.html.twig', [
+            'seance' => $seance,
+            'participants' => $participants,
+            'seanceStats' => $seanceStats,
+        ]);
+
+   } catch (\Exception $e) {
+    $this->logger->error($e->getMessage());
+
+    $this->addFlash('error', 'Erreur lors de l\'affichage de la séance');
+    return $this->redirectToRoute('app_coach_seances');
+}
+}
+
+#[Route('/seance/participant/{id}/presence', name: 'app_coach_update_presence', methods: ['POST'])]
+public function updatePresence(int $id): Response
+{
+    try {
+        $reservation = $this->reservationRepo->find($id);
+
+        if (!$reservation) {
+            return new JsonResponse(['error' => 'Réservation introuvable'], 404);
+        }
+/** @var \App\Entity\UserApp|null $coach */
+       $coach = $this->getUser();
+      
+
+if (!$coach) {
+    $this->addFlash('error', 'Utilisateur non connecté');
+    return $this->redirectToRoute('app_coach_seances');
+}
+
+        if ($reservation->getSeance()->getCoach()->getId_user() !== $coach->getId_user()) {
+            return new JsonResponse(['error' => 'Non autorisé'], 403);
+        }
+
+        // 🔥 SIMPLE ET PROPRE (pas besoin de reflection)
+        $currentStatus = $reservation->getStatut_presence()->value;
+
+        $newStatus = $currentStatus === 'PRESENT'
+            ? \App\Enum\StatutPresence::ABSENT
+            : \App\Enum\StatutPresence::PRESENT;
+
+        $reservation->setStatut_presence($newStatus);
+
+        $this->entityManager->flush();
+
+        return new JsonResponse([
+            'success' => true,
+            'message' => "Statut mis à jour",
+            'status' => $newStatus->value,
+        ]);
+
+    } catch (\Exception $e) {
+        $this->logger->error($e->getMessage()); // 🔥 pour voir l'erreur exacte
+
+        return new JsonResponse([
+            'error' => 'Erreur lors de la mise à jour',
+        ], 500);
+    }
+}
+
+
+
+#[Route('/export-pdf', name: 'app_coach_export_pdf', methods: ['GET'])]
+public function exportPdf(): Response
+{
+    try {
+/** @var \App\Entity\UserApp|null $coach */
+       $coach = $this->getUser();
+       
+
+if (!$coach) {
+    $this->addFlash('error', 'Utilisateur non connecté');
+    return $this->redirectToRoute('app_coach_seances');
+}
+
+      
+
+        $seances = $this->seanceRepo->findByCoach($coach);
+        $stats = $this->calculateStats($seances);
+
+        // Vérifier s'il y a des séances
+        if (empty($seances)) {
+            $this->addFlash('warning', 'Aucune séance à exporter');
+            return $this->redirectToRoute('app_coach_seances');
+        }
+
+        // Générer HTML depuis Twig
+        $html = $this->renderView('pdf/coach_seances_pdf.html.twig', [
+            'seances' => $seances,
+            'stats' => $stats,
+            'coach' => $coach,
+            'generated_at' => new \DateTime(),
+        ]);
+
+        // Configuration Dompdf
+        $options = new Options();
+        $options->set('defaultFont', 'Arial');
+        $options->set('isPhpEnabled', true);
+        $options->set('isRemoteEnabled', true);
+        $options->set('fontDir', $this->getParameter('kernel.project_dir') . '/public/fonts');
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        // Nom du fichier
+        $fileName = 'seances_' . $coach->getNom() . '_' . date('Y-m-d_H-i-s') . '.pdf';
+
+        // Logger l'export
+        $this->logger->info('Export PDF généré', [
+            'coach_id' => $coach->getId_user(),
+            'total_seances' => count($seances),
+            'file_name' => $fileName,
+        ]);
+
+        // ✅ CORRECTION ICI UNIQUEMENT
+        $pdfContent = $dompdf->output();
+
+        return new Response(
+            $pdfContent,
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            ]
+        );
+
+    } catch (\Exception $e) {
+        $this->logger->error('Erreur lors de la génération du PDF', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        $this->addFlash('error', 'Erreur lors de la génération du PDF: ' . $e->getMessage());
+        return $this->redirectToRoute('app_coach_seances');
+    }
+}
+/**
+ * @param Seance[] $seances
+ * @return array{
+ *     seance_populaire: ?Seance,
+ *     nb_reservations_max: int,
+ *     total_seances: int,
+ *     total_places: int,
+ *     total_participants: int,
+ *     taux_participation: int,
+ *     seances_a_venir: int,
+ *     seances_terminees: int,
+ *     prochaine_seance: ?Seance,
+ *     revenus_potentiels: int,
+ *     semaine_actuelle: int
+ * }
+ */
+private function calculateStats(array $seances): array
+{
+    $maxReservations = 0;
+    $seancePopulaire = null;
+
+    foreach ($seances as $seance) {
+        $count = count($seance->getReservationSeances());
+
+        if ($count > $maxReservations) {
+            $maxReservations = $count;
+            $seancePopulaire = $seance;
+        }
     }
 
-    /**
-     * Compte les séances de cette semaine
-     */
-    private function getSeancesThisWeek(array $seances): int
+    $stats['seance_populaire'] = $seancePopulaire;
+    $stats['nb_reservations_max'] = $maxReservations;
+
+    $totalSeances = count($seances);
+    $totalPlaces = 0;
+    $totalParticipants = 0;
+    $seancesAVenir = 0;
+    $seancesTerminees = 0;
+
+    // ✅ correction ici
+    $prochaineSeance = null;
+
+    foreach ($seances as $seance) {
+        $totalPlaces += $seance->getCapacite();
+        $participants = $this->reservationRepo->findSeanceReservations($seance);
+        $totalParticipants += count($participants);
+
+        if ($seance->getStatutSeance()->value === 'PLANIFIEE') {
+            $seancesAVenir++;
+
+            if (
+                $prochaineSeance === null ||
+                $seance->getDateSeance() < $prochaineSeance->getDateSeance()
+            ) {
+                $prochaineSeance = $seance;
+            }
+
+        } elseif ($seance->getStatutSeance()->value === 'TERMINEE') {
+            $seancesTerminees++;
+        }
+    }
+
+    $tauxParticipation = $totalPlaces > 0
+        ? round(($totalParticipants / $totalPlaces) * 100)
+        : 0;
+
+    // ✅ correction nom variable
+    $revenusPotentiels = $totalParticipants * 25;
+
+    return [
+        'seance_populaire' => $stats['seance_populaire'],
+        'nb_reservations_max' => $stats['nb_reservations_max'],
+        'total_seances' => $totalSeances,
+        'total_places' => $totalPlaces,
+        'total_participants' => $totalParticipants,
+        'taux_participation' => $tauxParticipation,
+        'seances_a_venir' => $seancesAVenir,
+        'seances_terminees' => $seancesTerminees,
+
+        // ✅ correction ici
+        'prochaine_seance' => $prochaineSeance,
+
+        'revenus_potentiels' => $revenusPotentiels,
+        'semaine_actuelle' => $this->getSeancesThisWeek($seances),
+    ];
+}
+/**
+ * @param Seance[] $seances
+ */
+private function getSeancesThisWeek(array $seances): int
     {
         $count = 0;
         $now = new \DateTime();

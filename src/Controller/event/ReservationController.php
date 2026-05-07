@@ -18,6 +18,8 @@ use Endroid\QrCode\Logo\Logo;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\SvgWriter;
 use App\Entity\Notification;
+use App\Service\EventDocumentService;
+use App\Service\EventWorkflowService;
 use App\Service\ReservationPricingService;
 use App\Service\EventDocumentService;
 use App\Service\EventWorkflowService;
@@ -33,6 +35,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 class ReservationController extends AbstractController
 {
+    public function __construct(private ReservationPricingService $pricingService)
+    {
+    }
+
     #[Route('/download-all-tickets', name: 'app_reservation_all_tickets', methods: ['GET'])]
     public function downloadAllTickets(EntityManagerInterface $entityManager, EventDocumentService $documentService, ReservationPricingService $pricingService): Response
     {

@@ -41,7 +41,7 @@
 </div>
 
 <div class="mb-3 text-muted">
-    {{ activites|length }} activite{{ activites|length > 1 ? 's' : '' }} trouvee{{ activites|length > 1 ? 's' : '' }}
+    {{ activites.getTotalItemCount|default(activites|length) }} activite{{ (activites.getTotalItemCount|default(activites|length)) > 1 ? 's' : '' }} trouvee{{ (activites.getTotalItemCount|default(activites|length)) > 1 ? 's' : '' }}
 </div>
 
 <div class="table-responsive">
@@ -87,4 +87,38 @@
         </tbody>
     </table>
 </div>
+
+{% if activites.getTotalItemCount is defined and activites.getTotalItemCount > 0 %}
+    <div class="d-flex justify-content-end mt-4 admin-pagination-wrap">
+        {{ knp_pagination_render(activites) }}
+    </div>
+{% endif %}
+
+<style>
+.admin-pagination-wrap .pagination {
+    --bs-pagination-color: #475569;
+    --bs-pagination-bg: #ffffff;
+    --bs-pagination-border-color: #d7dee8;
+    --bs-pagination-hover-color: #0f172a;
+    --bs-pagination-hover-bg: #f8fafc;
+    --bs-pagination-hover-border-color: #cbd5e1;
+    --bs-pagination-focus-color: #0f172a;
+    --bs-pagination-focus-bg: #eff6ff;
+    --bs-pagination-focus-box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
+    --bs-pagination-active-color: #ffffff;
+    --bs-pagination-active-bg: #0f766e;
+    --bs-pagination-active-border-color: #0f766e;
+    --bs-pagination-disabled-color: #94a3b8;
+    --bs-pagination-disabled-bg: #ffffff;
+    --bs-pagination-disabled-border-color: #d7dee8;
+    gap: 0.35rem;
+}
+
+.admin-pagination-wrap .page-link {
+    border-radius: 12px;
+    min-width: 42px;
+    text-align: center;
+    font-weight: 600;
+}
+</style>
 {% endblock %}

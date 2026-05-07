@@ -68,9 +68,11 @@ class Pack
     private ?string $statut_pack = null;
 
     #[ORM\OneToMany(targetEntity: Activite::class, mappedBy: 'pack')]
+    /** @var Collection<int, Activite> */
     private Collection $activites;
 
     #[ORM\OneToMany(targetEntity: Inscription::class, mappedBy: 'pack')]
+    /** @var Collection<int, Inscription> */
     private Collection $inscriptions;
 
     public function __construct()
@@ -79,12 +81,12 @@ class Pack
         $this->inscriptions = new ArrayCollection();
     }
 
-    public function getIdPack(): ?int
+    public function getId_pack(): ?int
     {
         return $this->id_pack;
     }
 
-    public function getId_pack(): ?int
+    public function getIdPack(): ?int
     {
         return $this->id_pack;
     }
@@ -94,9 +96,9 @@ class Pack
         return $this->nom;
     }
 
-    public function setNom(string $nom): self
+    public function setNom(?string $nom): self
     {
-        $this->nom = trim($nom);
+        $this->nom = $nom !== null ? trim($nom) : null;
         return $this;
     }
 
@@ -105,9 +107,9 @@ class Pack
         return $this->type_pack;
     }
 
-    public function setTypePack(string $type_pack): self
+    public function setTypePack(?string $type_pack): self
     {
-        $this->type_pack = trim($type_pack);
+        $this->type_pack = $type_pack !== null ? trim($type_pack) : null;
         return $this;
     }
 
@@ -116,7 +118,7 @@ class Pack
         return $this->prix_base;
     }
 
-    public function setPrixBase(string $prix_base): self
+    public function setPrixBase(?string $prix_base): self
     {
         $this->prix_base = $prix_base;
         return $this;
@@ -127,7 +129,7 @@ class Pack
         return $this->reduction;
     }
 
-    public function setReduction(string $reduction): self
+    public function setReduction(?string $reduction): self
     {
         $this->reduction = $reduction;
         return $this;
@@ -138,7 +140,7 @@ class Pack
         return $this->nb_activites_max;
     }
 
-    public function setNbActivitesMax(int $nb_activites_max): self
+    public function setNbActivitesMax(?int $nb_activites_max): self
     {
         $this->nb_activites_max = $nb_activites_max;
         return $this;
@@ -149,17 +151,23 @@ class Pack
         return $this->statut_pack;
     }
 
-    public function setStatutPack(string $statut_pack): self
+    public function setStatutPack(?string $statut_pack): self
     {
-        $this->statut_pack = trim($statut_pack);
+        $this->statut_pack = $statut_pack !== null ? trim($statut_pack) : null;
         return $this;
     }
 
+    /**
+     * @return Collection<int, Activite>
+     */
     public function getActivites(): Collection
     {
         return $this->activites;
     }
 
+    /**
+     * @return Collection<int, Inscription>
+     */
     public function getInscriptions(): Collection
     {
         return $this->inscriptions;
@@ -178,3 +186,4 @@ class Pack
         return $this->nom ?? 'Pack';
     }
 }
+

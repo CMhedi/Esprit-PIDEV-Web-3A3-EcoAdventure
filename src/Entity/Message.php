@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\PrioriteMessage;
 use App\Enum\StatutMessage;
 use App\Enum\TypeMessage;
 use App\Repository\MessageRepository;
@@ -21,7 +22,7 @@ class Message
     #[Assert\NotNull(message: "Le type de message est obligatoire.")]
     private ?TypeMessage $type_message = null;
 
-    #[ORM\Column(type: 'string', length: 2000, nullable: true)]
+    #[ORM\Column(type: 'string', length: 10000, nullable: true)]
     #[Assert\Length(
         max: 2000,
         maxMessage: "Le contenu ne peut pas dépasser {{ limit }} caractères."
@@ -48,10 +49,15 @@ class Message
     )]
     private ?\DateTimeInterface $date_modifier = null;
 
+    #[ORM\Column(enumType: PrioriteMessage::class, options: ['default' => 'NORMAL'])]
+    private ?PrioriteMessage $priorite_message = PrioriteMessage::NORMAL;
+
     #[ORM\Column(type: 'json', nullable: true)]
+    /** @var array<string, mixed>|null */
     private ?array $reactions = [];
 
     #[ORM\Column(type: 'json', nullable: true)]
+    /** @var array<string, mixed>|null */
     private ?array $attachments = [];
 
     #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
@@ -147,11 +153,28 @@ class Message
         return $this;
     }
 
+    public function getPrioriteMessage(): PrioriteMessage
+    {
+        return $this->priorite_message ?? PrioriteMessage::NORMAL;
+    }
+
+    public function setPrioriteMessage(PrioriteMessage $priorite_message): self
+    {
+        $this->priorite_message = $priorite_message;
+        return $this;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function getReactions(): array
     {
         return $this->reactions ?? [];
     }
 
+    /**
+     * @param array<string, mixed>|null $reactions
+     */
     public function setReactions(?array $reactions): self
     {
         $this->reactions = $reactions ?? [];
@@ -169,11 +192,17 @@ class Message
         return $this;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getAttachments(): array
     {
         return $this->attachments ?? [];
     }
 
+    /**
+     * @param array<string, mixed>|null $attachments
+     */
     public function setAttachments(?array $attachments): self
     {
         $this->attachments = $attachments ?? [];

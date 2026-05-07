@@ -1,15 +1,47 @@
 parameters:
-    app.promo_group_threshold: 10
-    app.promo_group_discount: 0.1
+    default_messages_upload_directory: 'C:/xampp2002/htdocs/uploads'
+    messages_upload_directory: '%env(default:default_messages_upload_directory:MESSAGES_UPLOAD_DIRECTORY)%'
+    activite_resv_image_directory: '%kernel.project_dir%/public/ActivieResvImage'
+    activite_resv_image_public_path: 'ActivieResvImage'
+    app.promo_group_threshold: 11
+    app.promo_group_discount: 0.10
+    default_pack_holiday_country: 'TN'
+    pack_holiday_country: '%env(default:default_pack_holiday_country:PACK_HOLIDAY_COUNTRY)%'
+    default_openai_api_key: ''
+    openai_api_key: '%env(default:default_openai_api_key:OPENAI_API_KEY)%'
+    default_openai_model: 'gpt-4o-mini'
+    openai_model: '%env(default:default_openai_model:OPENAI_MODEL)%'
+    default_konnect_api_base_url: 'https://api.sandbox.konnect.network/api/v2'
+    konnect_api_base_url: '%env(default:default_konnect_api_base_url:KONNECT_API_BASE_URL)%'
+    default_konnect_api_key: ''
+    konnect_api_key: '%env(default:default_konnect_api_key:KONNECT_API_KEY)%'
+    default_konnect_wallet_id: ''
+    konnect_wallet_id: '%env(default:default_konnect_wallet_id:KONNECT_WALLET_ID)%'
+    default_konnect_token: 'TND'
+    konnect_token: '%env(default:default_konnect_token:KONNECT_TOKEN)%'
+    default_stripe_secret_key: ''
+    stripe_secret_key: '%env(default:default_stripe_secret_key:STRIPE_SECRET_KEY)%'
+    default_stripe_publishable_key: ''
+    stripe_publishable_key: '%env(default:default_stripe_publishable_key:STRIPE_PUBLISHABLE_KEY)%'
+    default_stripe_currency: 'eur'
+    stripe_currency: '%env(default:default_stripe_currency:STRIPE_CURRENCY)%'
+    default_demo_card_payment_enabled: false
+    demo_card_payment_enabled: '%env(default:default_demo_card_payment_enabled:DEMO_CARD_PAYMENT_ENABLED)%'
+    default_card_ocr_api_url: 'http://127.0.0.1:5055/ocr/card'
+    card_ocr_api_url: '%env(default:default_card_ocr_api_url:CARD_OCR_API_URL)%'
+    default_public_app_url: ''
+    public_app_url: '%env(default:default_public_app_url:PUBLIC_APP_URL)%'
+    groq_default_api_key: ''
+    groq_default_model: 'llama-3.3-70b-versatile'
+    groq_default_vision_model: 'llama-3.2-11b-vision-preview'
+    groq_default_audio_model: 'whisper-large-v3'
+    giphy_default_api_key: ''
 
 services:
-    # default configuration for services in *this* file
     _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        autowire: true
+        autoconfigure: true
 
-    # makes classes in src/ available to be used as services
-    # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
         exclude:
@@ -17,5 +49,60 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    App\Service\Context\HolidayContextProvider:
+        arguments:
+            $countryCode: '%pack_holiday_country%'
+
+    App\Service\AI\AiPackExplainer:
+        arguments:
+            $apiKey: '%openai_api_key%'
+            $model: '%openai_model%'
+
+    App\Service\AI\AiAdminSynthesizer:
+        arguments:
+            $apiKey: '%openai_api_key%'
+            $model: '%openai_model%'
+
+    App\Service\AI\AiRiskExplainer:
+        arguments:
+            $apiKey: '%openai_api_key%'
+            $model: '%openai_model%'
+
+    App\Service\Payment\KonnectPaymentGateway:
+        arguments:
+            $apiKey: '%konnect_api_key%'
+            $walletId: '%konnect_wallet_id%'
+            $apiBaseUrl: '%konnect_api_base_url%'
+            $token: '%konnect_token%'
+
+    App\Service\Payment\StripeCheckoutGateway:
+        arguments:
+            $secretKey: '%stripe_secret_key%'
+            $publishableKey: '%stripe_publishable_key%'
+            $currency: '%stripe_currency%'
+    # ===== NUTRITION API SERVICE =====
+    App\Service\NutritionApiService:
+        arguments:
+            $httpClient: '@http_client'
+            $logger: '@logger'
+        tags:
+            - { name: 'monolog.logger', channel: 'nutrition' }
+
+    App\Service\GeminiGifChatService:
+        arguments:
+            $groqApiKey: '%env(default:groq_default_api_key:GROQ_API_KEY)%'
+            $groqModel: '%env(default:groq_default_model:GROQ_MODEL)%'
+            $giphyApiKey: '%env(default:giphy_default_api_key:GIPHY_API_KEY)%'
+            $groqVisionModel: '%env(default:groq_default_vision_model:GROQ_VISION_MODEL)%'
+            $groqAudioModel: '%env(default:groq_default_audio_model:GROQ_AUDIO_MODEL)%'
+            $debug: '%kernel.debug%'
+
+    App\Service\GroqAiService:
+        arguments:
+            $apiKey: '%env(default:groq_default_api_key:GROQ_API_KEY)%'
+
+    App\Service\ContentModerationService:
+        arguments:
+            $manualBadWordsEn: '%env(default::BAD_WORDS_EN)%'
+            $manualBadWordsFr: '%env(default::BAD_WORDS_FR)%'
+            $manualBadWordsAr: '%env(default::BAD_WORDS_AR)%'

@@ -5,7 +5,9 @@ namespace App\Repository;
 use App\Entity\Planning;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-
+/**
+ * @extends ServiceEntityRepository<Planning>
+ */
 class PlanningRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -13,10 +15,10 @@ class PlanningRepository extends ServiceEntityRepository
         parent::__construct($registry, Planning::class);
     }
 
-    // =========================
-    // 📋 GET ALL (trié comme Java)
-    // =========================
-    public function findAllOrdered(): array
+/**
+ * @return Planning[]
+ */
+public function findAllOrdered(): array
     {
         return $this->createQueryBuilder('p')
             ->orderBy('p.dateDebut', 'DESC')
@@ -24,9 +26,9 @@ class PlanningRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // =========================
-    // 🔥 GET ACTIFS
-    // =========================
+/**
+ * @return Planning[]
+ */
     public function findActifs(): array
     {
         return $this->createQueryBuilder('p')
@@ -37,9 +39,9 @@ class PlanningRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // =========================
-    // 🔍 SEARCH (comme JavaFX)
-    // =========================
+/**
+ * @return Planning[]
+ */
     public function search(?string $keyword): array
     {
         $qb = $this->createQueryBuilder('p');
@@ -54,9 +56,9 @@ class PlanningRepository extends ServiceEntityRepository
                   ->getResult();
     }
 
-    // =========================
-    // 📅 FILTER BY YEAR
-    // =========================
+/**
+ * @return Planning[]
+ */
     public function filterByYear(?int $year): array
     {
         if (!$year) {
@@ -71,9 +73,9 @@ class PlanningRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    // =========================
-    // 📌 FILTER BY STATUT
-    // =========================
+/**
+ * @return Planning[]
+ */
     public function filterByStatut(?string $statut): array
     {
         if (!$statut || $statut === 'TOUS') {
@@ -111,7 +113,18 @@ class PlanningRepository extends ServiceEntityRepository
             $this->getEntityManager()->flush();
         }
     }
- public function filter($search, $annee, $statut)
+/**
+ * @param string|null $search
+ * @param int|null $annee
+ * @param string|null $statut
+ * 
+ * @return Planning[]
+ */
+public function filter(
+    ?string $search,
+    ?int $annee,
+    ?string $statut
+): array
 {
     $qb = $this->createQueryBuilder('p');
 
@@ -135,6 +148,8 @@ class PlanningRepository extends ServiceEntityRepository
            ->setParameter('statut', $statut);
     }
 
-    return $qb->getQuery()->getResult();
+  $result = $qb->getQuery()->getResult();
+/** @var Planning[] $result */
+return $result;
 }
 }

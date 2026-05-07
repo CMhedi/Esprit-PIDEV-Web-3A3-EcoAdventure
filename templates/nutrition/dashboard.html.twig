@@ -1,0 +1,1204 @@
+
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard Nutrition - EcoTrack{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-5" style="background: linear-gradient(135deg, #ffffff 0%, #f8faf9 100%); min-height: 100vh;">
+
+    <div class="container">
+        <!-- ===== HEADER ===== -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="fw-bold mb-2" style="color: #27ae60;">
+                            <i class="bi bi-graph-up me-2"></i>
+                            Dashboard Nutrition
+                        </h1>
+                        <p class="text-muted mb-0">Suivez vos apports nutritionnels en temps réel</p>
+                    </div>
+                    <button class="btn btn-eco btn-lg" data-bs-toggle="modal" data-bs-target="#addLogModal">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Ajouter Log
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== STATS CARDS ===== -->
+        <div class="row g-4 mb-5">
+            <!-- Card 1: Calories -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card rounded-4 shadow-sm border-0 h-100 stat-card" style="border-top: 5px solid var(--energy-orange); background: linear-gradient(135deg, #fffbf5 0%, #ffffff 100%);">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="text-muted mb-1" style="font-size: 0.9rem;">
+                                    <i class="bi bi-fire me-1" style="color: var(--energy-orange);"></i>
+                                    Calories
+                                </p>
+                                <h3 class="mb-1 fw-bold" id="todayCalories" style="color: var(--energy-orange);">0</h3>
+                                <small class="text-muted">/ 2000 kcal</small>
+                            </div>
+                            <div style="font-size: 2.5rem; opacity: 0.1; color: var(--energy-orange);">
+                                <i class="bi bi-fire"></i>
+                            </div>
+                        </div>
+                        <div class="progress mt-3" style="height: 6px; background-color: #ecf0f1;">
+                            <div class="progress-bar" id="caloriesProgress" role="progressbar" style="width: 0%; background-color: var(--energy-orange);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Protéines -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card rounded-4 shadow-sm border-0 h-100 stat-card" style="border-top: 5px solid #2ecc71; background: linear-gradient(135deg, #f5fff7 0%, #ffffff 100%);">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="text-muted mb-1" style="font-size: 0.9rem;">
+                                    <i class="bi bi-egg me-1" style="color: #2ecc71;"></i>
+                                    Protéines
+                                </p>
+                                <h3 class="mb-1 fw-bold" id="todayProtein" style="color: #2ecc71;">0g</h3>
+                                <small class="text-muted">Objectif: 150g</small>
+                            </div>
+                            <div style="font-size: 2.5rem; opacity: 0.1; color: #2ecc71;">
+                                <i class="bi bi-egg"></i>
+                            </div>
+                        </div>
+                        <div class="progress mt-3" style="height: 6px; background-color: #ecf0f1;">
+                            <div class="progress-bar" id="proteinProgress" role="progressbar" style="width: 0%; background-color: #2ecc71;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Graisses -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card rounded-4 shadow-sm border-0 h-100 stat-card" style="border-top: 5px solid #e74c3c; background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="text-muted mb-1" style="font-size: 0.9rem;">
+                                    <i class="bi bi-droplet-half me-1" style="color: #e74c3c;"></i>
+                                    Graisses
+                                </p>
+                                <h3 class="mb-1 fw-bold" id="todayFat" style="color: #e74c3c;">0g</h3>
+                                <small class="text-muted">Objectif: 78g</small>
+                            </div>
+                            <div style="font-size: 2.5rem; opacity: 0.1; color: #e74c3c;">
+                                <i class="bi bi-droplet-half"></i>
+                            </div>
+                        </div>
+                        <div class="progress mt-3" style="height: 6px; background-color: #ecf0f1;">
+                            <div class="progress-bar" id="fatProgress" role="progressbar" style="width: 0%; background-color: #e74c3c;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4: Glucides -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card rounded-4 shadow-sm border-0 h-100 stat-card" style="border-top: 5px solid #3498db; background: linear-gradient(135deg, #f5f8ff 0%, #ffffff 100%);">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="text-muted mb-1" style="font-size: 0.9rem;">
+                                    <i class="bi bi-diagram-3 me-1" style="color: #3498db;"></i>
+                                    Glucides
+                                </p>
+                                <h3 class="mb-1 fw-bold" id="todayCarbs" style="color: #3498db;">0g</h3>
+                                <small class="text-muted">Objectif: 275g</small>
+                            </div>
+                            <div style="font-size: 2.5rem; opacity: 0.1; color: #3498db;">
+                                <i class="bi bi-diagram-3"></i>
+                            </div>
+                        </div>
+                        <div class="progress mt-3" style="height: 6px; background-color: #ecf0f1;">
+                            <div class="progress-bar" id="carbsProgress" role="progressbar" style="width: 0%; background-color: #3498db;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== CHARTS ===== -->
+        <div class="row g-4 mb-5">
+            <!-- Calories Chart -->
+            <div class="col-lg-8">
+                <div class="card rounded-4 shadow-sm border-0 p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0 fw-bold" style="color: #2c3e50;">
+                            <i class="bi bi-graph-up me-2" style="color: var(--energy-orange);"></i>
+                            Évolution des Calories
+                        </h5>
+                        <span class="badge bg-light" style="color: var(--energy-orange);">Cette semaine</span>
+                    </div>
+                    <canvas id="caloriesChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+
+            <!-- Macros Chart -->
+            <div class="col-lg-4">
+                <div class="card rounded-4 shadow-sm border-0 p-4">
+                    <h5 class="mb-4 fw-bold" style="color: #2c3e50;">
+                        <i class="bi bi-pie-chart-fill me-2" style="color: #27ae60;"></i>
+                        Répartition Macros
+                    </h5>
+                    <canvas id="macrosChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== FILTERS & SEARCH ===== -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card rounded-4 shadow-sm border-0 p-4">
+                    <div class="row g-3 align-items-end">
+                        <!-- Search -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold" style="color: #2c3e50;">
+                                <i class="bi bi-search me-1"></i>
+                                Rechercher un aliment
+                            </label>
+                            <input type="text" class="form-control rounded-3" id="searchInput" 
+                                   placeholder="Tapez le nom d'un aliment...">
+                        </div>
+
+                        <!-- Filter by Date -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold" style="color: #2c3e50;">
+                                <i class="bi bi-calendar me-1"></i>
+                                Date
+                            </label>
+                            <input type="date" class="form-control rounded-3" id="filterDate">
+                        </div>
+
+                        <!-- Sort -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold" style="color: #2c3e50;">
+                                <i class="bi bi-sort-down me-1"></i>
+                                Trier par
+                            </label>
+                            <select class="form-select rounded-3" id="sortSelect">
+                                <option value="date-desc">📅 Plus récent</option>
+                                <option value="date-asc">📅 Plus ancien</option>
+                                <option value="calories-desc">🔥 Calories (↓)</option>
+                                <option value="calories-asc">🔥 Calories (↑)</option>
+                                <option value="protein-desc">🥚 Protéines (↓)</option>
+                                <option value="name-asc">A-Z Nom</option>
+                            </select>
+                        </div>
+
+                        <!-- Reset Button -->
+                        <div class="col-md-12">
+                            <button class="btn btn-outline-eco rounded-3 w-100" id="resetFilters">
+                                <i class="bi bi-arrow-clockwise me-1"></i>
+                                Réinitialiser filtres
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== HISTORIQUE LOGS ===== -->
+        <div class="card rounded-4 shadow-sm border-0 p-4 mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0 fw-bold" style="color: #2c3e50;">
+                    <i class="bi bi-list-check me-2" style="color: #27ae60;"></i>
+                    Historique Nutrition
+                    <span class="badge bg-eco ms-2" id="logCount">0</span>
+                </h5>
+                <a href="{{ path('nutrition_export') }}" class="btn btn-sm btn-outline-eco rounded-3">
+                    <i class="bi bi-download me-1"></i>
+                    Exporter CSV
+                </a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr style="border-bottom: 2px solid #ecf0f1;">
+                            <th style="color: #7f8c8d; font-weight: 600; font-size: 0.9rem;">
+                                <i class="bi bi-calendar me-1"></i>
+                                Date
+                            </th>
+                            <th style="color: #7f8c8d; font-weight: 600; font-size: 0.9rem;">
+                                <i class="bi bi-apple me-1"></i>
+                                Aliment
+                            </th>
+                            <th style="color: #7f8c8d; font-weight: 600; font-size: 0.9rem;">
+                                <i class="bi bi-fire me-1"></i>
+                                Calories
+                            </th>
+                            <th style="color: #7f8c8d; font-weight: 600; font-size: 0.9rem;">
+                                <i class="bi bi-egg me-1"></i>
+                                Protéines
+                            </th>
+                            <th style="color: #7f8c8d; font-weight: 600; font-size: 0.9rem;">
+                                <i class="bi bi-droplet-half me-1"></i>
+                                Graisses
+                            </th>
+                            <th style="color: #7f8c8d; font-weight: 600; font-size: 0.9rem;">
+                                <i class="bi bi-diagram-3 me-1"></i>
+                                Glucides
+                            </th>
+                            <th class="text-center" style="color: #7f8c8d; font-weight: 600; font-size: 0.9rem;">
+                                <i class="bi bi-gear me-1"></i>
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTable">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox me-2"></i>
+                                Chargement...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="d-none text-center py-5">
+                <div style="font-size: 3rem; opacity: 0.3; color: #bdc3c7; margin-bottom: 1rem;">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <h5 style="color: #7f8c8d;">Aucun log trouvé</h5>
+                <p class="text-muted">Commencez à ajouter des aliments pour voir votre historique</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: ADD LOG ===== -->
+<div class="modal fade" id="addLogModal" tabindex="-1" role="dialog" aria-labelledby="addLogModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4 shadow-lg">
+            <div class="modal-header border-0 p-4" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white;">
+                <h5 class="modal-title fw-bold" id="addLogModalLabel">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Ajouter un Log Nutrition
+                </h5>
+                <!-- ===== FIX: Ajouter data-bs-dismiss avec aria attributes =====  -->
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" 
+                        aria-label="Fermer la modal" aria-controls="addLogModal">
+                </button>
+            </div>
+
+            <form id="addLogForm">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: #2c3e50;">
+                            Aliment <span class="text-danger" aria-label="requis">*</span>
+                        </label>
+                        <input type="text" class="form-control rounded-3" name="food_name" 
+                               placeholder="Ex: Poulet grillé" required aria-required="true">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: #2c3e50;">
+                            Date <span class="text-danger" aria-label="requis">*</span>
+                        </label>
+                        <input type="date" class="form-control rounded-3" name="log_date" 
+                               required aria-required="true">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold" style="color: #2c3e50;">
+                                <i class="bi bi-fire me-1" style="color: var(--energy-orange);"></i>
+                                Calories <span class="text-danger" aria-label="requis">*</span>
+                            </label>
+                            <input type="number" class="form-control rounded-3" name="calories" 
+                                   step="0.1" placeholder="0" required aria-required="true" min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold" style="color: #2c3e50;">
+                                <i class="bi bi-egg me-1" style="color: #2ecc71;"></i>
+                                Protéines (g)
+                            </label>
+                            <input type="number" class="form-control rounded-3" name="protein" 
+                                   step="0.1" value="0" placeholder="0" min="0">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold" style="color: #2c3e50;">
+                                <i class="bi bi-droplet-half me-1" style="color: #e74c3c;"></i>
+                                Graisses (g)
+                            </label>
+                            <input type="number" class="form-control rounded-3" name="fat" 
+                                   step="0.1" value="0" placeholder="0" min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold" style="color: #2c3e50;">
+                                <i class="bi bi-diagram-3 me-1" style="color: #3498db;"></i>
+                                Glucides (g)
+                            </label>
+                            <input type="number" class="form-control rounded-3" name="carbs" 
+                                   step="0.1" value="0" placeholder="0" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 p-4">
+                    <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal" 
+                            aria-label="Annuler">
+                        <i class="bi bi-x me-1"></i>
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn btn-eco rounded-3 fw-bold" aria-label="Ajouter le log">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Ajouter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+// ===== STATE MANAGEMENT =====
+let allLogs = [];
+let filteredLogs = [];
+let chartsInitialized = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Dashboard initialized');
+    
+    // Set date input to today
+    try {
+        const logDateInput = document.querySelector('input[name="log_date"]');
+        const filterDateInput = document.getElementById('filterDate');
+        
+        if (logDateInput) logDateInput.valueAsDate = new Date();
+        if (filterDateInput) filterDateInput.valueAsDate = new Date();
+    } catch (e) {
+        console.error('Error setting dates:', e);
+    }
+
+    loadDashboard();
+
+    // Event listeners
+    const addLogForm = document.getElementById('addLogForm');
+    const searchInput = document.getElementById('searchInput');
+    const filterDate = document.getElementById('filterDate');
+    const sortSelect = document.getElementById('sortSelect');
+    const resetBtn = document.getElementById('resetFilters');
+
+    if (addLogForm) {
+        addLogForm.addEventListener('submit', addLog);
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener('keyup', debounce(filterAndSort, 300));
+    }
+    
+    if (filterDate) {
+        filterDate.addEventListener('change', filterAndSort);
+    }
+    
+    if (sortSelect) {
+        sortSelect.addEventListener('change', filterAndSort);
+    }
+    
+    if (resetBtn) {
+        resetBtn.addEventListener('click', resetFilters);
+    }
+
+    // ===== 🔥 AJOUT ICI =====
+    const addButton = document.querySelector('[data-bs-target="#addLogModal"]');
+
+    if (addButton) {
+        addButton.addEventListener('click', () => {
+
+            editMode = false;
+            currentLogId = null;
+
+            const form = document.getElementById('addLogForm');
+            if (form) form.reset();
+
+            document.getElementById('addLogModalLabel').innerHTML =
+                '<i class="bi bi-plus-circle me-2"></i> Ajouter un Log Nutrition';
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML =
+                    '<i class="bi bi-check-circle me-2"></i> Ajouter';
+            }
+        });
+    }
+
+});
+
+// ===== DEBOUNCE FUNCTION =====
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// ===== LOAD DASHBOARD =====
+function loadDashboard() {
+    console.log('📊 Loading dashboard data...');
+    
+    loadTodayStats();
+    loadWeekStats();
+    loadLogs();
+}
+
+// ===== LOAD TODAY STATS =====
+function loadTodayStats() {
+    fetch('{{ path("nutrition_today") }}')
+        .then(r => {
+            if (!r.ok) {
+                throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+            }
+            return r.json();
+        })
+        .then(data => {
+            console.log('✅ Today stats loaded:', data);
+            if (data.success) {
+                updateStats(data);
+                if (data.macros && Object.keys(data.macros).length > 0) {
+                    createMacrosChart(data.macros);
+                }
+            } else {
+                console.warn('API returned error:', data.error);
+                showToast('⚠️ Erreur stats: ' + (data.error || 'Erreur inconnue'), 'warning');
+            }
+        })
+        .catch(e => {
+            console.error('❌ Erreur stats détaillée:', e.message);
+            showToast('❌ Erreur stats: ' + e.message, 'danger');
+        });
+}
+
+// ===== LOAD WEEK STATS =====
+function loadWeekStats() {
+    fetch('{{ path("nutrition_week") }}')
+        .then(r => {
+            if (!r.ok) {
+                throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+            }
+            return r.json();
+        })
+        .then(data => {
+            console.log('✅ Week stats loaded:', data);
+            if (data.success && data.by_day && Array.isArray(data.by_day)) {
+                createCaloriesChart(data.by_day);
+            } else {
+                console.warn('Invalid week data:', data);
+            }
+        })
+        .catch(e => {
+            console.error('❌ Erreur semaine détaillée:', e.message);
+            showToast('❌ Erreur semaine: ' + e.message, 'danger');
+        });
+}
+
+// ===== LOAD LOGS =====
+function loadLogs() {
+    fetch('{{ path("nutrition_logs") }}')
+        .then(r => {
+            if (!r.ok) {
+                throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+            }
+            return r.json();
+        })
+        .then(data => {
+            console.log('✅ Logs loaded:', data);
+            if (data.success && Array.isArray(data.logs)) {
+                allLogs = data.logs;
+                console.log(`Loaded ${allLogs.length} logs`);
+                filterAndSort();
+            } else if (data.success) {
+                allLogs = [];
+                filterAndSort();
+                console.warn('No logs data in response');
+            } else {
+                console.error('API error:', data.error);
+                showToast('❌ Erreur logs: ' + (data.error || 'Erreur inconnue'), 'danger');
+                allLogs = [];
+                renderLogs([]);
+            }
+        })
+        .catch(e => {
+            console.error('❌ Erreur logs détaillée:', e.message, e.stack);
+            showToast('❌ Erreur chargement logs: ' + e.message, 'danger');
+            allLogs = [];
+            renderLogs([]);
+        });
+}
+
+// ===== UPDATE STATS =====
+function updateStats(data) {
+    try {
+        const todayCalories = Math.round(data.total_calories || 0);
+        const todayProtein = Math.round(data.macros?.protein || 0);
+        const todayFat = Math.round(data.macros?.fat || 0);
+        const todayCarbs = Math.round(data.macros?.carbs || 0);
+
+        // ===== 🧠 NOUVEAU: OBJECTIFS =====
+        const goals = data.goals || {
+            calories: 2000,
+            protein: 150,
+            fat: 70,
+            carbs: 250
+        };
+
+        const caloriesEl = document.getElementById('todayCalories');
+        const proteinEl = document.getElementById('todayProtein');
+        const fatEl = document.getElementById('todayFat');
+        const carbsEl = document.getElementById('todayCarbs');
+
+        if (caloriesEl) caloriesEl.textContent = todayCalories;
+        if (proteinEl) proteinEl.textContent = todayProtein + 'g';
+        if (fatEl) fatEl.textContent = todayFat + 'g';
+        if (carbsEl) carbsEl.textContent = todayCarbs + 'g';
+
+        // ===== 🎯 UPDATE OBJECTIFS TEXTE =====
+        if (caloriesEl) {
+            const small = caloriesEl.parentElement.querySelector('small');
+            if (small) small.textContent = `/ ${goals.calories} kcal`;
+        }
+
+        if (proteinEl) {
+            const small = proteinEl.parentElement.querySelector('small');
+            if (small) small.textContent = `Objectif: ${goals.protein}g`;
+        }
+
+        if (fatEl) {
+            const small = fatEl.parentElement.querySelector('small');
+            if (small) small.textContent = `Objectif: ${goals.fat}g`;
+        }
+
+        if (carbsEl) {
+            const small = carbsEl.parentElement.querySelector('small');
+            if (small) small.textContent = `Objectif: ${goals.carbs}g`;
+        }
+
+        // ===== 📊 PROGRESS BARS (DYNAMIQUE) =====
+        const caloriesProgress = document.getElementById('caloriesProgress');
+        const proteinProgress = document.getElementById('proteinProgress');
+        const fatProgress = document.getElementById('fatProgress');
+        const carbsProgress = document.getElementById('carbsProgress');
+
+        if (caloriesProgress) {
+            caloriesProgress.style.width =
+                Math.min((todayCalories / goals.calories) * 100, 100) + '%';
+        }
+
+        if (proteinProgress) {
+            proteinProgress.style.width =
+                Math.min((todayProtein / goals.protein) * 100, 100) + '%';
+        }
+
+        if (fatProgress) {
+            fatProgress.style.width =
+                Math.min((todayFat / goals.fat) * 100, 100) + '%';
+        }
+
+        if (carbsProgress) {
+            carbsProgress.style.width =
+                Math.min((todayCarbs / goals.carbs) * 100, 100) + '%';
+        }
+
+        console.log('✅ Stats updated with goals:', {
+            todayCalories,
+            todayProtein,
+            todayFat,
+            todayCarbs,
+            goals
+        });
+
+    } catch (e) {
+        console.error('❌ Error updating stats:', e);
+    }
+}
+// ===== FILTER AND SORT =====
+function filterAndSort() {
+    try {
+        const searchInput = document.getElementById('searchInput');
+        const filterDate = document.getElementById('filterDate');
+        const sortSelect = document.getElementById('sortSelect');
+
+        const searchTerm = (searchInput?.value || '').toLowerCase().trim();
+        const filterDateValue = filterDate?.value || '';
+        const sortBy = sortSelect?.value || 'date-desc';
+
+        console.log('🔍 Filtering with:', { searchTerm, filterDateValue, sortBy });
+
+        // ===== FILTER =====
+        filteredLogs = allLogs.filter(log => {
+            // Search filter
+            if (searchTerm && !log.food_name?.toLowerCase().includes(searchTerm)) {
+                return false;
+            }
+
+            // Date filter
+            if (filterDateValue && log.log_date !== filterDateValue) {
+                return false;
+            }
+
+            return true;
+        });
+
+        console.log(`📊 Filtered to ${filteredLogs.length} logs`);
+
+        // ===== SORT =====
+        switch (sortBy) {
+            case 'date-desc':
+                filteredLogs.sort((a, b) => new Date(b.log_date) - new Date(a.log_date));
+                break;
+            case 'date-asc':
+                filteredLogs.sort((a, b) => new Date(a.log_date) - new Date(b.log_date));
+                break;
+            case 'calories-desc':
+                filteredLogs.sort((a, b) => (b.calories || 0) - (a.calories || 0));
+                break;
+            case 'calories-asc':
+                filteredLogs.sort((a, b) => (a.calories || 0) - (b.calories || 0));
+                break;
+            case 'protein-desc':
+                filteredLogs.sort((a, b) => (b.protein || 0) - (a.protein || 0));
+                break;
+            case 'name-asc':
+                filteredLogs.sort((a, b) => (a.food_name || '').localeCompare(b.food_name || ''));
+                break;
+        }
+
+        renderLogs(filteredLogs);
+    } catch (e) {
+        console.error('Error in filterAndSort:', e);
+        showToast('❌ Erreur filtrage: ' + e.message, 'danger');
+    }
+}
+
+// ===== RENDER LOGS =====
+function renderLogs(logs) {
+    try {
+        const tbody = document.getElementById('logsTable');
+        const emptyState = document.getElementById('emptyState');
+        const logCount = document.getElementById('logCount');
+
+        if (!tbody) {
+            console.error('logsTable element not found');
+            return;
+        }
+
+        if (logCount) {
+            logCount.textContent = logs.length;
+        }
+
+        tbody.innerHTML = '';
+
+        if (logs.length === 0) {
+            if (emptyState) {
+                emptyState.classList.remove('d-none');
+            }
+            console.log('📭 No logs to display');
+            return;
+        }
+
+        if (emptyState) {
+            emptyState.classList.add('d-none');
+        }
+
+        logs.forEach((log, index) => {
+            try {
+                const calorieValue = log.calories || 0;
+                const calorieColor = calorieValue > 500 ? '#e74c3c' : (calorieValue > 300 ? '#f39c12' : '#2ecc71');
+                
+                const logDate = new Date(log.log_date);
+                const formattedDate = isNaN(logDate) ? log.log_date : logDate.toLocaleDateString('fr-FR');
+
+                const tr = document.createElement('tr');
+                tr.style.cssText = 'border-bottom: 1px solid #ecf0f1; transition: all 0.2s ease; animation: slideIn 0.3s ease forwards; opacity: 0;';
+                tr.style.animationDelay = (index * 0.05) + 's';
+                
+                tr.innerHTML = `
+                    <td>
+                        <small style="color: #7f8c8d;">
+                            <i class="bi bi-calendar me-1"></i>
+                            ${escapeHtml(formattedDate)}
+                        </small>
+                    </td>
+                    <td>
+                        <strong style="color: #2c3e50;">
+                            <i class="bi bi-apple me-1"></i>
+                            ${escapeHtml(log.food_name || 'N/A')}
+                        </strong>
+                    </td>
+                    <td>
+                        <span class="badge" style="background-color: ${calorieColor}; color: white;">
+                            ${Math.round(calorieValue)} kcal
+                        </span>
+                    </td>
+                    <td><span style="color: #2ecc71; font-weight: 600;">${(log.protein || 0).toFixed(1)}g</span></td>
+                    <td><span style="color: #e74c3c; font-weight: 600;">${(log.fat || 0).toFixed(1)}g</span></td>
+                    <td><span style="color: #3498db; font-weight: 600;">${(log.carbs || 0).toFixed(1)}g</span></td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-warning rounded-2" onclick="editLog(${log.id})" 
+                                    title="Modifier" style="border-color: #f39c12; color: #f39c12;">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-outline-danger rounded-2" onclick="deleteLog(${log.id})" 
+                                    title="Supprimer">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            } catch (e) {
+                console.error('Error rendering log:', log, e);
+            }
+        });
+
+        console.log(`✅ Rendered ${logs.length} logs`);
+    } catch (e) {
+        console.error('Error in renderLogs:', e);
+        showToast('❌ Erreur affichage: ' + e.message, 'danger');
+    }
+}
+
+// ===== ADD LOG =====
+let editMode = false;
+let currentLogId = null;
+
+function addLog(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    if (!submitBtn) {
+        console.error('Submit button not found');
+        return;
+    }
+
+    // Disable button
+    submitBtn.disabled = true;
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = editMode
+        ? '<span class="spinner-border spinner-border-sm me-2"></span>Modification...'
+        : '<span class="spinner-border spinner-border-sm me-2"></span>Ajout...';
+
+    const body = Object.fromEntries(formData);
+
+    console.log(editMode ? '✏️ Updating log:' : '📝 Adding log:', body);
+
+    // ===== 🔥 ICI LA MAGIE =====
+    const url = editMode
+        ? `{{ path("nutrition_update", {"id": 0}) }}`.replace('0', currentLogId)
+        : '{{ path("nutrition_add") }}';
+
+    const method = editMode ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+    .then(r => {
+        if (!r.ok) {
+            throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        }
+        return r.json();
+    })
+    .then(data => {
+        console.log('✅ Response:', data);
+
+        if (data.success) {
+
+            showToast(
+                editMode
+                    ? '✅ Log modifié avec succès!'
+                    : '✅ Log ajouté avec succès!',
+                'success'
+            );
+
+            // reset form
+            form.reset();
+
+            const logDateInput = document.querySelector('input[name="log_date"]');
+            if (logDateInput) {
+                logDateInput.valueAsDate = new Date();
+            }
+
+            // close modal
+            const modal = bootstrap.Modal.getInstance(
+                document.getElementById('addLogModal')
+            );
+            if (modal) modal.hide();
+
+            // ===== RESET EDIT MODE =====
+            editMode = false;
+            currentLogId = null;
+
+            // reset UI
+            document.getElementById('addLogModalLabel').innerHTML =
+                '<i class="bi bi-plus-circle me-2"></i> Ajouter un Log Nutrition';
+
+            submitBtn.innerHTML =
+                '<i class="bi bi-check-circle me-2"></i> Ajouter';
+
+            loadDashboard();
+
+        } else {
+            showToast('❌ Erreur: ' + (data.error || 'Erreur inconnue'), 'danger');
+        }
+    })
+    .catch(e => {
+        console.error('❌ Error:', e);
+        showToast('❌ Erreur: ' + e.message, 'danger');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+}
+
+// ===== DELETE LOG =====
+function deleteLog(id) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce log ?')) {
+        return;
+    }
+
+    console.log('🗑️ Deleting log:', id);
+
+    fetch(`{{ path("nutrition_delete", {"id": 0}) }}`.replace('0', id), {
+        method: 'DELETE'
+    })
+    .then(r => {
+        if (!r.ok) {
+            throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        }
+        return r.json();
+    })
+    .then(data => {
+        console.log('✅ Log deleted:', data);
+        if (data.success) {
+            showToast('✅ Log supprimé!', 'success');
+            loadDashboard();
+        } else {
+            showToast('❌ Erreur: ' + (data.error || 'Erreur inconnue'), 'danger');
+        }
+    })
+    .catch(e => {
+        console.error('❌ Error deleting log:', e);
+        showToast('❌ Erreur: ' + e.message, 'danger');
+    });
+}
+
+// ===== EDIT LOG (placeholder) =====
+function editLog(id) {
+    console.log('✏️ Edit function called for log:', id);
+    showToast('ℹ️ Fonction modifier disponible bientôt', 'info');
+}
+
+// ===== RESET FILTERS =====
+function resetFilters() {
+    console.log('🔄 Resetting filters');
+    
+    const searchInput = document.getElementById('searchInput');
+    const filterDate = document.getElementById('filterDate');
+    const sortSelect = document.getElementById('sortSelect');
+
+    if (searchInput) searchInput.value = '';
+    if (filterDate) filterDate.valueAsDate = new Date();
+    if (sortSelect) sortSelect.value = 'date-desc';
+    
+    filterAndSort();
+    showToast('✅ Filtres réinitialisés', 'success');
+}
+
+// ===== CHARTS =====
+function createMacrosChart(macros) {
+    try {
+        const canvasEl = document.getElementById('macrosChart');
+        if (!canvasEl) {
+            console.error('macrosChart canvas not found');
+            return;
+        }
+
+        const ctx = canvasEl.getContext('2d');
+        
+        if (window.macrosChartInstance) {
+            window.macrosChartInstance.destroy();
+        }
+
+        const data = [macros.protein || 0, macros.fat || 0, macros.carbs || 0];
+        console.log('📊 Creating macros chart with data:', data);
+
+        window.macrosChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Protéines', 'Graisses', 'Glucides'],
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['#2ecc71', '#e74c3c', '#3498db'],
+                    borderColor: '#fff',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: { size: 12, weight: 600 }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (e) {
+        console.error('❌ Error creating macros chart:', e);
+    }
+}
+
+function createCaloriesChart(byDay) {
+    try {
+        if (!Array.isArray(byDay) || byDay.length === 0) {
+            console.warn('Invalid byDay data:', byDay);
+            return;
+        }
+
+        const canvasEl = document.getElementById('caloriesChart');
+        if (!canvasEl) {
+            console.error('caloriesChart canvas not found');
+            return;
+        }
+
+        const labels = byDay.map(d => {
+            try {
+                const date = new Date(d.date);
+                return isNaN(date) ? d.date : date.toLocaleDateString('fr-FR', { weekday: 'short' });
+            } catch (e) {
+                return d.date;
+            }
+        });
+        
+        const calories = byDay.map(d => d.calories || 0);
+
+        console.log('📈 Creating calories chart:', { labels, calories });
+
+        const ctx = canvasEl.getContext('2d');
+        
+        if (window.caloriesChartInstance) {
+            window.caloriesChartInstance.destroy();
+        }
+
+        window.caloriesChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Calories',
+                    data: calories,
+                    borderColor: 'var(--energy-orange)',
+                    backgroundColor: 'rgba(242, 140, 40, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 6,
+                    pointBackgroundColor: 'var(--energy-orange)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                    }
+                }
+            }
+        });
+    } catch (e) {
+        console.error('❌ Error creating calories chart:', e);
+    }
+}
+
+// ===== TOAST NOTIFICATION =====
+function showToast(message, type = 'info') {
+    try {
+        const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+        const toast = document.createElement('div');
+        
+        // Sanitize type
+        const validTypes = ['success', 'danger', 'warning', 'info'];
+        const safeType = validTypes.includes(type) ? type : 'info';
+        
+        toast.className = `alert alert-${safeType} alert-dismissible fade show shadow-sm`;
+        toast.setAttribute('role', 'alert');
+        toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; animation: slideInRight 0.3s ease;';
+        toast.innerHTML = `
+            ${escapeHtml(message)}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        toastContainer.appendChild(toast);
+
+        console.log(`📢 Toast [${safeType}]: ${message}`);
+
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 5000);
+    } catch (e) {
+        console.error('Error creating toast:', e);
+    }
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.setAttribute('role', 'region');
+    container.setAttribute('aria-live', 'polite');
+    container.setAttribute('aria-atomic', 'true');
+    document.body.appendChild(container);
+    return container;
+}
+
+// ===== ESCAPE HTML =====
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return String(text || '').replace(/[&<>"']/g, m => map[m]);
+}
+
+// ===== ERROR HANDLING =====
+window.addEventListener('error', function(e) {
+    console.error('🔴 Global error:', e.error);
+});
+
+window.addEventListener('unhandledrejection', function(e) {
+    console.error('🔴 Unhandled promise rejection:', e.reason);
+});
+function editLog(id) {
+    const log = allLogs.find(l => l.id === id);
+    if (!log) return;
+
+    editMode = true;
+    currentLogId = id;
+
+    const form = document.getElementById('addLogForm');
+
+    form.food_name.value = log.food_name;
+    form.calories.value = log.calories;
+    form.protein.value = log.protein;
+    form.fat.value = log.fat;
+    form.carbs.value = log.carbs;
+    form.log_date.value = log.log_date;
+
+    // changer titre modal
+    document.getElementById('addLogModalLabel').innerHTML =
+        '<i class="bi bi-pencil me-2"></i> Modifier Log';
+
+    // changer bouton
+    form.querySelector('button[type="submit"]').innerHTML =
+        '<i class="bi bi-check-circle me-2"></i> Modifier';
+
+    // ouvrir modal
+    const modal = new bootstrap.Modal(document.getElementById('addLogModal'));
+    modal.show();
+}
+</script>
+
+<style>
+    @keyframes slideInRight {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .btn-eco {
+        background-color: #27ae60 !important;
+        color: white !important;
+        border: none !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .btn-eco:hover {
+        background-color: #229954 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3) !important;
+    }
+
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    #logsTable tr:hover {
+        background-color: rgba(39, 174, 96, 0.05);
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #27ae60 !important;
+        box-shadow: 0 0 0 0.2rem rgba(39, 174, 96, 0.25) !important;
+    }
+</style>
+{% endblock %}
+

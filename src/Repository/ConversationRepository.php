@@ -34,6 +34,9 @@ class ConversationRepository extends ServiceEntityRepository
 //    }
 // Fichier: src/Repository/ConversationRepository.php
 
+/**
+ * @return Conversation|null
+ */
 public function findOneByParticipants(UserApp $u1, UserApp $u2)
 {
     return $this->createQueryBuilder('c')
@@ -50,6 +53,28 @@ public function findOneByParticipants(UserApp $u1, UserApp $u2)
         ->getOneOrNullResult();
 }
 
+    public function findLatestNonBlockedPrivateByParticipants(UserApp $u1, UserApp $u2): ?Conversation
+    {
+        return $this->createQueryBuilder('c')
+            ->join('c.participants', 'p1')
+            ->join('c.participants', 'p2')
+            ->where('c.est_groupe = :isGroup')
+            ->andWhere('p1 = :u1')
+            ->andWhere('p2 = :u2')
+            ->andWhere('(c.titre IS NULL OR c.titre NOT LIKE :blockedPrefix)')
+            ->setParameter('isGroup', false)
+            ->setParameter('u1', $u1)
+            ->setParameter('u2', $u2)
+            ->setParameter('blockedPrefix', '[PRIVATE_BLOCKED] %')
+            ->orderBy('c.date_creation', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * @return array<int, Conversation>|null
+     */
     public function findConversationsByUser(UserApp $user)
     {
         return $this->createQueryBuilder('c')
@@ -64,6 +89,9 @@ public function findOneByParticipants(UserApp $u1, UserApp $u2)
             ->getResult();
     }
 
+    /**
+     * @return array<int, mixed>
+     */
     public function getUnreadCountsForUser(UserApp $user): array
     {
         $rows = $this->getEntityManager()->createQueryBuilder()

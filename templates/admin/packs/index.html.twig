@@ -1063,6 +1063,16 @@
         </form>
     </div>
 
+    {% include 'admin/packs/_decision_panel.html.twig' with {
+        topPromising: topPromising|default([]),
+        averagePackScore: averagePackScore|default(0)
+    } only %}
+
+    {% include 'admin/packs/_risk_panel.html.twig' with {
+        topRiskyPacks: topRiskyPacks|default([]),
+        averagePackRisk: averagePackRisk|default(0)
+    } only %}
+
     <div class="packs-content-grid">
         <div class="packs-list-column">
             <div class="table-box" data-reveal-panel="list">
@@ -1078,12 +1088,16 @@
                                 <th>Réduction</th>
                                 <th>Prix final</th>
                                 <th>Nb activités</th>
+                                <th>Score</th>
+                                <th>Risque</th>
                                 <th>Statut</th>
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for pack in packs %}
+                                {% set insight = packInsights[pack.idPack] ?? null %}
+                                {% set risk = packRiskViews[pack.idPack] ?? null %}
                                 <tr>
                                     <td>
                                         <div class="pack-name">{{ pack.nom }}</div>
@@ -1094,6 +1108,29 @@
                                     <td>{{ pack.reduction }} DT</td>
                                     <td><span class="price-main">{{ pack.prixFinal|number_format(2, '.', ' ') }} DT</span></td>
                                     <td>{{ pack.nbActivitesMax }}</td>
+                                    <td>
+                                        {% if insight %}
+                                            <div class="fw-bold">{{ insight.score|number_format(1, '.', ' ') }}/100</div>
+                                            {% if insight.primaryBadge %}
+                                                <small class="text-muted">{{ insight.primaryBadge }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if risk %}
+                                            <div class="fw-bold">{{ risk.riskScore|number_format(1, '.', ' ') }}/100</div>
+                                            <div class="d-flex flex-wrap gap-1 my-1">
+                                                {% include 'admin/risk/_badge.html.twig' with { level: risk.riskLevel } only %}
+                                            </div>
+                                            <small class="text-muted d-block">{{ risk.riskProfile }}</small>
+                                            <small class="text-muted d-block">{{ risk.primaryAction ?: 'surveiller' }}</small>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
 
                                     <td>
                                         {% if pack.statutPack|lower in ['actif', 'active', 'disponible'] %}

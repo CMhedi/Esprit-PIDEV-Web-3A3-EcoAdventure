@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Reclamation;
+use App\Enum\StatutReclamation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -14,6 +15,39 @@ class ReclamationRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Reclamation::class);
+    }
+    /** @return array<mixed> */
+    public function countByStatus(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->select('r.statut, COUNT(r.id_reclamation) as total')
+            ->groupBy('r.statut')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return array<int, Reclamation> */
+    public function findUrgentTickets(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.priorite = :p')
+            ->andWhere('r.statut = :s')
+            ->setParameter('p', 'HAUTE')
+            ->setParameter('s', StatutReclamation::EN_ATTENTE)
+            ->orderBy('r.date_creation', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return array<mixed> */
+    public function countByTypeAndMonth(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->select('r.type, SUBSTRING(r.date_creation, 1, 7) as month, COUNT(r.id_reclamation) as total')
+            ->groupBy('r.type, month')
+            ->orderBy('month', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 
 //    /**

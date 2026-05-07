@@ -1,8 +1,9 @@
 <?php
 
 namespace App\Controller;
-
+use App\Service\ReclamationProcessor;
 use App\Entity\Reclamation;
+use App\Entity\UserApp;
 use App\Form\ReclamationType;
 use App\Repository\ReclamationRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -11,7 +12,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Enum\StatutReclamation;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/reclamation')]
+#[IsGranted('ROLE_USER')]
 final class ReclamationController extends AbstractController
 {
     #[Route('/admin', name: 'app_admin_reclamation_index', methods: ['GET'])]
@@ -42,28 +45,39 @@ final class ReclamationController extends AbstractController
     }
 
 
-    #[Route('/new', name: 'app_reclamation_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+#[Route('/new', name: 'app_reclamation_new', methods: ['GET', 'POST'])]
+    public function new(Request $request, EntityManagerInterface $entityManager, ReclamationProcessor $processor): Response
     {
         $reclamation = new Reclamation();
-        
-        // 1. Data automatique
-        $reclamation->setDate_creation(new \DateTime()); // Thabbet f'ism el function f'el Entity (date_creation)
         $reclamation->setStatut(StatutReclamation::EN_ATTENTE);
-        $reclamation->setUserApp($this->getUser());
+        $user = $this->getUser();
+        if ($user instanceof UserApp) {
+            $reclamation->setUserApp($user);
+        }
 
         $form = $this->createForm(ReclamationType::class, $reclamation);
         $form->handleRequest($request);
 
-        // 2. Thabbet ken el form t'eb3at
-        if ($form->isSubmitted() && $form->isValid()) { 
+        if ($form->isSubmitted() && $form->isValid()) {
+            $type = $reclamation->getType();
+
+            // Logique de priorité
+            if ($type === 'Séance' || $type === 'Paiement') {
+                $reclamation->setPriorite('HAUTE');
+            } elseif ($type === 'Technique') {
+                $reclamation->setPriorite('MOYENNE');
+            } else {
+                $reclamation->setPriorite('BASSE');
+            }
+
             $entityManager->persist($reclamation);
             $entityManager->flush();
-
-            return $this->redirectToRoute('app_reclamation_index');
+            
+            return $this->redirectToRoute('app_reclamation_index'); 
         }
 
         return $this->render('reclamation/new.html.twig', [
+            'reclamation' => $reclamation, 
             'form' => $form->createView(),
         ]);
     }
