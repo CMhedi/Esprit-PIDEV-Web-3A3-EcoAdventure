@@ -38,10 +38,7 @@ class RegistrationController extends AbstractController
                 $userPasswordHasher->hashPassword($user, $clearPassword)
             );
 
-            // 2. Set default role if not set
-            if (!$user->getRole()) {
-                $user->setRole(RoleUser::USER_SIMPLE);
-            }
+            // 2. Set default role if not set (defaulted in entity)
             
             $entityManager->persist($user);
             $entityManager->flush();

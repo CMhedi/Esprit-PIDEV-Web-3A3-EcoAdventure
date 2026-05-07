@@ -2070,7 +2070,6 @@ public function callLog(
         $assistant->setEmail($assistantEmail);
         $assistant->setRole(RoleUser::USER_SIMPLE);
         $assistant->setMot_de_passe(password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT));
-        $assistant->setDate_creation(new \DateTime());
         $assistant->setLast_seen(new \DateTime());
 
         $em->persist($assistant);

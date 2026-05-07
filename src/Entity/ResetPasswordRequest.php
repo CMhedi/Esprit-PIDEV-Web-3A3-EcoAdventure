@@ -21,7 +21,7 @@ class ResetPasswordRequest implements ResetPasswordRequestInterface
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id_user', nullable: false)]
     private ?UserApp $user = null;
 
-    public function __construct(?object $user = null, ?\DateTimeInterface $expiresAt = null, string $selector = '', string $hashedToken = '')
+    public function __construct(?UserApp $user = null, ?\DateTimeInterface $expiresAt = null, string $selector = '', string $hashedToken = '')
     {
         $this->user = $user;
         $this->expiresAt = $expiresAt ?? new \DateTimeImmutable('+1 hour');

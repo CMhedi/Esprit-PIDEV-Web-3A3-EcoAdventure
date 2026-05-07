@@ -8,13 +8,11 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 class TwoFactorGuardSubscriber implements EventSubscriberInterface
 {
     public function __construct(
         private UrlGeneratorInterface $urlGenerator,
-        private TokenStorageInterface $tokenStorage,
         private LoginRequestRepository $loginRequestRepository
     ) {
     }
