@@ -3,7 +3,9 @@
 namespace App\Tests\Service;
 
 use App\Entity\UserApp;
+use App\Entity\Reclamation;
 use App\Service\UserManager;
+use App\Service\ReclamationProcessor;
 use PHPUnit\Framework\TestCase;
 
 class UserManagerTest extends TestCase
@@ -90,5 +92,98 @@ class UserManagerTest extends TestCase
 
         $manager = new UserManager();
         $manager->validateResetIdentifier('invalid');
+    }
+
+    public function testValidReclamation()
+    {
+        $reclamation = new Reclamation();
+        $reclamation->setType('Technique');
+        $reclamation->setContenu('Problème de connexion');
+
+        $manager = new UserManager();
+        $this->assertTrue($manager->validateReclamation($reclamation));
+    }
+
+    public function testReclamationWithoutContent()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Le contenu de la réclamation est obligatoire');
+
+        $reclamation = new Reclamation();
+        $reclamation->setType('Technique');
+
+        $manager = new UserManager();
+        $manager->validateReclamation($reclamation);
+    }
+
+    public function testReclamationWithoutType()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Le type de la réclamation est obligatoire');
+
+        $reclamation = new Reclamation();
+        $reclamation->setContenu('Problème de connexion');
+
+        $manager = new UserManager();
+        $manager->validateReclamation($reclamation);
+    }
+
+    public function testReclamationPriorityHAUTE()
+    {
+        $reclamation = new Reclamation();
+        $reclamation->setType('Problème grave');
+        $reclamation->setContenu('Il y a un danger imminent');
+
+        $processor = new ReclamationProcessor();
+        $processor->calculatePriority($reclamation);
+
+        $this->assertEquals('HAUTE', $reclamation->getPriorite());
+    }
+
+    public function testReclamationPriorityMOYENNE()
+    {
+        $reclamation = new Reclamation();
+        $reclamation->setType('Retard');
+        $reclamation->setContenu('Le coach est en retard');
+
+        $processor = new ReclamationProcessor();
+        $processor->calculatePriority($reclamation);
+
+        $this->assertEquals('MOYENNE', $reclamation->getPriorite());
+    }
+
+    public function testReclamationPriorityBASSE()
+    {
+        $reclamation = new Reclamation();
+        $reclamation->setType('Suggestion');
+        $reclamation->setContenu('Vous devriez ajouter plus de fleurs');
+
+        $processor = new ReclamationProcessor();
+        $processor->calculatePriority($reclamation);
+
+        $this->assertEquals('BASSE', $reclamation->getPriorite());
+    }
+
+    public function testReclamationDefaultStatusIsEnAttente()
+    {
+        $reclamation = new Reclamation();
+        $this->assertEquals(\App\Enum\StatutReclamation::EN_ATTENTE, $reclamation->getStatut());
+    }
+
+    public function testReclamationDateCreationIsSet()
+    {
+        $reclamation = new Reclamation();
+        $this->assertInstanceOf(\DateTimeInterface::class, $reclamation->getDate_creation());
+    }
+
+    public function testReclamationUserAssociation()
+    {
+        $user = new UserApp();
+        $user->setNom('Ben Foulen');
+
+        $reclamation = new Reclamation();
+        $reclamation->setUserApp($user);
+
+        $this->assertSame($user, $reclamation->getUserApp());
     }
 }

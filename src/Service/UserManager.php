@@ -39,4 +39,17 @@ class UserManager
 
         return true;
     }
+
+    public function validateReclamation(\App\Entity\Reclamation $reclamation): bool
+    {
+        if (empty($reclamation->getContenu())) {
+            throw new \InvalidArgumentException('Le contenu de la réclamation est obligatoire');
+        }
+
+        if (empty($reclamation->getType())) {
+            throw new \InvalidArgumentException('Le type de la réclamation est obligatoire');
+        }
+
+        return true;
+    }
 }

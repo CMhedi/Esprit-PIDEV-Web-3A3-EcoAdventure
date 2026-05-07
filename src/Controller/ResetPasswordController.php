@@ -54,11 +54,13 @@ class ResetPasswordController extends AbstractController
                 return $this->redirectToRoute('app_forgot_password_request');
             }
 
-            $user = $this->entityManager->getRepository(UserApp::class)->createQueryBuilder('u')
+            $users = $this->entityManager->getRepository(UserApp::class)->createQueryBuilder('u')
                 ->where('u.email = :identifier OR u.telephone = :identifier')
                 ->setParameter('identifier', $identifier)
                 ->getQuery()
-                ->getOneOrNullResult();
+                ->getResult();
+
+            $user = !empty($users) ? $users[0] : null;
 
             if (!$user) {
                 $this->addFlash('reset_password_error', 'Utilisateur non trouvé .');
