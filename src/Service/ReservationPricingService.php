@@ -20,7 +20,8 @@ class ReservationPricingService
 
     /**
      * Calcule le prix total pour une réservation
-     * Retourne un tableau avec [sousTotal, remise, totalFinal, appliquePromo]
+     *
+     * @return array{sousTotal: float, remise: float, totalFinal: float, appliquePromo: bool, tauxRemise: float, threshold: int}
      */
     public function calculatePricing(Evenement $evenement, int $nbBillets): array
     {

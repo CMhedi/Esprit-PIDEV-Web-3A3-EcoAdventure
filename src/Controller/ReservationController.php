@@ -123,6 +123,10 @@ class ReservationController extends AbstractController
         ]);
     }
 
+    /**
+     * @param array<string, string[]> $fieldErrors
+     * @param array<string, string> $formData
+     */
     private function renderReservationForm(
         Activite $activite,
         array $fieldErrors = [],
@@ -135,6 +139,9 @@ class ReservationController extends AbstractController
         ]);
     }
 
+    /**
+     * @return array<string, string[]>
+     */
     private function mapViolations(ConstraintViolationListInterface $violations): array
     {
         $fieldErrors = [];
@@ -154,9 +161,9 @@ class ReservationController extends AbstractController
             return $authenticatedUser;
         }
 
-        $session = $request->getSession();
-
-        if ($session === null) {
+        try {
+            $session = $request->getSession();
+        } catch (\Symfony\Component\HttpFoundation\Exception\SessionNotFoundException $e) {
             return null;
         }
 

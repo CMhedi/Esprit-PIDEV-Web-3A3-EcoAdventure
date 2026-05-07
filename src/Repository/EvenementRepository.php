@@ -16,8 +16,10 @@ class EvenementRepository extends ServiceEntityRepository
         parent::__construct($registry, Evenement::class);
     }
 
-    // 🔍 FILTRE
-    public function findByFilters(?string $search, ?string $categorie, ?string $lieu, ?string $sortBy = 'date_desc', bool $onlyAvailable = false, int $page = 1, int $limit = 6)
+    /**
+     * @return \Doctrine\ORM\Tools\Pagination\Paginator<Evenement>
+     */
+    public function findByFilters(?string $search, ?string $categorie, ?string $lieu, ?string $sortBy = 'date_desc', bool $onlyAvailable = false, int $page = 1, int $limit = 6): \Doctrine\ORM\Tools\Pagination\Paginator
     {
         $qb = $this->createQueryBuilder('e');
 
@@ -70,7 +72,9 @@ class EvenementRepository extends ServiceEntityRepository
         return new \Doctrine\ORM\Tools\Pagination\Paginator($qb);
     }
 
-    // 📍 LIEUX DISTINCTS
+    /**
+     * @return string[]
+     */
     public function findDistinctLieux(): array
     {
         return $this->createQueryBuilder('e')

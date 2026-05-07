@@ -143,7 +143,7 @@ class StatistiqueController extends AbstractController
     }
 
     #[Route('/export-excel', name: 'app_admin_statistiques_export_excel', methods: ['GET'])]
-    public function exportExcel(EvenementRepository $evenementRepository, ReservationPricingService $pricingService): Response
+    public function exportExcel(EvenementRepository $evenementRepository, ReservationPricingService $pricingService, \App\Service\AiEventOptimizerService $aiOptimizer): Response
     {
         $events = $evenementRepository->findAll();
 
@@ -331,35 +331,23 @@ class StatistiqueController extends AbstractController
         $totalBilletsAnnee = 0;
 
         foreach ($events as $event) {
-            // Algorithme de prédiction (mock/simulation mathématique intelligente)
-            $placesMax = $event->getNb_places();
-            $placesRestantes = $event->getPlacesRestantes();
-            $placesVendues = max(0, $placesMax - $placesRestantes);
+            // 🤖 APPEL À L'AGENT IA POUR LES PRÉDICTIONS (FINI LE PHP !)
+            $aiPrediction = $aiOptimizer->predictFinancials($event);
             
-            $tauxRemplissage = $placesMax > 0 ? ($placesVendues / $placesMax) : 0;
-            
-            // L'IA estime le facteur de croissance (growth factor) selon la catégorie
-            $facteurSaison = 1.0;
-            $cat = $event->getCategorie_evt()->value;
-            if ($cat === 'NAUTIQUE') $facteurSaison = 1.4; // Plus populaire l'été
-            if ($cat === 'ALPINISME') $facteurSaison = 0.9;
-            if ($cat === 'VELO') $facteurSaison = 1.2;
+            $scoreIA = $aiPrediction['score_ia'];
+            $predictedTickets = $aiPrediction['predicted_tickets'];
+            $predictedCA = $aiPrediction['predicted_ca'];
 
-            // Score pseudo Machine Learning (Combinaison du remplissage + saison)
-            $scoreIA = round(($tauxRemplissage * 0.6 + $facteurSaison * 0.4) * 100, 1);
-            if ($scoreIA < 10) $scoreIA = rand(30, 50); // Minimum boost
-            
-            // Prédiction pour les 12 prochains mois (Récurrence estimée)
-            // On estime que l'événement aura lieu 10 fois dans l'année avec ce taux IA
-            $predictedTickets = (int) ($placesMax * ($scoreIA / 100) * 10);
-            $predictedCA = $predictedTickets * $event->getPrix();
+            // Calcul du taux actuel pour l'affichage
+            $placesMax = $event->getNb_places();
+            $tauxRemplissage = $placesMax > 0 ? (max(0, $placesMax - $event->getPlacesRestantes()) / $placesMax) : 0;
 
             $totalBilletsAnnee += $predictedTickets;
             $totalCAAnnee += $predictedCA;
 
             $mlSheet->setCellValue('A' . $rowML, $event->getId_evenement());
             $mlSheet->setCellValue('B' . $rowML, $event->getTitre());
-            $mlSheet->setCellValue('C' . $rowML, $cat);
+            $mlSheet->setCellValue('C' . $rowML, $event->getCategorie_evt()->value);
             $mlSheet->setCellValue('D' . $rowML, round($tauxRemplissage * 100, 1) . ' %');
             $mlSheet->setCellValue('E' . $rowML, $scoreIA . '/100');
             $mlSheet->setCellValue('F' . $rowML, $predictedTickets);

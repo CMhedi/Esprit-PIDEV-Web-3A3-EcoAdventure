@@ -55,7 +55,7 @@ class Activite
         notInRangeMessage: 'Le prix doit etre entre {{ min }} et {{ max }} DT.'
     )]
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private ?float $prix = null;
+    private ?string $prix = null;
 
     #[Assert\NotNull(message: 'Le statut est obligatoire.')]
     #[ORM\Column(enumType: Statut::class)]
@@ -131,12 +131,12 @@ class Activite
         return $this;
     }
 
-    public function getPrix(): ?float
+    public function getPrix(): ?string
     {
         return $this->prix;
     }
 
-    public function setPrix(?float $prix): self
+    public function setPrix(?string $prix): self
     {
         $this->prix = $prix;
 

@@ -112,7 +112,7 @@ class AiEventOptimizerService
     }
 
     /**
-     * Cas 4 : Yield Management (Tarification Dynamique)
+     * Cas 4 : notif Management (Tarification Dynamique)
      */
     public function analyzeYieldManagement(Evenement $evenement, float $heuresRemplissage): array
     {

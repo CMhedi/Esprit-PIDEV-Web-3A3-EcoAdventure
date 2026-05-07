@@ -255,7 +255,7 @@ class ReservationController extends AbstractController
 
         // 🤖 4) YIELD MANAGEMENT (TARIFICATION DYNAMIQUE)
         $yieldData = $aiOptimizer->analyzeYieldManagement($evenement, 1.5);
-        if (isset($yieldData['admin_alert']) && strpos($yieldData['admin_alert'], 'FORTE') !== false) {
+        if (str_contains($yieldData['admin_alert'], 'FORTE')) {
             $now = new \DateTimeImmutable('now', new \DateTimeZone('Africa/Tunis'));
             $notifYield = new Notification();
             $notifYield->setTitle('⚡ PRIX DYNAMIQUE AGENT IA')

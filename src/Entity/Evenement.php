@@ -153,7 +153,7 @@ class Evenement
     /**
      * @var Collection<int, ReservationEvenement>
      */
-    #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement', cascade: ['remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $reservationEvenements;
 
     /**
