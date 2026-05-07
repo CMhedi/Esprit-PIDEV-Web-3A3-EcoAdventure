@@ -38,6 +38,7 @@
                             <form action="{{ path('app_admin_reservation_delete', {'id': reservation.idResAct}) }}" 
                                   method="POST" style="display:inline-block;" 
                                   onsubmit="return confirm('Voulez-vous vraiment supprimer cette réservation ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete_reservation_' ~ reservation.idResAct) }}">
                                 <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
                             </form>
                         </td>

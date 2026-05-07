@@ -26,13 +26,15 @@ class ReservationAdminController extends AbstractController
     }
 
     #[Route('/delete/{id}', name: 'app_admin_reservation_delete', methods: ['POST'])]
-    public function delete(int $id, EntityManagerInterface $em): Response
+    public function delete(int $id, Request $request, EntityManagerInterface $em): Response
     {
         $reservation = $em->getRepository(ReservationActivite::class)->find($id);
-        if ($reservation) {
+        if ($reservation && $this->isCsrfTokenValid('delete_reservation_' . $reservation->getIdResAct(), $request->request->get('_token'))) {
             $em->remove($reservation);
             $em->flush();
             $this->addFlash('success', 'Réservation supprimée avec succès !');
+        } elseif ($reservation) {
+            $this->addFlash('danger', 'Jeton CSRF invalide.');
         }
         return $this->redirectToRoute('app_admin_reservations');
     }
