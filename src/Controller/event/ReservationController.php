@@ -21,6 +21,7 @@ use App\Entity\Notification;
 use App\Service\EventDocumentService;
 use App\Service\EventWorkflowService;
 use App\Service\ReservationPricingService;
+use App\Service\ReservationManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -133,7 +134,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/ticket/{id_res_evt}', name: 'app_reservation_ticket', methods: ['GET'])]
-    public function generateTicket(ReservationEvenement $reservation, ReservationPricingService $pricingService): Response
+    public function generateTicket(ReservationEvenement $reservation): Response
     {
         // 1. Generate QR Code
         $writer = new SvgWriter();
@@ -156,7 +157,7 @@ class ReservationController extends AbstractController
         $options->set('defaultFont', 'Arial');
         $dompdf = new Dompdf($options);
 
-        $pricing = $pricingService->calculatePricing($reservation->getEvenement(), $reservation->getNb_billets());
+        $pricing = $this->pricingService->calculatePricing($reservation->getEvenement(), $reservation->getNb_billets());
 
         $html = $this->renderView('front/event/ticket_pdf.html.twig', [
             'reservation' => $reservation,
@@ -182,25 +183,25 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/evenement/{id_evenement}', name: 'app_reservation_event', methods: ['POST'])]
-    public function reserver(Request $request, Evenement $evenement, EntityManagerInterface $entityManager, \App\Service\AiEventOptimizerService $aiOptimizer): Response
+    public function reserver(Request $request, Evenement $evenement, EntityManagerInterface $entityManager, \App\Service\AiEventOptimizerService $aiOptimizer, ReservationManager $reservationManager): Response
     {
-        /** @var UserApp $user */
         $user = $this->getUser();
 
-        if (!$user) {
+        if (!$user instanceof UserApp) {
             $this->addFlash('error', 'Vous devez être connecté pour réserver.');
             return $this->redirectToRoute('app_login');
         }
 
         $nbBillets = (int) $request->request->get('nb_billets', 1);
-        $placesRestantes = $evenement->getPlacesRestantes();
 
-
-
-        if ($placesRestantes > 0 && $nbBillets > $placesRestantes) {
-            $this->addFlash('error', sprintf('Il ne reste que %d place(s). Vous ne pouvez pas réserver plus que ce qui est disponible tant que l\'événement n\'est pas complet.', $placesRestantes));
+        try {
+            $reservationManager->validateReservationDemande($evenement, $nbBillets);
+        } catch (\LogicException $e) {
+            $this->addFlash('error', $e->getMessage());
             return $this->redirectToRoute('app_event_front_show', ['id_evenement' => $evenement->getId_evenement()]);
         }
+
+        $placesRestantes = $evenement->getPlacesRestantes();
 
             if ($placesRestantes <= 0) {
             $reservationsAttente = $entityManager->getRepository(ReservationEvenement::class)->findBy([
@@ -251,16 +252,14 @@ class ReservationController extends AbstractController
 
         $entityManager->persist($reservation);
 
-        if ($user instanceof UserApp) {
-            $user->addLoyaltyPoints($nbBillets * 10);
-            $entityManager->persist($user);
-        }
+        $user->addLoyaltyPoints($nbBillets * 10);
+        $entityManager->persist($user);
 
         $entityManager->flush();
 
         // 🤖 4) YIELD MANAGEMENT (TARIFICATION DYNAMIQUE)
         $yieldData = $aiOptimizer->analyzeYieldManagement($evenement, 1.5);
-        if (isset($yieldData['admin_alert']) && strpos($yieldData['admin_alert'], 'FORTE') !== false) {
+        if (str_contains($yieldData['admin_alert'], 'FORTE')) {
             $now = new \DateTimeImmutable('now', new \DateTimeZone('Africa/Tunis'));
             $notifYield = new Notification();
             $notifYield->setTitle('⚡ PRIX DYNAMIQUE AGENT IA')
@@ -295,7 +294,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/confirmer-event/{id_evenement}', name: 'app_reservation_confirm_event', methods: ['GET', 'POST'])]
-    public function confirmerEvent(Evenement $evenement, EntityManagerInterface $entityManager, \Symfony\Component\Routing\Generator\UrlGeneratorInterface $urlGenerator, ReservationPricingService $pricingService): Response
+    public function confirmerEvent(Evenement $evenement, EntityManagerInterface $entityManager, \Symfony\Component\Routing\Generator\UrlGeneratorInterface $urlGenerator): Response
     {
         $user = $this->getUser();
         if (!$user) {
@@ -319,7 +318,7 @@ class ReservationController extends AbstractController
             $totalBillets += $res->getNb_billets();
         }
 
-        $pricing = $pricingService->calculatePricing($evenement, $totalBillets);
+        $pricing = $this->pricingService->calculatePricing($evenement, $totalBillets);
         $totalFinal = $pricing['totalFinal'];
 
         // Tentative d'utilisation de Stripe (Mode Test)
@@ -391,7 +390,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/mes-reservations', name: 'app_mes_reservations', methods: ['GET'])]
-    public function mesReservations(Request $request, EntityManagerInterface $entityManager, ReservationPricingService $pricingService): Response
+    public function mesReservations(Request $request, EntityManagerInterface $entityManager): Response
     {
         $user = $this->getUser();
 
@@ -436,7 +435,7 @@ class ReservationController extends AbstractController
         }
 
         foreach ($groupedReservations as $eventId => $data) {
-            $groupedReservations[$eventId]['pricing'] = $pricingService->calculatePricing($data['evenement'], $data['total_billets']);
+            $groupedReservations[$eventId]['pricing'] = $this->pricingService->calculatePricing($data['evenement'], $data['total_billets']);
         }
 
         if ($hasUpdates) {

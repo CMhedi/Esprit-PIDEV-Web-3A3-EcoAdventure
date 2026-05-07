@@ -44,7 +44,7 @@ class ReservationEvenement
 
 
 
-#[ORM\Column(enumType: StatutReservationEvenement::class)]
+    #[ORM\Column(enumType: StatutReservationEvenement::class)]
 private ?StatutReservationEvenement $statut_res = null;
 
     public function getStatut_res(): ?StatutReservationEvenement
@@ -87,30 +87,30 @@ private ?StatutReservationEvenement $statut_res = null;
     }
 
     #[ORM\ManyToOne(targetEntity: UserApp::class, inversedBy: 'reservationEvenements')]
-    #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user')]
-    private ?UserApp $userApp = null;
+    #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user', nullable: false)]
+    private UserApp $userApp;
 
-    public function getUserApp(): ?UserApp
+    public function getUserApp(): UserApp
     {
         return $this->userApp;
     }
 
-    public function setUserApp(?UserApp $userApp): self
+    public function setUserApp(UserApp $userApp): self
     {
         $this->userApp = $userApp;
         return $this;
     }
 
     #[ORM\ManyToOne(targetEntity: Evenement::class, inversedBy: 'reservationEvenements')]
-    #[ORM\JoinColumn(name: 'id_evenement', referencedColumnName: 'id_evenement')]
-    private ?Evenement $evenement = null;
+    #[ORM\JoinColumn(name: 'id_evenement', referencedColumnName: 'id_evenement', nullable: false)]
+    private Evenement $evenement;
 
-    public function getEvenement(): ?Evenement
+    public function getEvenement(): Evenement
     {
         return $this->evenement;
     }
 
-    public function setEvenement(?Evenement $evenement): self
+    public function setEvenement(Evenement $evenement): self
     {
         $this->evenement = $evenement;
         return $this;

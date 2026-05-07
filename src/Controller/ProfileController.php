@@ -3,16 +3,20 @@
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\UserApp;
 
 final class ProfileController extends AbstractController
 {
     #[Route('/profile', name: 'app_profile_index')]
-    public function index(\Symfony\Component\HttpFoundation\Request $request, \Doctrine\ORM\EntityManagerInterface $em): Response
+    public function index(Request $request, EntityManagerInterface $em): Response
     {
         $user = $this->getUser();
-        if (!$user || !($user instanceof \App\Entity\UserApp)) {
+
+        if (!$user || !($user instanceof UserApp)) {
             return $this->redirectToRoute('app_login');
         }
 

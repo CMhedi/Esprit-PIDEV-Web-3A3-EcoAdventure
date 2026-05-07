@@ -20,7 +20,7 @@ class Evenement
 
     #[ORM\Column(type: 'string', length: 150)]
     #[Assert\NotBlank(message: "Le titre est obligatoire.")]
-    #[Assert\Length(min: 5, minMessage: "Le titre doit faire au moins {{ limit }} caract├¿res.")]
+    #[Assert\Length(min: 5, minMessage: "Le titre doit faire au moins {{ limit }} caractères.")]
     private ?string $titre = null;
 
     #[ORM\Column(type: 'string', length: 1000, nullable: true)]
@@ -28,12 +28,12 @@ class Evenement
     private ?string $description = null;
 
     #[ORM\Column(enumType: CategorieEvenement::class)]
-    #[Assert\NotNull(message: "Veuillez choisir une cat├®gorie.")]
+    #[Assert\NotNull(message: "Veuillez choisir une catégorie.")]
     private ?CategorieEvenement $categorie_evt = null;
 
     #[ORM\Column(type: 'datetime', nullable: false)]
     #[Assert\NotBlank(message: "La date est obligatoire.")]
-    #[Assert\GreaterThan("today", message: "La date de l'├®v├®nement doit ├¬tre dans le futur.")]
+    #[Assert\GreaterThan("today", message: "La date de l'événement doit être dans le futur.")]
     private ?\DateTimeInterface $date_event = null;
 
     #[ORM\Column(type: 'string', length: 150)]
@@ -42,16 +42,16 @@ class Evenement
 
     #[ORM\Column(type: 'integer')]
     #[Assert\NotBlank(message: "Le nombre de places est obligatoire.")]
-    #[Assert\Positive(message: "Le nombre de places doit ├¬tre positif.")]
+    #[Assert\Positive(message: "Le nombre de places doit être positif.")]
     private ?int $nb_places = null;
 
     #[ORM\Column(type: 'integer', options: ["default" => 10])]
-    #[Assert\PositiveOrZero(message: "La limite de la liste d'attente doit ├¬tre positive ou z├®ro.")]
+    #[Assert\PositiveOrZero(message: "La limite de la liste d'attente doit être positive ou zéro.")]
     private int $limite_attente = 10;
 
     #[ORM\Column(type: 'float', options: ["default" => 0.0])]
     #[Assert\NotBlank(message: "Le prix est obligatoire.")]
-    #[Assert\PositiveOrZero(message: "Le prix doit ├¬tre positif.")]
+    #[Assert\PositiveOrZero(message: "Le prix doit être positif.")]
     private float $prix = 0.0;
 
     public function getPrix(): float { return $this->prix; }
@@ -68,9 +68,9 @@ class Evenement
     public function getCategorieEvt(): ?CategorieEvenement { return $this->categorie_evt; }
     public function setCategorieEvt(CategorieEvenement $cat): self { $this->categorie_evt = $cat; return $this; }
     public function getDate_event(): ?\DateTimeInterface { return $this->date_event; }
-    public function setDate_event(\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
+    public function setDate_event(?\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
     public function getDateEvent(): ?\DateTimeInterface { return $this->date_event; }
-    public function setDateEvent(\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
+    public function setDateEvent(?\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
 
     public function getLieu(): ?string
     {
@@ -150,12 +150,16 @@ class Evenement
     public function getImageUrl(): ?string { return $this->image_url; }
     public function setImageUrl(?string $url): self { $this->image_url = $url; return $this; }
 
-    #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement', cascade: ['remove'], orphanRemoval: true)]
-    /** @var Collection<int, ReservationEvenement> */
+    /**
+     * @var Collection<int, ReservationEvenement>
+     */
+    #[ORM\OneToMany(targetEntity: ReservationEvenement::class, mappedBy: 'evenement', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $reservationEvenements;
 
+    /**
+     * @var Collection<int, EventRating>
+     */
     #[ORM\OneToMany(targetEntity: EventRating::class, mappedBy: 'evenement', cascade: ['remove'])]
-    /** @var Collection<int, EventRating> */
     private Collection $ratings;
 
     public function __construct()
@@ -210,14 +214,16 @@ class Evenement
 
     public function getPlacesRestantes(): int
     {
+        $totalPlaces = $this->nb_places ?? 0;
         $nbReservationsExistantes = 0;
+        
         foreach ($this->reservationEvenements as $res) {
             $statut = $res->getStatut_res();
             if ($statut !== \App\Enum\StatutReservationEvenement::ANNULEE && $statut !== \App\Enum\StatutReservationEvenement::LISTE_ATTENTE) {
-                $nbReservationsExistantes += $res->getNb_billets();
+                $nbReservationsExistantes += (int) $res->getNb_billets();
             }
         }
-        return max(0, $this->nb_places - $nbReservationsExistantes);
+        return max(0, $totalPlaces - $nbReservationsExistantes);
     }
 
 }

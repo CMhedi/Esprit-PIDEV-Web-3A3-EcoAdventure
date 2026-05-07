@@ -1,0 +1,192 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}EcoAdventure | Statistiques Événements{% endblock %}
+
+{% block page_title %}Analyse des Événements{% endblock %}
+
+{% block body %}
+<div class="container-fluid animate-fade-in px-4 py-3">
+    <!-- Header with Premium Glassmorphism -->
+    <div class="glass-header d-flex justify-content-between align-items-center mb-5 p-4 rounded-4 shadow-sm border" style="background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); border-color: rgba(255,255,255,0.4) !important;">
+        <div>
+            <h2 class="fw-bold mb-0" style="letter-spacing: -0.5px;"><span class="text-gradient">Statistiques</span> & Insights</h2>
+            <p class="text-muted small mb-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Performance et analyses des réservations en temps réel</p>
+        </div>
+        <div class="d-flex gap-3">
+            <a href="{{ path('app_event_admin_index') }}" class="btn btn-outline-primary rounded-pill px-4 shadow-sm transition-300 hover-lift">
+                <i class="bi bi-list-task me-2"></i>Gestion des événements
+            </a>
+            <a href="{{ path('app_admin_statistiques_export_excel') }}" class="btn btn-success rounded-pill px-4 shadow-sm transition-300 hover-lift">
+                <i class="bi bi-file-earmark-excel me-2"></i>Exporter Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6 col-xl-3">
+            <div class="kpi-card p-4 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden" style="background: #ffffff;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="kpi-icon-box bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-calendar-event-fill fs-4"></i>
+                    </div>
+                </div>
+                <div class="kpi-content">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">Total Événements</p>
+                    <h2 class="fw-bold mb-0 text-dark">{{ totalEvents }}</h2>
+                </div>
+                <div class="kpi-bg-icon position-absolute opacity-05" style="bottom: -20px; right: -10px; font-size: 6rem; pointer-events: none;"><i class="bi bi-calendar-event"></i></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="kpi-card p-4 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden" style="background: #ffffff;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="kpi-icon-box bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-ticket-perforated-fill fs-4"></i>
+                    </div>
+                </div>
+                <div class="kpi-content">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">Réservations</p>
+                    <h2 class="fw-bold mb-0 text-dark">{{ totalReservations }}</h2>
+                </div>
+                <div class="kpi-bg-icon position-absolute opacity-05" style="bottom: -20px; right: -10px; font-size: 6rem; pointer-events: none;"><i class="bi bi-ticket"></i></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="kpi-card p-4 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden" style="background: #ffffff;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="kpi-icon-box bg-warning bg-opacity-10 text-warning rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-percent fs-4"></i>
+                    </div>
+                    <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-2 py-1 small">Occupation</span>
+                </div>
+                <div class="kpi-content">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">Taux Remplissage</p>
+                    <h2 class="fw-bold mb-0 text-dark">{{ fillRate }}%</h2>
+                </div>
+                <div class="kpi-bg-icon position-absolute opacity-05" style="bottom: -20px; right: -10px; font-size: 6rem; pointer-events: none;"><i class="bi bi-pie-chart"></i></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="kpi-card p-4 rounded-4 shadow-sm border-0 h-100 position-relative overflow-hidden" style="background: #ffffff;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="kpi-icon-box bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-cash-stack fs-4"></i>
+                    </div>
+                    <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-2 py-1 small">DT</span>
+                </div>
+                <div class="kpi-content">
+                    <p class="text-muted small fw-bold text-uppercase mb-1 tracking-wider">Revenu Estimé</p>
+                    <h2 class="fw-bold mb-0 text-dark">{{ estimatedRevenue|number_format(2, ',', ' ') }}</h2>
+                </div>
+                <div class="kpi-bg-icon position-absolute opacity-05" style="bottom: -20px; right: -10px; font-size: 6rem; pointer-events: none;"><i class="bi bi-wallet2"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <!-- Chart: Events by Month -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg rounded-4 h-100 overflow-hidden" style="background: #ffffff;">
+                <div class="card-header bg-white border-bottom p-4">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Activité Mensuelle</h5>
+                    <p class="text-muted small mb-0">Nombre d'événements organisés par mois</p>
+                </div>
+                <div class="card-body p-4">
+                    <div id="month_chart_div" style="height: 400px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart: Events by Type -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-lg rounded-4 h-100 overflow-hidden" style="background: #ffffff;">
+                <div class="card-header bg-white border-bottom p-4">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-pie-chart-fill me-2 text-success"></i>Répartition par Type</h5>
+                    <p class="text-muted small mb-0">Catégories d'événements les plus fréquentes</p>
+                </div>
+                <div class="card-body p-4">
+                    <div id="type_chart_div" style="height: 400px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <!-- Chart: Reservation Status -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4 h-100 overflow-hidden" style="background: #ffffff;">
+                <div class="card-header bg-white border-bottom p-4">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-check-circle-fill me-2 text-info"></i>Statut des Réservations</h5>
+                    <p class="text-muted small mb-0">Confirmées, Annulées et En Attente</p>
+                </div>
+                <div class="card-body p-4">
+                    <div id="res_chart_div" style="height: 350px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights and Highlights -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4 h-100 overflow-hidden" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+                <div class="card-body p-4 text-white">
+                    <h5 class="fw-bold mb-4"><i class="bi bi-lightbulb-fill me-2 text-warning"></i>Insights Clés</h5>
+                    
+                    <div class="insight-item mb-4 p-3 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-10 shadow-sm">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="insight-icon bg-warning text-dark rounded-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-star-fill"></i>
+                            </div>
+                            <h6 class="mb-0 fw-bold small text-uppercase tracking-widest ms-2 opacity-75">Tendance Populaire</h6>
+                        </div>
+                        <p class="mb-0 h4 fw-bold">{{ mostPopularType }}</p>
+                        <p class="text-white text-opacity-50 small">C'est la catégorie qui génère le plus de demande en termes de billets.</p>
+                    </div>
+
+                    <div class="insight-item mb-4 p-3 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-10 shadow-sm">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="insight-icon bg-info text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-people-fill"></i>
+                            </div>
+                            <h6 class="mb-0 fw-bold small text-uppercase tracking-widest ms-2 opacity-75">Engagement Client</h6>
+                        </div>
+                        <p class="mb-0 h4 fw-bold">{{ resStats['confirmées'] }} Réservations</p>
+                        <p class="text-white text-opacity-50 small">Nombre total de participants confirmés à ce jour.</p>
+                    </div>
+
+                    <div class="mt-auto p-4 rounded-4 bg-primary text-white shadow-lg border-0">
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="small fw-bold text-uppercase tracking-widest opacity-80">Score de Remplissage</span>
+                            <span class="h4 fw-bold mb-0">{{ fillRate }}%</span>
+                        </div>
+                        <div class="progress rounded-pill bg-white bg-opacity-20" style="height: 10px;">
+                            <div class="progress-bar bg-white rounded-pill shadow-sm" role="progressbar" style="width: {{ fillRate }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .text-gradient { background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .opacity-05 { opacity: 0.05; }
+    .tracking-wider { letter-spacing: 0.05em; }
+    .tracking-widest { letter-spacing: 0.1em; }
+    .hover-lift { transition: transform 0.3s ease; }
+    .hover-lift:hover { transform: translateY(-4px); }
+    .kpi-card { transition: all 0.3s ease; border: 1px solid #edf2f7 !important; }
+    .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.06) !important; }
+    .glass-header { border: 1px solid rgba(255,255,255,0.4) !important; }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        {{ gc_draw(monthChart, 'month_chart_div') }}
+        {{ gc_draw(typeChart, 'type_chart_div') }}
+        {{ gc_draw(resChart, 'res_chart_div') }}
+    </script>
+{% endblock %}

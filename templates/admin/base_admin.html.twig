@@ -39,6 +39,8 @@
                 <li><a href="{{ path('app_admin_activites') }}" class="{{ app.request.get('_route') starts with 'app_admin_activites' ? 'active' : '' }}"><i class="bi bi-compass"></i> Activités</a></li>
                 <li><a href="{{ path('app_admin_packs') }}" class="{{ app.request.get('_route') starts with 'app_admin_pack' or app.request.get('_route') == 'app_admin_packs' ? 'active' : '' }}"><i class="bi bi-box-seam"></i> Packs Aventure</a></li>
                 <li><a href="{{ path('app_event_admin_index') }}" class="{{ app.request.get('_route') starts with 'app_event_admin' ? 'active' : '' }}"><i class="bi bi-calendar-event"></i> Événements</a></li>
+                <li><a href="{{ path('admin_event_reservations') }}" class="{{ app.request.get('_route') == 'admin_event_reservations' ? 'active' : '' }}"><i class="bi bi-ticket-perforated"></i> Réservations Événements</a></li>
+                <li><a href="{{ path('app_admin_statistiques_event') }}" class="{{ app.request.get('_route') starts with 'app_admin_statistiques' ? 'active' : '' }}"><i class="bi bi-graph-up-arrow"></i> Statistiques Event</a></li>
                 <li><a href="{{ path('app_admin_planning') }}" class="{{ app.request.get('_route') starts with 'app_admin_planning' or app.request.get('_route') starts with 'app_admin_seance' ? 'active' : '' }}"><i class="bi bi-calendar-week"></i> Plannings & Séances</a></li>
             </ul>
 
@@ -57,7 +59,6 @@
                     </a>
                 </li>
                 <li><a href="{{ path('admin_messagerie_index') }}" class="{{ app.request.get('_route') starts with 'admin_messagerie' ? 'active' : '' }}"><i class="bi bi-envelope-at"></i> Messagerie</a></li>
-                <li><a href="{{ path('admin_ai_dashboard') }}" class="{{ app.request.get('_route') starts with 'admin_ai' ? 'active' : '' }}"><i class="bi bi-stars"></i> AI Prediction</a></li>
             </ul>
 
             <div class="mt-auto pt-4 border-top border-white border-opacity-10">

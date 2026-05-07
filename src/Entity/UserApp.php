@@ -46,8 +46,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $image_url = null;
 
-    #[ORM\Column(type: 'string', length: 255)]
-    private string $role = RoleUser::USER_SIMPLE->value;
+    #[ORM\Column(length: 255, enumType: RoleUser::class)]
+    private RoleUser $role = RoleUser::USER_SIMPLE;
 
     #[ORM\Column(type: 'string', length: 255)]
     private string $mot_de_passe = '';
@@ -64,14 +64,14 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
     private ?string $experience = null;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    private ?string $specialite = null;
+    #[ORM\Column(length: 255, nullable: true, enumType: Specialite::class)]
+    private ?Specialite $specialite = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $bio_certifs = null;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    private ?string $disponibilite = null;
+    #[ORM\Column(length: 255, nullable: true, enumType: Disponibilite::class)]
+    private ?Disponibilite $disponibilite = null;
 
     #[ORM\Column(type: 'string', length: 10, nullable: true)]
     private ?string $referralCode = null;
@@ -183,11 +183,10 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRoles(): array
     {
-        $roles = [];
-        if ($this->role) {
-            $roles[] = 'ROLE_' . strtoupper($this->role);
-        }
-        $roles[] = 'ROLE_USER';
+        $roles = [
+            'ROLE_' . strtoupper($this->role->value),
+            'ROLE_USER'
+        ];
         return array_unique($roles);
     }
 
@@ -205,7 +204,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\Callback]
     public function validateCoachRequirements(ExecutionContextInterface $context): void
     {
-        if ($this->role === RoleUser::COACH->value) {
+        if ($this->role === RoleUser::COACH) {
             if (null === $this->age) {
                 $context->buildViolation("L'âge est obligatoire pour un coach.")
                     ->atPath('age')
@@ -249,8 +248,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEmail(string $email): self { $this->email = $email; return $this; }
     public function getTelephone(): ?string { return $this->telephone; }
     public function setTelephone(?string $telephone): self { $this->telephone = $telephone; return $this; }
-    public function getRole(): RoleUser { return RoleUser::from($this->role); }
-    public function setRole(RoleUser $role): self { $this->role = $role->value; return $this; }
+    public function getRole(): RoleUser { return $this->role; }
+    public function setRole(RoleUser $role): self { $this->role = $role; return $this; }
     public function getMot_de_passe(): string { return $this->mot_de_passe; }
     public function setMot_de_passe(string $mot_de_passe): self { $this->mot_de_passe = $mot_de_passe; return $this; }
     public function getDate_creation(): \DateTimeInterface { return $this->date_creation; }
@@ -262,8 +261,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function setAge(?int $age): self { $this->age = $age; return $this; }
     public function getExperience(): ?string { return $this->experience; }
     public function setExperience(?string $experience): self { $this->experience = $experience; return $this; }
-    public function getSpecialite(): ?Specialite { return $this->specialite ? Specialite::from($this->specialite) : null; }
-    public function setSpecialite(?Specialite $specialite): self { $this->specialite = $specialite?->value; return $this; }
+    public function getSpecialite(): ?Specialite { return $this->specialite; }
+    public function setSpecialite(?Specialite $specialite): self { $this->specialite = $specialite; return $this; }
     public function getBioCertifs(): ?string { return $this->bio_certifs; }
     public function setBioCertifs(?string $bio_certifs): self { $this->bio_certifs = $bio_certifs; return $this; }
     public function getBio_certifs(): ?string { return $this->bio_certifs; }
@@ -272,8 +271,8 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
     public function setImageUrl(?string $image_url): self { $this->image_url = $image_url; return $this; }
     public function getImage_url(): ?string { return $this->image_url; }
     public function setImage_url(?string $image_url): self { $this->image_url = $image_url; return $this; }
-    public function getDisponibilite(): ?Disponibilite { return $this->disponibilite ? Disponibilite::from($this->disponibilite) : null; }
-    public function setDisponibilite(?Disponibilite $disponibilite): self { $this->disponibilite = $disponibilite?->value; return $this; }
+    public function getDisponibilite(): ?Disponibilite { return $this->disponibilite; }
+    public function setDisponibilite(?Disponibilite $disponibilite): self { $this->disponibilite = $disponibilite; return $this; }
     public function getReferralCode(): ?string { return $this->referralCode; }
     public function setReferralCode(?string $code): self { $this->referralCode = $code; return $this; }
     public function getLoyaltyPoints(): int { return $this->loyaltyPoints; }

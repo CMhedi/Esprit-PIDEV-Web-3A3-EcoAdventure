@@ -41,6 +41,12 @@ class EventRating
         return $this->id;
     }
 
+    public function setId(int $id): self
+    {
+        $this->id = $id;
+        return $this;
+    }
+
     public function getUser(): ?UserApp
     {
         return $this->user;
