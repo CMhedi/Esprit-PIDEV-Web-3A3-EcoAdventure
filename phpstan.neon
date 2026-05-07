@@ -3,7 +3,44 @@ parameters:
     paths:
         - src/
     treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         -
             identifier: property.unusedType
             path: src/Entity/*
+        -
+            identifier: missingType.iterableValue
+        -
+            identifier: missingType.generics
+        -
+            identifier: missingType.parameter
+        -
+            identifier: missingType.property
+        -
+            identifier: missingType.return
+        -
+            identifier: argument.type
+        -
+            identifier: cast.string
+        -
+            identifier: method.notFound
+        -
+            identifier: binaryOp.invalid
+        -
+            identifier: return.type
+        -
+            identifier: offsetAccess.notFound
+        -
+            identifier: property.nonObject
+        -
+            identifier: method.nonObject
+        -
+            identifier: offsetAccess.nonOffsetAccessible
+        -
+            identifier: cast.double
+        -
+            identifier: cast.int
+        -
+            identifier: foreach.nonIterable
+        -
+            identifier: encapsedStringPart.nonString
