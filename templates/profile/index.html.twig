@@ -206,7 +206,7 @@
                 <div class="widget-card">
                     <i class="fas fa-calendar-alt widget-icon"></i>
                     <span class="widget-val">
-                        {% set total_res = (user.reservationActivites|length) + (user.reservationEvenements|length) + (user.reservationSeances|length) %}
+                        {% set total_res = (user.reservationActivites|length) + (user.reservationEvenements|length) %}
                         {{ total_res }}
                     </span>
                     <span class="widget-lab">Réservations</span>

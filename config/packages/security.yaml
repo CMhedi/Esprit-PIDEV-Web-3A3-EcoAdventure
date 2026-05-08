@@ -9,25 +9,30 @@ security:
                 property: email # Symfony bech ylawej bel email fel login
 
     firewalls:
-            main:
-                lazy: true
-                provider: app_user_provider
-                
-                # Hadhi el line elli t'salla7 el mochkla:
-                entry_point: App\Security\LoginManagerAuthenticator
-                
-                custom_authenticator: 
-                    - App\Security\LoginManagerAuthenticator
-                    - App\Security\GoogleAuthenticator
-                
-                logout:
-                    path: app_logout
-                    target: app_login
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
 
-                remember_me:
-                    secret: '%kernel.secret%'
-                    lifetime: 604800
-                    path: /
+        # ✅ AJOUTEZ CE FIREWALL POUR TELEGRAM
+        telegram_webhook:
+            pattern: ^/webhook/telegram
+            security: false
+
+        main:
+            lazy: true
+            provider: app_user_provider
+            entry_point: App\Security\LoginManagerAuthenticator
+            custom_authenticator: 
+                - App\Security\LoginManagerAuthenticator
+                - App\Security\GoogleAuthenticator
+            logout:
+                path: app_logout
+                target: app_login
+
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 604800
+                path: /
                 # by default, the feature is enabled by checking a checkbox in the
                 # login form, uncomment the following line to always enable it.
                 #always_remember_me: true

@@ -42,6 +42,7 @@
                 <li><a href="{{ path('admin_event_reservations') }}" class="{{ app.request.get('_route') == 'admin_event_reservations' ? 'active' : '' }}"><i class="bi bi-ticket-perforated"></i> Réservations Événements</a></li>
                 <li><a href="{{ path('app_admin_statistiques_event') }}" class="{{ app.request.get('_route') starts with 'app_admin_statistiques' ? 'active' : '' }}"><i class="bi bi-graph-up-arrow"></i> Statistiques Event</a></li>
                 <li><a href="{{ path('app_admin_planning') }}" class="{{ app.request.get('_route') starts with 'app_admin_planning' or app.request.get('_route') starts with 'app_admin_seance' ? 'active' : '' }}"><i class="bi bi-calendar-week"></i> Plannings & Séances</a></li>
+                <li><a href="{{ path('admin_churn_view') }}"><i class="bi bi-people"></i> Churn Dashboard</a></li>
             </ul>
 
             <div class="sidebar-label small text-uppercase px-3 mb-2" style="font-size: 0.65rem; letter-spacing: 1.5px;">Clients & Communauté</div>
