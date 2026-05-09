@@ -16,6 +16,7 @@ class ReclamationRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Reclamation::class);
     }
+    /** @return array<mixed> */
     public function countByStatus(): array
     {
         return $this->createQueryBuilder('r')
@@ -25,6 +26,7 @@ class ReclamationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /** @return array<int, Reclamation> */
     public function findUrgentTickets(): array
     {
         return $this->createQueryBuilder('r')
@@ -37,6 +39,7 @@ class ReclamationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /** @return array<mixed> */
     public function countByTypeAndMonth(): array
     {
         return $this->createQueryBuilder('r')

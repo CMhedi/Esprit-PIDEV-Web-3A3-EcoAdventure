@@ -13,12 +13,13 @@
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/instantiator": "^2.0",
         "doctrine/orm": "^3.6",
-
         "dompdf/dompdf": "^3.1",
         "endroid/qr-code": "^6.0",
         "fpt/stripe-bundle": "0.13",
         "google/apiclient": "^2.19",
         "knplabs/knp-paginator-bundle": "^6.10",
+        "knpuniversity/oauth2-client-bundle": "*",
+        "league/oauth2-google": "*",
         "nucleos/dompdf-bundle": "^4.2",
         "phpdocumentor/reflection-docblock": "^5.2",
         "phpoffice/phpspreadsheet": "^5.6",
@@ -54,11 +55,14 @@
         "symfony/validator": "6.4.*",
         "symfony/web-link": "6.4.*",
         "symfony/yaml": "6.4.*",
-
+        "symfonycasts/reset-password-bundle": "*",
         "symfonycasts/verify-email-bundle": "^1.18",
         "twig/extra-bundle": "^2.12|^3.0",
         "twig/intl-extra": "*",
-        "twig/twig": "^2.12|^3.0"
+        "twig/twig": "^2.12|^3.0",
+        "twilio/sdk": "^8.11",
+        "vonage/client": "^4.3",
+        "webmozart/assert": "1.11"
     },
 
     "config": {

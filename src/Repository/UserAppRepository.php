@@ -115,11 +115,11 @@ class UserAppRepository extends ServiceEntityRepository
     LEFT JOIN reservation_seance r ON r.id_user = u.id_user
     LEFT JOIN seance s ON s.id_seance = r.id_seance
 
-    WHERE u.id_user = $userId -- 🔥 FIX ICI
+    WHERE u.id_user = :userId
     GROUP BY u.id_user
     ";
 
-        return $conn->executeQuery($sql)->fetchAssociative() ?: [];
+        return $conn->executeQuery($sql, ['userId' => $userId])->fetchAssociative() ?: [];
     }
 
     /**

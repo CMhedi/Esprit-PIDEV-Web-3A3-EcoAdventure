@@ -44,17 +44,16 @@ class ReservationEvenement
 
 
 
-#[ORM\Column(enumType: StatutReservationEvenement::class)]
-private ?StatutReservationEvenement $statut_res = null;
+    #[ORM\Column(name: 'statut_res', type: 'string', length: 255)]
+    private ?string $statut_res = null;
 
     public function getStatut_res(): ?StatutReservationEvenement
     {
-        return $this->statut_res;
+        return $this->statut_res ? StatutReservationEvenement::tryFrom($this->statut_res) : null;
     }
-
-    public function setStatut_res(StatutReservationEvenement $statut_res): self
+    public function setStatut_res(?StatutReservationEvenement $statut): self
     {
-        $this->statut_res = $statut_res;
+        $this->statut_res = $statut?->value;
         return $this;
     }
 
@@ -87,30 +86,30 @@ private ?StatutReservationEvenement $statut_res = null;
     }
 
     #[ORM\ManyToOne(targetEntity: UserApp::class, inversedBy: 'reservationEvenements')]
-    #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user')]
-    private ?UserApp $userApp = null;
+    #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user', nullable: false)]
+    private UserApp $userApp;
 
-    public function getUserApp(): ?UserApp
+    public function getUserApp(): UserApp
     {
         return $this->userApp;
     }
 
-    public function setUserApp(?UserApp $userApp): self
+    public function setUserApp(UserApp $userApp): self
     {
         $this->userApp = $userApp;
         return $this;
     }
 
     #[ORM\ManyToOne(targetEntity: Evenement::class, inversedBy: 'reservationEvenements')]
-    #[ORM\JoinColumn(name: 'id_evenement', referencedColumnName: 'id_evenement')]
-    private ?Evenement $evenement = null;
+    #[ORM\JoinColumn(name: 'id_evenement', referencedColumnName: 'id_evenement', nullable: false)]
+    private Evenement $evenement;
 
-    public function getEvenement(): ?Evenement
+    public function getEvenement(): Evenement
     {
         return $this->evenement;
     }
 
-    public function setEvenement(?Evenement $evenement): self
+    public function setEvenement(Evenement $evenement): self
     {
         $this->evenement = $evenement;
         return $this;

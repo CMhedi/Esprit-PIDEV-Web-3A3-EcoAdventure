@@ -2,358 +2,474 @@
 
 {% block title %}{{ evenement.titre }} | EcoAdventure{% endblock %}
 
+{% block stylesheets %}
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+{% endblock %}
+
 {% block body %}
 <style>
+    :root {
+        --eco-green: #1a472a;
+        --eco-accent: #2d5a27;
+        --eco-light: #f0f4f1;
+        --eco-gold: #c5a059;
+        --eco-success: #10b981;
+    }
+
     body {
-        background-color: #f8f9fa;
-        font-family: 'Inter', sans-serif;
-    }
-    .event-cover-img {
-        width: 100%;
-        height: 40vh;
-        max-height: 380px;
-        object-fit: cover;
-        border-radius: 24px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    }
-    .sticky-sidebar {
-        position: sticky;
-        top: 2rem;
-        z-index: 10;
-    }
-    .booking-card {
-        border-radius: 24px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-        background: #ffffff;
-    }
-    .badge-category {
-        background-color: #e6f4ea;
-        color: #1e8e3e;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        padding: 8px 16px;
-        border-radius: 50px;
-    }
-    .section-title {
-        font-weight: 800;
-        font-size: 1.5rem;
-        margin-bottom: 1.5rem;
+        background-color: var(--eco-light);
+        font-family: 'Outfit', sans-serif;
         color: #1a202c;
     }
-    .icon-box {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        background-color: #f1f5f9;
+
+    .hero-section {
+        position: relative;
+        height: 60vh;
+        min-height: 450px;
+        width: 100%;
+        overflow: hidden;
+        border-bottom-left-radius: 40px;
+        border-bottom-right-radius: 40px;
+        margin-bottom: -100px;
+        z-index: 1;
+    }
+
+    .hero-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scale(1.05);
+        transition: transform 0.5s ease;
+    }
+
+    .hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.7) 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 60px 0 140px 0;
+    }
+
+    .main-container {
+        position: relative;
+        z-index: 10;
+        margin-top: 0;
+    }
+
+    .event-card-main {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        margin-bottom: 40px;
+    }
+
+    .sidebar-card {
+        background: #ffffff;
+        border-radius: 30px;
+        border: none;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        padding: 30px;
+        position: sticky;
+        top: 100px;
+    }
+
+    .badge-eco {
+        background: var(--eco-green);
+        color: white;
+        padding: 8px 18px;
+        border-radius: 50px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        font-size: 0.85rem;
+        box-shadow: 0 4px 10px rgba(26, 71, 42, 0.2);
+    }
+
+    .section-title {
+        font-weight: 800;
+        font-size: 1.75rem;
+        margin-bottom: 25px;
+        color: var(--eco-green);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .section-title i {
+        color: var(--eco-gold);
+    }
+
+    .info-box {
+        background: #f8fafc;
+        border-radius: 20px;
+        padding: 20px;
+        border: 1px solid #edf2f7;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .info-box:hover {
+        transform: translateY(-5px);
+        background: white;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        border-color: var(--eco-green);
+    }
+
+    .info-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 15px;
+        background: var(--eco-light);
+        color: var(--eco-green);
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 1.5rem;
-        color: #4CAF50;
+        margin-bottom: 15px;
     }
-    .price-text {
-        font-size: 2.5rem;
+
+    .price-tag {
+        font-size: 3rem;
         font-weight: 800;
-        color: #2E7D32;
+        color: var(--eco-green);
         line-height: 1;
+    }
+
+    .btn-eco-primary {
+        background: var(--eco-green);
+        color: white;
+        border: none;
+        padding: 16px 32px;
+        border-radius: 18px;
+        font-weight: 700;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .btn-eco-primary:hover {
+        background: var(--eco-accent);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(26, 71, 42, 0.3);
+        color: white;
+    }
+
+    .weather-card {
+        background: linear-gradient(135deg, #1a472a 0%, #2d5a27 100%);
+        border-radius: 25px;
+        color: white;
+        padding: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .weather-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .review-card {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        border: 1px solid #f1f5f9;
+        margin-bottom: 15px;
+        transition: transform 0.2s ease;
+    }
+
+    .review-card:hover {
+        transform: scale(1.02);
+    }
+
+    .rating-star {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .rating-star:hover {
+        transform: scale(1.2);
+        color: var(--eco-gold) !important;
     }
 </style>
 
-<<<<<<< HEAD
-<div class="container py-5">
-    
-    {% for message in app.flashes('success') %}
-        <div class="alert alert-success border-0 shadow-sm rounded-3 fw-bold"><i class="bi bi-check-circle-fill me-2"></i>{{ message }}</div>
-    {% endfor %}
-    {% for message in app.flashes('error') %}
-        <div class="alert alert-danger border-0 shadow-sm rounded-3 fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ message }}</div>
-    {% endfor %}
-=======
-        <div class="row">
-            <div class="col-lg-8">
-                {% if evenement.image_url %}
-                    <img src="{{ asset(evenement.image_url) }}" class="img-fluid rounded shadow-sm mb-4" alt="{{ evenement.titre }}" style="width: 100%; max-height: 400px; object-fit: cover;">
-                {% else %}
-                    <img src="{{ asset('assets/img/event1.png') }}" class="img-fluid rounded shadow-sm mb-4" alt="{{ evenement.titre }}" style="width: 100%; max-height: 400px; object-fit: cover;">
-                {% endif %}
-                
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h1 class="fw-bold">{{ evenement.titre }}</h1>
-                    <div class="text-warning fs-4">
-                        {% set avg = evenement.averageRating %}
-                        {% for i in 1..5 %}
-                            <i class="bi bi-star{{ avg >= i ? '-fill' : (avg >= i - 0.5 ? '-half' : '') }}"></i>
-                        {% endfor %}
-                        <span class="ms-1 text-muted fs-6">({{ evenement.ratings|length }})</span>
-                    </div>
-                </div>
-                <p class="lead">{{ evenement.description }}</p>
->>>>>>> 8da195205bd0888e33115f8708c0181920e2f7bb
-
-    <!-- Entête Titre -->
-    <div class="mb-4 d-flex justify-content-between align-items-end">
-        <div>
-            <h1 class="display-4 fw-bold text-dark mb-3">{{ evenement.titre }}</h1>
-            <div class="d-flex align-items-center gap-3">
-                <span class="badge-category text-uppercase"><i class="bi bi-tag-fill me-2"></i>{{ evenement.categorie_evt.value }}</span>
-                <div class="d-flex align-items-center text-warning fs-5">
+<!-- Hero Section -->
+<div class="hero-section">
+    {% if evenement.image_url %}
+        <img src="{{ asset(evenement.image_url) }}" class="hero-img" alt="{{ evenement.titre }}">
+    {% else %}
+        <img src="{{ asset('assets/img/default-event.png') }}" class="hero-img" alt="{{ evenement.titre }}">
+    {% endif %}
+    <div class="hero-overlay">
+        <div class="container">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <span class="badge-eco text-uppercase">{{ evenement.categorie_evt.value }}</span>
+                <div class="text-warning fs-5">
                     {% set avg = evenement.averageRating %}
                     {% for i in 1..5 %}
                         <i class="bi bi-star{{ avg >= i ? '-fill' : (avg >= i - 0.5 ? '-half' : '') }}"></i>
                     {% endfor %}
-                    <span class="ms-2 text-muted fs-6 fw-bold">({{ evenement.ratings|length }} avis)</span>
+                    <span class="text-white opacity-75 fs-6 ms-2">({{ evenement.ratings|length }} avis)</span>
                 </div>
             </div>
+            <h1 class="display-3 fw-bold text-white mb-0">{{ evenement.titre }}</h1>
+            <p class="text-white opacity-75 fs-4 mt-2"><i class="bi bi-geo-alt-fill me-2"></i>{{ evenement.lieu }}</p>
         </div>
     </div>
+</div>
 
-    <!-- Image Principale -->
-    <div class="mb-5">
-        {% if evenement.image_url %}
-            <img src="{{ asset(evenement.image_url) }}" class="event-cover-img" alt="{{ evenement.titre }}">
-        {% else %}
-            <img src="{{ asset('assets/img/default-event.png') }}" class="event-cover-img" alt="{{ evenement.titre }}">
-        {% endif %}
-    </div>
+<div class="container main-container py-5">
+    
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success border-0 shadow-lg rounded-4 fw-bold mb-4 animate__animated animate__fadeInDown">
+            <i class="bi bi-check-circle-fill me-2"></i>{{ message }}
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-danger border-0 shadow-lg rounded-4 fw-bold mb-4 animate__animated animate__fadeInDown">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ message }}
+        </div>
+    {% endfor %}
 
-    <!-- Contenu Split -->
     <div class="row g-5">
-        
-        <!-- Colonne Gauche : Infos -->
-        <div class="col-lg-7 col-xl-8">
-            <section class="mb-5 pb-4 border-bottom">
-                <h3 class="section-title">À propos de l'aventure</h3>
-                <p class="text-muted fs-5 lh-lg">{{ evenement.description }}</p>
-            </section>
+        <!-- Content Column -->
+        <div class="col-lg-8">
+            <div class="event-card-main">
+                <section class="mb-5 pb-4 border-bottom">
+                    <h3 class="section-title"><i class="bi bi-info-circle-fill"></i>À propos de l'aventure</h3>
+                    <p class="text-muted fs-5 lh-lg">{{ evenement.description }}</p>
+                </section>
 
-            <section class="mb-5 pb-4 border-bottom">
-                <h3 class="section-title">Informations Importantes</h3>
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center p-3 rounded-4 bg-white border shadow-sm h-100">
-                            <div class="icon-box me-3"><i class="bi bi-geo-alt-fill"></i></div>
-                            <div>
-                                <h6 class="fw-bold mb-1 text-dark">Lieu</h6>
+                <section class="mb-5">
+                    <h3 class="section-title"><i class="bi bi-calendar-check-fill"></i>Détails essentiels</h3>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <div class="info-icon"><i class="bi bi-geo-alt-fill"></i></div>
+                                <h6 class="fw-bold mb-1">Localisation</h6>
                                 <span class="text-muted">{{ evenement.lieu }}</span>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center p-3 rounded-4 bg-white border shadow-sm h-100">
-                            <div class="icon-box me-3"><i class="bi bi-calendar-event-fill"></i></div>
-                            <div>
-                                <h6 class="fw-bold mb-1 text-dark">Date & Heure</h6>
-                                <span class="text-muted">{{ evenement.date_event|date('d/m/Y à H:i') }}</span>
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <div class="info-icon"><i class="bi bi-clock-fill"></i></div>
+                                <h6 class="fw-bold mb-1">Date & Heure</h6>
+                                <span class="text-muted">{{ evenement.date_event|date('d F Y à H:i') }}</span>
                             </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {% if weather %}
-            <section class="mb-5">
-                <h3 class="section-title">Conditions Météo (<span class="text-primary">{{ evenement.lieu }}</span>)</h3>
-                <div class="card border-0 rounded-4 shadow-sm" style="background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);">
-                    <div class="card-body p-4 d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center gap-4">
-                            <div class="bg-white p-3 rounded-circle shadow-sm">
-                                <i class="bi bi-cloud-sun-fill text-info fs-1"></i>
-                            </div>
-                            <div>
-                                <h4 class="fw-bold mb-1 text-dark text-capitalize">{{ weather.description }}</h4>
-                                <span class="text-muted">Préparez-vous bien pour votre aventure sportive !</span>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            <img src="https://openweathermap.org/img/wn/{{ weather.icon }}@2x.png" alt="Météo" style="width: 80px;">
-                            <span class="display-3 fw-bold text-dark ms-2">{{ weather.temp }}°</span>
-                        </div>
-                    </div>
-                </div>
-                
-                {% if weather_ai_alert %}
-                <div class="alert alert-{{ weather_ai_alert.type }} border-0 rounded-4 shadow-sm position-relative overflow-hidden mb-5">
-                    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.4) 100%); z-index: 0;"></div>
-                    <div class="d-flex align-items-center position-relative" style="z-index: 1;">
-                        <div class="bg-{{ weather_ai_alert.type }} text-white rounded-circle d-flex justify-content-center align-items-center me-3 flex-shrink-0" style="width: 50px; height: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
-                            <i class="bi bi-robot fs-4"></i>
-                        </div>
-                        <div>
-                            <h6 class="fw-bold text-{{ weather_ai_alert.type }} mb-1">
-                                {% if weather_ai_alert.type == 'success' %}
-                                    <i class="bi bi-check-circle-fill me-1"></i>Avis Météo Favorable (Agent IA)
-                                {% else %}
-                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Alerte Météo Intelligente (Agent IA)
-                                {% endif %}
-                            </h6>
-                            <p class="mb-0 text-dark fw-bold" style="font-size: 0.95rem;">{{ weather_ai_alert.message }}</p>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-            </section>
-            {% endif %}
-
-            <section class="mt-5">
-                {% set reviews_with_comments = evenement.ratings|filter(r => r.commentaire is not empty) %}
-                
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="section-title mb-0">Avis des Aventuriers</h3>
-                    <span class="badge bg-warning text-dark fs-6 rounded-pill"><i class="bi bi-chat-left-text-fill me-1"></i> {{ reviews_with_comments|length }} avis</span>
-                </div>
-
-                {% if reviews_with_comments|length > 0 %}
-                    <div class="d-flex flex-column gap-3 mb-5">
-                        {% for rating in reviews_with_comments %}
-                            <div class="card border-0 shadow-sm rounded-4">
-                                <div class="card-body p-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div class="fw-bold text-dark"><i class="bi bi-person-circle me-2 text-muted"></i>{{ rating.user.nom }} {{ rating.user.prenom }}</div>
-                                        
-                                        {% if app.user and rating.user.id_user == app.user.id_user %}
-                                            <form action="{{ path('app_event_rate_delete', {'id': rating.id}) }}" method="POST" onsubmit="return confirm('Supprimer ce commentaire ?');" class="m-0 p-0">
-                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0 m-0 border-0" title="Supprimer cet avis">
-                                                    <i class="bi bi-trash-fill fs-5"></i>
-                                                </button>
-                                            </form>
-                                        {% endif %}
-                                    </div>
-                                    <small class="text-muted d-block mb-2">{{ rating.createdAt|date('d/m/Y') }}</small>
-                                    <p class="mb-0 text-dark" style="font-size: 0.95rem;">"{{ rating.commentaire }}"</p>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="text-muted text-center mb-5">Soyez le premier à donner votre avis après l'événement !</p>
-                {% endif %}
-
-                {% if app.user %}
-                    <h4 class="section-title fs-5 mt-4">Ajouter un avis</h4>
-                    <div class="card border-0 shadow-sm rounded-4 bg-light border border-warning border-opacity-25">
-                        <div class="card-body p-4 text-center">
-                            <form action="{{ path('app_event_rate', {'id_evenement': evenement.id_evenement}) }}" method="POST" id="rating-form">
-                                <div class="rating-stars mb-3 fs-1 text-warning d-flex justify-content-center gap-2">
-                                    {% for i in 1..5 %}
-                                        <i class="bi bi-star rating-star" data-value="{{ i }}" style="cursor: pointer; transition: transform 0.2s;"></i>
-                                    {% endfor %}
-                                </div>
-                                <input type="hidden" name="note" id="note-input" value="5">
-                                
-                                <div class="mb-4 text-start">
-                                    <label for="commentaire" class="form-label fw-bold small text-muted">Votre commentaire</label>
-                                    <textarea name="commentaire" id="commentaire" class="form-control rounded-3" rows="3" placeholder="Qu'avez-vous pensé de cet événement ?" required></textarea>
-                                </div>
-
-                                <button type="submit" class="btn btn-warning btn-lg fw-bold px-5 rounded-pill shadow-sm">Soumettre mon avis</button>
-                            </form>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="alert alert-warning text-center mt-4 border-0 rounded-4 shadow-sm">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i> Vous devez être connecté pour laisser un avis.
-                    </div>
-                {% endif %}
-            </section>
-
-        </div>
-
-        <!-- Colonne Droite : Ticket / Booking -->
-        <div class="col-lg-5 col-xl-4">
-            <div class="sticky-sidebar">
-                
-                <div class="card booking-card p-4">
-                    <div class="d-flex align-items-baseline gap-2 mb-4">
-                        <span class="price-text">{{ evenement.prix|number_format(2, ',', ' ') }}</span>
-                        <span class="text-muted fw-bold fs-5">DT <span class="fw-normal fs-6">/ personne</span></span>
-                    </div>
-
-                    <div class="p-3 mb-4 rounded-3 border {% if places_dispo > 0 %}border-success bg-success bg-opacity-10{% else %}border-danger bg-danger bg-opacity-10{% endif %}">
+                {% if weather %}
+                <section class="mb-5">
+                    <h3 class="section-title"><i class="bi bi-cloud-sun-fill"></i>Météo en direct</h3>
+                    <div class="weather-card shadow-lg">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-dark"><i class="bi bi-ticket-perforated-fill me-2"></i>Disponibilité</span>
-                            {% if places_dispo <= 0 %}
-                                {% if attente_dispo > 0 %}
-                                    <span class="badge bg-warning text-dark fs-6 rounded-pill">Attente ouverte</span>
-                                {% else %}
-                                    <span class="badge bg-danger fs-6 rounded-pill">Totalement Complet</span>
-                                {% endif %}
-                            {% else %}
-                                <span class="badge bg-success fs-6 rounded-pill">{{ places_dispo }} Places</span>
-                            {% endif %}
+                            <div class="d-flex align-items-center gap-4">
+                                <div class="bg-white p-3 rounded-circle shadow-sm">
+                                    <img src="https://openweathermap.org/img/wn/{{ weather.icon }}@2x.png" alt="Météo" style="width: 60px;">
+                                </div>
+                                <div>
+                                    <h4 class="fw-bold mb-1 text-capitalize">{{ weather.description }}</h4>
+                                    <span class="opacity-75">Conditions idéales pour l'EcoAdventure</span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="display-3 fw-bold">{{ weather.temp }}°</span>
+                                <p class="mb-0 opacity-75">{{ evenement.lieu }}</p>
+                            </div>
                         </div>
                     </div>
-
-                    {% if promo_threshold and promo_discount %}
-                    <div class="alert alert-info border-0 bg-info bg-opacity-10 rounded-3 d-flex align-items-center mb-4">
-                        <i class="bi bi-gift-fill fs-3 text-info me-3"></i>
-                        <div>
-                            <h6 class="fw-bold text-info mb-0">Remise de Groupe</h6>
-                            <span class="small text-muted">-{{ promo_discount * 100 }}% dès {{ promo_threshold }} billets, puis <span class="text-primary fw-bold">+1%</span> tous les 5 billets (max 50), puis <span class="text-primary fw-bold">+1%</span> tous les 10 billets.</span>
+                    
+                    {% if weather_ai_alert %}
+                    <div class="mt-4 p-4 rounded-4 border-start border-5 border-{{ weather_ai_alert.type }} bg-{{ weather_ai_alert.type }} bg-opacity-10 shadow-sm">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-{{ weather_ai_alert.type }} text-white p-2 rounded-circle">
+                                <i class="bi bi-robot fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-{{ weather_ai_alert.type }} mb-1">Analyse de l'Agent IA</h6>
+                                <p class="mb-0 text-dark">{{ weather_ai_alert.message }}</p>
+                            </div>
                         </div>
                     </div>
                     {% endif %}
+                </section>
+                {% endif %}
 
-                    <form action="{{ path('app_reservation_event', {'id_evenement': evenement.id_evenement}) }}" method="POST" id="booking-form">
-                        <div class="mb-4">
-                            <label for="nb_billets" class="form-label fw-bold small text-muted text-uppercase">Participants</label>
-                            <div class="input-group input-group-lg">
-                                <span class="input-group-text bg-white"><i class="bi bi-person-fill text-muted"></i></span>
-                                <input type="number" name="nb_billets" id="nb_billets" class="form-control fw-bold border-start-0" value="1" min="1" max="{{ places_dispo > 0 ? places_dispo : (attente_dispo > 0 ? attente_dispo : 1) }}" {% if places_dispo <= 0 and attente_dispo <= 0 %}disabled{% endif %}>
-                            </div>
+                <!-- Reviews Section -->
+                <section class="mt-5 pt-4 border-top">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="section-title mb-0"><i class="bi bi-chat-quote-fill"></i>Avis des Aventuriers</h3>
+                        <span class="badge rounded-pill bg-light text-dark border px-3 py-2 fw-bold">{{ evenement.ratings|length }} avis</span>
+                    </div>
+
+                    {% set reviews_with_comments = evenement.ratings|filter(r => r.commentaire is not empty) %}
+                    {% if reviews_with_comments|length > 0 %}
+                        <div class="reviews-list">
+                            {% for rating in reviews_with_comments %}
+                                <div class="review-card">
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="bg-eco-light text-eco p-2 rounded-circle" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="bi bi-person-fill"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="fw-bold mb-0">{{ rating.user.nom }} {{ rating.user.prenom }}</h6>
+                                                <small class="text-muted">{{ rating.createdAt|date('d/m/Y') }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="text-warning">
+                                            {% for i in 1..5 %}
+                                                <i class="bi bi-star{{ rating.note >= i ? '-fill' : '' }}"></i>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <p class="mb-0 font-italic text-muted">"{{ rating.commentaire }}"</p>
+                                    
+                                    {% if app.user and rating.user.id_user == app.user.id_user %}
+                                        <form action="{{ path('app_event_rate_delete', {'id': rating.id}) }}" method="POST" onsubmit="return confirm('Supprimer ce commentaire ?');" class="text-end mt-2">
+                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash"></i> Supprimer</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
                         </div>
-
-                        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom" id="price-container">
-                            <span class="fw-bold text-dark">Total</span>
-                            <div class="text-end">
-                                <h4 class="fw-bold text-success mb-0" id="total-price">{{ evenement.prix|number_format(2, ',', ' ') }} DT</h4>
-                                <small class="fw-bold d-none px-2 py-1 rounded-pill bg-primary bg-opacity-10 text-primary" id="promo-info" style="font-size: 0.7rem;"><i class="bi bi-stars me-1"></i>Promo appliquée !</small>
-                            </div>
+                    {% else %}
+                        <div class="text-center py-5 bg-light rounded-4 border-dashed border-2">
+                            <i class="bi bi-chat-dots-fill display-4 text-muted opacity-25"></i>
+                            <p class="text-muted mt-3">Aucun avis pour le moment. Soyez le premier !</p>
                         </div>
+                    {% endif %}
 
-                        {% if places_dispo <= 0 %}
-                            {% if attente_dispo > 0 %}
-                                <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold rounded-4 shadow-sm text-dark py-3"><i class="bi bi-hourglass-split me-2"></i>Liste d'attente</button>
-                                <p class="text-center text-muted small mt-3 mb-0">Vous ne serez pas débité.</p>
-                            {% else %}
-                                <button type="button" class="btn btn-secondary btn-lg w-100 fw-bold rounded-4 py-3 disabled">Événement Indisponible</button>
-                            {% endif %}
-                        {% else %}
-                            <button type="submit" class="btn btn-success btn-lg w-100 fw-bold rounded-4 shadow-sm py-3" style="background-color: #2E7D32;"><i class="bi bi-check-circle-fill me-2"></i>Confirmer la réservation</button>
-                            <p class="text-center text-muted small mt-3 mb-0">Réservation rapide et sécurisée.</p>
-                        {% endif %}
-                    </form>
+                    {% if app.user %}
+                    <div class="mt-5 p-4 rounded-4 bg-light border border-2">
+                        <h4 class="fw-bold mb-4">Laissez votre empreinte</h4>
+                        <form action="{{ path('app_event_rate', {'id_evenement': evenement.id_evenement}) }}" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Votre note</label>
+                                <div class="rating-stars fs-2 text-warning gap-2 d-flex">
+                                    {% for i in 1..5 %}
+                                        <i class="bi bi-star rating-star" data-value="{{ i }}"></i>
+                                    {% endfor %}
+                                </div>
+                                <input type="hidden" name="note" id="note-input" value="5">
+                            </div>
+                            <div class="mb-3">
+                                <label for="commentaire" class="form-label fw-bold">Votre expérience</label>
+                                <textarea name="commentaire" id="commentaire" class="form-control rounded-4 border-0 shadow-sm" rows="3" placeholder="Racontez-nous votre aventure..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-eco-primary py-3">Envoyer mon avis</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </section>
+            </div>
+        </div>
+
+        <!-- Sidebar Column -->
+        <div class="col-lg-4">
+            <div class="sidebar-card shadow-lg">
+                <div class="text-center mb-4">
+                    <span class="text-muted fw-bold small text-uppercase ls-1">À partir de</span>
+                    <div class="d-flex justify-content-center align-items-baseline gap-2 mt-1">
+                        <span class="price-tag">{{ evenement.prix|number_format(2, ',', ' ') }}</span>
+                        <span class="text-muted fw-bold fs-5">DT</span>
+                    </div>
                 </div>
 
-                <!-- AI RECOMMENDATION BOX -->
-                {% if places_dispo <= 0 and ai_recommendation %}
-                <div class="card mt-4 border-0 rounded-4 shadow-sm overflow-hidden" style="background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="icon-box bg-info bg-opacity-25 text-info me-3" style="width: 40px; height: 40px;">
-                                <i class="bi bi-robot fs-5"></i>
-                            </div>
-                            <h6 class="fw-bold text-white mb-0">Agent IA EcoAdventure</h6>
-                        </div>
-                        <p class="text-light opacity-75 small mb-3">Plus de places ? Notre Agent IA a trouvé une aventure alternative similaire juste pour vous :</p>
-                        
-                        <div class="bg-white bg-opacity-10 rounded-3 p-3 mb-4 d-flex align-items-center">
-                            {% if ai_recommendation.image_url %}
-                                <img src="{{ asset(ai_recommendation.image_url) }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" class="me-3">
+                <div class="d-flex flex-column gap-3 mb-4">
+                    <div class="p-3 rounded-4 {% if places_dispo > 0 %}bg-success bg-opacity-10 border border-success border-opacity-25{% else %}bg-danger bg-opacity-10 border border-danger border-opacity-25{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold"><i class="bi bi-people-fill me-2"></i>Places</span>
+                            {% if places_dispo <= 0 %}
+                                <span class="badge rounded-pill bg-danger">Complet</span>
                             {% else %}
-                                <div class="bg-dark text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; border-radius: 8px;"><i class="bi bi-image"></i></div>
+                                <span class="badge rounded-pill bg-success">{{ places_dispo }} disponibles</span>
                             {% endif %}
-                            <div>
-                                <h6 class="text-white fw-bold mb-1" style="font-size: 0.9rem;">{{ ai_recommendation.titre }}</h6>
-                                <span class="text-info fw-bold small">{{ ai_recommendation.prix }} DT</span>
-                            </div>
                         </div>
+                    </div>
+                </div>
 
-                        <a href="{{ path('app_event_front_show', {'id_evenement': ai_recommendation.id_evenement}) }}" class="btn btn-info w-100 fw-bold rounded-pill text-dark">Voir l'alternative</a>
+                {% if promo_threshold and promo_discount %}
+                <div class="alert alert-warning border-0 rounded-4 p-3 mb-4">
+                    <div class="d-flex gap-3">
+                        <i class="bi bi-lightning-charge-fill fs-3 text-warning"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1">Offre de groupe !</h6>
+                            <p class="small mb-0 opacity-75">-{{ promo_discount * 100 }}% dès {{ promo_threshold }} participants. Plus on est d'aventuriers, moins c'est cher !</p>
+                        </div>
                     </div>
                 </div>
                 {% endif %}
 
+                <form action="{{ path('app_reservation_event', {'id_evenement': evenement.id_evenement}) }}" method="POST" id="booking-form">
+                    <div class="mb-4">
+                        <label for="nb_billets" class="form-label fw-bold text-muted small">NOMBRE DE PARTICIPANTS</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light border-0"><i class="bi bi-people"></i></span>
+                            <input type="number" name="nb_billets" id="nb_billets" class="form-control bg-light border-0 fw-bold" value="1" min="1" max="{{ places_dispo > 0 ? places_dispo : (attente_dispo > 0 ? attente_dispo : 1) }}" {% if places_dispo <= 0 and attente_dispo <= 0 %}disabled{% endif %}>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4 pt-3 border-top">
+                        <span class="fw-bold text-muted">TOTAL ESTIMÉ</span>
+                        <div class="text-end">
+                            <h3 class="fw-bold text-success mb-0" id="total-price">{{ evenement.prix|number_format(2, ',', ' ') }} DT</h3>
+                            <span id="promo-info" class="badge bg-eco text-white d-none animate__animated animate__pulse animate__infinite">Promo appliquée !</span>
+                        </div>
+                    </div>
+
+                    {% if places_dispo <= 0 %}
+                        {% if attente_dispo > 0 %}
+                            <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold rounded-4 shadow-sm py-3 mb-3">
+                                <i class="bi bi-hourglass-split me-2"></i>S'inscrire en attente
+                            </button>
+                            <p class="text-center text-muted small px-3">La liste d'attente est ouverte. Vous serez prévenu dès qu'une place se libère.</p>
+                        {% else %}
+                            <button type="button" class="btn btn-secondary btn-lg w-100 fw-bold rounded-4 py-3 disabled">Événement complet</button>
+                        {% endif %}
+                    {% else %}
+                        <button type="submit" class="btn btn-eco-primary py-3">
+                            <i class="bi bi-check-circle-fill"></i>Réserver mon aventure
+                        </button>
+                    {% endif %}
+                </form>
+
+                {% if places_dispo <= 0 and ai_recommendation %}
+                <div class="mt-5 p-4 rounded-4 bg-dark text-white">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-robot text-info fs-4"></i>
+                        <h6 class="fw-bold mb-0">Recommandation IA</h6>
+                    </div>
+                    <p class="small opacity-75 mb-3">Cet événement est complet, mais notre IA vous suggère cette alternative :</p>
+                    <div class="d-flex gap-3 align-items-center p-2 rounded-3 bg-white bg-opacity-10 mb-3">
+                        {% if ai_recommendation.image_url %}
+                            <img src="{{ asset(ai_recommendation.image_url) }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 10px;">
+                        {% endif %}
+                        <div>
+                            <h6 class="fw-bold mb-0 small">{{ ai_recommendation.titre }}</h6>
+                            <span class="text-info small fw-bold">{{ ai_recommendation.prix }} DT</span>
+                        </div>
+                    </div>
+                    <a href="{{ path('app_event_front_show', {'id_evenement': ai_recommendation.id_evenement}) }}" class="btn btn-info btn-sm w-100 fw-bold rounded-pill">Découvrir</a>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -361,92 +477,65 @@
 
 {% block js %}
 <script>
-// Rating Stars Interaction
-document.querySelectorAll('.rating-star').forEach(star => {
-    star.addEventListener('mouseover', function() {
-        highlightStars(this.dataset.value);
-        this.style.transform = 'scale(1.2)';
-    });
-    star.addEventListener('mouseout', function() {
-        this.style.transform = 'scale(1)';
-    });
-    star.addEventListener('click', function() {
-        document.getElementById('note-input').value = this.dataset.value;
-        setSelectedStars(this.dataset.value);
-    });
-});
+    // Rating Stars Logic
+    const stars = document.querySelectorAll('.rating-star');
+    const noteInput = document.getElementById('note-input');
 
-document.querySelector('.rating-stars').addEventListener('mouseleave', function() {
-    highlightStars(document.getElementById('note-input').value);
-});
-
-function highlightStars(val) {
-    document.querySelectorAll('.rating-star').forEach(star => {
-        if (star.dataset.value <= val) {
-            star.classList.replace('bi-star', 'bi-star-fill');
-        } else {
-            star.classList.replace('bi-star-fill', 'bi-star');
-        }
-    });
-}
-
-function setSelectedStars(val) {
-    highlightStars(val);
-}
-highlightStars(5);
-
-// Dynamic Price Calculation
-const basePrice = {{ evenement.prix }};
-const promoThreshold = {{ promo_threshold|default(1000) }};
-const promoDiscount = {{ promo_discount|default(0) }};
-const inputBillets = document.getElementById('nb_billets');
-const totalPriceEl = document.getElementById('total-price');
-const promoInfoEl = document.getElementById('promo-info');
-
-if (inputBillets) {
-    inputBillets.addEventListener('input', function() {
-        let nb = parseInt(this.value) || 1;
-        let sousTotal = basePrice * nb;
-        let isPromo = false;
-
-        if (nb >= promoThreshold) {
-            let disc = promoDiscount;
-            if (nb <= 50) {
-                disc += Math.floor((nb - promoThreshold) / 5) * 0.01;
+    function updateStars(value) {
+        stars.forEach(s => {
+            if (s.dataset.value <= value) {
+                s.classList.replace('bi-star', 'bi-star-fill');
             } else {
-                disc = 0.18 + Math.floor((nb - 50) / 10) * 0.01;
+                s.classList.replace('bi-star-fill', 'bi-star');
             }
-            
-            sousTotal = sousTotal * (1 - disc);
-            isPromo = true;
-            promoInfoEl.innerHTML = `<i class="bi bi-stars me-1"></i>Promo ${Math.round(disc * 100)}% appliquée !`;
-        }
+        });
+    }
 
-        totalPriceEl.textContent = sousTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DT';
-        
-        if (isPromo) {
-            promoInfoEl.classList.remove('d-none');
-            totalPriceEl.classList.remove('text-success');
-            totalPriceEl.classList.add('text-primary');
-        } else {
-            promoInfoEl.classList.add('d-none');
-            totalPriceEl.classList.remove('text-primary');
-            totalPriceEl.classList.add('text-success');
-        }
+    stars.forEach(star => {
+        star.addEventListener('mouseenter', () => updateStars(star.dataset.value));
+        star.addEventListener('click', () => {
+            noteInput.value = star.dataset.value;
+            updateStars(star.dataset.value);
+        });
     });
-}
 
-// Prevent double submission
-const bookingForm = document.getElementById('booking-form');
-if (bookingForm) {
-    bookingForm.addEventListener('submit', function() {
-        const btn = this.querySelector('button[type="submit"]');
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Traitement...';
-        }
+    document.querySelector('.rating-stars')?.addEventListener('mouseleave', () => {
+        updateStars(noteInput.value);
     });
-}
+
+    updateStars(5);
+
+    // Price Calculation
+    const basePrice = {{ evenement.prix }};
+    const promoThreshold = {{ promo_threshold|default(999) }};
+    const promoDiscount = {{ promo_discount|default(0) }};
+    const inputBillets = document.getElementById('nb_billets');
+    const totalPriceEl = document.getElementById('total-price');
+    const promoInfoEl = document.getElementById('promo-info');
+
+    if (inputBillets) {
+        inputBillets.addEventListener('input', function() {
+            let nb = parseInt(this.value) || 1;
+            let total = basePrice * nb;
+            let discounted = false;
+
+            if (nb >= promoThreshold) {
+                let disc = promoDiscount;
+                if (nb <= 50) {
+                    disc += Math.floor((nb - promoThreshold) / 5) * 0.01;
+                } else {
+                    disc = 0.18 + Math.floor((nb - 50) / 10) * 0.01;
+                }
+                total = total * (1 - disc);
+                discounted = true;
+                promoInfoEl.textContent = `Promo ${Math.round(disc * 100)}% appliquée !`;
+            }
+
+            totalPriceEl.textContent = total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DT';
+            if (discounted) promoInfoEl.classList.remove('d-none');
+            else promoInfoEl.classList.add('d-none');
+        });
+    }
 </script>
 {% endblock %}
 {% endblock %}

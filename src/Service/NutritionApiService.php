@@ -35,6 +35,8 @@ class NutritionApiService
  */
     public function getNutritionValues(string $ingredient): array
     {
+        error_log("🥗 SERVICE getNutritionValues called for: " . $ingredient);
+        $this->logger->info("🥗 getNutritionValues called for: " . $ingredient);
         try {
             if (empty($ingredient)) {
                 throw new \InvalidArgumentException("Ingrédient vide");
@@ -47,14 +49,17 @@ class NutritionApiService
                 $ingredient = '1 ' . $ingredient;
             }
 
-            $this->logger->info("🌐 API CALL: $ingredient");
+            $this->logger->info("🌐 NUTRITION API CALL: Starting for '$ingredient'");
 
-            // 🔥 EXACTEMENT comme Java
-            $body = "ingredientList=$ingredient&servings=1&includeNutrition=true";
+            // On construit le body comme une chaîne de caractères pour être sûr de l'encodage
+            $body = "ingredientList=" . urlencode($ingredient) . "&servings=1&includeNutrition=true";
+
+            $url = self::API_BASE_URL . '/recipes/parseIngredients?apiKey=' . $this->apiKey;
+            $this->logger->info("🌐 URL: $url");
 
             $response = $this->httpClient->request(
                 'POST',
-                self::API_BASE_URL . '/recipes/parseIngredients?apiKey=' . $this->apiKey,
+                $url,
                 [
                     'body' => $body,
                     'headers' => [
@@ -63,27 +68,36 @@ class NutritionApiService
                 ]
             );
 
-            $content = $response->getContent();
+            // On récupère le contenu sans lancer d'exception
+            $content = $response->getContent(false);
+            $statusCode = $response->getStatusCode();
 
-            // 🔍 DEBUG IMPORTANT
-            $this->logger->info("RAW RESPONSE: " . $content);
+            $this->logger->info("🌐 API Status Code: $statusCode");
+            $this->logger->info("🌐 RAW RESPONSE (truncated): " . substr($content, 0, 500));
+
+            if ($statusCode !== 200) {
+                $errorData = json_decode($content, true);
+                $message = $errorData['message'] ?? 'Erreur Spoonacular (Status ' . $statusCode . ')';
+                throw new \Exception($message);
+            }
 
             $data = json_decode($content, true);
 
-            if (empty($data)) {
-                throw new \Exception("Réponse API vide");
+            if (empty($data) || !is_array($data)) {
+                throw new \Exception("Réponse API vide ou invalide");
             }
 
             return $this->parseNutritionResponse($data);
 
         } catch (\Exception $e) {
-            $this->logger->error("❌ Erreur Nutrition: " . $e->getMessage());
+            $this->logger->error("❌ NutritionApiService Error: " . $e->getMessage());
 
             return [
                 'calories' => 0,
                 'protein' => 0,
                 'fat' => 0,
                 'carbs' => 0,
+                'error_msg' => $e->getMessage()
             ];
         }
     }

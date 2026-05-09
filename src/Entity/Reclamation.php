@@ -12,8 +12,12 @@ use App\Repository\ReclamationRepository;
 #[ORM\Table(name: 'reclamation')]
 class Reclamation
 {
+    public function __construct()
+    {
+        $this->date_creation = new \DateTime();
+    }
     #[ORM\Id]
-    #[ORM\GeneratedValue]
+    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     #[ORM\Column(type: 'integer')]
     private ?int $id_reclamation = null;
 
@@ -28,10 +32,10 @@ class Reclamation
         return $this;
     }
 
-#[ORM\Column(type: 'string', length: 80)]
-private ?string $type = null;
+    #[ORM\Column(type: 'string', length: 80)]
+    private string $type = '';
 
-    public function getType(): ?string
+    public function getType(): string
     {
         return $this->type;
     }
@@ -42,15 +46,22 @@ private ?string $type = null;
         return $this;
     }
 
-#[ORM\Column(type: 'string', length: 20)]
-private ?string $priorite = 'BASSE'; // Valeurs: HAUTE, MOYENNE, BASSE
+    #[ORM\Column(type: 'string', length: 20)]
+    private string $priorite = 'BASSE'; // Valeurs: HAUTE, MOYENNE, BASSE
 
-public function getPriorite(): ?string { return $this->priorite; }
-public function setPriorite(string $priorite): self { $this->priorite = $priorite; return $this; }
-#[ORM\Column(type: 'string', length: 2000)]
-private ?string $contenu = null;
+    public function getPriorite(): string
+    {
+        return $this->priorite;
+    }
+    public function setPriorite(string $priorite): self
+    {
+        $this->priorite = $priorite;
+        return $this;
+    }
+    #[ORM\Column(type: 'string', length: 2000)]
+    private string $contenu = '';
 
-    public function getContenu(): ?string
+    public function getContenu(): string
     {
         return $this->contenu;
     }
@@ -63,29 +74,29 @@ private ?string $contenu = null;
 
 
 
-#[ORM\Column(enumType: StatutReclamation::class)]
-private ?StatutReclamation $statut = null;
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $statut = StatutReclamation::EN_ATTENTE->value;
 
-    public function getStatut(): ?StatutReclamation
+    public function getStatut(): StatutReclamation
     {
-        return $this->statut;
+        return StatutReclamation::from($this->statut);
     }
 
     public function setStatut(StatutReclamation $statut): self
     {
-        $this->statut = $statut;
+        $this->statut = $statut->value;
         return $this;
     }
 
     #[ORM\Column(type: 'datetime', nullable: false)]
-    private ?\DateTimeInterface $date_creation = null;
+    private \DateTimeInterface $date_creation;
 
-    public function getDate_creation(): ?\DateTimeInterface
+    public function getDate_creation(): \DateTimeInterface
     {
         return $this->date_creation;
     }
 
-    public function setDate_creation(\DateTimeInterface $date_creation): self
+    protected function setDate_creation(\DateTimeInterface $date_creation): self
     {
         $this->date_creation = $date_creation;
         return $this;

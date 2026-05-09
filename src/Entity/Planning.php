@@ -46,9 +46,8 @@ class Planning
     #[Assert\Type(\DateTimeInterface::class)]
     private ?\DateTimeInterface $date_fin = null;
 
-    #[ORM\Column(enumType: StatutPlanning::class)]
-    #[Assert\NotNull(message: "Le statut est obligatoire")]
-    private ?StatutPlanning $statut = null;
+    #[ORM\Column(type: 'string', length: 255)]
+    private ?string $statut = null;
 
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $created_at = null;
@@ -56,11 +55,11 @@ class Planning
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $updated_at = null;
 
-   /**
- * @var Collection<int, Seance>
- */
-#[ORM\OneToMany(targetEntity: Seance::class, mappedBy: 'planning')]
-private Collection $seances;
+    /**
+     * @var Collection<int, Seance>
+     */
+    #[ORM\OneToMany(targetEntity: Seance::class, mappedBy: 'planning')]
+    private Collection $seances;
     public function __construct()
     {
         $this->seances = new ArrayCollection();
@@ -69,71 +68,118 @@ private Collection $seances;
     // =========================
     // BONUS 🔥 VALIDATION MÉTIER
     // =========================
-  #[Assert\Callback]
-public function validateDates(ExecutionContextInterface $context): void
-{
-    $today = new \DateTime('today');
+    #[Assert\Callback]
+    public function validateDates(ExecutionContextInterface $context): void
+    {
+        $today = new \DateTime('today');
 
-    // 🔴 Vérifier date début >= aujourd’hui
-    if ($this->date_debut && $this->date_debut < $today) {
-        $context->buildViolation("La date de début ne peut pas être dans le passé")
-            ->atPath('date_debut')
-            ->addViolation();
-    }
-
-    // 🔴 Vérifier date fin > date début
-    if ($this->date_debut && $this->date_fin) {
-        if ($this->date_fin <= $this->date_debut) {
-            $context->buildViolation("La date de fin doit être après la date de début")
-                ->atPath('date_fin')
+        // 🔴 Vérifier date début >= aujourd’hui
+        if ($this->date_debut && $this->date_debut < $today) {
+            $context->buildViolation("La date de début ne peut pas être dans le passé")
+                ->atPath('date_debut')
                 ->addViolation();
         }
+
+        // 🔴 Vérifier date fin > date début
+        if ($this->date_debut && $this->date_fin) {
+            if ($this->date_fin <= $this->date_debut) {
+                $context->buildViolation("La date de fin doit être après la date de début")
+                    ->atPath('date_fin')
+                    ->addViolation();
+            }
+        }
     }
-}
 
     // =========================
     // GETTERS / SETTERS
     // =========================
 
-    public function getIdPlanning(): ?int { return $this->id_planning; }
-
-    public function getTitre(): ?string { return $this->titre; }
-    public function setTitre(?string $titre): self { $this->titre = $titre; return $this; }
-
-    public function getDescription(): ?string { return $this->description; }
-    public function setDescription(?string $description): self { $this->description = $description; return $this; }
-
-    public function getDateDebut(): ?\DateTimeInterface { return $this->date_debut; }
-    public function setDateDebut(?\DateTimeInterface $date): self
-{
-    $this->date_debut = $date;
-    return $this;
-}
-    public function getDateFin(): ?\DateTimeInterface { return $this->date_fin; }
-    public function setDateFin(?\DateTimeInterface $date): self
-{
-    $this->date_fin = $date;
-    return $this;
-}
-
-    public function getStatut(): ?StatutPlanning { return $this->statut; }
-    public function setStatut(StatutPlanning $statut): self { $this->statut = $statut; return $this; }
-
-    public function getCreatedAt(): ?\DateTimeInterface { return $this->created_at; }
-    public function setCreatedAt(\DateTimeInterface $date): self { $this->created_at = $date; return $this; }
-
-    public function getUpdatedAt(): ?\DateTimeInterface { return $this->updated_at; }
-    public function setUpdatedAt(\DateTimeInterface $date): self { $this->updated_at = $date; return $this; }
-/**
- * @return Collection<int, Seance>
- */
-    public function getSeances(): Collection { return $this->seances; }
-    public function getDuree(): ?int
-{
-    if ($this->date_debut && $this->date_fin) {
-        return $this->date_debut->diff($this->date_fin)->days;
+    public function getIdPlanning(): ?int
+    {
+        return $this->id_planning;
     }
 
-    return null;
-}
+    public function getTitre(): ?string
+    {
+        return $this->titre;
+    }
+    public function setTitre(?string $titre): self
+    {
+        $this->titre = $titre;
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+    public function setDescription(?string $description): self
+    {
+        $this->description = $description;
+        return $this;
+    }
+
+    public function getDateDebut(): ?\DateTimeInterface
+    {
+        return $this->date_debut;
+    }
+    public function setDateDebut(?\DateTimeInterface $date): self
+    {
+        $this->date_debut = $date;
+        return $this;
+    }
+    public function getDateFin(): ?\DateTimeInterface
+    {
+        return $this->date_fin;
+    }
+    public function setDateFin(?\DateTimeInterface $date): self
+    {
+        $this->date_fin = $date;
+        return $this;
+    }
+
+    public function getStatut(): ?StatutPlanning
+    {
+        return $this->statut ? StatutPlanning::tryFrom($this->statut) : null;
+    }
+    public function setStatut(?StatutPlanning $statut): self
+    {
+        $this->statut = $statut?->value;
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeInterface
+    {
+        return $this->created_at;
+    }
+    public function setCreatedAt(\DateTimeInterface $date): self
+    {
+        $this->created_at = $date;
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeInterface
+    {
+        return $this->updated_at;
+    }
+    public function setUpdatedAt(\DateTimeInterface $date): self
+    {
+        $this->updated_at = $date;
+        return $this;
+    }
+    /**
+     * @return Collection<int, Seance>
+     */
+    public function getSeances(): Collection
+    {
+        return $this->seances;
+    }
+    public function getDuree(): ?int
+    {
+        if ($this->date_debut && $this->date_fin) {
+            return $this->date_debut->diff($this->date_fin)->days;
+        }
+
+        return null;
+    }
 }

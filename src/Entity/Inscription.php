@@ -29,7 +29,7 @@ class Inscription
     private ?\DateTimeInterface $date_inscription = null;
 
     #[Assert\NotBlank(message: 'Le statut est obligatoire.')]
-    #[ORM\Column(name: 'statut_inscr', type: 'string', enumType: StatutInscription::class, length: 255)]
+    #[ORM\Column(name: 'statut_inscr', enumType: StatutInscription::class)]
     private ?StatutInscription $statut_inscr = null;
 
     #[ORM\Column(name: 'montant_total', type: 'decimal', precision: 10, scale: 2)]
@@ -80,7 +80,7 @@ class Inscription
     {
         return $this->date_inscription;
     }
-    
+
 
     public function setDateInscription(\DateTimeInterface $date_inscription): self
     {

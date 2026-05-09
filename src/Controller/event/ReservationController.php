@@ -21,8 +21,6 @@ use App\Entity\Notification;
 use App\Service\EventDocumentService;
 use App\Service\EventWorkflowService;
 use App\Service\ReservationPricingService;
-use App\Service\EventDocumentService;
-use App\Service\EventWorkflowService;
 use App\Service\ReservationManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -40,7 +38,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/download-all-tickets', name: 'app_reservation_all_tickets', methods: ['GET'])]
-    public function downloadAllTickets(EntityManagerInterface $entityManager, EventDocumentService $documentService, ReservationPricingService $pricingService): Response
+    public function downloadAllTickets(EntityManagerInterface $entityManager, EventDocumentService $documentService): Response
     {
         $user = $this->getUser();
         if (!$user instanceof UserApp) return $this->redirectToRoute('app_login');
@@ -71,7 +69,7 @@ class ReservationController extends AbstractController
                 'totalBillets' => $data['total_billets'],
                 'qrCode' => $documentService->generateQrCode(sprintf('EVENT:%d|USER:%d|TICKETS:%d', $eventId, $user->getId_user(), $data['total_billets'])),
                 'reference' => 'EVT-' . $eventId . '-' . $user->getId_user(),
-                'pricing' => $pricingService->calculatePricing($data['evenement'], $data['total_billets'])
+                'pricing' => $this->pricingService->calculatePricing($data['evenement'], $data['total_billets'])
             ];
         }
 
@@ -136,7 +134,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/ticket/{id_res_evt}', name: 'app_reservation_ticket', methods: ['GET'])]
-    public function generateTicket(ReservationEvenement $reservation, ReservationPricingService $pricingService): Response
+    public function generateTicket(ReservationEvenement $reservation): Response
     {
         // 1. Generate QR Code
         $writer = new SvgWriter();
@@ -159,7 +157,7 @@ class ReservationController extends AbstractController
         $options->set('defaultFont', 'Arial');
         $dompdf = new Dompdf($options);
 
-        $pricing = $pricingService->calculatePricing($reservation->getEvenement(), $reservation->getNb_billets());
+        $pricing = $this->pricingService->calculatePricing($reservation->getEvenement(), $reservation->getNb_billets());
 
         $html = $this->renderView('front/event/ticket_pdf.html.twig', [
             'reservation' => $reservation,
@@ -261,7 +259,7 @@ class ReservationController extends AbstractController
 
         // 🤖 4) YIELD MANAGEMENT (TARIFICATION DYNAMIQUE)
         $yieldData = $aiOptimizer->analyzeYieldManagement($evenement, 1.5);
-        if (isset($yieldData['admin_alert']) && strpos($yieldData['admin_alert'], 'FORTE') !== false) {
+        if (str_contains($yieldData['admin_alert'], 'FORTE')) {
             $now = new \DateTimeImmutable('now', new \DateTimeZone('Africa/Tunis'));
             $notifYield = new Notification();
             $notifYield->setTitle('⚡ PRIX DYNAMIQUE AGENT IA')
@@ -296,7 +294,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/confirmer-event/{id_evenement}', name: 'app_reservation_confirm_event', methods: ['GET', 'POST'])]
-    public function confirmerEvent(Evenement $evenement, EntityManagerInterface $entityManager, \Symfony\Component\Routing\Generator\UrlGeneratorInterface $urlGenerator, ReservationPricingService $pricingService): Response
+    public function confirmerEvent(Evenement $evenement, EntityManagerInterface $entityManager, \Symfony\Component\Routing\Generator\UrlGeneratorInterface $urlGenerator): Response
     {
         $user = $this->getUser();
         if (!$user) {
@@ -320,7 +318,7 @@ class ReservationController extends AbstractController
             $totalBillets += $res->getNb_billets();
         }
 
-        $pricing = $pricingService->calculatePricing($evenement, $totalBillets);
+        $pricing = $this->pricingService->calculatePricing($evenement, $totalBillets);
         $totalFinal = $pricing['totalFinal'];
 
         // Tentative d'utilisation de Stripe (Mode Test)
@@ -392,7 +390,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/mes-reservations', name: 'app_mes_reservations', methods: ['GET'])]
-    public function mesReservations(Request $request, EntityManagerInterface $entityManager, ReservationPricingService $pricingService): Response
+    public function mesReservations(Request $request, EntityManagerInterface $entityManager): Response
     {
         $user = $this->getUser();
 
@@ -437,7 +435,7 @@ class ReservationController extends AbstractController
         }
 
         foreach ($groupedReservations as $eventId => $data) {
-            $groupedReservations[$eventId]['pricing'] = $pricingService->calculatePricing($data['evenement'], $data['total_billets']);
+            $groupedReservations[$eventId]['pricing'] = $this->pricingService->calculatePricing($data['evenement'], $data['total_billets']);
         }
 
         if ($hasUpdates) {

@@ -82,7 +82,6 @@ class SetupController extends AbstractController
             $user->setRole($userData['role']);
             $user->setTelephone($userData['telephone']);
             $user->setAge($userData['age']);
-            $user->setDate_creation(new \DateTime());
             
             // Hash the password
             $hashedPassword = $passwordHasher->hashPassword(

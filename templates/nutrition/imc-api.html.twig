@@ -363,9 +363,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
     btn.addEventListener('click', searchIngredient);
 
+    const input = document.getElementById('ingredientSearch');
+    if (input) {
+        input.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                searchIngredient();
+            }
+        });
+    }
+
 });
 
 function searchIngredient() {
+    console.log("🔍 searchIngredient called");
     let query = document.getElementById('ingredientSearch').value;
 
     if (!query || query.length < 2) {
@@ -382,15 +392,17 @@ function searchIngredient() {
     }
 
     document.getElementById('searchLoading').classList.remove('d-none');
-    document.getElementById('searchResults').classList.add('d-none');
+    console.log("🚀 Starting fetch for:", query);
+    alert("Fetching: " + query);
 
     fetch(`/nutrition/api/get?ingredient=${encodeURIComponent(query)}`)
         .then(r => r.json())
         .then(data => {
-            if (data.success) {
+            if (data.success && !data.nutrition.error_msg) {
                 displayNutritionResult(data);
             } else {
-                alert("❌ " + data.error);
+                const error = data.nutrition && data.nutrition.error_msg ? data.nutrition.error_msg : (data.error || "Erreur inconnue");
+                alert("❌ API Error: " + error);
             }
         })
         .catch(e => alert('Erreur: ' + e.message))

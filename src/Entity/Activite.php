@@ -181,12 +181,12 @@ class Activite
         return $this;
     }
 
-    public function getPrix(): ?float
+    public function getPrix(): ?string
     {
         return $this->prix !== null ? (float) $this->prix : null;
     }
 
-    public function setPrix(?float $prix): self
+    public function setPrix(?string $prix): self
     {
         $this->prix = $prix !== null ? number_format($prix, 2, '.', '') : null;
         return $this;

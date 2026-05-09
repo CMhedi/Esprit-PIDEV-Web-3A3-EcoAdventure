@@ -188,7 +188,7 @@ public function getTodayStats(Request $request): JsonResponse
 
             // ===== GROUPER PAR JOUR =====
             $byDay = [];
-            
+           
             // Initialiser avec jours vides (7 jours)
             for ($i = 0; $i < 7; $i++) {
                 $day = new \DateTime("-" . (6 - $i) . " days");
@@ -485,11 +485,11 @@ public function add(Request $request): JsonResponse
             }
 
             $logs = $this->repository->getByUser($user->getId());
-                
-            
+               
+           
 
             $csv = "Date,Aliment,Calories,Protéines,Graisses,Glucides\n";
-            
+           
             foreach ($logs as $log) {
                 $csv .= sprintf(
                     '"%s","%s",%.2f,%.2f,%.2f,%.2f' . "\n",
@@ -808,6 +808,7 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
     #[Route('/api/get', name: 'api_get')]
     public function getNutrition(Request $request, NutritionApiService $apiService): JsonResponse
     {
+        error_log("📡 Controller getNutrition called for: " . $request->query->get('ingredient'));
         try {
             $ingredient = $request->query->get('ingredient');
 
@@ -1080,7 +1081,7 @@ public function getIMCDashboard(Request $request, SessionInterface $session): Js
     private function calculateIdealWeight(float $height, string $gender): array
     {
         $heightCm = $height;
-        
+       
         if ($gender === 'F') {
             $ideal_min = 45.5 + 2.3 * (($heightCm - 152.4) / 2.54);
             $ideal_max = 50 + 2.3 * (($heightCm - 152.4) / 2.54);

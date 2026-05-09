@@ -44,17 +44,16 @@ class ReservationSeance
 
 
 
-#[ORM\Column(enumType: StatutReservation::class)]
-private ?StatutReservation $statut = null;
+    #[ORM\Column(type: 'string', length: 255)]
+    private ?string $statutReservation = null;
 
-    public function getStatut(): ?StatutReservation
+    public function getStatutReservation(): ?StatutReservation
     {
-        return $this->statut;
+        return $this->statutReservation ? StatutReservation::tryFrom($this->statutReservation) : null;
     }
-
-    public function setStatut(StatutReservation $statut): self
+    public function setStatutReservation(?StatutReservation $statut): self
     {
-        $this->statut = $statut;
+        $this->statutReservation = $statut?->value;
         return $this;
     }
 
@@ -88,8 +87,8 @@ private ?StatutReservation $statut = null;
         return $this;
     }
 
-#[ORM\Column(type: 'string', length: 255, nullable: true)]
-private ?string $google_event_id = null;
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $google_event_id = null;
 
     public function getGoogle_event_id(): ?string
     {
@@ -118,17 +117,16 @@ private ?string $google_event_id = null;
 
 
 
-#[ORM\Column(enumType: StatutPresence::class)]
-private ?StatutPresence $statut_presence = null;
+    #[ORM\Column(type: 'string', length: 255)]
+    private ?string $statutPresence = null;
 
-    public function getStatut_presence(): ?StatutPresence
+    public function getStatutPresence(): ?StatutPresence
     {
-        return $this->statut_presence;
+        return $this->statutPresence ? StatutPresence::tryFrom($this->statutPresence) : null;
     }
-
-    public function setStatut_presence(StatutPresence $statut_presence): self
+    public function setStatutPresence(?StatutPresence $statut): self
     {
-        $this->statut_presence = $statut_presence;
+        $this->statutPresence = $statut?->value;
         return $this;
     }
 

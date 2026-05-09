@@ -45,9 +45,8 @@ class Seance
     #[Assert\Positive(message: "Capacité doit être positive")]
     private ?int $capacite = null;
 
-    #[ORM\Column(enumType: StatutSeance::class)]
-    #[Assert\NotNull(message: "Statut obligatoire")]
-    private ?StatutSeance $statutSeance = null;
+    #[ORM\Column(type: 'string', length: 255)]
+    private ?string $statutSeance = null;
 
     #[ORM\ManyToOne(targetEntity: Planning::class, inversedBy: 'seances')]
     #[ORM\JoinColumn(name: 'id_planning', referencedColumnName: 'id_planning', nullable: false)]
@@ -57,11 +56,11 @@ class Seance
     #[ORM\JoinColumn(name: 'id_coach', referencedColumnName: 'id_user', nullable: false)]
     private ?UserApp $coach = null;
 
-/**
- * @var Collection<int, ReservationSeance>
- */
-#[ORM\OneToMany(targetEntity: ReservationSeance::class, mappedBy: 'seance')]
-private Collection $reservationSeances;
+    /**
+     * @var Collection<int, ReservationSeance>
+     */
+    #[ORM\OneToMany(targetEntity: ReservationSeance::class, mappedBy: 'seance')]
+    private Collection $reservationSeances;
 
     public function __construct()
     {
@@ -72,47 +71,97 @@ private Collection $reservationSeances;
     // GETTERS / SETTERS
     // =========================
 
-    public function getIdSeance(): ?int { return $this->idSeance; }
+    public function getIdSeance(): ?int
+    {
+        return $this->idSeance;
+    }
 
-    public function getNom(): ?string { return $this->nom; }
-    public function setNom(string $nom): self { $this->nom = $nom; return $this; }
+    public function getNom(): ?string
+    {
+        return $this->nom;
+    }
+    public function setNom(string $nom): self
+    {
+        $this->nom = $nom;
+        return $this;
+    }
 
-    public function getDateSeance(): ?\DateTimeInterface { return $this->dateSeance; }
-public function setDateSeance(?\DateTimeInterface $date): self
-{
-    $this->dateSeance = $date;
-    return $this;
-}
+    public function getDateSeance(): ?\DateTimeInterface
+    {
+        return $this->dateSeance;
+    }
+    public function setDateSeance(?\DateTimeInterface $date): self
+    {
+        $this->dateSeance = $date;
+        return $this;
+    }
 
-    public function getHeureDebut(): ?\DateTimeInterface { return $this->heureDebut; }
-public function setHeureDebut(?\DateTimeInterface $heure): self
-{
-    $this->heureDebut = $heure;
-    return $this;
-}
+    public function getHeureDebut(): ?\DateTimeInterface
+    {
+        return $this->heureDebut;
+    }
+    public function setHeureDebut(?\DateTimeInterface $heure): self
+    {
+        $this->heureDebut = $heure;
+        return $this;
+    }
 
-    public function getHeureFin(): ?\DateTimeInterface { return $this->heureFin; }
-public function setHeureFin(?\DateTimeInterface $heure): self
-{
-    $this->heureFin = $heure;
-    return $this;
-}
+    public function getHeureFin(): ?\DateTimeInterface
+    {
+        return $this->heureFin;
+    }
+    public function setHeureFin(?\DateTimeInterface $heure): self
+    {
+        $this->heureFin = $heure;
+        return $this;
+    }
 
-    public function getCapacite(): ?int { return $this->capacite; }
-    public function setCapacite(int $capacite): self { $this->capacite = $capacite; return $this; }
+    public function getCapacite(): ?int
+    {
+        return $this->capacite;
+    }
+    public function setCapacite(int $capacite): self
+    {
+        $this->capacite = $capacite;
+        return $this;
+    }
 
-    public function getStatutSeance(): ?StatutSeance { return $this->statutSeance; }
-    public function setStatutSeance(StatutSeance $statut): self { $this->statutSeance = $statut; return $this; }
+    public function getStatutSeance(): ?StatutSeance
+    {
+        return $this->statutSeance ? StatutSeance::tryFrom($this->statutSeance) : null;
+    }
+    public function setStatutSeance(?StatutSeance $statut): self
+    {
+        $this->statutSeance = $statut?->value;
+        return $this;
+    }
 
-    public function getPlanning(): ?Planning { return $this->planning; }
-    public function setPlanning(?Planning $planning): self { $this->planning = $planning; return $this; }
+    public function getPlanning(): ?Planning
+    {
+        return $this->planning;
+    }
+    public function setPlanning(?Planning $planning): self
+    {
+        $this->planning = $planning;
+        return $this;
+    }
 
-    public function getCoach(): ?UserApp { return $this->coach; }
-    public function setCoach(?UserApp $coach): self { $this->coach = $coach; return $this; }
-/**
- * @return Collection<int, ReservationSeance>
- */
-    public function getReservationSeances(): Collection { return $this->reservationSeances; }
+    public function getCoach(): ?UserApp
+    {
+        return $this->coach;
+    }
+    public function setCoach(?UserApp $coach): self
+    {
+        $this->coach = $coach;
+        return $this;
+    }
+    /**
+     * @return Collection<int, ReservationSeance>
+     */
+    public function getReservationSeances(): Collection
+    {
+        return $this->reservationSeances;
+    }
 
     // =========================
     // VALIDATION MÉTIER 🔥
@@ -121,7 +170,8 @@ public function setHeureFin(?\DateTimeInterface $heure): self
     #[Assert\Callback]
     public function validateSeance(ExecutionContextInterface $context): void
     {
-        if (!$this->planning) return;
+        if (!$this->planning)
+            return;
 
         $today = new \DateTime('today');
 
@@ -144,19 +194,25 @@ public function setHeureFin(?\DateTimeInterface $heure): self
                 ->addViolation();
         }
 
-       // ❌ hors interval (VERSION CORRIGÉE)
-if ($this->dateSeance && $this->planning->getDateDebut() && $this->planning->getDateFin()) {
+        // ❌ hors interval (VERSION CORRIGÉE)
+        if ($this->dateSeance && $this->planning->getDateDebut() && $this->planning->getDateFin()) {
 
+<<<<<<< HEAD
  $dateSeance = (new \DateTime($this->dateSeance->format('Y-m-d')))->setTime(0, 0);
 $dateDebut = (new \DateTime($this->planning->getDateDebut()->format('Y-m-d')))->setTime(0, 0);
 $dateFin = (new \DateTime($this->planning->getDateFin()->format('Y-m-d')))->setTime(23, 59, 59);
+=======
+            $dateSeance = (new \DateTime($this->dateSeance->format('Y-m-d')))->setTime(0, 0);
+            $dateDebut = (new \DateTime($this->planning->getDateDebut()->format('Y-m-d')))->setTime(0, 0);
+            $dateFin = (new \DateTime($this->planning->getDateFin()->format('Y-m-d')))->setTime(23, 59, 59);
+>>>>>>> gestion_utilisateur
 
-    if ($dateSeance < $dateDebut || $dateSeance > $dateFin) {
-        $context->buildViolation("La date doit être comprise entre le début et la fin du planning")
-            ->atPath('dateSeance')
-            ->addViolation();
-    }
-}
+            if ($dateSeance < $dateDebut || $dateSeance > $dateFin) {
+                $context->buildViolation("La date doit être comprise entre le début et la fin du planning")
+                    ->atPath('dateSeance')
+                    ->addViolation();
+            }
+        }
 
         // ❌ heure fin < début
         if ($this->heureDebut && $this->heureFin) {

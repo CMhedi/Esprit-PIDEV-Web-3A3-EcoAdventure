@@ -1,0 +1,249 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}EcoAdventure | IA Churn Dashboard{% endblock %}
+
+{% block css %}
+<style>
+    .text-gradient {
+        background: linear-gradient(135deg, #2D3436 0%, #00B894 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .hover-lift {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .churn-card {
+        border: none;
+        border-radius: 1.5rem;
+        background: white;
+    }
+    .probability-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: #f1f3f5;
+        overflow: hidden;
+    }
+    .probability-fill {
+        height: 100%;
+        transition: width 1s ease-out;
+    }
+    .risk-badge {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+    }
+    .pulse-high {
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    .animate-fade-in {
+        animation: fadeIn 0.8s ease-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Analyse Prédictive Churn{% endblock %}
+
+{% block body %}
+<div class="dashboard-container animate-fade-in px-4 py-3">
+    <!-- Header Section -->
+    <div class="glass-header d-flex justify-content-between align-items-center mb-5 p-4 rounded-4 shadow-sm border" style="background: rgba(255,255,255,0.7); backdrop-filter: blur(20px);">
+        <div>
+            <h2 class="fw-bold mb-0"><span class="text-gradient">Retention</span> Strategy Center</h2>
+            <p class="text-muted small mb-0"><i class="bi bi-robot text-primary me-2"></i>Intelligence Artificielle de détection de départ | {{ "now"|date("d/m/Y H:i") }}</p>
+        </div>
+        <div class="d-flex gap-3">
+            <button id="predictAllBtn" class="btn btn-primary rounded-pill px-4 shadow-sm hover-lift">
+                <i class="bi bi-lightning-fill me-2"></i>Recalculer tout l'IA
+            </button>
+        </div>
+    </div>
+
+    <!-- KPI Section -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="churn-card p-4 shadow-sm hover-lift border-start border-primary border-5">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-bold text-uppercase">Total Utilisateurs</span>
+                    <i class="bi bi-people text-primary fs-4"></i>
+                </div>
+                <h2 class="fw-bold mb-0">{{ stats.total_users }}</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="churn-card p-4 shadow-sm hover-lift border-start border-danger border-5">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-bold text-uppercase">Risque Élevé</span>
+                    <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+                </div>
+                <h2 class="fw-bold mb-0 text-danger">{{ stats.high_risk }}</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="churn-card p-4 shadow-sm hover-lift border-start border-warning border-5">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-bold text-uppercase">Risque Moyen</span>
+                    <i class="bi bi-hourglass-split text-warning fs-4"></i>
+                </div>
+                <h2 class="fw-bold mb-0 text-warning">{{ stats.medium_risk }}</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="churn-card p-4 shadow-sm hover-lift border-start border-success border-5">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-bold text-uppercase">Fidèles (Risque Faible)</span>
+                    <i class="bi bi-shield-check text-success fs-4"></i>
+                </div>
+                <h2 class="fw-bold mb-0 text-success">{{ stats.low_risk }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main List Section -->
+    <div class="card churn-card shadow-lg">
+        <div class="card-header bg-white border-0 py-4 px-4">
+            <h4 class="fw-bold mb-0">Liste des utilisateurs par risque de Churn</h4>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr class="text-muted small text-uppercase fw-bold">
+                            <th class="ps-4">Utilisateur</th>
+                            <th>Probabilité de départ</th>
+                            <th>Niveau de Risque</th>
+                            <th>Dernière Analyse</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            {% set risk = user.churnRisk %}
+                            {% set probPercent = (user.churnProbability * 100)|round(1) %}
+                            {% set colorClass = risk == 'high' ? 'danger' : (risk == 'medium' ? 'warning' : 'success') %}
+                            
+                            <tr>
+                                <td class="ps-4 py-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar bg-{{ colorClass }} bg-opacity-10 text-{{ colorClass }} rounded-circle d-flex align-items-center justify-content-center fw-bold me-3" style="width: 45px; height: 45px;">
+                                            {{ user.nom|first }}{{ user.prenom|first }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ user.nom }} {{ user.prenom }}</div>
+                                            <div class="text-muted small">{{ user.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="width: 250px;">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="flex-grow-1">
+                                            <div class="probability-bar">
+                                                <div class="probability-fill bg-{{ colorClass }}" style="width: {{ probPercent }}%"></div>
+                                            </div>
+                                        </div>
+                                        <span class="fw-bold small">{{ probPercent }}%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge risk-badge rounded-pill px-3 py-2 bg-{{ colorClass }} bg-opacity-10 text-{{ colorClass }} {{ risk == 'high' ? 'pulse-high' : '' }}">
+                                        {{ risk|upper }} RISK
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-muted small">
+                                        <i class="bi bi-clock me-1"></i>
+                                        {{ user.lastPredictionAt ? user.lastPredictionAt|date('d/m/Y H:i') : 'Jamais' }}
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-light rounded-pill px-3 predict-one-btn" data-id="{{ user.id_user }}">
+                                        <i class="bi bi-arrow-repeat me-1"></i>Analyser
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Predict All Logic
+        const predictAllBtn = document.getElementById('predictAllBtn');
+        if (predictAllBtn) {
+            predictAllBtn.addEventListener('click', function() {
+                Swal.fire({
+                    title: 'Lancement de l\'IA',
+                    text: "L'IA va analyser tous vos utilisateurs. Cela peut prendre quelques instants.",
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#00B894',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Lancer l\'analyse',
+                    cancelButtonText: 'Annuler'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        predictAllBtn.disabled = true;
+                        predictAllBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>IA en cours...';
+                        
+                        fetch('{{ path('admin_churn_view')|replace({'/view': '/predict-all'}) }}', {
+                            method: 'POST'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            Swal.fire('Succès !', data.total_processed + ' utilisateurs analysés.', 'success')
+                            .then(() => window.location.reload());
+                        })
+                        .catch(err => {
+                            Swal.fire('Erreur', 'Impossible de contacter l\'IA.', 'error');
+                            predictAllBtn.disabled = false;
+                            predictAllBtn.innerHTML = '<i class="bi bi-lightning-fill me-2"></i>Recalculer tout l\'IA';
+                        });
+                    }
+                });
+            });
+        }
+
+        // Predict One Logic
+        document.querySelectorAll('.predict-one-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const userId = this.getAttribute('data-id');
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                
+                fetch('{{ path('admin_churn_view')|replace({'/view': '/predict/'}) }}' + userId, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    window.location.reload();
+                })
+                .catch(err => {
+                    Swal.fire('Erreur', 'Analyse impossible.', 'error');
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Analyser';
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}
