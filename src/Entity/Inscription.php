@@ -80,7 +80,7 @@ class Inscription
     {
         return $this->date_inscription;
     }
-    
+
 
     public function setDateInscription(\DateTimeInterface $date_inscription): self
     {

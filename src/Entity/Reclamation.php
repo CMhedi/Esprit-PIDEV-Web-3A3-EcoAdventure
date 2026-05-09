@@ -32,8 +32,8 @@ class Reclamation
         return $this;
     }
 
-#[ORM\Column(type: 'string', length: 80)]
-private string $type = '';
+    #[ORM\Column(type: 'string', length: 80)]
+    private string $type = '';
 
     public function getType(): string
     {
@@ -46,13 +46,20 @@ private string $type = '';
         return $this;
     }
 
-#[ORM\Column(type: 'string', length: 20)]
-private string $priorite = 'BASSE'; // Valeurs: HAUTE, MOYENNE, BASSE
+    #[ORM\Column(type: 'string', length: 20)]
+    private string $priorite = 'BASSE'; // Valeurs: HAUTE, MOYENNE, BASSE
 
-public function getPriorite(): string { return $this->priorite; }
-public function setPriorite(string $priorite): self { $this->priorite = $priorite; return $this; }
-#[ORM\Column(type: 'string', length: 2000)]
-private string $contenu = '';
+    public function getPriorite(): string
+    {
+        return $this->priorite;
+    }
+    public function setPriorite(string $priorite): self
+    {
+        $this->priorite = $priorite;
+        return $this;
+    }
+    #[ORM\Column(type: 'string', length: 2000)]
+    private string $contenu = '';
 
     public function getContenu(): string
     {
@@ -67,8 +74,8 @@ private string $contenu = '';
 
 
 
-#[ORM\Column(type: 'string', length: 255)]
-private string $statut = StatutReclamation::EN_ATTENTE->value;
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $statut = StatutReclamation::EN_ATTENTE->value;
 
     public function getStatut(): StatutReclamation
     {

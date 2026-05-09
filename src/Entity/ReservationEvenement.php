@@ -45,10 +45,17 @@ class ReservationEvenement
 
 
     #[ORM\Column(name: 'statut_res', type: 'string', length: 255)]
-    private ?string $statutReservationEvenement = null;
+    private ?string $statut_res = null;
 
-    public function getStatutReservationEvenement(): ?StatutReservationEvenement { return $this->statutReservationEvenement ? StatutReservationEvenement::tryFrom($this->statutReservationEvenement) : null; }
-    public function setStatutReservationEvenement(?StatutReservationEvenement $statut): self { $this->statutReservationEvenement = $statut?->value; return $this; }
+    public function getStatut_res(): ?StatutReservationEvenement
+    {
+        return $this->statut_res ? StatutReservationEvenement::tryFrom($this->statut_res) : null;
+    }
+    public function setStatut_res(?StatutReservationEvenement $statut): self
+    {
+        $this->statut_res = $statut?->value;
+        return $this;
+    }
 
     #[ORM\Column(type: 'boolean', options: ["default" => false])]
     private bool $is_notified_availability = false;
