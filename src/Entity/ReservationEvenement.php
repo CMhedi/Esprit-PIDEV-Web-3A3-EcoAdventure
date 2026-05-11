@@ -57,9 +57,7 @@ class ReservationEvenement
         return $this;
     }
 
-    // Aliases pour la compatibilité avec le code existant
-    public function getStatut_res(): ?StatutReservationEvenement { return $this->getStatutReservationEvenement(); }
-    public function setStatut_res(?StatutReservationEvenement $statut): self { return $this->setStatutReservationEvenement($statut); }
+
 
     #[ORM\Column(type: 'boolean', options: ["default" => false])]
     private bool $is_notified_availability = false;
