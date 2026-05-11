@@ -384,7 +384,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
             if (
                 $date &&
                 $date >= $limitDate &&
-                $reservation->getStatut_presence() === \App\Enum\StatutPresence::ABSENT
+                $reservation->getStatutPresence() === \App\Enum\StatutPresence::ABSENT
             ) {
                 $count++;
             }

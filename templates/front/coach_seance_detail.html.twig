@@ -152,14 +152,14 @@
                                                 </td>
                                                 <td>
                                                     {% if seance.statutSeance.value == 'TERMINEE' %}
-                                                        <span class="badge {% if participant.statut_presence.value == 'PRESENT' %}bg-success{% else %}bg-danger{% endif %}">
-                                                            {{ participant.statut_presence.value }}
+                                                        <span class="badge {% if participant.statutPresence.value == 'PRESENT' %}bg-success{% else %}bg-danger{% endif %}">
+                                                            {{ participant.statutPresence.value }}
                                                         </span>
                                                     {% else %}
                                                         <button type="button" class="btn btn-sm btn-outline-success presence-btn"
                                                                 data-id="{{ participant.id_reservation }}"
-                                                                data-status="{{ participant.statut_presence.value }}">
-                                                            {% if participant.statut_presence.value == 'PRESENT' %}
+                                                                data-status="{{ participant.statutPresence.value }}">
+                                                            {% if participant.statutPresence.value == 'PRESENT' %}
                                                                 <i class="bi bi-check-circle-fill"></i> Présent
                                                             {% else %}
                                                                 <i class="bi bi-x-circle"></i> Absent

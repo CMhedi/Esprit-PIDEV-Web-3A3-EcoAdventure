@@ -33,8 +33,20 @@ final class InscriptionRiskEngine
 
         $views = [];
         foreach ($inscriptions as $inscription) {
+            try {
+                $user = $inscription->getUserApp();
+                // Ensure the user actually exists (triggers proxy load if necessary)
+                if ($user !== null) {
+                    $historyCount = $user->getInscriptions()->count();
+                } else {
+                    $historyCount = 0;
+                }
+            } catch (\Doctrine\ORM\EntityNotFoundException $e) {
+                // Skip inscriptions with orphaned user references
+                continue;
+            }
+
             $amount = (float) ($inscription->getMontantTotal() ?? 0.0);
-            $historyCount = $inscription->getUserApp()?->getInscriptions()->count() ?? 0;
             $userAverageAmount = $this->computeUserAverageAmount($inscription);
             $packRiskView = $this->resolvePackRiskView($inscription, $packRiskViews);
             $packRiskScore = $packRiskView?->getRiskScore() ?? 35.0;
@@ -161,7 +173,13 @@ final class InscriptionRiskEngine
 
     private function computeUserAverageAmount(Inscription $current): float
     {
-        $inscriptions = $current->getUserApp()?->getInscriptions();
+        try {
+            $user = $current->getUserApp();
+            $inscriptions = $user?->getInscriptions();
+        } catch (\Doctrine\ORM\EntityNotFoundException $e) {
+            return (float) ($current->getMontantTotal() ?? 0.0);
+        }
+
         if ($inscriptions === null || $inscriptions->count() <= 1) {
             return (float) ($current->getMontantTotal() ?? 0.0);
         }

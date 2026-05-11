@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use App\Enum\StatutReservation;
 use App\Repository\ReservationSeanceRepository;
 use App\Enum\StatutPresence;
+
 #[ORM\Entity(repositoryClass: ReservationSeanceRepository::class)]
 #[ORM\Table(name: 'reservation_seance')]
 class ReservationSeance
@@ -42,13 +43,11 @@ class ReservationSeance
         return $this;
     }
 
+    #[ORM\Column(name: "statut", type: 'string', length: 255)]
+    private ?string $statut = null;
 
-
-    #[ORM\Column(type: 'string', length: 255)]
-    private ?string $statutReservation = null;
-
-    public function getStatutReservation(): ?StatutReservation { return $this->statutReservation ? StatutReservation::tryFrom($this->statutReservation) : null; }
-    public function setStatutReservation(?StatutReservation $statut): self { $this->statutReservation = $statut?->value; return $this; }
+    public function getStatut(): ?StatutReservation { return $this->statut ? StatutReservation::tryFrom($this->statut) : null; }
+    public function setStatut(?StatutReservation $statut): self { $this->statut = $statut?->value; return $this; }
 
     #[ORM\ManyToOne(targetEntity: UserApp::class, inversedBy: 'reservationSeances')]
     #[ORM\JoinColumn(name: 'id_user', referencedColumnName: 'id_user')]
@@ -80,8 +79,8 @@ class ReservationSeance
         return $this;
     }
 
-#[ORM\Column(type: 'string', length: 255, nullable: true)]
-private ?string $google_event_id = null;
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $google_event_id = null;
 
     public function getGoogle_event_id(): ?string
     {
@@ -108,12 +107,9 @@ private ?string $google_event_id = null;
         return $this;
     }
 
-
-
     #[ORM\Column(type: 'string', length: 255)]
     private ?string $statutPresence = null;
 
     public function getStatutPresence(): ?StatutPresence { return $this->statutPresence ? StatutPresence::tryFrom($this->statutPresence) : null; }
     public function setStatutPresence(?StatutPresence $statut): self { $this->statutPresence = $statut?->value; return $this; }
-
 }
