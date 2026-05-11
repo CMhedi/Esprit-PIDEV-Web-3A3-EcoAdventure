@@ -53,23 +53,78 @@ class Evenement
     #[Assert\PositiveOrZero(message: "Le prix doit être positif.")]
     private float $prix = 0.0;
 
-    public function getPrix(): float { return $this->prix; }
-    public function setPrix(float $prix): self { $this->prix = $prix; return $this; }
+    public function getPrix(): float
+    {
+        return $this->prix;
+    }
+    public function setPrix(float $prix): self
+    {
+        $this->prix = $prix;
+        return $this;
+    }
 
-    public function getId_evenement(): ?int { return $this->id_evenement; }
-    public function setId_evenement(int $id): self { $this->id_evenement = $id; return $this; }
-    public function getTitre(): ?string { return $this->titre; }
-    public function setTitre(string $titre): self { $this->titre = $titre; return $this; }
-    public function getDescription(): ?string { return $this->description; }
-    public function setDescription(?string $desc): self { $this->description = $desc; return $this; }
-    public function getCategorie_evt(): ?CategorieEvenement { return $this->categorie_evt ? CategorieEvenement::tryFrom($this->categorie_evt) : null; }
-    public function setCategorie_evt(?CategorieEvenement $cat): self { $this->categorie_evt = $cat?->value; return $this; }
-    public function getCategorieEvt(): ?CategorieEvenement { return $this->getCategorie_evt(); }
-    public function setCategorieEvt(?CategorieEvenement $cat): self { return $this->setCategorie_evt($cat); }
-    public function getDate_event(): ?\DateTimeInterface { return $this->date_event; }
-    public function setDate_event(?\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
-    public function getDateEvent(): ?\DateTimeInterface { return $this->date_event; }
-    public function setDateEvent(?\DateTimeInterface $date): self { $this->date_event = $date; return $this; }
+    public function getId_evenement(): ?int
+    {
+        return $this->id_evenement;
+    }
+    public function setId_evenement(int $id): self
+    {
+        $this->id_evenement = $id;
+        return $this;
+    }
+    public function getTitre(): ?string
+    {
+        return $this->titre;
+    }
+    public function setTitre(string $titre): self
+    {
+        $this->titre = $titre;
+        return $this;
+    }
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+    public function setDescription(?string $desc): self
+    {
+        $this->description = $desc;
+        return $this;
+    }
+    public function getCategorie_evt(): ?CategorieEvenement
+    {
+        return $this->categorie_evt ? CategorieEvenement::tryFrom($this->categorie_evt) : null;
+    }
+    public function setCategorie_evt(?CategorieEvenement $cat): self
+    {
+        $this->categorie_evt = $cat?->value;
+        return $this;
+    }
+    public function getCategorieEvt(): ?CategorieEvenement
+    {
+        return $this->getCategorie_evt();
+    }
+    public function setCategorieEvt(?CategorieEvenement $cat): self
+    {
+        return $this->setCategorie_evt($cat);
+    }
+    public function getDate_event(): ?\DateTimeInterface
+    {
+        return $this->date_event;
+    }
+    public function setDate_event(?\DateTimeInterface $date): self
+    {
+        $this->date_event = $date;
+        return $this;
+    }
+    public function getDateEvent(): ?\DateTimeInterface
+    {
+        return $this->date_event;
+    }
+    public function setDateEvent(?\DateTimeInterface $date): self
+    {
+        $this->date_event = $date;
+        return $this;
+    }
 
     public function getLieu(): ?string
     {
@@ -115,8 +170,15 @@ class Evenement
         return $this;
     }
 
-    public function getNbPlaces(): ?int { return $this->nb_places; }
-    public function setNbPlaces(int $nb): self { $this->nb_places = $nb; return $this; }
+    public function getNbPlaces(): ?int
+    {
+        return $this->nb_places;
+    }
+    public function setNbPlaces(int $nb): self
+    {
+        $this->nb_places = $nb;
+        return $this;
+    }
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $statut = null;
@@ -146,8 +208,15 @@ class Evenement
         return $this;
     }
 
-    public function getImageUrl(): ?string { return $this->image_url; }
-    public function setImageUrl(?string $url): self { $this->image_url = $url; return $this; }
+    public function getImageUrl(): ?string
+    {
+        return $this->image_url;
+    }
+    public function setImageUrl(?string $url): self
+    {
+        $this->image_url = $url;
+        return $this;
+    }
 
     /**
      * @var Collection<int, ReservationEvenement>
@@ -215,7 +284,7 @@ class Evenement
     {
         $totalPlaces = $this->nb_places ?? 0;
         $nbReservationsExistantes = 0;
-        
+
         foreach ($this->reservationEvenements as $res) {
             $statut = $res->getStatutReservationEvenement();
             if ($statut !== \App\Enum\StatutReservationEvenement::ANNULEE && $statut !== \App\Enum\StatutReservationEvenement::LISTE_ATTENTE) {
