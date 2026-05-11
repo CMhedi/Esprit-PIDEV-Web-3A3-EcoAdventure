@@ -72,8 +72,12 @@ $allSeances = $this->seanceRepo->findAll();
         $disponibles = 0;
 
         foreach ($seances as $s) {
+<<<<<<< HEAD
+            $capacite = $s->getCapacite();
+=======
             /** @var Seance $s */
             $capacite = (int) $s->getCapacite();
+>>>>>>> gestion_utilisateur
             $nbReservations = count($s->getReservationSeances());
 
             $totalCapacite += $capacite;

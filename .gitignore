@@ -20,6 +20,8 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+<<<<<<< HEAD
+=======
 
 ### Python ###
 venv/
@@ -44,3 +46,4 @@ Thumbs.db
 tools/card_ocr_api/.venv/
 tools/card_ocr_api/__pycache__/
 ###< local tooling ###
+>>>>>>> gestion_utilisateur
