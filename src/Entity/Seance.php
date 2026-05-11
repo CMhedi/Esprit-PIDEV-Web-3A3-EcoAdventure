@@ -197,16 +197,9 @@ class Seance
         // ❌ hors interval (VERSION CORRIGÉE)
         if ($this->dateSeance && $this->planning->getDateDebut() && $this->planning->getDateFin()) {
 
-<<<<<<< HEAD
- $dateSeance = (new \DateTime($this->dateSeance->format('Y-m-d')))->setTime(0, 0);
-$dateDebut = (new \DateTime($this->planning->getDateDebut()->format('Y-m-d')))->setTime(0, 0);
-$dateFin = (new \DateTime($this->planning->getDateFin()->format('Y-m-d')))->setTime(23, 59, 59);
-=======
             $dateSeance = (new \DateTime($this->dateSeance->format('Y-m-d')))->setTime(0, 0);
             $dateDebut = (new \DateTime($this->planning->getDateDebut()->format('Y-m-d')))->setTime(0, 0);
             $dateFin = (new \DateTime($this->planning->getDateFin()->format('Y-m-d')))->setTime(23, 59, 59);
->>>>>>> gestion_utilisateur
-
             if ($dateSeance < $dateDebut || $dateSeance > $dateFin) {
                 $context->buildViolation("La date doit être comprise entre le début et la fin du planning")
                     ->atPath('dateSeance')
