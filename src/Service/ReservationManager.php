@@ -21,4 +21,16 @@ class ReservationManager
 
     return true;
 }
+
+    public function validateReservationDemande(\App\Entity\Evenement $evenement, int $nbBillets): void
+    {
+        if ($nbBillets <= 0) {
+            throw new \LogicException("Le nombre de billets doit être supérieur à 0.");
+        }
+
+        $now = new \DateTime();
+        if ($evenement->getDateEvent() < $now) {
+            throw new \LogicException("Cet événement est déjà passé.");
+        }
+    }
 }
