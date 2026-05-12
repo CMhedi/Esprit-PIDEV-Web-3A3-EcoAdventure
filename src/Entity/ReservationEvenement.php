@@ -51,6 +51,12 @@ class ReservationEvenement
     {
         return $this->statut_res ? StatutReservationEvenement::tryFrom($this->statut_res) : null;
     }
+
+    public function getStatutReservationEvenement(): ?StatutReservationEvenement
+    {
+        return $this->getStatut_res();
+    }
+
     public function setStatut_res(?StatutReservationEvenement $statut): self
     {
         $this->statut_res = $statut?->value;

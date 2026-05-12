@@ -286,7 +286,7 @@ class Evenement
         $nbReservationsExistantes = 0;
 
         foreach ($this->reservationEvenements as $res) {
-            $statut = $res->getStatutReservationEvenement();
+            $statut = $res->getStatut_res();
             if ($statut !== \App\Enum\StatutReservationEvenement::ANNULEE && $statut !== \App\Enum\StatutReservationEvenement::LISTE_ATTENTE) {
                 $nbReservationsExistantes += (int) $res->getNb_billets();
             }
