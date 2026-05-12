@@ -105,8 +105,8 @@ public function detail(int $id): Response
             'places_reservees' => count($participants),
             'places_restantes' => $seance->getCapacite() - count($participants),
             'taux_occupation' => round((count($participants) / $seance->getCapacite()) * 100),
-            'presents' => count(array_filter($participants, fn($r) => $r->getStatut_presence()->value === 'PRESENT')),
-            'absents' => count(array_filter($participants, fn($r) => $r->getStatut_presence()->value === 'ABSENT')),
+            'presents' => count(array_filter($participants, fn($r) => $r->getStatutPresence()->value === 'PRESENT')),
+            'absents' => count(array_filter($participants, fn($r) => $r->getStatutPresence()->value === 'ABSENT')),
         ];
 
         return $this->render('front/coach_seance_detail.html.twig', [
@@ -146,13 +146,13 @@ if (!$coach) {
         }
 
         // 🔥 SIMPLE ET PROPRE (pas besoin de reflection)
-        $currentStatus = $reservation->getStatut_presence()->value;
+        $currentStatus = $reservation->getStatutPresence()->value;
 
         $newStatus = $currentStatus === 'PRESENT'
             ? \App\Enum\StatutPresence::ABSENT
             : \App\Enum\StatutPresence::PRESENT;
 
-        $reservation->setStatut_presence($newStatus);
+        $reservation->setStatutPresence($newStatus);
 
         $this->entityManager->flush();
 

@@ -57,6 +57,8 @@ class ReservationEvenement
         return $this;
     }
 
+
+
     #[ORM\Column(type: 'boolean', options: ["default" => false])]
     private bool $is_notified_availability = false;
 

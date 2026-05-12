@@ -125,8 +125,7 @@ if ($user) {
             'error' => $e->getMessage(),
         ]);
 
-        $this->addFlash('error', 'Erreur lors du chargement des séances');
-        return $this->redirectToRoute('app_user_seances');
+        throw $e;
     }
 }
     /**
@@ -237,7 +236,7 @@ private function createReservation(UserApp $user, Seance $seance): ReservationSe
         $reservation->setSeance($seance);
         $reservation->setDate_reservation(new \DateTime());
         $reservation->setStatut(StatutReservation::CONFIRMEE);
-        $reservation->setStatut_presence(StatutPresence::ABSENT);
+        $reservation->setStatutPresence(StatutPresence::ABSENT);
 
         return $reservation;
     }
