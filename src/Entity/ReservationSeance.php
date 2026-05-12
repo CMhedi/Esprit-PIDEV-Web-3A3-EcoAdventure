@@ -44,16 +44,16 @@ class ReservationSeance
 
 
 
-    #[ORM\Column(type: 'string', length: 255)]
-    private ?string $statutReservation = null;
+    #[ORM\Column(name: 'statut', type: 'string', length: 255)]
+    private ?string $statut = null;
 
-    public function getStatutReservation(): ?StatutReservation
+    public function getStatut(): ?StatutReservation
     {
-        return $this->statutReservation ? StatutReservation::tryFrom($this->statutReservation) : null;
+        return $this->statut ? StatutReservation::tryFrom($this->statut) : null;
     }
-    public function setStatutReservation(?StatutReservation $statut): self
+    public function setStatut(?StatutReservation $statut): self
     {
-        $this->statutReservation = $statut?->value;
+        $this->statut = $statut?->value;
         return $this;
     }
 

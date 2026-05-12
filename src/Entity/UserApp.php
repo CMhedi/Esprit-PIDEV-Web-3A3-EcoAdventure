@@ -636,7 +636,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
         $limitDate = new \DateTime('-7 days');
 
         foreach ($this->reservationSeances as $res) {
-            if ($res->getCreatedAt() >= $limitDate) {
+            if ($res->getDate_reservation() >= $limitDate) {
                 $count++;
             }
         }
@@ -654,7 +654,7 @@ class UserApp implements UserInterface, PasswordAuthenticatedUserInterface
             if (
                 $date &&
                 $date >= $limitDate &&
-                $reservation->getStatut_presence() === \App\Enum\StatutPresence::ABSENT
+                $reservation->getStatutPresence() === \App\Enum\StatutPresence::ABSENT
             ) {
                 $count++;
             }
