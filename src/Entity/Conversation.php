@@ -53,7 +53,7 @@ class Conversation
     #[Assert\LessThanOrEqual("now", message: "La date de création ne peut pas être dans le futur.")]
     private ?\DateTimeInterface $date_creation = null;
 
-    #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'conversation', cascade: ['remove'])]
+    #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'conversation', cascade: ['persist', 'remove'], orphanRemoval: true)]
     /** @var Collection<int, Message> */
     private Collection $messages;
 

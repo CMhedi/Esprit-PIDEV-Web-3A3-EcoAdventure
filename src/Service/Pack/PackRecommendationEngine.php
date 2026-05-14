@@ -6,6 +6,7 @@ use App\Dto\PackInsightView;
 use App\Entity\Inscription;
 use App\Entity\Pack;
 use App\Entity\UserApp;
+use Doctrine\ORM\EntityNotFoundException;
 
 final class PackRecommendationEngine
 {
@@ -99,12 +100,19 @@ final class PackRecommendationEngine
 
             $amounts[] = (float) ($inscription->getMontantTotal() ?? 0);
 
-            if ($inscription->getPack()) {
+            try {
                 $pack = $inscription->getPack();
+                if ($pack === null) {
+                    continue;
+                }
+
                 $knownPackIds[] = (int) $pack->getIdPack();
                 $capacities[] = (int) ($pack->getNbActivitesMax() ?? 0);
                 $typeKey = mb_strtolower((string) $pack->getTypePack());
                 $typePreferences[$typeKey] = ($typePreferences[$typeKey] ?? 0) + 1;
+            } catch (EntityNotFoundException) {
+                // id_pack points to a deleted pack row: skip for scoring; fix data or run migrations.
+                continue;
             }
         }
 

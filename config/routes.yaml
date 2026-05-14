@@ -9,3 +9,9 @@ ai_bundle_controllers:
         path: ../src/AiBundle/Controller/
         namespace: App\AiBundle\Controller
     type: attribute
+
+# Explicit route so Twig path('app_reservation_disponibilite') always resolves (see ReservationController::disponibilite).
+app_reservation_disponibilite:
+    path: /reservation/disponibilite/{id}
+    controller: App\Controller\ReservationController::disponibilite
+    methods: [GET, HEAD]

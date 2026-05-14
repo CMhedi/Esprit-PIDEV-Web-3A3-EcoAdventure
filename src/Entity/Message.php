@@ -61,7 +61,7 @@ class Message
     private ?array $attachments = [];
 
     #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
-    #[ORM\JoinColumn(name: 'id_conversation', referencedColumnName: 'id_conversation', nullable: false)]
+    #[ORM\JoinColumn(name: 'id_conversation', referencedColumnName: 'id_conversation', nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull(message: "Le message doit être rattaché à une conversation.")]
     private ?Conversation $conversation = null;
 

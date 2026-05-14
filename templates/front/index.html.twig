@@ -1296,11 +1296,11 @@
                  data-user-display-name="{{ (nom_utilisateur ~ ' ' ~ prenom_utilisateur)|trim }}"
                  data-user-email="{{ user_email|default('') }}">
                 {% if current_conv %}
-                    {% set is_group_admin = current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
+                    {% set is_group_admin = current_conv.est_groupe and current_conv.createur is not null and current_conv.createur.id_user == mon_id %}
                 {% endif %}
                 {% if current_conv %}
                 {% for message in messages %}
-                    {% set is_mine = (message.userApp is defined and message.userApp.id_user == mon_id) %}
+                    {% set is_mine = message.userApp is not null and message.userApp.id_user == mon_id %}
                     {% set msgType = message.type_message and message.type_message.value is defined ? message.type_message.value : (message.type_message ?? '') %}
                     {% set rawContent = message.contenu ?? '' %}
                     {% set hasUrlInText = rawContent matches '/(https?:\\/\\/|www\\.)\\S+/i' %}
@@ -1639,7 +1639,7 @@
             </div>
             <div class="modal-body">
                 {% if current_conv is defined and current_conv %}
-                    {% set is_group_admin = current_conv.est_groupe and current_conv.createur is defined and current_conv.createur.id_user == mon_id %}
+                    {% set is_group_admin = current_conv.est_groupe and current_conv.createur is not null and current_conv.createur.id_user == mon_id %}
                     {% set private_other_user = null %}
                     {% if not current_conv.est_groupe %}
                         {% for participant in current_conv.participants %}
@@ -1669,11 +1669,11 @@
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>
                                             {{ participant.nom }} {{ participant.prenom }}
-                                            {% if participant.id_user == current_conv.createur.id_user %}
+                                            {% if current_conv.createur and participant.id_user == current_conv.createur.id_user %}
                                                 <span class="badge bg-success ms-2">Admin</span>
                                             {% endif %}
                                         </span>
-                                        {% if is_group_admin and participant.id_user != current_conv.createur.id_user %}
+                                        {% if is_group_admin and current_conv.createur and participant.id_user != current_conv.createur.id_user %}
                                             <a href="{{ path('app_kick_member', {'id_conversation': current_conv.id_conversation, 'id_user_to_kick': participant.id_user, 'id_user': mon_id}) }}"
                                                class="btn btn-sm btn-outline-danger"
                                                data-confirm-link
@@ -1748,7 +1748,7 @@
                     
                     {# --- Delete conversation (only if admin or private chat) --- #}
                     <div class="d-grid shadow-sm">
-                        {% if not current_conv.est_groupe or current_conv.createur.id_user == mon_id %}
+                        {% if not current_conv.est_groupe or (current_conv.createur and current_conv.createur.id_user == mon_id) %}
                             <a href="{{ path('app_delete_conversation', {'id_conversation': current_conv.id_conversation, 'id_user': mon_id}) }}"
                                class="btn btn-danger py-2"
                                data-confirm-link

@@ -3,8 +3,6 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 
 use App\Repository\ReservationEvenementRepository;
 use App\Enum\StatutReservationEvenement;
@@ -44,12 +42,12 @@ class ReservationEvenement
 
 
 
-    #[ORM\Column(name: 'statut_res', type: 'string', length: 255)]
-    private ?string $statut_res = null;
+    #[ORM\Column(name: 'statut_res', type: 'string', length: 255, enumType: StatutReservationEvenement::class)]
+    private ?StatutReservationEvenement $statut_res = null;
 
     public function getStatut_res(): ?StatutReservationEvenement
     {
-        return $this->statut_res ? StatutReservationEvenement::tryFrom($this->statut_res) : null;
+        return $this->statut_res;
     }
 
     public function getStatutReservationEvenement(): ?StatutReservationEvenement
@@ -59,7 +57,7 @@ class ReservationEvenement
 
     public function setStatut_res(?StatutReservationEvenement $statut): self
     {
-        $this->statut_res = $statut?->value;
+        $this->statut_res = $statut;
         return $this;
     }
 
@@ -109,7 +107,7 @@ class ReservationEvenement
     }
 
     #[ORM\ManyToOne(targetEntity: Evenement::class, inversedBy: 'reservationEvenements')]
-    #[ORM\JoinColumn(name: 'id_evenement', referencedColumnName: 'id_evenement', nullable: false)]
+    #[ORM\JoinColumn(name: 'id_evenement', referencedColumnName: 'id_evenement', nullable: false, onDelete: 'CASCADE')]
     private Evenement $evenement;
 
     public function getEvenement(): Evenement

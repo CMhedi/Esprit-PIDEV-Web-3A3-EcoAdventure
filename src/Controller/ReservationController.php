@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Activite;
 use App\Entity\ReservationActivite;
 use App\Enum\StatutReservationActivite;
+use App\Repository\ReservationActiviteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,6 +16,9 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ReservationController extends AbstractController
 {
+    /** Capacité affichée tant qu'aucun champ dédié n'existe sur {@see Activite}. */
+    private const DISPONIBILITE_CAPACITE_DEFAUT = 50;
+
     #[Route('/reservationfront/{id}', name: 'app_reservation_front')]
     public function reservationFront(int $id, EntityManagerInterface $em): Response
     {
@@ -25,6 +29,35 @@ class ReservationController extends AbstractController
         }
 
         return $this->renderReservationForm($activite);
+    }
+
+    /** Route name registered in config/routes.yaml (avoids missing-route issues with some caches / deploys). */
+    public function disponibilite(int $id, EntityManagerInterface $em, ReservationActiviteRepository $reservationRepo): Response
+    {
+        $activite = $em->getRepository(Activite::class)->find($id);
+
+        if (!$activite) {
+            throw $this->createNotFoundException('Activite non trouvee');
+        }
+
+        $nbReserve = (int) $reservationRepo->createQueryBuilder('r')
+            ->select('COALESCE(SUM(r.nb_personnes), 0)')
+            ->where('r.activite = :activite')
+            ->andWhere('r.statut_res != :annule')
+            ->setParameter('activite', $activite)
+            ->setParameter('annule', StatutReservationActivite::ANNULEE)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $capaciteTotale = max(self::DISPONIBILITE_CAPACITE_DEFAUT, $nbReserve);
+        $disponible = max(0, $capaciteTotale - $nbReserve);
+
+        return $this->render('front/disponibilite.html.twig', [
+            'activite' => $activite,
+            'capaciteTotale' => $capaciteTotale,
+            'nbReserve' => $nbReserve,
+            'disponible' => $disponible,
+        ]);
     }
 
     #[Route('/reservation/create/{id}', name: 'app_reservation_create', methods: ['POST'])]
