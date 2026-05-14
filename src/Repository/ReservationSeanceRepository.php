@@ -149,7 +149,7 @@ class ReservationSeanceRepository extends ServiceEntityRepository
     public function countBySeance(int $seanceId): int
 {
     return $this->createQueryBuilder('r')
-        ->select('COUNT(r.id)')
+        ->select('COUNT(r.id_reservation)')
         ->where('r.seance = :seance')
         ->setParameter('seance', $seanceId)
         ->getQuery()
@@ -160,7 +160,7 @@ public function getAbsences30Days(int $userId): int
     $date = new \DateTime('-30 days');
 
     return (int) $this->createQueryBuilder('r')
-        ->select('COUNT(r.id)')
+        ->select('COUNT(r.id_reservation)')
         ->where('r.userApp = :user')
         ->andWhere('r.statut_presence = :absence')
         ->andWhere('r.date_reservation >= :date')
