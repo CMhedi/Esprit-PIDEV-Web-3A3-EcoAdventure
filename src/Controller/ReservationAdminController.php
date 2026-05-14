@@ -2,10 +2,11 @@
 
 namespace App\Controller;
 
-use App\Entity\ReservationActivite;
 use App\Entity\Activite;
+use App\Entity\ReservationActivite;
 use App\Enum\StatutReservationActivite;
 use App\Repository\ActiviteRepository;
+use App\Repository\ReservationActiviteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,12 +17,12 @@ use Symfony\Component\Routing\Annotation\Route;
 class ReservationAdminController extends AbstractController
 {
     #[Route('/', name: 'app_admin_reservations')]
-    public function index(EntityManagerInterface $em): Response
+    public function index(ReservationActiviteRepository $reservationActiviteRepository): Response
     {
-        $reservations = $em->getRepository(ReservationActivite::class)->findAll();
+        $reservations = $reservationActiviteRepository->findAllForAdminList();
 
         return $this->render('admin/reservationadmin.html.twig', [
-            'reservations' => $reservations
+            'reservations' => $reservations,
         ]);
     }
 
@@ -38,11 +39,11 @@ class ReservationAdminController extends AbstractController
     }
 
     #[Route('/edit/{id}', name: 'app_admin_reservation_edit', methods: ['GET','POST'])]
-    public function edit(int $id, Request $request, EntityManagerInterface $em, ActiviteRepository $activiteRepository): Response
+    public function edit(int $id, Request $request, EntityManagerInterface $em, ActiviteRepository $activiteRepository, ReservationActiviteRepository $reservationActiviteRepository): Response
     {
-        $reservation = $em->getRepository(ReservationActivite::class)->find($id);
+        $reservation = $reservationActiviteRepository->findOneForAdmin($id);
         if (!$reservation) {
-            throw $this->createNotFoundException('Réservation non trouvée');
+            throw $this->createNotFoundException('Réservation introuvable ou activité / utilisateur associé manquant.');
         }
 
         $activites = $activiteRepository->findAllValid();

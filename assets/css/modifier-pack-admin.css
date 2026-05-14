@@ -254,25 +254,67 @@
     transform: translateY(-1px);
 }
 
+.form-block .form-select {
+    max-width: min(420px, 100%);
+}
+
+.form-block input[type="number"].form-control {
+    max-width: min(200px, 100%);
+}
+
 .input-with-unit {
-    position: relative;
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    max-width: min(320px, 100%);
+    border-radius: 16px;
+    border: 1px solid #d7dfdc;
+    background: #fff;
+    overflow: hidden;
+    box-sizing: border-box;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.input-with-unit:focus-within {
+    border-color: var(--eco-accent);
+    box-shadow: 0 0 0 0.22rem rgba(59, 130, 246, 0.14);
+}
+
+.input-with-unit > div {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: stretch;
+}
+
+.input-with-unit > .form-control,
+.input-with-unit > div .form-control {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    min-height: 52px;
+    padding-right: 14px;
+}
+
+.input-with-unit .form-control:focus {
+    transform: none;
+    border-color: transparent !important;
+    box-shadow: none !important;
 }
 
 .input-with-unit span {
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0 14px;
     background: rgba(242, 140, 40, 0.12);
     color: var(--eco-secondary);
     font-weight: 800;
-    padding: 6px 10px;
-    border-radius: 999px;
     font-size: 0.82rem;
-}
-
-.input-with-unit .form-control {
-    padding-right: 72px;
+    border-left: 1px solid rgba(215, 223, 220, 0.95);
 }
 
 .form-error {
@@ -308,8 +350,25 @@
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    margin-top: 8px;
+    margin-top: 16px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(215, 223, 220, 0.55);
     flex-wrap: wrap;
+}
+
+.form-actions-full .btn-pack-cancel,
+.form-actions-full .btn-pack-save {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.form-actions-full .btn-pack-save {
+    padding-left: 22px;
+    padding-right: 22px;
 }
 
 .btn-pack-cancel {

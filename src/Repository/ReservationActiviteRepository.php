@@ -16,6 +16,36 @@ class ReservationActiviteRepository extends ServiceEntityRepository
         parent::__construct($registry, ReservationActivite::class);
     }
 
+    /**
+     * Liste admin : ignore les réservations dont l’activité ou l’utilisateur
+     * n’existe plus (FK orpheline), pour éviter EntityNotFoundException au rendu.
+     *
+     * @return ReservationActivite[]
+     */
+    public function findAllForAdminList(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->innerJoin('r.activite', 'a')->addSelect('a')
+            ->innerJoin('r.userApp', 'u')->addSelect('u')
+            ->orderBy('r.dateRes', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Détail / édition admin : null si réservation ou relation obligatoire absente.
+     */
+    public function findOneForAdmin(int $id): ?ReservationActivite
+    {
+        return $this->createQueryBuilder('r')
+            ->innerJoin('r.activite', 'a')->addSelect('a')
+            ->innerJoin('r.userApp', 'u')->addSelect('u')
+            ->andWhere('r.id_res_act = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
 //    /**
 //     * @return ReservationActivite[] Returns an array of ReservationActivite objects
 //     */

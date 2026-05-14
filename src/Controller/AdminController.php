@@ -6,7 +6,6 @@ use App\Repository\ActiviteRepository;
 use App\Repository\InscriptionRepository;
 use App\Repository\PackRepository;
 use App\Repository\ReclamationRepository;
-use App\Repository\ReservationActiviteRepository;
 use App\Service\AI\AiRiskExplainer;
 use App\Service\Pack\PackInsightAssembler;
 use App\Service\Risk\InscriptionRiskEngine;
@@ -225,16 +224,6 @@ final class AdminController extends AbstractController
             'nom' => $nom,
             'sort_by' => $sortBy,
             'tri' => $tri,
-        ]);
-    }
-
-    #[Route('/admin/reservations', name: 'app_admin_reservations')]
-    public function reservations(
-        ReservationActiviteRepository $reservationRepository
-    ): Response {
-        $reservations = $reservationRepository->findAll();
-        return $this->render('admin/reservationadmin.html.twig', [
-            'reservations' => $reservations
         ]);
     }
 
